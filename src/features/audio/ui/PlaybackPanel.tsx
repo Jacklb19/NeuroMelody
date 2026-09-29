@@ -23,12 +23,12 @@ const STATE_TEXT: Readonly<Record<AudioState, string>> = {
 const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31);
 
 const buttonStyle: React.CSSProperties = {
-  padding: 'var(--espacio-2) var(--espacio-4)',
-  backgroundColor: 'var(--color-boton-fondo)',
-  color: 'var(--color-boton-texto)',
+  padding: 'var(--space-2) var(--space-4)',
+  backgroundColor: 'var(--color-button-background)',
+  color: 'var(--color-button-text)',
   border: 'none',
-  borderRadius: 'var(--radio-borde)',
-  fontSize: 'var(--texto-base)',
+  borderRadius: 'var(--border-radius)',
+  fontSize: 'var(--text-base)',
   cursor: 'pointer',
 };
 
@@ -187,18 +187,18 @@ export function PlaybackPanel({
     <section
       aria-labelledby={titleId}
       style={{
-        border: 'var(--borde-grosor) solid var(--color-borde)',
-        borderRadius: 'var(--radio-borde)',
-        padding: 'var(--espacio-6)',
-        marginBottom: 'var(--espacio-8)',
+        border: 'var(--border-width) solid var(--color-border)',
+        borderRadius: 'var(--border-radius)',
+        padding: 'var(--space-6)',
+        marginBottom: 'var(--space-8)',
       }}
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
         Música
       </h2>
-      <p style={{ marginBottom: 'var(--espacio-4)' }}>Usa un volumen moderado en tu dispositivo.</p>
+      <p style={{ marginBottom: 'var(--space-4)' }}>Usa un volumen moderado en tu dispositivo.</p>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)', alignItems: 'center', marginBottom: 'var(--espacio-4)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <button
           type="button"
           style={buttonStyle}
@@ -233,7 +233,7 @@ export function PlaybackPanel({
         Estado de la música: <strong>{stateText}</strong>
       </p>
       {control.error !== null && (
-        <p style={{ marginTop: 'var(--espacio-2)' }}>
+        <p style={{ marginTop: 'var(--space-2)' }}>
           El audio no está disponible en este navegador ({control.error}).
         </p>
       )}
@@ -246,19 +246,19 @@ export function PlaybackPanel({
           aria-describedby={warningTextId}
           style={{
             position: 'static',
-            marginTop: 'var(--espacio-4)',
-            padding: 'var(--espacio-4)',
-            border: 'var(--borde-grosor) solid var(--color-borde)',
-            borderRadius: 'var(--radio-borde)',
+            marginTop: 'var(--space-4)',
+            padding: 'var(--space-4)',
+            border: 'var(--border-width) solid var(--color-border)',
+            borderRadius: 'var(--border-radius)',
           }}
         >
-          <h3 id={warningTitleId} style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-2)' }}>
+          <h3 id={warningTitleId} style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)' }}>
             {warning === 0 ? 'La sesión planificada terminó' : 'Llevas 60 minutos de escucha continua'}
           </h3>
-          <p id={warningTextId} style={{ marginBottom: 'var(--espacio-4)' }}>
+          <p id={warningTextId} style={{ marginBottom: 'var(--space-4)' }}>
             Si no respondes, la música se apagará en 2 minutos con un fundido suave.
           </p>
-          <div style={{ display: 'flex', gap: 'var(--espacio-4)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
             <button ref={continueButtonRef} type="button" style={buttonStyle} onClick={continueSession}>
               Continuar
             </button>
@@ -277,10 +277,10 @@ export function PlaybackPanel({
         style={{
           ...buttonStyle,
           position: 'fixed',
-          right: 'var(--espacio-4)',
-          bottom: 'var(--espacio-4)',
+          right: 'var(--space-4)',
+          bottom: 'var(--space-4)',
           zIndex: 10,
-          padding: 'var(--espacio-3) var(--espacio-6)',
+          padding: 'var(--space-3) var(--space-6)',
           opacity: state === 'playing' ? 1 : 0.6,
         }}
       >

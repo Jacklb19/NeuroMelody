@@ -18,16 +18,16 @@ type PaletteColor = Exclude<keyof ChartPalette, 'font'>;
 
 /** Variable CSS de la que sale cada color de la paleta. */
 export const PALETTE_VARIABLES: Readonly<Record<PaletteColor, string>> = {
-  line: '--color-grafica-linea',
-  grid: '--color-grafica-rejilla',
-  text: '--color-grafica-texto',
-  discarded: '--color-grafica-descartado',
-  lowQualityBackground: '--color-grafica-baja-calidad-fondo',
-  lowQualityHatch: '--color-grafica-baja-calidad-rayado',
+  line: '--color-chart-line',
+  grid: '--color-chart-grid',
+  text: '--color-chart-text',
+  discarded: '--color-chart-discarded',
+  lowQualityBackground: '--color-chart-low-quality-background',
+  lowQualityHatch: '--color-chart-low-quality-hatch',
 };
 
-export const FAMILY_VARIABLE = '--fuente-base';
-export const SIZE_VARIABLE = '--texto-sm';
+export const FAMILY_VARIABLE = '--font-base';
+export const SIZE_VARIABLE = '--text-sm';
 
 /** Falta una variable de la paleta: la gráfica no se puede dibujar con fidelidad. */
 export class ChartPaletteError extends Error {

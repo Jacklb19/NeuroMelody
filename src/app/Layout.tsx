@@ -14,20 +14,20 @@ const LINKS = [
 export function Layout(): React.JSX.Element {
   return (
     <>
-      <a href="#contenido" className="saltar-al-contenido">
+      <a href="#contenido" className="skip-link">
         Saltar al contenido
       </a>
-      <header style={{ marginBottom: 'var(--espacio-8)' }}>
+      <header style={{ marginBottom: 'var(--space-8)' }}>
         <nav aria-label="Principal">
-          <ul style={{ listStyle: 'none', display: 'flex', gap: 'var(--espacio-4)' }}>
+          <ul style={{ listStyle: 'none', display: 'flex', gap: 'var(--space-4)' }}>
             {LINKS.map(({ route, text }) => (
               <li key={route}>
                 <NavLink
                   to={route}
                   end
                   style={({ isActive }) => ({
-                    color: 'var(--color-texto)',
-                    fontWeight: isActive ? 'var(--peso-destacado)' : 'var(--peso-normal)',
+                    color: 'var(--color-text)',
+                    fontWeight: isActive ? 'var(--font-weight-strong)' : 'var(--font-weight-normal)',
                   })}
                 >
                   {text}

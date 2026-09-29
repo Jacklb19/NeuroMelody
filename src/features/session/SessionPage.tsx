@@ -17,8 +17,8 @@ export function SessionPage(): React.JSX.Element {
 
   return (
     <>
-      <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-2)' }}>Sesión</h1>
-      <p style={{ color: 'var(--color-texto-secundario)', marginBottom: 'var(--espacio-6)' }}>
+      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>Sesión</h1>
+      <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)' }}>
         Plan: {durationMin} minutos.
       </p>
       <PlaybackPanel durationMin={durationMin} />

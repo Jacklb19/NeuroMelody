@@ -15,14 +15,14 @@ function styles(values: Record<string, string>): ComputedStyles {
 }
 
 const COMPLETE_STYLES: Record<string, string> = {
-  '--color-grafica-linea': ' #2563eb',
-  '--color-grafica-rejilla': '#e5e7eb',
-  '--color-grafica-texto': '#4b5563',
-  '--color-grafica-descartado': '#78716c',
-  '--color-grafica-baja-calidad-fondo': '#fffbeb',
-  '--color-grafica-baja-calidad-rayado': '#a16207',
-  '--fuente-base': 'system-ui, sans-serif',
-  '--texto-sm': '0.875rem',
+  '--color-chart-line': ' #2563eb',
+  '--color-chart-grid': '#e5e7eb',
+  '--color-chart-text': '#4b5563',
+  '--color-chart-discarded': '#78716c',
+  '--color-chart-low-quality-background': '#fffbeb',
+  '--color-chart-low-quality-hatch': '#a16207',
+  '--font-base': 'system-ui, sans-serif',
+  '--text-sm': '0.875rem',
   'font-size': '16px',
 };
 
@@ -40,7 +40,7 @@ describe('leerPaletaGrafica', () => {
   });
 
   it('acepta un tamaño en px', () => {
-    const palette = readChartPalette(styles({ ...COMPLETE_STYLES, '--texto-sm': '13px' }));
+    const palette = readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': '13px' }));
     expect(palette.font).toBe('13px system-ui, sans-serif');
   });
 
@@ -54,7 +54,7 @@ describe('leerPaletaGrafica', () => {
   );
 
   it('lanza un error si el tamaño no se puede interpretar', () => {
-    expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--texto-sm': 'mediano' }))).toThrow(
+    expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': 'mediano' }))).toThrow(
       ChartPaletteError,
     );
   });
@@ -92,20 +92,20 @@ describe('tokens de la gráfica en src/index.css', () => {
   });
 
   it('no reutiliza los colores de error en la gráfica', () => {
-    const errors = new Set([resolve('--color-error-texto'), resolve('--color-error-fondo')]);
+    const errors = new Set([resolve('--color-error-text'), resolve('--color-error-background')]);
     for (const variable of Object.values(PALETTE_VARIABLES)) {
       expect(errors.has(resolve(variable)), variable).toBe(false);
     }
   });
 
   it.each([
-    ['--color-grafica-linea', '--color-fondo'],
-    ['--color-grafica-linea', '--color-grafica-baja-calidad-fondo'],
-    ['--color-grafica-descartado', '--color-fondo'],
-    ['--color-grafica-descartado', '--color-grafica-baja-calidad-fondo'],
-    ['--color-grafica-baja-calidad-rayado', '--color-fondo'],
-    ['--color-grafica-baja-calidad-rayado', '--color-grafica-baja-calidad-fondo'],
-    ['--color-grafica-texto', '--color-fondo'],
+    ['--color-chart-line', '--color-background'],
+    ['--color-chart-line', '--color-chart-low-quality-background'],
+    ['--color-chart-discarded', '--color-background'],
+    ['--color-chart-discarded', '--color-chart-low-quality-background'],
+    ['--color-chart-low-quality-hatch', '--color-background'],
+    ['--color-chart-low-quality-hatch', '--color-chart-low-quality-background'],
+    ['--color-chart-text', '--color-background'],
   ])('%s tiene al menos 3:1 de contraste sobre %s', (foreground, background) => {
     expect(contrast(resolve(foreground), resolve(background))).toBeGreaterThanOrEqual(3);
   });

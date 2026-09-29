@@ -27,13 +27,13 @@ export function WarningsPage(): React.JSX.Element {
 
   return (
     <>
-      <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-4)' }}>Antes de empezar</h1>
-      <ul style={{ display: 'grid', gap: 'var(--espacio-2)', marginBottom: 'var(--espacio-6)', paddingLeft: 'var(--espacio-6)' }}>
+      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-4)' }}>Antes de empezar</h1>
+      <ul style={{ display: 'grid', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', paddingLeft: 'var(--space-6)' }}>
         {WARNINGS.map((text) => (
           <li key={text}>{text}</li>
         ))}
       </ul>
-      <div style={{ display: 'flex', gap: 'var(--espacio-2)', alignItems: 'flex-start', marginBottom: 'var(--espacio-4)' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
         <input
           id={checkboxId}
           type="checkbox"
@@ -49,12 +49,12 @@ export function WarningsPage(): React.JSX.Element {
         onClick={accept}
         disabled={!confirmed}
         style={{
-          padding: 'var(--espacio-2) var(--espacio-4)',
-          backgroundColor: 'var(--color-boton-fondo)',
-          color: 'var(--color-boton-texto)',
+          padding: 'var(--space-2) var(--space-4)',
+          backgroundColor: 'var(--color-button-background)',
+          color: 'var(--color-button-text)',
           border: 'none',
-          borderRadius: 'var(--radio-borde)',
-          fontSize: 'var(--texto-base)',
+          borderRadius: 'var(--border-radius)',
+          fontSize: 'var(--text-base)',
           cursor: confirmed ? 'pointer' : 'not-allowed',
           opacity: confirmed ? 1 : 0.6,
         }}

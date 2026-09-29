@@ -91,18 +91,18 @@ export function AcquisitionPanel({
     <section
       aria-labelledby={titleId}
       style={{
-        border: 'var(--borde-grosor) solid var(--color-borde)',
-        borderRadius: 'var(--radio-borde)',
-        padding: 'var(--espacio-6)',
-        marginBottom: 'var(--espacio-8)',
+        border: 'var(--border-width) solid var(--color-border)',
+        borderRadius: 'var(--border-radius)',
+        padding: 'var(--space-6)',
+        marginBottom: 'var(--space-8)',
       }}
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
         Fuente de señal
       </h2>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)', marginBottom: 'var(--espacio-4)' }}>
-        <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
           Escenario del simulador
           <select
             value={scenario}
@@ -119,7 +119,7 @@ export function AcquisitionPanel({
           </select>
         </label>
 
-        <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
+        <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
           Velocidad
           <select
             value={speed}
@@ -141,30 +141,30 @@ export function AcquisitionPanel({
         type="button"
         onClick={active ? disconnect : connect}
         style={{
-          padding: 'var(--espacio-2) var(--espacio-4)',
-          backgroundColor: 'var(--color-boton-fondo)',
-          color: 'var(--color-boton-texto)',
+          padding: 'var(--space-2) var(--space-4)',
+          backgroundColor: 'var(--color-button-background)',
+          color: 'var(--color-button-text)',
           border: 'none',
-          borderRadius: 'var(--radio-borde)',
+          borderRadius: 'var(--border-radius)',
           cursor: 'pointer',
-          fontSize: 'var(--texto-base)',
-          marginBottom: 'var(--espacio-4)',
+          fontSize: 'var(--text-base)',
+          marginBottom: 'var(--space-4)',
         }}
       >
         {active ? 'Desconectar' : 'Conectar simulador'}
       </button>
 
-      <p role="status" style={{ marginBottom: 'var(--espacio-4)' }}>
+      <p role="status" style={{ marginBottom: 'var(--space-4)' }}>
         Estado de la conexión: <strong>{STATE_TEXT[reading.state]}</strong>
       </p>
 
       {reading.error !== null && (
-        <p role="alert" style={{ color: 'var(--color-error-texto)', marginBottom: 'var(--espacio-4)' }}>
+        <p role="alert" style={{ color: 'var(--color-error-text)', marginBottom: 'var(--space-4)' }}>
           La medición no es fiable y se descartó ({reading.error}). Revisa la colocación del dispositivo.
         </p>
       )}
 
-      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--espacio-1) var(--espacio-4)' }}>
+      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--space-1) var(--space-4)' }}>
         <dt>Frecuencia cardíaca</dt>
         <dd data-testid="heart-rate">
           {reading.last === null ? '—' : `${String(reading.last.heartRate)} lpm`}

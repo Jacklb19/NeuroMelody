@@ -166,17 +166,17 @@ export function SignalPanel({
     <section
       aria-labelledby={titleId}
       style={{
-        border: 'var(--borde-grosor) solid var(--color-borde)',
-        borderRadius: 'var(--radio-borde)',
-        padding: 'var(--espacio-6)',
-        marginBottom: 'var(--espacio-8)',
+        border: 'var(--border-width) solid var(--color-border)',
+        borderRadius: 'var(--border-radius)',
+        padding: 'var(--space-6)',
+        marginBottom: 'var(--space-8)',
       }}
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
         Señal e indicadores
       </h2>
 
-      <p role="status" style={{ marginBottom: 'var(--espacio-4)' }}>
+      <p role="status" style={{ marginBottom: 'var(--space-4)' }}>
         Calidad de la señal:{' '}
         <strong>
           {quality === null ? (
@@ -191,12 +191,12 @@ export function SignalPanel({
       </p>
 
       {!threadAvailable && (
-        <p style={{ marginBottom: 'var(--espacio-4)' }}>
+        <p style={{ marginBottom: 'var(--space-4)' }}>
           El análisis de la señal no está disponible en este navegador.
         </p>
       )}
       {threadError !== null && (
-        <p style={{ marginBottom: 'var(--espacio-4)' }}>
+        <p style={{ marginBottom: 'var(--space-4)' }}>
           No se pudo actualizar el análisis de la señal ({threadError}).
         </p>
       )}
@@ -207,10 +207,10 @@ export function SignalPanel({
           role="img"
           aria-label="Tacograma: intervalos entre latidos de los últimos 5 minutos"
           aria-describedby={summaryId}
-          style={{ height: 'var(--alto-grafica)', marginBottom: 'var(--espacio-4)' }}
+          style={{ height: 'var(--chart-height)', marginBottom: 'var(--space-4)' }}
         />
       ) : (
-        <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
+        <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>
           La gráfica no está disponible: {chart.reason}. Los indicadores en texto siguen
           actualizándose.
         </p>
@@ -221,7 +221,7 @@ export function SignalPanel({
         style={{
           display: 'grid',
           gridTemplateColumns: 'max-content 1fr',
-          gap: 'var(--espacio-1) var(--espacio-4)',
+          gap: 'var(--space-1) var(--space-4)',
           fontVariantNumeric: 'tabular-nums',
         }}
       >

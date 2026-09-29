@@ -15,14 +15,14 @@ export function PlanPage(): React.JSX.Element {
 
   return (
     <>
-      <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-4)' }}>Plan de sesión</h1>
-      <fieldset style={{ border: 'none', marginBottom: 'var(--espacio-6)' }}>
-        <legend style={{ marginBottom: 'var(--espacio-2)', fontWeight: 'var(--peso-destacado)' }}>
+      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-4)' }}>Plan de sesión</h1>
+      <fieldset style={{ border: 'none', marginBottom: 'var(--space-6)' }}>
+        <legend style={{ marginBottom: 'var(--space-2)', fontWeight: 'var(--font-weight-strong)' }}>
           Duración de la sesión
         </legend>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           {DURATIONS_MIN.map((minutes) => (
-            <label key={minutes} style={{ display: 'flex', gap: 'var(--espacio-1)', alignItems: 'center' }}>
+            <label key={minutes} style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
               <input
                 type="radio"
                 name="duracion"
@@ -38,11 +38,11 @@ export function PlanPage(): React.JSX.Element {
         </div>
       </fieldset>
 
-      <section aria-label="Resumen del plan" style={{ marginBottom: 'var(--espacio-6)' }}>
+      <section aria-label="Resumen del plan" style={{ marginBottom: 'var(--space-6)' }}>
         <p>
           Duración: <strong>{duration} minutos</strong>.
         </p>
-        <p style={{ color: 'var(--color-texto-secundario)' }}>
+        <p style={{ color: 'var(--color-text-secondary)' }}>
           La música empieza en el nivel {LEVELS[CALIBRATION_LEVEL].name} durante los primeros 3
           minutos, mientras se toma la referencia de tu señal.
         </p>
@@ -54,12 +54,12 @@ export function PlanPage(): React.JSX.Element {
           void navigate(`/sesion?duracion=${String(duration)}`);
         }}
         style={{
-          padding: 'var(--espacio-2) var(--espacio-4)',
-          backgroundColor: 'var(--color-boton-fondo)',
-          color: 'var(--color-boton-texto)',
+          padding: 'var(--space-2) var(--space-4)',
+          backgroundColor: 'var(--color-button-background)',
+          color: 'var(--color-button-text)',
           border: 'none',
-          borderRadius: 'var(--radio-borde)',
-          fontSize: 'var(--texto-base)',
+          borderRadius: 'var(--border-radius)',
+          fontSize: 'var(--text-base)',
           cursor: 'pointer',
         }}
       >

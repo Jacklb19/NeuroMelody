@@ -100,13 +100,13 @@ describe('PanelSenal', () => {
 
   it('con una variable de la paleta ausente oculta solo la gráfica', async () => {
     const scene = createScene('rest', () => {
-      throw new ChartPaletteError('Falta la variable CSS --color-grafica-linea.');
+      throw new ChartPaletteError('Falta la variable CSS --color-chart-line.');
     });
     await scene.connect();
     scene.advanceSignalSeconds(70);
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByText(/--color-grafica-linea/)).toBeInTheDocument();
+    expect(screen.getByText(/--color-chart-line/)).toBeInTheDocument();
     expect(screen.getByTestId('rmssd')).toHaveTextContent(/^\d+ ms$/);
   });
 

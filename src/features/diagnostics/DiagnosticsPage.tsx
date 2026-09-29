@@ -45,11 +45,11 @@ export function DiagnosticsPage(): React.JSX.Element {
 
   return (
     <>
-      <header style={{ marginBottom: 'var(--espacio-8)' }}>
-        <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-2)' }}>
+      <header style={{ marginBottom: 'var(--space-8)' }}>
+        <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>
           Diagnóstico de la plataforma
         </h1>
-        <p style={{ color: 'var(--color-texto-secundario)' }}>
+        <p style={{ color: 'var(--color-text-secondary)' }}>
           Verifica la configuración base del entorno,
           cabeceras de aislamiento y capacidades del navegador.
         </p>
@@ -58,45 +58,45 @@ export function DiagnosticsPage(): React.JSX.Element {
       <section
         aria-labelledby={listId}
         style={{
-          border: 'var(--borde-grosor) solid var(--color-borde)',
-          borderRadius: 'var(--radio-borde)',
-          padding: 'var(--espacio-6)',
-          marginBottom: 'var(--espacio-8)',
+          border: 'var(--border-width) solid var(--color-border)',
+          borderRadius: 'var(--border-radius)',
+          padding: 'var(--space-6)',
+          marginBottom: 'var(--space-8)',
         }}
       >
-        <h2 id={listId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+        <h2 id={listId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
           Capacidades detectadas en tiempo de ejecución
         </h2>
 
-        <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--espacio-4)' }}>
+        <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--space-4)' }}>
           {items.map((item) => (
             <li
               key={item.label}
               style={{
-                padding: 'var(--espacio-3)',
-                border: 'var(--borde-grosor) solid var(--color-borde-suave)',
-                borderRadius: 'var(--radio-borde)',
+                padding: 'var(--space-3)',
+                border: 'var(--border-width) solid var(--color-border-subtle)',
+                borderRadius: 'var(--border-radius)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 'var(--espacio-4)',
+                gap: 'var(--space-4)',
               }}
             >
               <div>
                 <strong style={{ display: 'block' }}>{item.label}</strong>
-                <span style={{ fontSize: 'var(--texto-sm)', color: 'var(--color-texto-tenue)' }}>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
                   {item.description}
                 </span>
               </div>
               <span
                 role="status"
                 style={{
-                  fontWeight: 'var(--peso-destacado)',
-                  padding: 'var(--espacio-1) var(--espacio-2)',
-                  borderRadius: 'var(--radio-borde)',
-                  backgroundColor: item.available ? 'var(--color-exito-fondo)' : 'var(--color-error-fondo)',
-                  color: item.available ? 'var(--color-exito-texto)' : 'var(--color-error-texto)',
-                  fontSize: 'var(--texto-sm)',
+                  fontWeight: 'var(--font-weight-strong)',
+                  padding: 'var(--space-1) var(--space-2)',
+                  borderRadius: 'var(--border-radius)',
+                  backgroundColor: item.available ? 'var(--color-success-background)' : 'var(--color-error-background)',
+                  color: item.available ? 'var(--color-success-text)' : 'var(--color-error-text)',
+                  fontSize: 'var(--text-sm)',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -109,15 +109,15 @@ export function DiagnosticsPage(): React.JSX.Element {
 
       <section
         style={{
-          border: 'var(--borde-grosor) solid var(--color-borde)',
-          borderRadius: 'var(--radio-borde)',
-          padding: 'var(--espacio-6)',
+          border: 'var(--border-width) solid var(--color-border)',
+          borderRadius: 'var(--border-radius)',
+          padding: 'var(--space-6)',
         }}
       >
-        <h2 style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+        <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
           Verificación de Reactividad
         </h2>
-        <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
+        <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>
           Verificaciones realizadas:{' '}
           <strong data-testid="check-counter">{checkCounter}</strong>
         </p>
@@ -125,13 +125,13 @@ export function DiagnosticsPage(): React.JSX.Element {
           type="button"
           onClick={handleRecheck}
           style={{
-            padding: 'var(--espacio-2) var(--espacio-4)',
-            backgroundColor: 'var(--color-boton-fondo)',
-            color: 'var(--color-boton-texto)',
+            padding: 'var(--space-2) var(--space-4)',
+            backgroundColor: 'var(--color-button-background)',
+            color: 'var(--color-button-text)',
             border: 'none',
-            borderRadius: 'var(--radio-borde)',
+            borderRadius: 'var(--border-radius)',
             cursor: 'pointer',
-            fontSize: 'var(--texto-base)',
+            fontSize: 'var(--text-base)',
           }}
         >
           Reevaluar capacidades
