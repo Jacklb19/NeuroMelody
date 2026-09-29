@@ -7,11 +7,11 @@ import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
 import { SignalPanel } from '../signal/SignalPanel';
 
-/** Sesión en curso (docs/pantallas.md, `/sesion`). */
+/** Sesión en curso (docs/pantallas.md, `/session`). */
 export function SessionPage(): React.JSX.Element {
   usePageTitle('Sesión');
   const [params] = useSearchParams();
-  const durationMin = readDuration(params.get('duracion'));
+  const durationMin = readDuration(params.get('duration'));
   // La fuente se comparte: la adquisición la crea y el análisis la consume.
   const [source, setSource] = useState<SignalSource | null>(null);
 

@@ -49,9 +49,9 @@ describe('rutas', () => {
 
   it('exige las advertencias antes de la sesión y vuelve a la sesión pedida al aceptarlas (RF-17)', async () => {
     const user = userEvent.setup();
-    const { registry } = renderWith('/sesion?duracion=30');
+    const { registry } = renderWith('/session?duration=30');
 
-    expect(currentPath()).toBe('/advertencias');
+    expect(currentPath()).toBe('/warnings');
     const button = screen.getByRole('button', { name: /aceptar y continuar/i });
     expect(button).toBeDisabled();
 
@@ -59,13 +59,13 @@ describe('rutas', () => {
     await user.click(button);
 
     expect(registry.isAccepted()).toBe(true);
-    expect(currentPath()).toBe('/sesion?duracion=30');
+    expect(currentPath()).toBe('/session?duration=30');
     expect(screen.getByRole('heading', { level: 1, name: 'Sesión' })).toBeInTheDocument();
     expect(screen.getByText(/plan: 30 minutos/i)).toBeInTheDocument();
   });
 
   it('con las advertencias aceptadas entra directo a la sesión con sus paneles', () => {
-    renderWith('/sesion', true);
+    renderWith('/session', true);
     expect(screen.getByText(/plan: 20 minutos/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
@@ -79,11 +79,11 @@ describe('rutas', () => {
     await user.click(screen.getByRole('radio', { name: '45 minutos' }));
     expect(screen.getByText('45 minutos', { selector: 'strong' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /continuar a la sesión/i }));
-    expect(currentPath()).toBe('/sesion?duracion=45');
+    expect(currentPath()).toBe('/session?duration=45');
   });
 
   it('el diagnóstico sigue accesible por su ruta', () => {
-    renderWith('/diagnostico');
+    renderWith('/diagnostics');
     expect(screen.getByRole('heading', { level: 1, name: /diagnóstico de la plataforma/i })).toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe('rutas', () => {
 
 describe('advertencias (R-06)', () => {
   it('muestran el carácter no clínico y complementario del documento', () => {
-    renderWith('/advertencias');
+    renderWith('/warnings');
     const text = document.body.textContent;
     expect(text).toMatch(/herramienta de bienestar y acompañamiento/i);
     expect(text).toMatch(/no es un dispositivo médico/i);
@@ -111,7 +111,7 @@ describe('advertencias (R-06)', () => {
   });
 
   it('no usan lenguaje clínico ni promesas terapéuticas', () => {
-    renderWith('/advertencias');
+    renderWith('/warnings');
     expect(document.body.textContent).not.toMatch(
       /diagnós|arritmi|anómal|ectópic|prematur|terapia|cura\b|alivia|reduce el dolor/i,
     );

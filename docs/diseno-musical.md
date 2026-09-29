@@ -32,7 +32,7 @@ El motor nunca salta más de un escalón en una transición, y toda transición 
 | Intermedio | 66 BPM | Pentatónica mayor o lidio | 2 o 3 | Medio-bajo | Media-alta |
 | Activación baja (meta) | 58 a 60 BPM | Bordón y pentatónica | 1 o 2 | Bajo (pasa bajos cerca de 2 kHz) | Alta |
 
-### Valores concretos (aprobados el 29 sep, en `src/features/audio/motor/niveles.ts`)
+### Valores concretos (aprobados el 29 sep, en `src/features/audio/engine/levels.ts`)
 
 | Nivel | Tempo | Modo | Capas | Pasa bajos | Reverberación (mezcla) |
 |---|---|---|---|---|---|

@@ -3,12 +3,12 @@ import { NavLink, Outlet } from 'react-router';
 const LINKS = [
   { route: '/', text: 'Inicio' },
   { route: '/plan', text: 'Plan' },
-  { route: '/sesion', text: 'Sesión' },
+  { route: '/session', text: 'Sesión' },
 ] as const;
 
 /**
  * Estructura común: enlace para saltar al contenido, navegación principal y
- * contenido de la ruta. `/diagnostico` queda fuera de la navegación a
+ * contenido de la ruta. `/diagnostics` queda fuera de la navegación a
  * propósito: es una herramienta técnica (docs/pantallas.md).
  */
 export function Layout(): React.JSX.Element {

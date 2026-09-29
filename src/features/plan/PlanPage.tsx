@@ -25,7 +25,7 @@ export function PlanPage(): React.JSX.Element {
             <label key={minutes} style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
               <input
                 type="radio"
-                name="duracion"
+                name="duration"
                 value={minutes}
                 checked={duration === minutes}
                 onChange={() => {
@@ -51,7 +51,7 @@ export function PlanPage(): React.JSX.Element {
       <button
         type="button"
         onClick={() => {
-          void navigate(`/sesion?duracion=${String(duration)}`);
+          void navigate(`/session?duration=${String(duration)}`);
         }}
         style={{
           padding: 'var(--space-2) var(--space-4)',

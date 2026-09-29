@@ -13,17 +13,17 @@ export function AppRoutes(): React.JSX.Element {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
-        <Route path="advertencias" element={<WarningsPage />} />
+        <Route path="warnings" element={<WarningsPage />} />
         <Route path="plan" element={<PlanPage />} />
         <Route
-          path="sesion"
+          path="session"
           element={
             <RequireWarnings>
               <SessionPage />
             </RequireWarnings>
           }
         />
-        <Route path="diagnostico" element={<DiagnosticsPage />} />
+        <Route path="diagnostics" element={<DiagnosticsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

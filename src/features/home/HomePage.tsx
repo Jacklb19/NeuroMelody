@@ -27,7 +27,7 @@ export function HomePage(): React.JSX.Element {
           </Link>
         </li>
         <li>
-          <Link to="/sesion" style={linkStyle}>
+          <Link to="/session" style={linkStyle}>
             Empezar con el plan por defecto ({DEFAULT_DURATION_MIN} minutos)
           </Link>
         </li>

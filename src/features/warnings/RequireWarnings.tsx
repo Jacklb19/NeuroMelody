@@ -6,7 +6,7 @@ export function RequireWarnings({ children }: { readonly children: React.ReactNo
   const registry = useWarningsRegistry();
   const { pathname, search } = useLocation();
   if (!registry.isAccepted()) {
-    return <Navigate to="/advertencias" replace state={{ from: `${pathname}${search}` }} />;
+    return <Navigate to="/warnings" replace state={{ from: `${pathname}${search}` }} />;
   }
   return <>{children}</>;
 }

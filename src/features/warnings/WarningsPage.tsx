@@ -8,7 +8,7 @@ function destinationAfterAccept(state: unknown): string {
   if (typeof state === 'object' && state !== null && 'from' in state && typeof state.from === 'string') {
     return state.from;
   }
-  return '/sesion';
+  return '/session';
 }
 
 export function WarningsPage(): React.JSX.Element {
