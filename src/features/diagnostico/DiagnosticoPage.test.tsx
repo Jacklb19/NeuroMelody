@@ -9,8 +9,8 @@ describe('DiagnosticoPage', () => {
 
     expect(
       screen.getByRole('heading', {
-        level: 1,
-        name: /neuromelody · diagnóstico de la plataforma/i,
+        level: 2,
+        name: /diagnóstico de la plataforma/i,
       }),
     ).toBeInTheDocument();
 
