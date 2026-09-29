@@ -32,6 +32,18 @@ El motor nunca salta más de un escalón en una transición, y toda transición 
 | Intermedio | 66 BPM | Pentatónica mayor o lidio | 2 o 3 | Medio-bajo | Media-alta |
 | Activación baja (meta) | 58 a 60 BPM | Bordón y pentatónica | 1 o 2 | Bajo (pasa bajos cerca de 2 kHz) | Alta |
 
+### Valores concretos (aprobados el 29 sep, en `src/features/audio/motor/niveles.ts`)
+
+| Nivel | Tempo | Modo | Capas | Pasa bajos | Reverberación (mezcla) |
+|---|---|---|---|---|---|
+| Activación alta | 76 BPM | Pentatónica mayor | 3 (bordón, armonía, melodía) | 6 kHz | 0,25 |
+| Intermedio | 66 BPM | Lidio | 2 (bordón, armonía) | 3,5 kHz | 0,35 |
+| Activación baja (meta) | 59 BPM | Bordón con pentatónica | 2 (bordón, díadas abiertas) | 2 kHz | 0,5 |
+
+- **Tónica:** re3 (≈ 146,8 Hz). El bordón suena una octava abajo, en re2, con su quinta.
+- **Notas compartidas:** la pentatónica mayor de re (re, mi, fa#, la, si) está contenida en el lidio de re (re, mi, fa#, sol#, la, si, do#). Por eso, en un fundido entre Activación alta e Intermedio, los dos bancos de voces comparten notas y la transición no introduce choques armónicos.
+- **Ciclo armónico:** 16 pulsos. La armonía cambia cada 4 pulsos.
+
 ## Reglas de transición
 
 - **Centro tonal:** fijo durante toda la sesión.
