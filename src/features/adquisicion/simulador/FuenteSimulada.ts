@@ -145,17 +145,40 @@ export class FuenteSimulada implements FuenteSenal {
       pendiente = generador.siguiente();
     }
     this.#latidoPendiente = pendiente;
+
+    if (this.#sinContacto(tiempoMs)) {
+      // Como una banda real: sigue notificando, sin RR y con la última FC.
+      return {
+        tiempoMs,
+        frecuenciaCardiaca: this.#frecuenciaCardiaca(pendiente),
+        intervalosRRms: [],
+        contactoSensor: false,
+      };
+    }
+
     this.#rrRecientes = [...this.#rrRecientes, ...intervalosRRms].slice(-LATIDOS_PARA_FC);
-
-    // Antes del primer latido completo se usa el que está en curso.
-    const referencia = this.#rrRecientes.length > 0 ? this.#rrRecientes : [pendiente.rrMs];
-    const rrMedio = referencia.reduce((suma, rr) => suma + rr, 0) / referencia.length;
-
     return {
       tiempoMs,
-      frecuenciaCardiaca: Math.round(60000 / rrMedio),
+      frecuenciaCardiaca: this.#frecuenciaCardiaca(pendiente),
       intervalosRRms,
       contactoSensor: true,
     };
+  }
+
+  #frecuenciaCardiaca(pendiente: Latido): number {
+    // Antes del primer latido completo se usa el que está en curso.
+    const referencia = this.#rrRecientes.length > 0 ? this.#rrRecientes : [pendiente.rrMs];
+    const rrMedio = referencia.reduce((suma, rr) => suma + rr, 0) / referencia.length;
+    return Math.round(60000 / rrMedio);
+  }
+
+  /** Pérdida de contacto periódica del escenario de artefactos: (k·periodo, k·periodo + duración]. */
+  #sinContacto(tiempoMs: number): boolean {
+    const artefactos = ESCENARIOS[this.#opciones.escenario].artefactos;
+    if (artefactos === null || tiempoMs < artefactos.periodoPerdidaContactoMs) {
+      return false;
+    }
+    const fase = tiempoMs % artefactos.periodoPerdidaContactoMs;
+    return fase > 0 && fase <= artefactos.duracionPerdidaContactoMs;
   }
 }

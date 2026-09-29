@@ -31,7 +31,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByTestId('frecuencia-cardiaca')).toHaveTextContent('—');
   });
 
-  it('ofrece los tres escenarios y las cuatro velocidades', () => {
+  it('ofrece los cuatro escenarios y las cuatro velocidades', () => {
     renderizarConTiempoFalso();
 
     const escenarios = screen.getAllByRole('option').map((o) => o.textContent);
@@ -39,6 +39,7 @@ describe('PanelAdquisicion', () => {
       'Reposo',
       'Activación',
       'Relajación progresiva',
+      'Reposo con fallos de lectura',
       '1×',
       '2×',
       '5×',

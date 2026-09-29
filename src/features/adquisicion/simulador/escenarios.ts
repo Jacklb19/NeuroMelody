@@ -16,7 +16,22 @@ export interface ParametrosFisiologicos {
   readonly ruidoMs: number;
 }
 
-export type IdEscenario = 'reposo' | 'activacion' | 'relajacion_progresiva';
+export type IdEscenario = 'reposo' | 'activacion' | 'relajacion_progresiva' | 'artefactos';
+
+/**
+ * Fallos de lectura simulados para probar el filtrado (RF-04): latidos
+ * prematuros seguidos de uno compensatorio y pérdidas periódicas de contacto.
+ */
+export interface ConfiguracionArtefactos {
+  /** Probabilidad de que un latido sea prematuro. */
+  readonly probabilidadPrematuro: number;
+  /** Duración del latido prematuro como fracción del RR normal. */
+  readonly fraccionPrematuro: number;
+  /** Cada cuánto tiempo de señal se pierde el contacto del sensor. */
+  readonly periodoPerdidaContactoMs: number;
+  /** Cuánto dura cada pérdida de contacto. */
+  readonly duracionPerdidaContactoMs: number;
+}
 
 export interface Escenario {
   readonly id: IdEscenario;
@@ -24,6 +39,8 @@ export interface Escenario {
   readonly nombre: string;
   /** Parámetros vigentes a los `tiempoMs` de señal desde la conexión. */
   parametrosEn(tiempoMs: number): ParametrosFisiologicos;
+  /** Fallos de lectura simulados; `null` en los escenarios limpios. */
+  readonly artefactos: ConfiguracionArtefactos | null;
 }
 
 /** RMSSD esperado ≈ 45 ms. */
@@ -40,6 +57,14 @@ export const PARAMETROS_ACTIVACION: ParametrosFisiologicos = {
   amplitudRespiratoriaMs: 8,
   amplitudMayerMs: 15,
   ruidoMs: 5,
+};
+
+/** Valores aprobados en el sprint 2 (docs/propuestas.md). */
+export const ARTEFACTOS_POR_OMISION: ConfiguracionArtefactos = {
+  probabilidadPrematuro: 0.02,
+  fraccionPrematuro: 0.7,
+  periodoPerdidaContactoMs: 90_000,
+  duracionPerdidaContactoMs: 5000,
 };
 
 /** Duración de la transición del escenario de relajación progresiva. */
@@ -71,11 +96,13 @@ export const ESCENARIOS: Readonly<Record<IdEscenario, Escenario>> = {
     id: 'reposo',
     nombre: 'Reposo',
     parametrosEn: () => PARAMETROS_REPOSO,
+    artefactos: null,
   },
   activacion: {
     id: 'activacion',
     nombre: 'Activación',
     parametrosEn: () => PARAMETROS_ACTIVACION,
+    artefactos: null,
   },
   relajacion_progresiva: {
     id: 'relajacion_progresiva',
@@ -87,6 +114,14 @@ export const ESCENARIOS: Readonly<Record<IdEscenario, Escenario>> = {
         PARAMETROS_REPOSO,
         Math.min(Math.max(tiempoMs / DURACION_RELAJACION_MS, 0), 1),
       ),
+    artefactos: null,
+  },
+  artefactos: {
+    id: 'artefactos',
+    // Describe el dispositivo, no el cuerpo: la interfaz no interpreta la señal.
+    nombre: 'Reposo con fallos de lectura',
+    parametrosEn: () => PARAMETROS_REPOSO,
+    artefactos: ARTEFACTOS_POR_OMISION,
   },
 };
 
@@ -94,4 +129,5 @@ export const IDS_ESCENARIOS: readonly IdEscenario[] = [
   'reposo',
   'activacion',
   'relajacion_progresiva',
+  'artefactos',
 ];
