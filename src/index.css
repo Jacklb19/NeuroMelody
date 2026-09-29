@@ -18,6 +18,19 @@
   --color-error-fondo: #fee2e2;
   --color-error-texto: #991b1b;
 
+  /*
+   * Gráfica de la señal. Tonos neutros y ámbar suave, nunca los de error: la
+   * ve alguien que intenta relajarse. Los que marcan información cumplen 3:1
+   * de contraste con el fondo (WCAG 1.4.11), y la forma (rayado, ×) no
+   * depende del color.
+   */
+  --color-grafica-linea: var(--color-foco);
+  --color-grafica-rejilla: var(--color-borde-suave);
+  --color-grafica-texto: var(--color-texto-secundario);
+  --color-grafica-descartado: #78716c;
+  --color-grafica-baja-calidad-fondo: #fffbeb;
+  --color-grafica-baja-calidad-rayado: #a16207;
+
   /* Tipografía */
   --fuente-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --interlineado-base: 1.5;
@@ -43,6 +56,7 @@
   --foco-grosor: 3px;
   --foco-separacion: 2px;
   --ancho-maximo-contenido: 960px;
+  --alto-grafica: 14rem;
 
   font-family: var(--fuente-base);
   line-height: var(--interlineado-base);

@@ -45,6 +45,9 @@ function aVelocidad(valor: string): Velocidad {
 }
 
 interface PropsPanelAdquisicion {
+  /** Fuente actual; la guarda el componente padre para compartirla con el análisis. */
+  readonly fuente: FuenteSenal | null;
+  readonly alCambiarFuente: (fuente: FuenteSenal) => void;
   /** Permite inyectar un reloj falso en las pruebas. */
   readonly crearFuente?: CrearFuenteSimulada;
 }
@@ -55,11 +58,12 @@ interface PropsPanelAdquisicion {
  * conexión (HU-01) junto con la última lectura recibida.
  */
 export function PanelAdquisicion({
+  fuente,
+  alCambiarFuente,
   crearFuente = crearFuentePorOmision,
 }: PropsPanelAdquisicion): React.JSX.Element {
   const [escenario, setEscenario] = useState<IdEscenario>('reposo');
   const [velocidad, setVelocidad] = useState<Velocidad>(1);
-  const [fuente, setFuente] = useState<FuenteSenal | null>(null);
   const lectura = useFuenteSenal(fuente);
   const tituloId = useId();
 
@@ -75,7 +79,7 @@ export function PanelAdquisicion({
 
   const conectar = (): void => {
     const nueva = crearFuente({ escenario, velocidad, semilla: SEMILLA_SIMULADOR });
-    setFuente(nueva);
+    alCambiarFuente(nueva);
     void nueva.conectar();
   };
 

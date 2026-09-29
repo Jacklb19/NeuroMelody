@@ -106,6 +106,29 @@ describe('FuenteSimulada', () => {
     expect(alError).not.toHaveBeenCalled();
   });
 
+  it('en el escenario artefactos pierde el contacto 5 s cada 90 s', async () => {
+    const { entorno, notificaciones, alError } = await crearFuenteConectada(10, 'artefactos');
+    entorno.avanzar(20_000); // 200 s de señal
+
+    const sinContacto = notificaciones.filter((n) => n.contactoSensor === false);
+    expect(sinContacto.map((n) => n.tiempoMs)).toEqual([
+      91_000, 92_000, 93_000, 94_000, 95_000, 181_000, 182_000, 183_000, 184_000, 185_000,
+    ]);
+    expect(sinContacto.every((n) => n.intervalosRRms.length === 0)).toBe(true);
+
+    // Durante la pérdida se mantiene la última FC reportada.
+    const antes = notificaciones.find((n) => n.tiempoMs === 90_000);
+    expect(sinContacto[0]?.frecuenciaCardiaca).toBe(antes?.frecuenciaCardiaca);
+    expect(notificaciones.find((n) => n.tiempoMs === 96_000)?.contactoSensor).toBe(true);
+    expect(alError).not.toHaveBeenCalled();
+  });
+
+  it('los escenarios limpios nunca pierden el contacto', async () => {
+    const { entorno, notificaciones } = await crearFuenteConectada(10, 'reposo');
+    entorno.avanzar(20_000);
+    expect(notificaciones.every((n) => n.contactoSensor === true)).toBe(true);
+  });
+
   it('no emite nada tras desconectar', async () => {
     const { entorno, fuente, notificaciones } = await crearFuenteConectada();
     entorno.avanzar(3000);
