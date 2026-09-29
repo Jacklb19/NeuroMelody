@@ -1,13 +1,14 @@
 import { useState, useId } from 'react';
+import { useTituloPagina } from '../../app/useTituloPagina';
 import { verificarCapacidades } from './verificarCapacidades';
 import type { CapacidadesEntorno } from './diagnostico.types';
 
 export function DiagnosticoPage(): React.JSX.Element {
+  useTituloPagina('Diagnóstico de la plataforma');
   const [capacidades, setCapacidades] = useState<CapacidadesEntorno>(() =>
     verificarCapacidades(),
   );
   const [contadorPrueba, setContadorPrueba] = useState<number>(0);
-  const tituloId = useId();
   const listaId = useId();
 
   const handleRecalcular = (): void => {
@@ -43,11 +44,11 @@ export function DiagnosticoPage(): React.JSX.Element {
   ];
 
   return (
-    <section aria-labelledby={tituloId} style={{ marginTop: 'var(--espacio-8)' }}>
+    <>
       <header style={{ marginBottom: 'var(--espacio-8)' }}>
-        <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-2)' }}>
+        <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-2)' }}>
           Diagnóstico de la plataforma
-        </h2>
+        </h1>
         <p style={{ color: 'var(--color-texto-secundario)' }}>
           Verifica la configuración base del entorno,
           cabeceras de aislamiento y capacidades del navegador.
@@ -63,9 +64,9 @@ export function DiagnosticoPage(): React.JSX.Element {
           marginBottom: 'var(--espacio-8)',
         }}
       >
-        <h3 id={listaId} style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-4)' }}>
+        <h2 id={listaId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
           Capacidades detectadas en tiempo de ejecución
-        </h3>
+        </h2>
 
         <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--espacio-4)' }}>
           {items.map((item) => (
@@ -113,9 +114,9 @@ export function DiagnosticoPage(): React.JSX.Element {
           padding: 'var(--espacio-6)',
         }}
       >
-        <h3 style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-4)' }}>
+        <h2 style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
           Verificación de Reactividad
-        </h3>
+        </h2>
         <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
           Verificaciones realizadas:{' '}
           <strong data-testid="contador-pruebas">{contadorPrueba}</strong>
@@ -136,6 +137,6 @@ export function DiagnosticoPage(): React.JSX.Element {
           Reevaluar capacidades
         </button>
       </section>
-    </section>
+    </>
   );
 }

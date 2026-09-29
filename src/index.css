@@ -84,6 +84,21 @@ body {
   padding: var(--espacio-8) var(--espacio-4);
 }
 
+/* Enlace para saltar la navegación: oculto hasta que recibe el foco (WCAG 2.4.1). */
+.saltar-al-contenido {
+  position: absolute;
+  left: var(--espacio-4);
+  top: calc(-1 * var(--espacio-8) - var(--espacio-8));
+  padding: var(--espacio-2) var(--espacio-4);
+  background-color: var(--color-boton-fondo);
+  color: var(--color-boton-texto);
+  border-radius: var(--radio-borde);
+}
+
+.saltar-al-contenido:focus {
+  top: var(--espacio-2);
+}
+
 /* Enfoque accesible visible */
 a:focus-visible,
 button:focus-visible {
