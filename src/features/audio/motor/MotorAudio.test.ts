@@ -171,9 +171,11 @@ describe('MotorAudio en uso', () => {
     envolvente.gain.value = 1;
     entorno.contexto.currentTime = 600;
 
+    const eventosAntes = envolvente.gain.eventos.length;
     const fin = motor.programarFundidoFinal(120);
     expect(fin).toBe(600 + 120 + FUNDIDO_FINAL_S);
-    expect(envolvente.gain.eventos.slice(-2)).toEqual([
+    // No cancela nada de lo ya programado (el fundido de entrada puede seguir en curso).
+    expect(envolvente.gain.eventos.slice(eventosAntes)).toEqual([
       { tipo: 'set', valor: 1, tiempo: 720 },
       { tipo: 'lineal', valor: 0, tiempo: 740 },
     ]);

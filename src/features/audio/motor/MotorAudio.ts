@@ -301,12 +301,12 @@ export class MotorAudio {
    * @returns el instante (reloj de audio) en que termina el fundido.
    */
   programarFundidoFinal(enSegundos: number): number {
-    const t = this.#contexto.currentTime;
+    // Solo agenda a futuro: no cancela el fundido de entrada si aún está en curso.
+    const inicio = this.#contexto.currentTime + Math.max(0, enSegundos);
     const envolvente = this.#nodos.envolvente.gain;
-    retener(envolvente, t);
-    envolvente.setValueAtTime(envolvente.value, t + enSegundos);
-    envolvente.linearRampToValueAtTime(0, t + enSegundos + FUNDIDO_FINAL_S);
-    return t + enSegundos + FUNDIDO_FINAL_S;
+    envolvente.setValueAtTime(1, inicio);
+    envolvente.linearRampToValueAtTime(0, inicio + FUNDIDO_FINAL_S);
+    return inicio + FUNDIDO_FINAL_S;
   }
 
   /** Cancela un fundido final programado y vuelve al volumen pleno en 2 s. */

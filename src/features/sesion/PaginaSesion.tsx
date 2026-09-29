@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import { useTituloPagina } from '../../app/useTituloPagina';
 import type { FuenteSenal } from '../adquisicion/contrato';
 import { PanelAdquisicion } from '../adquisicion/PanelAdquisicion';
+import { PanelReproduccion } from '../audio/ui/PanelReproduccion';
 import { leerDuracion } from '../plan/plan';
 import { PanelSenal } from '../senal/PanelSenal';
 
@@ -20,6 +21,7 @@ export function PaginaSesion(): React.JSX.Element {
       <p style={{ color: 'var(--color-texto-secundario)', marginBottom: 'var(--espacio-6)' }}>
         Plan: {duracionMin} minutos.
       </p>
+      <PanelReproduccion duracionMin={duracionMin} />
       <PanelAdquisicion fuente={fuente} alCambiarFuente={setFuente} />
       <PanelSenal fuente={fuente} />
     </>
