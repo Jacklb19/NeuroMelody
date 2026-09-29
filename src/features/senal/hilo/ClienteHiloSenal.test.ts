@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { crearEntornoTiempoFalso } from '../../../test/entornoTiempoFalso';
+import { ContextoDibujoFalso } from '../../../test/contextoDibujoFalso';
 import { crearPuertoEnProceso } from '../../../test/puertoHiloEnProceso';
 import { FuenteSimulada } from '../../adquisicion/simulador/FuenteSimulada';
 import type { ResultadoIndices } from '../procesamiento/ProcesadorSenal';
@@ -79,6 +80,30 @@ describe('ClienteHiloSenal', () => {
     puerto.recibirDesdeHilo({ tipo: 'error', mensaje: 'tarde' });
 
     expect(puerto.terminado).toBe(true);
+    expect(alError).not.toHaveBeenCalled();
+  });
+
+  it('transfiere el lienzo con la paleta y reenvía los cambios de tamaño', () => {
+    const { puerto, cliente, alError } = crearEscena();
+    const contexto = new ContextoDibujoFalso();
+    // jsdom no tiene OffscreenCanvas: basta un objeto con la misma forma.
+    const lienzo = { width: 0, height: 0, getContext: () => contexto } as unknown as OffscreenCanvas;
+    const paleta = {
+      linea: 'a',
+      rejilla: 'b',
+      texto: 'c',
+      descartado: 'd',
+      bajaCalidadFondo: 'e',
+      bajaCalidadRayado: 'f',
+      fuente: '14px sans-serif',
+    };
+
+    cliente.adjuntarLienzo(lienzo, paleta, { anchoCss: 300, altoCss: 100, escala: 2 });
+    cliente.redimensionar({ anchoCss: 400, altoCss: 100, escala: 2 });
+
+    expect(puerto.enviados.map((m) => m.tipo)).toEqual(['iniciar-lienzo', 'redimensionar']);
+    expect(lienzo.width).toBe(800);
+    expect(contexto.contar('clearRect')).toBe(2);
     expect(alError).not.toHaveBeenCalled();
   });
 

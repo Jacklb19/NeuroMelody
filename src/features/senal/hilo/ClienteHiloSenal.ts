@@ -1,4 +1,6 @@
 import type { FuenteSenal } from '../../adquisicion/contrato';
+import type { DimensionesLienzo } from '../dibujo/dibujarTacograma';
+import type { PaletaGrafica } from '../dibujo/paleta';
 import type { ResultadoIndices } from '../procesamiento/ProcesadorSenal';
 import { esMensajeDesdeHilo, type MensajeHaciaHilo } from './protocolo';
 
@@ -69,6 +71,22 @@ export class ClienteHiloSenal {
         }
       },
     });
+  }
+
+  /**
+   * Transfiere el lienzo al hilo de señal, que dibuja en él a partir de ese
+   * momento. La paleta se lee en el hilo principal, donde están las variables CSS.
+   */
+  adjuntarLienzo(
+    lienzo: OffscreenCanvas,
+    paleta: PaletaGrafica,
+    dimensiones: DimensionesLienzo,
+  ): void {
+    this.#puerto.enviar({ tipo: 'iniciar-lienzo', lienzo, paleta, dimensiones }, [lienzo]);
+  }
+
+  redimensionar(dimensiones: DimensionesLienzo): void {
+    this.#puerto.enviar({ tipo: 'redimensionar', dimensiones });
   }
 
   suscribir(observador: ObservadorHiloSenal): () => void {

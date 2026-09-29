@@ -1,10 +1,26 @@
 import type { NotificacionLatido } from '../../adquisicion/contrato';
+import type { ContextoDibujo, DimensionesLienzo } from '../dibujo/dibujarTacograma';
+import { VARIABLES_PALETA, type PaletaGrafica } from '../dibujo/paleta';
 import type { CalidadSenal, ResultadoIndices } from '../procesamiento/ProcesadorSenal';
+
+/** Lo que el hilo de señal necesita del lienzo transferido (un OffscreenCanvas). */
+export interface LienzoHilo {
+  width: number;
+  height: number;
+  getContext(tipo: '2d'): ContextoDibujo | null;
+}
 
 /** Mensajes del hilo principal al hilo de señal. */
 export type MensajeHaciaHilo =
   | { readonly tipo: 'notificacion'; readonly notificacion: NotificacionLatido }
-  | { readonly tipo: 'reiniciar' };
+  | { readonly tipo: 'reiniciar' }
+  | {
+      readonly tipo: 'iniciar-lienzo';
+      readonly lienzo: LienzoHilo;
+      readonly paleta: PaletaGrafica;
+      readonly dimensiones: DimensionesLienzo;
+    }
+  | { readonly tipo: 'redimensionar'; readonly dimensiones: DimensionesLienzo };
 
 /** Mensajes del hilo de señal al hilo principal. */
 export type MensajeDesdeHilo =
@@ -36,6 +52,39 @@ function esNotificacion(valor: unknown): valor is NotificacionLatido {
   );
 }
 
+function esTextoNoVacio(valor: unknown): valor is string {
+  return typeof valor === 'string' && valor.trim() !== '';
+}
+
+function esPaleta(valor: unknown): valor is PaletaGrafica {
+  return (
+    esRegistro(valor) &&
+    esTextoNoVacio(valor.fuente) &&
+    Object.keys(VARIABLES_PALETA).every((clave) => esTextoNoVacio(valor[clave]))
+  );
+}
+
+function esDimensiones(valor: unknown): valor is DimensionesLienzo {
+  return (
+    esRegistro(valor) &&
+    esNumero(valor.anchoCss) &&
+    esNumero(valor.altoCss) &&
+    esNumero(valor.escala) &&
+    valor.anchoCss >= 0 &&
+    valor.altoCss >= 0 &&
+    valor.escala > 0
+  );
+}
+
+function esLienzo(valor: unknown): valor is LienzoHilo {
+  return (
+    esRegistro(valor) &&
+    typeof valor.getContext === 'function' &&
+    esNumero(valor.width) &&
+    esNumero(valor.height)
+  );
+}
+
 const CALIDADES: readonly CalidadSenal[] = ['reuniendo', 'buena', 'baja'];
 
 function esResultado(valor: unknown): valor is ResultadoIndices {
@@ -63,6 +112,10 @@ export function esMensajeHaciaHilo(valor: unknown): valor is MensajeHaciaHilo {
       return esNotificacion(valor.notificacion);
     case 'reiniciar':
       return true;
+    case 'iniciar-lienzo':
+      return esLienzo(valor.lienzo) && esPaleta(valor.paleta) && esDimensiones(valor.dimensiones);
+    case 'redimensionar':
+      return esDimensiones(valor.dimensiones);
     default:
       return false;
   }
