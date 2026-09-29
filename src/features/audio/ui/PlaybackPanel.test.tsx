@@ -23,9 +23,14 @@ const stopButton = () => screen.getByRole('button', { name: 'Detener' });
 
 async function start() {
   fireEvent.click(screen.getByRole('button', { name: /iniciar música/i }));
-  await waitFor(() => {
-    expect(state()).toMatch(/sonando/i);
-  });
+  // With setInterval faked, waitFor only re-checks on DOM changes; under a loaded
+  // parallel run the start chain can take longer than the default 1 s.
+  await waitFor(
+    () => {
+      expect(state()).toMatch(/sonando/i);
+    },
+    { timeout: 5000 },
+  );
 }
 
 function advanceOneCheck() {
