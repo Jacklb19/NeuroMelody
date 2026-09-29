@@ -7,6 +7,7 @@ export function DiagnosticoPage(): React.JSX.Element {
     verificarCapacidades(),
   );
   const [contadorPrueba, setContadorPrueba] = useState<number>(0);
+  const tituloId = useId();
   const listaId = useId();
 
   const handleRecalcular = (): void => {
@@ -42,13 +43,13 @@ export function DiagnosticoPage(): React.JSX.Element {
   ];
 
   return (
-    <main style={{ padding: '1rem' }}>
+    <section aria-labelledby={tituloId} style={{ marginTop: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
-          NeuroMelody · Diagnóstico de la plataforma
-        </h1>
+        <h2 id={tituloId} style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+          Diagnóstico de la plataforma
+        </h2>
         <p style={{ color: '#4b5563' }}>
-          Página de prueba para verificar la configuración base del entorno,
+          Verifica la configuración base del entorno,
           cabeceras de aislamiento y capacidades del navegador.
         </p>
       </header>
@@ -62,9 +63,9 @@ export function DiagnosticoPage(): React.JSX.Element {
           marginBottom: '2rem',
         }}
       >
-        <h2 id={listaId} style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+        <h3 id={listaId} style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>
           Capacidades detectadas en tiempo de ejecución
-        </h2>
+        </h3>
 
         <ul style={{ listStyle: 'none', display: 'grid', gap: '1rem' }}>
           {items.map((item) => (
@@ -112,9 +113,9 @@ export function DiagnosticoPage(): React.JSX.Element {
           padding: '1.5rem',
         }}
       >
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>
           Verificación de Reactividad
-        </h2>
+        </h3>
         <p style={{ marginBottom: '1rem', color: '#4b5563' }}>
           Verificaciones realizadas:{' '}
           <strong data-testid="contador-pruebas">{contadorPrueba}</strong>
@@ -135,6 +136,6 @@ export function DiagnosticoPage(): React.JSX.Element {
           Reevaluar capacidades
         </button>
       </section>
-    </main>
+    </section>
   );
 }

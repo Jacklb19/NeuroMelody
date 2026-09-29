@@ -1,59 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
+import { crearEntornoTiempoFalso } from '../../../test/entornoTiempoFalso';
 import type { NotificacionLatido } from '../contrato';
 import { UNIDADES_RR_POR_SEGUNDO } from '../unidadesRR';
 import type { IdEscenario } from './escenarios';
-import {
-  FuenteSimulada,
-  PERIODO_REVISION_MS,
-  type Programador,
-  type Reloj,
-  type Velocidad,
-} from './FuenteSimulada';
-
-/** Reloj y programador falsos: el tiempo solo avanza cuando la prueba lo pide. */
-function crearEntornoFalso() {
-  let ahora = 5000;
-  let tarea: (() => void) | null = null;
-  let tareasProgramadas = 0;
-  const reloj: Reloj = { ahoraMs: () => ahora };
-  const programador: Programador = {
-    repetir: (nueva) => {
-      tarea = nueva;
-      tareasProgramadas++;
-      return () => {
-        tarea = null;
-      };
-    },
-  };
-  return {
-    reloj,
-    programador,
-    /** Avanza el tiempo real de golpe y dispara una sola revisión. */
-    saltar(ms: number) {
-      ahora += ms;
-      tarea?.();
-    },
-    /** Avanza el tiempo real revisión a revisión, como el temporizador real. */
-    avanzar(ms: number) {
-      for (let t = 0; t < ms; t += PERIODO_REVISION_MS) {
-        this.saltar(PERIODO_REVISION_MS);
-      }
-    },
-    get activa() {
-      return tarea !== null;
-    },
-    get tareasProgramadas() {
-      return tareasProgramadas;
-    },
-  };
-}
+import { FuenteSimulada, type Velocidad } from './FuenteSimulada';
 
 async function crearFuenteConectada(
   velocidad: Velocidad = 1,
   escenario: IdEscenario = 'reposo',
   semilla = 1,
 ) {
-  const entorno = crearEntornoFalso();
+  const entorno = crearEntornoTiempoFalso();
   const fuente = new FuenteSimulada({ escenario, semilla, velocidad, ...entorno });
   const notificaciones: NotificacionLatido[] = [];
   const alError = vi.fn();
@@ -70,7 +27,7 @@ describe('FuenteSimulada', () => {
   });
 
   it('pasa por conectando y conectada, y vuelve a desconectada', async () => {
-    const entorno = crearEntornoFalso();
+    const entorno = crearEntornoTiempoFalso();
     const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 1, ...entorno });
     const alCambiarEstado = vi.fn();
     fuente.suscribir({ alCambiarEstado });
@@ -158,7 +115,7 @@ describe('FuenteSimulada', () => {
   });
 
   it('deja de emitir si un observador desconecta durante una notificación', async () => {
-    const entorno = crearEntornoFalso();
+    const entorno = crearEntornoTiempoFalso();
     const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 1, ...entorno });
     const alNotificar = vi.fn(() => {
       void fuente.desconectar();
