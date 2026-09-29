@@ -43,12 +43,12 @@ export function DiagnosticoPage(): React.JSX.Element {
   ];
 
   return (
-    <section aria-labelledby={tituloId} style={{ marginTop: '2rem' }}>
-      <header style={{ marginBottom: '2rem' }}>
-        <h2 id={tituloId} style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+    <section aria-labelledby={tituloId} style={{ marginTop: 'var(--espacio-8)' }}>
+      <header style={{ marginBottom: 'var(--espacio-8)' }}>
+        <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-2)' }}>
           Diagnóstico de la plataforma
         </h2>
-        <p style={{ color: '#4b5563' }}>
+        <p style={{ color: 'var(--color-texto-secundario)' }}>
           Verifica la configuración base del entorno,
           cabeceras de aislamiento y capacidades del navegador.
         </p>
@@ -57,45 +57,45 @@ export function DiagnosticoPage(): React.JSX.Element {
       <section
         aria-labelledby={listaId}
         style={{
-          border: '1px solid #d1d5db',
-          borderRadius: '4px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
+          border: 'var(--borde-grosor) solid var(--color-borde)',
+          borderRadius: 'var(--radio-borde)',
+          padding: 'var(--espacio-6)',
+          marginBottom: 'var(--espacio-8)',
         }}
       >
-        <h3 id={listaId} style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>
+        <h3 id={listaId} style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-4)' }}>
           Capacidades detectadas en tiempo de ejecución
         </h3>
 
-        <ul style={{ listStyle: 'none', display: 'grid', gap: '1rem' }}>
+        <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--espacio-4)' }}>
           {items.map((item) => (
             <li
               key={item.etiqueta}
               style={{
-                padding: '0.75rem',
-                border: '1px solid #e5e7eb',
-                borderRadius: '4px',
+                padding: 'var(--espacio-3)',
+                border: 'var(--borde-grosor) solid var(--color-borde-suave)',
+                borderRadius: 'var(--radio-borde)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '1rem',
+                gap: 'var(--espacio-4)',
               }}
             >
               <div>
                 <strong style={{ display: 'block' }}>{item.etiqueta}</strong>
-                <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                <span style={{ fontSize: 'var(--texto-sm)', color: 'var(--color-texto-tenue)' }}>
                   {item.descripcion}
                 </span>
               </div>
               <span
                 role="status"
                 style={{
-                  fontWeight: 600,
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  backgroundColor: item.activo ? '#dcfce7' : '#fee2e2',
-                  color: item.activo ? '#166534' : '#991b1b',
-                  fontSize: '0.875rem',
+                  fontWeight: 'var(--peso-destacado)',
+                  padding: 'var(--espacio-1) var(--espacio-2)',
+                  borderRadius: 'var(--radio-borde)',
+                  backgroundColor: item.activo ? 'var(--color-exito-fondo)' : 'var(--color-error-fondo)',
+                  color: item.activo ? 'var(--color-exito-texto)' : 'var(--color-error-texto)',
+                  fontSize: 'var(--texto-sm)',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -108,15 +108,15 @@ export function DiagnosticoPage(): React.JSX.Element {
 
       <section
         style={{
-          border: '1px solid #d1d5db',
-          borderRadius: '4px',
-          padding: '1.5rem',
+          border: 'var(--borde-grosor) solid var(--color-borde)',
+          borderRadius: 'var(--radio-borde)',
+          padding: 'var(--espacio-6)',
         }}
       >
-        <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-4)' }}>
           Verificación de Reactividad
         </h3>
-        <p style={{ marginBottom: '1rem', color: '#4b5563' }}>
+        <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
           Verificaciones realizadas:{' '}
           <strong data-testid="contador-pruebas">{contadorPrueba}</strong>
         </p>
@@ -124,13 +124,13 @@ export function DiagnosticoPage(): React.JSX.Element {
           type="button"
           onClick={handleRecalcular}
           style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#1f2937',
-            color: '#ffffff',
+            padding: 'var(--espacio-2) var(--espacio-4)',
+            backgroundColor: 'var(--color-boton-fondo)',
+            color: 'var(--color-boton-texto)',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: 'var(--radio-borde)',
             cursor: 'pointer',
-            fontSize: '1rem',
+            fontSize: 'var(--texto-base)',
           }}
         >
           Reevaluar capacidades

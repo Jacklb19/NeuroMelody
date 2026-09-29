@@ -87,18 +87,18 @@ export function PanelAdquisicion({
     <section
       aria-labelledby={tituloId}
       style={{
-        border: '1px solid #d1d5db',
-        borderRadius: '4px',
-        padding: '1.5rem',
-        marginBottom: '2rem',
+        border: 'var(--borde-grosor) solid var(--color-borde)',
+        borderRadius: 'var(--radio-borde)',
+        padding: 'var(--espacio-6)',
+        marginBottom: 'var(--espacio-8)',
       }}
     >
-      <h2 id={tituloId} style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+      <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
         Fuente de señal
       </h2>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-        <label style={{ display: 'grid', gap: '0.25rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)', marginBottom: 'var(--espacio-4)' }}>
+        <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
           Escenario del simulador
           <select
             value={escenario}
@@ -115,7 +115,7 @@ export function PanelAdquisicion({
           </select>
         </label>
 
-        <label style={{ display: 'grid', gap: '0.25rem' }}>
+        <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
           Velocidad
           <select
             value={velocidad}
@@ -137,30 +137,30 @@ export function PanelAdquisicion({
         type="button"
         onClick={activa ? desconectar : conectar}
         style={{
-          padding: '0.5rem 1rem',
-          backgroundColor: '#1f2937',
-          color: '#ffffff',
+          padding: 'var(--espacio-2) var(--espacio-4)',
+          backgroundColor: 'var(--color-boton-fondo)',
+          color: 'var(--color-boton-texto)',
           border: 'none',
-          borderRadius: '4px',
+          borderRadius: 'var(--radio-borde)',
           cursor: 'pointer',
-          fontSize: '1rem',
-          marginBottom: '1rem',
+          fontSize: 'var(--texto-base)',
+          marginBottom: 'var(--espacio-4)',
         }}
       >
         {activa ? 'Desconectar' : 'Conectar simulador'}
       </button>
 
-      <p role="status" style={{ marginBottom: '1rem' }}>
+      <p role="status" style={{ marginBottom: 'var(--espacio-4)' }}>
         Estado de la conexión: <strong>{TEXTO_ESTADO[lectura.estado]}</strong>
       </p>
 
       {lectura.error !== null && (
-        <p role="alert" style={{ color: '#991b1b', marginBottom: '1rem' }}>
+        <p role="alert" style={{ color: 'var(--color-error-texto)', marginBottom: 'var(--espacio-4)' }}>
           La medición no es fiable y se descartó ({lectura.error}). Revisa la colocación del dispositivo.
         </p>
       )}
 
-      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '0.25rem 1rem' }}>
+      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--espacio-1) var(--espacio-4)' }}>
         <dt>Frecuencia cardíaca</dt>
         <dd data-testid="frecuencia-cardiaca">
           {lectura.ultima === null ? '—' : `${String(lectura.ultima.frecuenciaCardiaca)} lpm`}

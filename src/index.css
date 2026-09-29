@@ -1,10 +1,54 @@
-/* Estilos mínimos base (accesibles y legibles, sin paleta elaborada) */
+/*
+ * Design tokens: única fuente de colores, tipografía y espaciados.
+ * Los componentes los consumen con var(--...) y no repiten valores literales.
+ */
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #111827;
-  background-color: #ffffff;
+  /* Colores */
+  --color-texto: #111827;
+  --color-texto-secundario: #4b5563;
+  --color-texto-tenue: #6b7280;
+  --color-fondo: #ffffff;
+  --color-borde: #d1d5db;
+  --color-borde-suave: #e5e7eb;
+  --color-boton-fondo: #1f2937;
+  --color-boton-texto: #ffffff;
+  --color-foco: #2563eb;
+  --color-exito-fondo: #dcfce7;
+  --color-exito-texto: #166534;
+  --color-error-fondo: #fee2e2;
+  --color-error-texto: #991b1b;
+
+  /* Tipografía */
+  --fuente-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --interlineado-base: 1.5;
+  --peso-normal: 400;
+  --peso-destacado: 600;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.125rem;
+  --texto-xl: 1.25rem;
+  --texto-2xl: 1.75rem;
+
+  /* Espaciado (escala de 0,25 rem) */
+  --espacio-1: 0.25rem;
+  --espacio-2: 0.5rem;
+  --espacio-3: 0.75rem;
+  --espacio-4: 1rem;
+  --espacio-6: 1.5rem;
+  --espacio-8: 2rem;
+
+  /* Bordes, foco y maquetación */
+  --borde-grosor: 1px;
+  --radio-borde: 4px;
+  --foco-grosor: 3px;
+  --foco-separacion: 2px;
+  --ancho-maximo-contenido: 960px;
+
+  font-family: var(--fuente-base);
+  line-height: var(--interlineado-base);
+  font-weight: var(--peso-normal);
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
 }
 
 * {
@@ -21,14 +65,14 @@ body {
 
 #root {
   width: 100%;
-  max-width: 960px;
+  max-width: var(--ancho-maximo-contenido);
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: var(--espacio-8) var(--espacio-4);
 }
 
 /* Enfoque accesible visible */
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid #2563eb;
-  outline-offset: 2px;
+  outline: var(--foco-grosor) solid var(--color-foco);
+  outline-offset: var(--foco-separacion);
 }
