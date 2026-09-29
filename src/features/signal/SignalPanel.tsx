@@ -1,71 +1,71 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { FuenteSenal } from '../acquisition/contract';
-import type { DimensionesLienzo } from './drawing/drawTachogram';
-import { ErrorPaletaGrafica, leerPaletaGrafica, type PaletaGrafica } from './drawing/palette';
-import { ClienteHiloSenal, crearPuertoWorker } from './thread/SignalThreadClient';
-import type { CalidadSenal, ResultadoIndices } from './processing/SignalProcessor';
-import { VENTANA_ANALISIS_MS } from './processing/thresholds';
+import type { SignalSource } from '../acquisition/contract';
+import type { CanvasDimensions } from './drawing/drawTachogram';
+import { ChartPaletteError, readChartPalette, type ChartPalette } from './drawing/palette';
+import { SignalThreadClient, createWorkerPort } from './thread/SignalThreadClient';
+import type { SignalQuality, IndicesResult } from './processing/SignalProcessor';
+import { ANALYSIS_WINDOW_MS } from './processing/thresholds';
 
-type TransferirLienzo = (lienzo: HTMLCanvasElement) => OffscreenCanvas;
+type TransferCanvas = (canvas: HTMLCanvasElement) => OffscreenCanvas;
 
-interface PropsPanelSenal {
-  readonly fuente: FuenteSenal | null;
+interface SignalPanelProps {
+  readonly source: SignalSource | null;
   /** Permite usar un hilo de señal en el mismo proceso en las pruebas. */
-  readonly crearCliente?: () => ClienteHiloSenal;
-  readonly leerPaleta?: () => PaletaGrafica;
+  readonly createClient?: () => SignalThreadClient;
+  readonly readPalette?: () => ChartPalette;
   /** `null` si el navegador no puede transferir un lienzo a un Worker. */
-  readonly transferirLienzo?: TransferirLienzo | null;
+  readonly transferCanvas?: TransferCanvas | null;
 }
 
-type EstadoGrafica =
-  | { readonly tipo: 'lista'; readonly paleta: PaletaGrafica; readonly transferir: TransferirLienzo }
-  | { readonly tipo: 'no-disponible'; readonly motivo: string };
+type ChartState =
+  | { readonly kind: 'lista'; readonly palette: ChartPalette; readonly transfer: TransferCanvas }
+  | { readonly kind: 'no-disponible'; readonly reason: string };
 
-const TEXTO_CALIDAD: Readonly<Record<CalidadSenal, { icono: string; texto: string }>> = {
-  reuniendo: { icono: '…', texto: 'Reuniendo datos…' },
-  buena: { icono: '✓', texto: 'Buena' },
-  baja: { icono: '△', texto: 'Baja: revisa la colocación del dispositivo.' },
+const QUALITY_TEXT: Readonly<Record<SignalQuality, { icon: string; text: string }>> = {
+  reuniendo: { icon: '…', text: 'Reuniendo datos…' },
+  buena: { icon: '✓', text: 'Buena' },
+  baja: { icon: '△', text: 'Baja: revisa la colocación del dispositivo.' },
 };
 
-const crearClientePorOmision = (): ClienteHiloSenal => new ClienteHiloSenal(crearPuertoWorker());
+const createDefaultClient = (): SignalThreadClient => new SignalThreadClient(createWorkerPort());
 
-function transferenciaDelNavegador(): TransferirLienzo | null {
+function browserTransfer(): TransferCanvas | null {
   return typeof HTMLCanvasElement !== 'undefined' &&
     'transferControlToOffscreen' in HTMLCanvasElement.prototype
-    ? (lienzo) => lienzo.transferControlToOffscreen()
+    ? (canvas) => canvas.transferControlToOffscreen()
     : null;
 }
 
-function evaluarGrafica(
-  transferir: TransferirLienzo | null,
-  leerPaleta: () => PaletaGrafica,
-): EstadoGrafica {
-  if (transferir === null) {
-    return { tipo: 'no-disponible', motivo: 'Este navegador no puede dibujar la gráfica en segundo plano.' };
+function evaluateChart(
+  transfer: TransferCanvas | null,
+  readPalette: () => ChartPalette,
+): ChartState {
+  if (transfer === null) {
+    return { kind: 'no-disponible', reason: 'Este navegador no puede dibujar la gráfica en segundo plano.' };
   }
   try {
-    return { tipo: 'lista', paleta: leerPaleta(), transferir };
+    return { kind: 'lista', palette: readPalette(), transfer };
   } catch (error) {
     // Solo se oculta la gráfica: los indicadores en texto siguen funcionando.
-    if (error instanceof ErrorPaletaGrafica) {
-      return { tipo: 'no-disponible', motivo: `Faltan estilos de la gráfica (${error.message})` };
+    if (error instanceof ChartPaletteError) {
+      return { kind: 'no-disponible', reason: `Faltan estilos de la gráfica (${error.message})` };
     }
     throw error;
   }
 }
 
-function medir(contenedor: HTMLElement): DimensionesLienzo {
-  const { width, height } = contenedor.getBoundingClientRect();
-  return { anchoCss: width, altoCss: height, escala: window.devicePixelRatio || 1 };
+function measure(container: HTMLElement): CanvasDimensions {
+  const { width, height } = container.getBoundingClientRect();
+  return { widthCss: width, heightCss: height, scale: window.devicePixelRatio || 1 };
 }
 
-function formatearMinutos(ms: number): string {
-  const segundos = Math.floor(ms / 1000);
-  return `${String(Math.floor(segundos / 60))}:${String(segundos % 60).padStart(2, '0')}`;
+function formatMinutes(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  return `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function formatear(valor: number | null, unidad: string): string {
-  return valor === null ? '—' : `${String(Math.round(valor))} ${unidad}`;
+function format(value: number | null, unit: string): string {
+  return value === null ? '—' : `${String(Math.round(value))} ${unit}`;
 }
 
 /**
@@ -74,97 +74,97 @@ function formatear(valor: number | null, unidad: string): string {
  * texto (RNF-09): indicadores, ventana analizada y calidad de la señal, que
  * se anuncia a los lectores de pantalla solo cuando cambia.
  */
-export function PanelSenal({
-  fuente,
-  crearCliente,
-  leerPaleta = leerPaletaGrafica,
-  transferirLienzo,
-}: PropsPanelSenal): React.JSX.Element {
-  const [grafica] = useState<EstadoGrafica>(() =>
-    evaluarGrafica(
-      transferirLienzo === undefined ? transferenciaDelNavegador() : transferirLienzo,
-      leerPaleta,
+export function SignalPanel({
+  source,
+  createClient,
+  readPalette = readChartPalette,
+  transferCanvas,
+}: SignalPanelProps): React.JSX.Element {
+  const [chart] = useState<ChartState>(() =>
+    evaluateChart(
+      transferCanvas === undefined ? browserTransfer() : transferCanvas,
+      readPalette,
     ),
   );
-  const [hiloDisponible] = useState(
-    () => crearCliente !== undefined || typeof Worker !== 'undefined',
+  const [threadAvailable] = useState(
+    () => createClient !== undefined || typeof Worker !== 'undefined',
   );
-  const [lectura, setLectura] = useState<{ fuente: FuenteSenal; resultado: ResultadoIndices } | null>(
+  const [reading, setReading] = useState<{ source: SignalSource; result: IndicesResult } | null>(
     null,
   );
-  const [errorHilo, setErrorHilo] = useState<string | null>(null);
-  const clienteRef = useRef<ClienteHiloSenal | null>(null);
-  const contenedorRef = useRef<HTMLDivElement | null>(null);
-  const tituloId = useId();
-  const resumenId = useId();
+  const [threadError, setThreadError] = useState<string | null>(null);
+  const clientRef = useRef<SignalThreadClient | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  const summaryId = useId();
 
   // Crea el hilo de señal y, si se puede, le transfiere un lienzo nuevo. El
   // lienzo se crea aquí porque solo se puede transferir una vez.
   useEffect(() => {
-    if (!hiloDisponible) {
+    if (!threadAvailable) {
       return undefined;
     }
-    const cliente = (crearCliente ?? crearClientePorOmision)();
-    clienteRef.current = cliente;
-    const bajaErrores = cliente.suscribir({ alError: setErrorHilo });
+    const client = (createClient ?? createDefaultClient)();
+    clientRef.current = client;
+    const unsubscribeErrors = client.subscribe({ onError: setThreadError });
 
-    const contenedor = contenedorRef.current;
-    let limpiarLienzo = (): void => undefined;
-    if (grafica.tipo === 'lista' && contenedor !== null) {
-      const lienzo = document.createElement('canvas');
-      lienzo.setAttribute('aria-hidden', 'true');
-      lienzo.style.width = '100%';
-      lienzo.style.height = '100%';
-      lienzo.style.display = 'block';
-      contenedor.append(lienzo);
-      cliente.adjuntarLienzo(grafica.transferir(lienzo), grafica.paleta, medir(contenedor));
+    const container = containerRef.current;
+    let cleanupCanvas = (): void => undefined;
+    if (chart.kind === 'lista' && container !== null) {
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('aria-hidden', 'true');
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.display = 'block';
+      container.append(canvas);
+      client.attachCanvas(chart.transfer(canvas), chart.palette, measure(container));
 
-      const observador =
+      const observer =
         typeof ResizeObserver === 'undefined'
           ? null
           : new ResizeObserver(() => {
-              cliente.redimensionar(medir(contenedor));
+              client.resize(measure(container));
             });
-      observador?.observe(contenedor);
-      limpiarLienzo = () => {
-        observador?.disconnect();
-        lienzo.remove();
+      observer?.observe(container);
+      cleanupCanvas = () => {
+        observer?.disconnect();
+        canvas.remove();
       };
     }
 
     return () => {
-      limpiarLienzo();
-      bajaErrores();
-      cliente.terminar();
-      clienteRef.current = null;
+      cleanupCanvas();
+      unsubscribeErrors();
+      client.terminate();
+      clientRef.current = null;
     };
-  }, [hiloDisponible, crearCliente, grafica]);
+  }, [threadAvailable, createClient, chart]);
 
   // Conecta la fuente actual al hilo de señal.
   useEffect(() => {
-    const cliente = clienteRef.current;
-    if (cliente === null || fuente === null) {
+    const client = clientRef.current;
+    if (client === null || source === null) {
       return undefined;
     }
-    const bajaIndices = cliente.suscribir({
-      alIndices: (resultado) => {
-        setLectura({ fuente, resultado });
+    const unsubscribeIndices = client.subscribe({
+      onIndices: (result) => {
+        setReading({ source, result });
       },
     });
-    const desconectar = cliente.conectarFuente(fuente);
+    const disconnect = client.connectSource(source);
     return () => {
-      desconectar();
-      bajaIndices();
+      disconnect();
+      unsubscribeIndices();
     };
-  }, [fuente, hiloDisponible, crearCliente, grafica]);
+  }, [source, threadAvailable, createClient, chart]);
 
   // Solo se muestran resultados de la fuente actual.
-  const resultado = lectura !== null && lectura.fuente === fuente ? lectura.resultado : null;
-  const calidad = resultado === null ? null : TEXTO_CALIDAD[resultado.calidad];
+  const result = reading !== null && reading.source === source ? reading.result : null;
+  const quality = result === null ? null : QUALITY_TEXT[result.quality];
 
   return (
     <section
-      aria-labelledby={tituloId}
+      aria-labelledby={titleId}
       style={{
         border: 'var(--borde-grosor) solid var(--color-borde)',
         borderRadius: 'var(--radio-borde)',
@@ -172,52 +172,52 @@ export function PanelSenal({
         marginBottom: 'var(--espacio-8)',
       }}
     >
-      <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
         Señal e indicadores
       </h2>
 
       <p role="status" style={{ marginBottom: 'var(--espacio-4)' }}>
         Calidad de la señal:{' '}
         <strong>
-          {calidad === null ? (
+          {quality === null ? (
             'Esperando datos de la señal'
           ) : (
             <>
-              <span aria-hidden="true">{calidad.icono} </span>
-              {calidad.texto}
+              <span aria-hidden="true">{quality.icon} </span>
+              {quality.text}
             </>
           )}
         </strong>
       </p>
 
-      {!hiloDisponible && (
+      {!threadAvailable && (
         <p style={{ marginBottom: 'var(--espacio-4)' }}>
           El análisis de la señal no está disponible en este navegador.
         </p>
       )}
-      {errorHilo !== null && (
+      {threadError !== null && (
         <p style={{ marginBottom: 'var(--espacio-4)' }}>
-          No se pudo actualizar el análisis de la señal ({errorHilo}).
+          No se pudo actualizar el análisis de la señal ({threadError}).
         </p>
       )}
 
-      {grafica.tipo === 'lista' ? (
+      {chart.kind === 'lista' ? (
         <div
-          ref={contenedorRef}
+          ref={containerRef}
           role="img"
           aria-label="Tacograma: intervalos entre latidos de los últimos 5 minutos"
-          aria-describedby={resumenId}
+          aria-describedby={summaryId}
           style={{ height: 'var(--alto-grafica)', marginBottom: 'var(--espacio-4)' }}
         />
       ) : (
         <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
-          La gráfica no está disponible: {grafica.motivo}. Los indicadores en texto siguen
+          La gráfica no está disponible: {chart.reason}. Los indicadores en texto siguen
           actualizándose.
         </p>
       )}
 
       <dl
-        id={resumenId}
+        id={summaryId}
         style={{
           display: 'grid',
           gridTemplateColumns: 'max-content 1fr',
@@ -226,19 +226,19 @@ export function PanelSenal({
         }}
       >
         <dt>Frecuencia cardíaca media</dt>
-        <dd data-testid="fc-media">{formatear(resultado?.fcMedia ?? null, 'lpm')}</dd>
+        <dd data-testid="fc-media">{format(result?.meanHr ?? null, 'lpm')}</dd>
         <dt>Variabilidad entre latidos (RMSSD)</dt>
-        <dd data-testid="rmssd">{formatear(resultado?.rmssd ?? null, 'ms')}</dd>
+        <dd data-testid="rmssd">{format(result?.rmssd ?? null, 'ms')}</dd>
         <dt>Variabilidad global (SDNN)</dt>
-        <dd data-testid="sdnn">{formatear(resultado?.sdnn ?? null, 'ms')}</dd>
+        <dd data-testid="sdnn">{format(result?.sdnn ?? null, 'ms')}</dd>
         <dt>Ventana analizada</dt>
         <dd data-testid="ventana">
-          {formatearMinutos(resultado?.coberturaMs ?? 0)} de {formatearMinutos(VENTANA_ANALISIS_MS)}
+          {formatMinutes(result?.coverageMs ?? 0)} de {formatMinutes(ANALYSIS_WINDOW_MS)}
         </dd>
         <dt>Latidos aceptados</dt>
-        <dd data-testid="aceptados">{resultado?.latidosAceptados ?? 0}</dd>
+        <dd data-testid="aceptados">{result?.acceptedBeats ?? 0}</dd>
         <dt>Descartados por calidad de señal</dt>
-        <dd data-testid="descartados">{resultado?.latidosDescartados ?? 0}</dd>
+        <dd data-testid="descartados">{result?.discardedBeats ?? 0}</dd>
       </dl>
     </section>
   );

@@ -1,29 +1,29 @@
 import { Navigate, Route, Routes } from 'react-router';
-import { PaginaAdvertencias } from '../features/warnings/WarningsPage';
-import { RequiereAdvertencias } from '../features/warnings/RequireWarnings';
-import { DiagnosticoPage } from '../features/diagnostics/DiagnosticsPage';
-import { PaginaInicio } from '../features/home/HomePage';
-import { PaginaPlan } from '../features/plan/PlanPage';
-import { PaginaSesion } from '../features/session/SessionPage';
-import { Marco } from './Layout';
+import { WarningsPage } from '../features/warnings/WarningsPage';
+import { RequireWarnings } from '../features/warnings/RequireWarnings';
+import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
+import { HomePage } from '../features/home/HomePage';
+import { PlanPage } from '../features/plan/PlanPage';
+import { SessionPage } from '../features/session/SessionPage';
+import { Layout } from './Layout';
 
 /** Rutas del S3 según docs/pantallas.md (react-router en modo declarativo). */
-export function Rutas(): React.JSX.Element {
+export function AppRoutes(): React.JSX.Element {
   return (
     <Routes>
-      <Route element={<Marco />}>
-        <Route index element={<PaginaInicio />} />
-        <Route path="advertencias" element={<PaginaAdvertencias />} />
-        <Route path="plan" element={<PaginaPlan />} />
+      <Route element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route path="advertencias" element={<WarningsPage />} />
+        <Route path="plan" element={<PlanPage />} />
         <Route
           path="sesion"
           element={
-            <RequiereAdvertencias>
-              <PaginaSesion />
-            </RequiereAdvertencias>
+            <RequireWarnings>
+              <SessionPage />
+            </RequireWarnings>
           }
         />
-        <Route path="diagnostico" element={<DiagnosticoPage />} />
+        <Route path="diagnostico" element={<DiagnosticsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

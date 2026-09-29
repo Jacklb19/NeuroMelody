@@ -1,29 +1,29 @@
-import { msDesdeUnidadesRR } from '../rrUnits';
+import { msFromRrUnits } from '../rrUnits';
 
 /** Contenido útil de una notificación de la característica Heart Rate Measurement. */
-export interface MedicionFC {
+export interface HeartRateMeasurement {
   /** Frecuencia cardíaca en latidos por minuto, sin validar el rango. */
-  readonly frecuenciaCardiaca: number;
+  readonly heartRate: number;
   /** Contacto del sensor; `null` si el dispositivo no lo soporta. */
-  readonly contactoSensor: boolean | null;
+  readonly sensorContact: boolean | null;
   /** Intervalos RR en milisegundos (resolución de 1/1024 s). */
-  readonly intervalosRRms: readonly number[];
+  readonly rrIntervalsMs: readonly number[];
 }
 
 /** La notificación no cumple el formato de la especificación. */
-export class ErrorMedicionFC extends Error {
-  constructor(mensaje: string) {
-    super(mensaje);
+export class HeartRateMeasurementError extends Error {
+  constructor(message: string) {
+    super(message);
     this.name = 'ErrorMedicionFC';
   }
 }
 
 // Bits del byte de banderas (Heart Rate Service, característica 0x2A37).
-const BANDERA_FC_16_BITS = 0x01;
-const BANDERA_CONTACTO_DETECTADO = 0x02;
-const BANDERA_CONTACTO_SOPORTADO = 0x04;
-const BANDERA_ENERGIA_PRESENTE = 0x08;
-const BANDERA_RR_PRESENTE = 0x10;
+const FLAG_HR_16_BIT = 0x01;
+const FLAG_CONTACT_DETECTED = 0x02;
+const FLAG_CONTACT_SUPPORTED = 0x04;
+const FLAG_ENERGY_PRESENT = 0x08;
+const FLAG_RR_PRESENT = 0x10;
 
 /**
  * Interpreta el valor de la característica Heart Rate Measurement (RF-03).
@@ -37,57 +37,57 @@ const BANDERA_RR_PRESENTE = 0x10;
  *
  * @throws ErrorMedicionFC si los datos están truncados o mal formados.
  */
-export function interpretarMedicionFC(datos: DataView): MedicionFC {
-  if (datos.byteLength < 1) {
-    throw new ErrorMedicionFC('Medición vacía.');
+export function parseHeartRateMeasurement(data: DataView): HeartRateMeasurement {
+  if (data.byteLength < 1) {
+    throw new HeartRateMeasurementError('Medición vacía.');
   }
-  const banderas = datos.getUint8(0);
-  let desplazamiento = 1;
+  const flags = data.getUint8(0);
+  let offset = 1;
 
-  const fc16Bits = (banderas & BANDERA_FC_16_BITS) !== 0;
-  const bytesFC = fc16Bits ? 2 : 1;
-  exigirBytes(datos, desplazamiento, bytesFC, 'frecuencia cardíaca');
-  const frecuenciaCardiaca = fc16Bits
-    ? datos.getUint16(desplazamiento, true)
-    : datos.getUint8(desplazamiento);
-  desplazamiento += bytesFC;
+  const hr16Bit = (flags & FLAG_HR_16_BIT) !== 0;
+  const hrBytes = hr16Bit ? 2 : 1;
+  requireBytes(data, offset, hrBytes, 'frecuencia cardíaca');
+  const heartRate = hr16Bit
+    ? data.getUint16(offset, true)
+    : data.getUint8(offset);
+  offset += hrBytes;
 
-  if ((banderas & BANDERA_ENERGIA_PRESENTE) !== 0) {
-    exigirBytes(datos, desplazamiento, 2, 'energía gastada');
-    desplazamiento += 2;
+  if ((flags & FLAG_ENERGY_PRESENT) !== 0) {
+    requireBytes(data, offset, 2, 'energía gastada');
+    offset += 2;
   }
 
-  const intervalosRRms: number[] = [];
-  if ((banderas & BANDERA_RR_PRESENTE) !== 0) {
-    if ((datos.byteLength - desplazamiento) % 2 !== 0) {
-      throw new ErrorMedicionFC('Intervalos RR truncados.');
+  const rrIntervalsMs: number[] = [];
+  if ((flags & FLAG_RR_PRESENT) !== 0) {
+    if ((data.byteLength - offset) % 2 !== 0) {
+      throw new HeartRateMeasurementError('Intervalos RR truncados.');
     }
-    for (; desplazamiento < datos.byteLength; desplazamiento += 2) {
-      intervalosRRms.push(msDesdeUnidadesRR(datos.getUint16(desplazamiento, true)));
+    for (; offset < data.byteLength; offset += 2) {
+      rrIntervalsMs.push(msFromRrUnits(data.getUint16(offset, true)));
     }
   }
 
   return {
-    frecuenciaCardiaca,
-    contactoSensor: interpretarContacto(banderas),
-    intervalosRRms,
+    heartRate,
+    sensorContact: parseContact(flags),
+    rrIntervalsMs,
   };
 }
 
-function interpretarContacto(banderas: number): boolean | null {
-  if ((banderas & BANDERA_CONTACTO_SOPORTADO) === 0) {
+function parseContact(flags: number): boolean | null {
+  if ((flags & FLAG_CONTACT_SUPPORTED) === 0) {
     return null;
   }
-  return (banderas & BANDERA_CONTACTO_DETECTADO) !== 0;
+  return (flags & FLAG_CONTACT_DETECTED) !== 0;
 }
 
-function exigirBytes(
-  datos: DataView,
-  desplazamiento: number,
-  cantidad: number,
-  campo: string,
+function requireBytes(
+  data: DataView,
+  offset: number,
+  count: number,
+  field: string,
 ): void {
-  if (datos.byteLength < desplazamiento + cantidad) {
-    throw new ErrorMedicionFC(`Medición truncada: falta ${campo}.`);
+  if (data.byteLength < offset + count) {
+    throw new HeartRateMeasurementError(`Medición truncada: falta ${field}.`);
   }
 }

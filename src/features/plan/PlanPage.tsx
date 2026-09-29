@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useTituloPagina } from '../../app/usePageTitle';
-import { NIVELES, NIVEL_CALIBRACION } from '../audio/engine/levels';
-import { DURACIONES_MIN, DURACION_POR_OMISION_MIN } from './plan';
+import { usePageTitle } from '../../app/usePageTitle';
+import { LEVELS, CALIBRATION_LEVEL } from '../audio/engine/levels';
+import { DURATIONS_MIN, DEFAULT_DURATION_MIN } from './plan';
 
 /**
  * Plan de sesión (HU-07, RF-18). En el S3 solo se elige la duración; la
  * propuesta de objetivos con el modelo de lenguaje llega en el S6.
  */
-export function PaginaPlan(): React.JSX.Element {
-  useTituloPagina('Plan de sesión');
-  const [duracion, setDuracion] = useState(DURACION_POR_OMISION_MIN);
-  const navegar = useNavigate();
+export function PlanPage(): React.JSX.Element {
+  usePageTitle('Plan de sesión');
+  const [duration, setDuration] = useState(DEFAULT_DURATION_MIN);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -21,18 +21,18 @@ export function PaginaPlan(): React.JSX.Element {
           Duración de la sesión
         </legend>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)' }}>
-          {DURACIONES_MIN.map((minutos) => (
-            <label key={minutos} style={{ display: 'flex', gap: 'var(--espacio-1)', alignItems: 'center' }}>
+          {DURATIONS_MIN.map((minutes) => (
+            <label key={minutes} style={{ display: 'flex', gap: 'var(--espacio-1)', alignItems: 'center' }}>
               <input
                 type="radio"
                 name="duracion"
-                value={minutos}
-                checked={duracion === minutos}
+                value={minutes}
+                checked={duration === minutes}
                 onChange={() => {
-                  setDuracion(minutos);
+                  setDuration(minutes);
                 }}
               />
-              {minutos} minutos
+              {minutes} minutos
             </label>
           ))}
         </div>
@@ -40,10 +40,10 @@ export function PaginaPlan(): React.JSX.Element {
 
       <section aria-label="Resumen del plan" style={{ marginBottom: 'var(--espacio-6)' }}>
         <p>
-          Duración: <strong>{duracion} minutos</strong>.
+          Duración: <strong>{duration} minutos</strong>.
         </p>
         <p style={{ color: 'var(--color-texto-secundario)' }}>
-          La música empieza en el nivel {NIVELES[NIVEL_CALIBRACION].nombre} durante los primeros 3
+          La música empieza en el nivel {LEVELS[CALIBRATION_LEVEL].name} durante los primeros 3
           minutos, mientras se toma la referencia de tu señal.
         </p>
       </section>
@@ -51,7 +51,7 @@ export function PaginaPlan(): React.JSX.Element {
       <button
         type="button"
         onClick={() => {
-          void navegar(`/sesion?duracion=${String(duracion)}`);
+          void navigate(`/sesion?duracion=${String(duration)}`);
         }}
         style={{
           padding: 'var(--espacio-2) var(--espacio-4)',

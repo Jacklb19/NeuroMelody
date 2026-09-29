@@ -2,70 +2,70 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { describe, it, expect } from 'vitest';
-import { ContextoAdvertencias } from '../features/warnings/warningsContext';
-import { ADVERTENCIAS } from '../features/warnings/warningsText';
-import { RegistroAdvertencias } from '../features/warnings/warningsRegistry';
-import { leerDuracion } from '../features/plan/plan';
-import { Rutas } from './AppRoutes';
+import { WarningsContext } from '../features/warnings/warningsContext';
+import { WARNINGS } from '../features/warnings/warningsText';
+import { WarningsRegistry } from '../features/warnings/warningsRegistry';
+import { readDuration } from '../features/plan/plan';
+import { AppRoutes } from './AppRoutes';
 
-function UbicacionActual() {
+function CurrentLocation() {
   const { pathname, search } = useLocation();
   return <output data-testid="ubicacion">{`${pathname}${search}`}</output>;
 }
 
-function renderizar(ruta: string, aceptadas = false) {
-  const registro = new RegistroAdvertencias(null);
-  if (aceptadas) {
-    registro.aceptar(new Date());
+function renderWith(route: string, accepted = false) {
+  const registry = new WarningsRegistry(null);
+  if (accepted) {
+    registry.accept(new Date());
   }
   render(
-    <ContextoAdvertencias.Provider value={registro}>
-      <MemoryRouter initialEntries={[ruta]}>
-        <Rutas />
-        <UbicacionActual />
+    <WarningsContext.Provider value={registry}>
+      <MemoryRouter initialEntries={[route]}>
+        <AppRoutes />
+        <CurrentLocation />
       </MemoryRouter>
-    </ContextoAdvertencias.Provider>,
+    </WarningsContext.Provider>,
   );
-  return { registro };
+  return { registry };
 }
 
-const ubicacion = () => screen.getByTestId('ubicacion').textContent;
+const currentPath = () => screen.getByTestId('ubicacion').textContent;
 
 describe('rutas', () => {
   it('el inicio lleva al plan y a la sesión; la navegación no incluye el diagnóstico', () => {
-    renderizar('/');
+    renderWith('/');
     expect(screen.getByRole('heading', { level: 1, name: 'NeuroMelody' })).toBeInTheDocument();
-    const navegacion = screen.getByRole('navigation', { name: /principal/i });
-    const enlaces = Array.from(navegacion.querySelectorAll('a'), (a) => a.textContent);
-    expect(enlaces).toEqual(['Inicio', 'Plan', 'Sesión']);
+    const navigation = screen.getByRole('navigation', { name: /principal/i });
+    const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
+    expect(links).toEqual(['Inicio', 'Plan', 'Sesión']);
     expect(screen.getByRole('link', { name: /preparar una sesión/i })).toHaveAttribute('href', '/plan');
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
   it('ofrece un enlace para saltar al contenido', () => {
-    renderizar('/');
+    renderWith('/');
     expect(screen.getByRole('link', { name: /saltar al contenido/i })).toHaveAttribute('href', '#contenido');
   });
 
   it('exige las advertencias antes de la sesión y vuelve a la sesión pedida al aceptarlas (RF-17)', async () => {
     const user = userEvent.setup();
-    const { registro } = renderizar('/sesion?duracion=30');
+    const { registry } = renderWith('/sesion?duracion=30');
 
-    expect(ubicacion()).toBe('/advertencias');
-    const boton = screen.getByRole('button', { name: /aceptar y continuar/i });
-    expect(boton).toBeDisabled();
+    expect(currentPath()).toBe('/advertencias');
+    const button = screen.getByRole('button', { name: /aceptar y continuar/i });
+    expect(button).toBeDisabled();
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(boton);
+    await user.click(button);
 
-    expect(registro.aceptadas()).toBe(true);
-    expect(ubicacion()).toBe('/sesion?duracion=30');
+    expect(registry.isAccepted()).toBe(true);
+    expect(currentPath()).toBe('/sesion?duracion=30');
     expect(screen.getByRole('heading', { level: 1, name: 'Sesión' })).toBeInTheDocument();
     expect(screen.getByText(/plan: 30 minutos/i)).toBeInTheDocument();
   });
 
   it('con las advertencias aceptadas entra directo a la sesión con sus paneles', () => {
-    renderizar('/sesion', true);
+    renderWith('/sesion', true);
     expect(screen.getByText(/plan: 20 minutos/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
@@ -73,45 +73,45 @@ describe('rutas', () => {
 
   it('el plan permite elegir la duración con el teclado y la lleva a la sesión', async () => {
     const user = userEvent.setup();
-    renderizar('/plan', true);
+    renderWith('/plan', true);
 
     expect(screen.getByRole('radio', { name: '20 minutos' })).toBeChecked();
     await user.click(screen.getByRole('radio', { name: '45 minutos' }));
     expect(screen.getByText('45 minutos', { selector: 'strong' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /continuar a la sesión/i }));
-    expect(ubicacion()).toBe('/sesion?duracion=45');
+    expect(currentPath()).toBe('/sesion?duracion=45');
   });
 
   it('el diagnóstico sigue accesible por su ruta', () => {
-    renderizar('/diagnostico');
+    renderWith('/diagnostico');
     expect(screen.getByRole('heading', { level: 1, name: /diagnóstico de la plataforma/i })).toBeInTheDocument();
   });
 
   it('una ruta desconocida vuelve al inicio', () => {
-    renderizar('/no-existe');
-    expect(ubicacion()).toBe('/');
+    renderWith('/no-existe');
+    expect(currentPath()).toBe('/');
   });
 
   it('pone un título de documento por pantalla', () => {
-    renderizar('/plan');
+    renderWith('/plan');
     expect(document.title).toBe('Plan de sesión · NeuroMelody');
   });
 });
 
 describe('advertencias (R-06)', () => {
   it('muestran el carácter no clínico y complementario del documento', () => {
-    renderizar('/advertencias');
-    const texto = document.body.textContent;
-    expect(texto).toMatch(/herramienta de bienestar y acompañamiento/i);
-    expect(texto).toMatch(/no es un dispositivo médico/i);
-    expect(texto).toMatch(/complementario al seguimiento de tu profesional de la salud/i);
-    expect(texto).toMatch(/no mide el dolor/i);
-    expect(texto).toMatch(/tecla esc/i);
-    expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(ADVERTENCIAS.length);
+    renderWith('/advertencias');
+    const text = document.body.textContent;
+    expect(text).toMatch(/herramienta de bienestar y acompañamiento/i);
+    expect(text).toMatch(/no es un dispositivo médico/i);
+    expect(text).toMatch(/complementario al seguimiento de tu profesional de la salud/i);
+    expect(text).toMatch(/no mide el dolor/i);
+    expect(text).toMatch(/tecla esc/i);
+    expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(WARNINGS.length);
   });
 
   it('no usan lenguaje clínico ni promesas terapéuticas', () => {
-    renderizar('/advertencias');
+    renderWith('/advertencias');
     expect(document.body.textContent).not.toMatch(
       /diagnós|arritmi|anómal|ectópic|prematur|terapia|cura\b|alivia|reduce el dolor/i,
     );
@@ -126,11 +126,11 @@ describe('leerDuracion', () => {
     ['25', 20],
     ['abc', 20],
     ['', 20],
-  ])('interpreta %j como %i minutos', (valor, esperado) => {
-    expect(leerDuracion(valor)).toBe(esperado);
+  ])('interpreta %j como %i minutos', (value, expected) => {
+    expect(readDuration(value)).toBe(expected);
   });
 
   it('usa 20 minutos si no hay valor', () => {
-    expect(leerDuracion(null)).toBe(20);
+    expect(readDuration(null)).toBe(20);
   });
 });

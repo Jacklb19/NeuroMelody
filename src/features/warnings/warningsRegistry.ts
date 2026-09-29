@@ -6,37 +6,37 @@
  * lectura se trata como "no aceptadas" y las advertencias se vuelven a
  * pedir; la aceptación vale solo para la visita en curso.
  */
-export const CLAVE_ADVERTENCIAS = 'neuromelody.advertencias-aceptadas';
+export const WARNINGS_STORAGE_KEY = 'neuromelody.advertencias-aceptadas';
 
-export type AlmacenClaveValor = Pick<Storage, 'getItem' | 'setItem'>;
+export type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
-export class RegistroAdvertencias {
-  readonly #almacen: AlmacenClaveValor | null;
-  #aceptadasEnEstaVisita = false;
+export class WarningsRegistry {
+  readonly #storage: KeyValueStorage | null;
+  #acceptedThisVisit = false;
 
-  constructor(almacen: AlmacenClaveValor | null) {
-    this.#almacen = almacen;
+  constructor(storage: KeyValueStorage | null) {
+    this.#storage = storage;
   }
 
-  aceptadas(): boolean {
-    if (this.#aceptadasEnEstaVisita) {
+  isAccepted(): boolean {
+    if (this.#acceptedThisVisit) {
       return true;
     }
     try {
-      return this.#almacen?.getItem(CLAVE_ADVERTENCIAS) != null;
+      return this.#storage?.getItem(WARNINGS_STORAGE_KEY) != null;
     } catch {
       return false;
     }
   }
 
   /** @returns `true` si la aceptación quedó guardada en el dispositivo. */
-  aceptar(fecha: Date): boolean {
-    this.#aceptadasEnEstaVisita = true;
+  accept(date: Date): boolean {
+    this.#acceptedThisVisit = true;
     try {
-      if (this.#almacen === null) {
+      if (this.#storage === null) {
         return false;
       }
-      this.#almacen.setItem(CLAVE_ADVERTENCIAS, fecha.toISOString());
+      this.#storage.setItem(WARNINGS_STORAGE_KEY, date.toISOString());
       return true;
     } catch {
       return false;
@@ -45,7 +45,7 @@ export class RegistroAdvertencias {
 }
 
 /** Almacén del navegador; el propio acceso a `localStorage` puede lanzar un error. */
-export function almacenDelNavegador(): AlmacenClaveValor | null {
+export function browserStorage(): KeyValueStorage | null {
   try {
     return window.localStorage;
   } catch {

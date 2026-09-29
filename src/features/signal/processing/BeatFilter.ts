@@ -1,24 +1,24 @@
-import type { MotivoDescarte } from './types';
+import type { DiscardReason } from './types';
 import {
-  DESCARTES_PARA_REINICIAR,
-  DESVIACION_MAXIMA,
-  LATIDOS_REFERENCIA,
-  RR_MAXIMO_MS,
-  RR_MINIMO_MS,
+  DISCARDS_TO_RESET,
+  MAX_DEVIATION,
+  REFERENCE_BEATS,
+  MAX_RR_MS,
+  MIN_RR_MS,
 } from './thresholds';
 
-export interface Clasificacion {
-  readonly aceptado: boolean;
-  readonly motivoDescarte: MotivoDescarte | null;
+export interface Classification {
+  readonly accepted: boolean;
+  readonly discardReason: DiscardReason | null;
 }
 
-const ACEPTADO: Clasificacion = { aceptado: true, motivoDescarte: null };
+const ACCEPTED: Classification = { accepted: true, discardReason: null };
 
-function mediana(valores: readonly number[]): number {
-  const ordenados = [...valores].sort((a, b) => a - b);
-  const mitad = Math.floor(ordenados.length / 2);
-  const centro = ordenados[mitad] ?? 0;
-  return ordenados.length % 2 === 0 ? ((ordenados[mitad - 1] ?? 0) + centro) / 2 : centro;
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  const center = sorted[middle] ?? 0;
+  return sorted.length % 2 === 0 ? ((sorted[middle - 1] ?? 0) + center) / 2 : center;
 }
 
 /**
@@ -33,42 +33,42 @@ function mediana(valores: readonly number[]): number {
  *    ser esos 5 latidos: así un cambio real y sostenido de la frecuencia no
  *    se descarta para siempre.
  */
-export class FiltroLatidos {
-  #referencia: number[] = [];
-  #descartesSeguidos: number[] = [];
+export class BeatFilter {
+  #reference: number[] = [];
+  #consecutiveDiscards: number[] = [];
 
-  clasificar(rrMs: number): Clasificacion {
-    if (rrMs < RR_MINIMO_MS || rrMs > RR_MAXIMO_MS) {
-      return { aceptado: false, motivoDescarte: 'fuera_de_rango' };
+  classify(rrMs: number): Classification {
+    if (rrMs < MIN_RR_MS || rrMs > MAX_RR_MS) {
+      return { accepted: false, discardReason: 'fuera_de_rango' };
     }
 
-    if (this.#referencia.length < LATIDOS_REFERENCIA) {
-      this.#aceptar(rrMs);
-      return ACEPTADO;
+    if (this.#reference.length < REFERENCE_BEATS) {
+      this.#accept(rrMs);
+      return ACCEPTED;
     }
 
-    const referencia = mediana(this.#referencia);
-    if (Math.abs(rrMs - referencia) / referencia > DESVIACION_MAXIMA) {
-      this.#descartesSeguidos.push(rrMs);
-      if (this.#descartesSeguidos.length >= DESCARTES_PARA_REINICIAR) {
-        this.#referencia = this.#descartesSeguidos;
-        this.#descartesSeguidos = [];
+    const reference = median(this.#reference);
+    if (Math.abs(rrMs - reference) / reference > MAX_DEVIATION) {
+      this.#consecutiveDiscards.push(rrMs);
+      if (this.#consecutiveDiscards.length >= DISCARDS_TO_RESET) {
+        this.#reference = this.#consecutiveDiscards;
+        this.#consecutiveDiscards = [];
       }
-      return { aceptado: false, motivoDescarte: 'desviacion' };
+      return { accepted: false, discardReason: 'desviacion' };
     }
 
-    this.#aceptar(rrMs);
-    return ACEPTADO;
+    this.#accept(rrMs);
+    return ACCEPTED;
   }
 
   /** Olvida la referencia; se usa al iniciar una nueva conexión. */
-  reiniciar(): void {
-    this.#referencia = [];
-    this.#descartesSeguidos = [];
+  reset(): void {
+    this.#reference = [];
+    this.#consecutiveDiscards = [];
   }
 
-  #aceptar(rrMs: number): void {
-    this.#referencia = [...this.#referencia, rrMs].slice(-LATIDOS_REFERENCIA);
-    this.#descartesSeguidos = [];
+  #accept(rrMs: number): void {
+    this.#reference = [...this.#reference, rrMs].slice(-REFERENCE_BEATS);
+    this.#consecutiveDiscards = [];
   }
 }

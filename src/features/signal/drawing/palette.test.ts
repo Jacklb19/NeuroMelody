@@ -2,19 +2,19 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  ErrorPaletaGrafica,
-  leerPaletaGrafica,
-  VARIABLE_FAMILIA,
-  VARIABLE_TAMANO,
-  VARIABLES_PALETA,
-  type EstilosCalculados,
+  ChartPaletteError,
+  readChartPalette,
+  FAMILY_VARIABLE,
+  SIZE_VARIABLE,
+  PALETTE_VARIABLES,
+  type ComputedStyles,
 } from './palette';
 
-function estilos(valores: Record<string, string>): EstilosCalculados {
-  return { getPropertyValue: (nombre: string) => valores[nombre] ?? '' };
+function styles(values: Record<string, string>): ComputedStyles {
+  return { getPropertyValue: (name: string) => values[name] ?? '' };
 }
 
-const COMPLETOS: Record<string, string> = {
+const COMPLETE_STYLES: Record<string, string> = {
   '--color-grafica-linea': ' #2563eb',
   '--color-grafica-rejilla': '#e5e7eb',
   '--color-grafica-texto': '#4b5563',
@@ -28,34 +28,34 @@ const COMPLETOS: Record<string, string> = {
 
 describe('leerPaletaGrafica', () => {
   it('lee los colores de las variables CSS y convierte el tamaño de rem a px', () => {
-    expect(leerPaletaGrafica(estilos(COMPLETOS))).toEqual({
-      linea: '#2563eb',
-      rejilla: '#e5e7eb',
-      texto: '#4b5563',
-      descartado: '#78716c',
-      bajaCalidadFondo: '#fffbeb',
-      bajaCalidadRayado: '#a16207',
-      fuente: '14px system-ui, sans-serif',
+    expect(readChartPalette(styles(COMPLETE_STYLES))).toEqual({
+      line: '#2563eb',
+      grid: '#e5e7eb',
+      text: '#4b5563',
+      discarded: '#78716c',
+      lowQualityBackground: '#fffbeb',
+      lowQualityHatch: '#a16207',
+      font: '14px system-ui, sans-serif',
     });
   });
 
   it('acepta un tamaño en px', () => {
-    const paleta = leerPaletaGrafica(estilos({ ...COMPLETOS, '--texto-sm': '13px' }));
-    expect(paleta.fuente).toBe('13px system-ui, sans-serif');
+    const palette = readChartPalette(styles({ ...COMPLETE_STYLES, '--texto-sm': '13px' }));
+    expect(palette.font).toBe('13px system-ui, sans-serif');
   });
 
-  it.each(Object.values(VARIABLES_PALETA).concat([VARIABLE_FAMILIA, VARIABLE_TAMANO]))(
+  it.each(Object.values(PALETTE_VARIABLES).concat([FAMILY_VARIABLE, SIZE_VARIABLE]))(
     'lanza un error explícito si falta %s',
     (variable) => {
-      const incompletos = { ...COMPLETOS, [variable]: '' };
-      expect(() => leerPaletaGrafica(estilos(incompletos))).toThrow(ErrorPaletaGrafica);
-      expect(() => leerPaletaGrafica(estilos(incompletos))).toThrow(variable);
+      const incomplete = { ...COMPLETE_STYLES, [variable]: '' };
+      expect(() => readChartPalette(styles(incomplete))).toThrow(ChartPaletteError);
+      expect(() => readChartPalette(styles(incomplete))).toThrow(variable);
     },
   );
 
   it('lanza un error si el tamaño no se puede interpretar', () => {
-    expect(() => leerPaletaGrafica(estilos({ ...COMPLETOS, '--texto-sm': 'mediano' }))).toThrow(
-      ErrorPaletaGrafica,
+    expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--texto-sm': 'mediano' }))).toThrow(
+      ChartPaletteError,
     );
   });
 });
@@ -66,35 +66,35 @@ describe('tokens de la gráfica en src/index.css', () => {
     [...css.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1] ?? '', (m[2] ?? '').trim()]),
   );
 
-  function resolver(nombre: string): string {
-    const valor = tokens.get(nombre) ?? '';
-    const referencia = /^var\((--[a-z0-9-]+)\)$/.exec(valor);
-    return referencia?.[1] === undefined ? valor : resolver(referencia[1]);
+  function resolve(name: string): string {
+    const value = tokens.get(name) ?? '';
+    const reference = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+    return reference?.[1] === undefined ? value : resolve(reference[1]);
   }
 
-  function luminancia(hex: string): number {
-    const canales = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16) / 255);
-    const [r = 0, g = 0, b = 0] = canales.map((c) =>
+  function luminance(hex: string): number {
+    const channels = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16) / 255);
+    const [r = 0, g = 0, b = 0] = channels.map((c) =>
       c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
     );
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
-  function contraste(a: string, b: string): number {
-    const [claro, oscuro] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
-    return ((claro ?? 0) + 0.05) / ((oscuro ?? 0) + 0.05);
+  function contrast(a: string, b: string): number {
+    const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
   }
 
   it('define todas las variables que lee la paleta', () => {
-    for (const variable of [...Object.values(VARIABLES_PALETA), VARIABLE_FAMILIA, VARIABLE_TAMANO]) {
-      expect(resolver(variable), variable).not.toBe('');
+    for (const variable of [...Object.values(PALETTE_VARIABLES), FAMILY_VARIABLE, SIZE_VARIABLE]) {
+      expect(resolve(variable), variable).not.toBe('');
     }
   });
 
   it('no reutiliza los colores de error en la gráfica', () => {
-    const errores = new Set([resolver('--color-error-texto'), resolver('--color-error-fondo')]);
-    for (const variable of Object.values(VARIABLES_PALETA)) {
-      expect(errores.has(resolver(variable)), variable).toBe(false);
+    const errors = new Set([resolve('--color-error-texto'), resolve('--color-error-fondo')]);
+    for (const variable of Object.values(PALETTE_VARIABLES)) {
+      expect(errors.has(resolve(variable)), variable).toBe(false);
     }
   });
 
@@ -106,7 +106,7 @@ describe('tokens de la gráfica en src/index.css', () => {
     ['--color-grafica-baja-calidad-rayado', '--color-fondo'],
     ['--color-grafica-baja-calidad-rayado', '--color-grafica-baja-calidad-fondo'],
     ['--color-grafica-texto', '--color-fondo'],
-  ])('%s tiene al menos 3:1 de contraste sobre %s', (primerPlano, fondo) => {
-    expect(contraste(resolver(primerPlano), resolver(fondo))).toBeGreaterThanOrEqual(3);
+  ])('%s tiene al menos 3:1 de contraste sobre %s', (foreground, background) => {
+    expect(contrast(resolve(foreground), resolve(background))).toBeGreaterThanOrEqual(3);
   });
 });

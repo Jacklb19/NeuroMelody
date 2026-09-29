@@ -2,12 +2,12 @@
  * Punto de entrada del Worker de señal: solo conecta los mensajes con el
  * manejador. Todo el cálculo vive en módulos puros que se prueban sin Worker.
  */
-import { crearManejadorHiloSenal } from '../../signal/thread/threadHandler';
+import { createSignalThreadHandler } from '../../signal/thread/threadHandler';
 
-const manejar = crearManejadorHiloSenal((mensaje) => {
-  self.postMessage(mensaje);
+const handle = createSignalThreadHandler((message) => {
+  self.postMessage(message);
 });
 
-self.onmessage = (evento: MessageEvent<unknown>) => {
-  manejar(evento.data);
+self.onmessage = (event: MessageEvent<unknown>) => {
+  handle(event.data);
 };

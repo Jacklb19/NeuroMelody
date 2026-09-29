@@ -1,22 +1,22 @@
-import { cuantizarRRms } from '../rrUnits';
-import type { Escenario } from '../../acquisition/simulator/scenarios';
-import { crearAleatorio, normalEstandar } from './prng';
+import { quantizeRrMs } from '../rrUnits';
+import type { Scenario } from '../../acquisition/simulator/scenarios';
+import { createRandom, standardNormal } from './prng';
 
 /** Frecuencia de la oscilación respiratoria (banda HF). */
-export const FRECUENCIA_RESPIRATORIA_HZ = 0.25;
+export const RESPIRATORY_FREQUENCY_HZ = 0.25;
 /** Frecuencia de la onda de Mayer (banda LF). */
-export const FRECUENCIA_MAYER_HZ = 0.1;
+export const MAYER_FREQUENCY_HZ = 0.1;
 
 /** Un latido generado: su intervalo RR y el instante en que termina. */
-export interface Latido {
+export interface Beat {
   readonly rrMs: number;
   /** Tiempo de señal (ms desde la conexión) en que se completa el latido. */
-  readonly finMs: number;
+  readonly endMs: number;
 }
 
-export interface GeneradorRR {
+export interface RrGenerator {
   /** Genera el siguiente latido de la serie. */
-  siguiente(): Latido;
+  next(): Beat;
 }
 
 /**
@@ -33,57 +33,57 @@ export interface GeneradorRR {
  *
  * La serie depende solo del escenario y de la semilla.
  */
-export function crearGeneradorRR(escenario: Escenario, semilla: number): GeneradorRR {
-  const base = crearGeneradorBase(escenario, semilla);
-  const artefactos = escenario.artefactos;
-  if (artefactos === null) {
+export function createRrGenerator(scenario: Scenario, seed: number): RrGenerator {
+  const base = createBaseGenerator(scenario, seed);
+  const artifacts = scenario.artifacts;
+  if (artifacts === null) {
     return base;
   }
 
   // Semilla derivada para no consumir números de la serie base.
-  const aleatorioArtefactos = crearAleatorio(semilla ^ 0x5bd1e995);
-  let compensatorioPendiente: Latido | null = null;
+  const artifactRandom = createRandom(seed ^ 0x5bd1e995);
+  let pendingCompensatory: Beat | null = null;
 
   return {
-    siguiente(): Latido {
-      if (compensatorioPendiente !== null) {
-        const compensatorio = compensatorioPendiente;
-        compensatorioPendiente = null;
-        return compensatorio;
+    next(): Beat {
+      if (pendingCompensatory !== null) {
+        const compensatory = pendingCompensatory;
+        pendingCompensatory = null;
+        return compensatory;
       }
-      const latido = base.siguiente();
-      if (aleatorioArtefactos() >= artefactos.probabilidadPrematuro) {
-        return latido;
+      const beat = base.next();
+      if (artifactRandom() >= artifacts.prematureProbability) {
+        return beat;
       }
-      const siguienteBase = base.siguiente();
-      const rrPrematuro = cuantizarRRms(latido.rrMs * artefactos.fraccionPrematuro);
-      const inicioMs = latido.finMs - latido.rrMs;
-      compensatorioPendiente = {
-        rrMs: latido.rrMs + siguienteBase.rrMs - rrPrematuro,
-        finMs: siguienteBase.finMs,
+      const nextBase = base.next();
+      const prematureRr = quantizeRrMs(beat.rrMs * artifacts.prematureFraction);
+      const startMs = beat.endMs - beat.rrMs;
+      pendingCompensatory = {
+        rrMs: beat.rrMs + nextBase.rrMs - prematureRr,
+        endMs: nextBase.endMs,
       };
-      return { rrMs: rrPrematuro, finMs: inicioMs + rrPrematuro };
+      return { rrMs: prematureRr, endMs: startMs + prematureRr };
     },
   };
 }
 
-function crearGeneradorBase(escenario: Escenario, semilla: number): GeneradorRR {
-  const aleatorio = crearAleatorio(semilla);
-  const faseMayer = 2 * Math.PI * aleatorio();
-  let inicioMs = 0;
+function createBaseGenerator(scenario: Scenario, seed: number): RrGenerator {
+  const random = createRandom(seed);
+  const mayerPhase = 2 * Math.PI * random();
+  let startMs = 0;
 
   return {
-    siguiente(): Latido {
-      const p = escenario.parametrosEn(inicioMs);
-      const t = inicioMs / 1000;
-      const rrCrudo =
-        60000 / p.fcMedia +
-        p.amplitudRespiratoriaMs * Math.sin(2 * Math.PI * FRECUENCIA_RESPIRATORIA_HZ * t) +
-        p.amplitudMayerMs * Math.sin(2 * Math.PI * FRECUENCIA_MAYER_HZ * t + faseMayer) +
-        p.ruidoMs * normalEstandar(aleatorio);
-      const rrMs = cuantizarRRms(rrCrudo);
-      inicioMs += rrMs;
-      return { rrMs, finMs: inicioMs };
+    next(): Beat {
+      const p = scenario.paramsAt(startMs);
+      const t = startMs / 1000;
+      const rawRr =
+        60000 / p.meanHr +
+        p.respiratoryAmplitudeMs * Math.sin(2 * Math.PI * RESPIRATORY_FREQUENCY_HZ * t) +
+        p.mayerAmplitudeMs * Math.sin(2 * Math.PI * MAYER_FREQUENCY_HZ * t + mayerPhase) +
+        p.noiseMs * standardNormal(random);
+      const rrMs = quantizeRrMs(rawRr);
+      startMs += rrMs;
+      return { rrMs, endMs: startMs };
     },
   };
 }

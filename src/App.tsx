@@ -1,10 +1,10 @@
 import { BrowserRouter } from 'react-router';
-import { Rutas } from './app/AppRoutes';
+import { AppRoutes } from './app/AppRoutes';
 
 export function App(): React.JSX.Element {
   return (
     <BrowserRouter>
-      <Rutas />
+      <AppRoutes />
     </BrowserRouter>
   );
 }

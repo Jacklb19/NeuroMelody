@@ -3,45 +3,45 @@
  * sobre NucleoSintesis: lee los AudioParam del bloque y copia el canal a los
  * demás. No reserva memoria en `process()`.
  */
-import { NucleoSintesis } from '../core/SynthesisCore';
-import { ambito, valorParametro, type ParametrosBloque } from './workletScope';
+import { SynthesisCore } from '../core/SynthesisCore';
+import { scope, paramValue, type BlockParams } from './workletScope';
 import {
-  DESCRIPTORES_SINTETIZADOR,
-  NOMBRE_SINTETIZADOR,
-  leerOpcionesSintetizador,
+  SYNTHESIZER_DESCRIPTORS,
+  SYNTHESIZER_NAME,
+  readSynthesizerOptions,
 } from './workletContract';
 
-class ProcesadorSintetizador extends ambito.AudioWorkletProcessor {
-  static get parameterDescriptors(): typeof DESCRIPTORES_SINTETIZADOR {
-    return DESCRIPTORES_SINTETIZADOR;
+class SynthesizerProcessor extends scope.AudioWorkletProcessor {
+  static get parameterDescriptors(): typeof SYNTHESIZER_DESCRIPTORS {
+    return SYNTHESIZER_DESCRIPTORS;
   }
 
-  readonly #nucleo: NucleoSintesis;
+  readonly #core: SynthesisCore;
 
-  constructor(opciones: AudioWorkletNodeOptions) {
+  constructor(options: AudioWorkletNodeOptions) {
     super();
-    const { semilla, modoInicial, capasIniciales } = leerOpcionesSintetizador(opciones.processorOptions);
-    this.#nucleo = new NucleoSintesis(ambito.sampleRate, semilla, modoInicial);
-    this.#nucleo.fijarCapasIniciales(capasIniciales);
+    const { seed, initialMode, initialLayers } = readSynthesizerOptions(options.processorOptions);
+    this.#core = new SynthesisCore(scope.sampleRate, seed, initialMode);
+    this.#core.setInitialLayers(initialLayers);
   }
 
-  process(_entradas: Float32Array[][], salidas: Float32Array[][], parametros: ParametrosBloque): boolean {
-    const salida = salidas[0];
-    const canal = salida?.[0];
-    if (salida === undefined || canal === undefined) {
+  process(_inputs: Float32Array[][], outputs: Float32Array[][], params: BlockParams): boolean {
+    const output = outputs[0];
+    const channel = output?.[0];
+    if (output === undefined || channel === undefined) {
       return true;
     }
-    this.#nucleo.procesar(
-      canal,
-      valorParametro(parametros, 'tempo', 66),
-      valorParametro(parametros, 'modo', 1),
-      valorParametro(parametros, 'capas', 2),
+    this.#core.process(
+      channel,
+      paramValue(params, 'tempo', 66),
+      paramValue(params, 'modo', 1),
+      paramValue(params, 'capas', 2),
     );
-    for (let c = 1; c < salida.length; c++) {
-      salida[c]?.set(canal);
+    for (let c = 1; c < output.length; c++) {
+      output[c]?.set(channel);
     }
     return true;
   }
 }
 
-ambito.registerProcessor(NOMBRE_SINTETIZADOR, ProcesadorSintetizador);
+scope.registerProcessor(SYNTHESIZER_NAME, SynthesizerProcessor);

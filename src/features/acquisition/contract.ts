@@ -7,10 +7,10 @@
  */
 
 /** Tipos de fuente de señal previstos en el documento de definición. */
-export type TipoFuente = 'simulador' | 'ble' | 'registro';
+export type SourceKind = 'simulador' | 'ble' | 'registro';
 
 /** Estado de la conexión con la fuente; la interfaz lo muestra siempre (HU-01). */
-export type EstadoConexion =
+export type ConnectionState =
   | 'desconectada'
   | 'conectando'
   | 'conectada'
@@ -21,36 +21,36 @@ export type EstadoConexion =
  * Una notificación de la fuente, con la misma forma que la característica
  * estándar de ritmo cardíaco de BLE (≈ 1 por segundo).
  */
-export interface NotificacionLatido {
+export interface BeatNotification {
   /**
    * Tiempo de señal en milisegundos desde la conexión, monótono no
    * decreciente. No es tiempo de pared: con el simulador acelerado avanza
    * más rápido, y las ventanas de análisis deben usar este tiempo.
    */
-  readonly tiempoMs: number;
+  readonly timeMs: number;
   /** Frecuencia cardíaca en latidos por minuto, tal como la reporta la fuente. */
-  readonly frecuenciaCardiaca: number;
+  readonly heartRate: number;
   /** Intervalos entre latidos completados desde la notificación anterior, en ms. */
-  readonly intervalosRRms: readonly number[];
+  readonly rrIntervalsMs: readonly number[];
   /** Contacto del sensor con la piel; `null` si la fuente no lo informa. */
-  readonly contactoSensor: boolean | null;
+  readonly sensorContact: boolean | null;
 }
 
 /** Callbacks de quien consume una fuente; todos son opcionales. */
-export interface ObservadorFuente {
-  readonly alNotificar?: (notificacion: NotificacionLatido) => void;
-  readonly alCambiarEstado?: (estado: EstadoConexion) => void;
-  readonly alError?: (error: Error) => void;
+export interface SourceObserver {
+  readonly onNotification?: (notification: BeatNotification) => void;
+  readonly onStateChange?: (state: ConnectionState) => void;
+  readonly onError?: (error: Error) => void;
 }
 
 /** Contrato que cumple toda fuente de señal. */
-export interface FuenteSenal {
-  readonly tipo: TipoFuente;
-  readonly estado: EstadoConexion;
+export interface SignalSource {
+  readonly kind: SourceKind;
+  readonly state: ConnectionState;
   /** Inicia la adquisición; el tiempo de señal vuelve a empezar en 0. */
-  conectar(): Promise<void>;
+  connect(): Promise<void>;
   /** Detiene la adquisición; tras resolverse no llegan más notificaciones. */
-  desconectar(): Promise<void>;
+  disconnect(): Promise<void>;
   /** Registra un observador y devuelve la función que lo da de baja. */
-  suscribir(observador: ObservadorFuente): () => void;
+  subscribe(observer: SourceObserver): () => void;
 }

@@ -1,37 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { TECHO, recortarBloque, recortarSuave } from './softClip';
+import { CEILING, softClipBlock, softClip } from './softClip';
 
 describe('recortarSuave', () => {
   it('el techo corresponde a −1 dBFS', () => {
-    expect(20 * Math.log10(TECHO)).toBeCloseTo(-1, 10);
+    expect(20 * Math.log10(CEILING)).toBeCloseTo(-1, 10);
   });
 
   it.each([1, 2, 10, 1e6, -1, -10, -1e6])('nunca supera el techo con la entrada %s', (x) => {
-    expect(Math.abs(recortarSuave(x))).toBeLessThanOrEqual(TECHO);
+    expect(Math.abs(softClip(x))).toBeLessThanOrEqual(CEILING);
   });
 
   it('casi no modifica las señales pequeñas', () => {
-    expect(recortarSuave(0)).toBe(0);
-    expect(recortarSuave(0.1)).toBeCloseTo(0.1, 2);
-    expect(Math.abs(recortarSuave(0.1) - 0.1) / 0.1).toBeLessThan(0.005);
+    expect(softClip(0)).toBe(0);
+    expect(softClip(0.1)).toBeCloseTo(0.1, 2);
+    expect(Math.abs(softClip(0.1) - 0.1) / 0.1).toBeLessThan(0.005);
   });
 
   it('es monótono y simétrico', () => {
-    let anterior = recortarSuave(-3);
+    let previous = softClip(-3);
     for (let x = -3; x <= 3; x += 0.01) {
-      const valor = recortarSuave(x);
-      expect(valor).toBeGreaterThanOrEqual(anterior);
-      expect(recortarSuave(-x)).toBeCloseTo(-valor, 12);
-      anterior = valor;
+      const value = softClip(x);
+      expect(value).toBeGreaterThanOrEqual(previous);
+      expect(softClip(-x)).toBeCloseTo(-value, 12);
+      previous = value;
     }
   });
 });
 
 describe('recortarBloque', () => {
   it('recorta en su sitio y devuelve el pico', () => {
-    const bloque = new Float32Array([0.1, -5, 0.5, 3]);
-    const pico = recortarBloque(bloque);
-    expect(Math.max(...Array.from(bloque, Math.abs))).toBeLessThanOrEqual(TECHO);
-    expect(pico).toBeCloseTo(Math.abs(bloque[1] ?? 0), 6);
+    const block = new Float32Array([0.1, -5, 0.5, 3]);
+    const peak = softClipBlock(block);
+    expect(Math.max(...Array.from(block, Math.abs))).toBeLessThanOrEqual(CEILING);
+    expect(peak).toBeCloseTo(Math.abs(block[1] ?? 0), 6);
   });
 });

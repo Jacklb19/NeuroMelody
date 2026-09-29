@@ -1,56 +1,56 @@
-import { MODO, type Modo } from '../core/theory';
+import { MODE, type Mode } from '../core/theory';
 
 /**
  * Niveles musicales de la guía (docs/diseno-musical.md). Valores iniciales
  * aprobados en el S3; se ajustan con oyentes al cerrar el S4.
  */
-export type IdNivel = 'alta' | 'intermedio' | 'meta';
+export type LevelId = 'alta' | 'intermedio' | 'meta';
 
-export interface NivelMusical {
-  readonly id: IdNivel;
+export interface MusicLevel {
+  readonly id: LevelId;
   /** Nombre descriptivo para la interfaz. */
-  readonly nombre: string;
+  readonly name: string;
   readonly tempo: number;
-  readonly modo: Modo;
-  readonly capas: number;
+  readonly mode: Mode;
+  readonly layers: number;
   /** Frecuencia de corte del pasa bajos, en Hz. */
-  readonly brilloHz: number;
+  readonly brightnessHz: number;
   /** Ganancia de la señal reverberada (0 a 1). */
-  readonly reverberacion: number;
+  readonly reverb: number;
 }
 
-export const NIVELES: Readonly<Record<IdNivel, NivelMusical>> = {
+export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
   alta: {
     id: 'alta',
-    nombre: 'Activación alta',
+    name: 'Activación alta',
     tempo: 76,
-    modo: MODO.pentatonicaMayor,
-    capas: 3,
-    brilloHz: 6000,
-    reverberacion: 0.25,
+    mode: MODE.majorPentatonic,
+    layers: 3,
+    brightnessHz: 6000,
+    reverb: 0.25,
   },
   intermedio: {
     id: 'intermedio',
-    nombre: 'Intermedio',
+    name: 'Intermedio',
     tempo: 66,
-    modo: MODO.lidio,
-    capas: 2,
-    brilloHz: 3500,
-    reverberacion: 0.35,
+    mode: MODE.lydian,
+    layers: 2,
+    brightnessHz: 3500,
+    reverb: 0.35,
   },
   meta: {
     id: 'meta',
-    nombre: 'Activación baja (meta)',
+    name: 'Activación baja (meta)',
     // Centro del rango de 58 a 60 BPM del diseño.
     tempo: 59,
-    modo: MODO.bordonPentatonica,
-    capas: 2,
-    brilloHz: 2000,
-    reverberacion: 0.5,
+    mode: MODE.dronePentatonic,
+    layers: 2,
+    brightnessHz: 2000,
+    reverb: 0.5,
   },
 };
 
-export const IDS_NIVELES: readonly IdNivel[] = ['alta', 'intermedio', 'meta'];
+export const LEVEL_IDS: readonly LevelId[] = ['alta', 'intermedio', 'meta'];
 
 /** Los primeros 3 minutos de cada sesión suenan en Intermedio (calibración). */
-export const NIVEL_CALIBRACION: IdNivel = 'intermedio';
+export const CALIBRATION_LEVEL: LevelId = 'intermedio';

@@ -1,136 +1,136 @@
-import type { NotificacionLatido } from '../../acquisition/contract';
-import type { ContextoDibujo, DimensionesLienzo } from '../../signal/drawing/drawTachogram';
-import { VARIABLES_PALETA, type PaletaGrafica } from '../../signal/drawing/palette';
-import type { CalidadSenal, ResultadoIndices } from '../processing/SignalProcessor';
+import type { BeatNotification } from '../../acquisition/contract';
+import type { DrawingContext, CanvasDimensions } from '../../signal/drawing/drawTachogram';
+import { PALETTE_VARIABLES, type ChartPalette } from '../../signal/drawing/palette';
+import type { SignalQuality, IndicesResult } from '../processing/SignalProcessor';
 
 /** Lo que el hilo de señal necesita del lienzo transferido (un OffscreenCanvas). */
-export interface LienzoHilo {
+export interface ThreadCanvas {
   width: number;
   height: number;
-  getContext(tipo: '2d'): ContextoDibujo | null;
+  getContext(kind: '2d'): DrawingContext | null;
 }
 
 /** Mensajes del hilo principal al hilo de señal. */
-export type MensajeHaciaHilo =
-  | { readonly tipo: 'notificacion'; readonly notificacion: NotificacionLatido }
-  | { readonly tipo: 'reiniciar' }
+export type MessageToThread =
+  | { readonly kind: 'notificacion'; readonly notification: BeatNotification }
+  | { readonly kind: 'reiniciar' }
   | {
-      readonly tipo: 'iniciar-lienzo';
-      readonly lienzo: LienzoHilo;
-      readonly paleta: PaletaGrafica;
-      readonly dimensiones: DimensionesLienzo;
+      readonly kind: 'iniciar-lienzo';
+      readonly canvas: ThreadCanvas;
+      readonly palette: ChartPalette;
+      readonly dimensions: CanvasDimensions;
     }
-  | { readonly tipo: 'redimensionar'; readonly dimensiones: DimensionesLienzo };
+  | { readonly kind: 'redimensionar'; readonly dimensions: CanvasDimensions };
 
 /** Mensajes del hilo de señal al hilo principal. */
-export type MensajeDesdeHilo =
-  | { readonly tipo: 'indices'; readonly resultado: ResultadoIndices }
-  | { readonly tipo: 'error'; readonly mensaje: string };
+export type MessageFromThread =
+  | { readonly kind: 'indices'; readonly result: IndicesResult }
+  | { readonly kind: 'error'; readonly message: string };
 
-type Registro = Record<string, unknown>;
+type UnknownRecord = Record<string, unknown>;
 
-function esRegistro(valor: unknown): valor is Registro {
-  return typeof valor === 'object' && valor !== null;
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
 }
 
-function esNumero(valor: unknown): valor is number {
-  return typeof valor === 'number' && Number.isFinite(valor);
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-function esNumeroONulo(valor: unknown): valor is number | null {
-  return valor === null || esNumero(valor);
+function isNumberOrNull(value: unknown): value is number | null {
+  return value === null || isNumber(value);
 }
 
-function esNotificacion(valor: unknown): valor is NotificacionLatido {
+function isNotification(value: unknown): value is BeatNotification {
   return (
-    esRegistro(valor) &&
-    esNumero(valor.tiempoMs) &&
-    esNumero(valor.frecuenciaCardiaca) &&
-    Array.isArray(valor.intervalosRRms) &&
-    valor.intervalosRRms.every(esNumero) &&
-    (valor.contactoSensor === null || typeof valor.contactoSensor === 'boolean')
+    isRecord(value) &&
+    isNumber(value.timeMs) &&
+    isNumber(value.heartRate) &&
+    Array.isArray(value.rrIntervalsMs) &&
+    value.rrIntervalsMs.every(isNumber) &&
+    (value.sensorContact === null || typeof value.sensorContact === 'boolean')
   );
 }
 
-function esTextoNoVacio(valor: unknown): valor is string {
-  return typeof valor === 'string' && valor.trim() !== '';
+function isNonEmptyText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim() !== '';
 }
 
-function esPaleta(valor: unknown): valor is PaletaGrafica {
+function isPalette(value: unknown): value is ChartPalette {
   return (
-    esRegistro(valor) &&
-    esTextoNoVacio(valor.fuente) &&
-    Object.keys(VARIABLES_PALETA).every((clave) => esTextoNoVacio(valor[clave]))
+    isRecord(value) &&
+    isNonEmptyText(value.font) &&
+    Object.keys(PALETTE_VARIABLES).every((key) => isNonEmptyText(value[key]))
   );
 }
 
-function esDimensiones(valor: unknown): valor is DimensionesLienzo {
+function isDimensions(value: unknown): value is CanvasDimensions {
   return (
-    esRegistro(valor) &&
-    esNumero(valor.anchoCss) &&
-    esNumero(valor.altoCss) &&
-    esNumero(valor.escala) &&
-    valor.anchoCss >= 0 &&
-    valor.altoCss >= 0 &&
-    valor.escala > 0
+    isRecord(value) &&
+    isNumber(value.widthCss) &&
+    isNumber(value.heightCss) &&
+    isNumber(value.scale) &&
+    value.widthCss >= 0 &&
+    value.heightCss >= 0 &&
+    value.scale > 0
   );
 }
 
-function esLienzo(valor: unknown): valor is LienzoHilo {
+function isCanvas(value: unknown): value is ThreadCanvas {
   return (
-    esRegistro(valor) &&
-    typeof valor.getContext === 'function' &&
-    esNumero(valor.width) &&
-    esNumero(valor.height)
+    isRecord(value) &&
+    typeof value.getContext === 'function' &&
+    isNumber(value.width) &&
+    isNumber(value.height)
   );
 }
 
-const CALIDADES: readonly CalidadSenal[] = ['reuniendo', 'buena', 'baja'];
+const QUALITIES: readonly SignalQuality[] = ['reuniendo', 'buena', 'baja'];
 
-function esResultado(valor: unknown): valor is ResultadoIndices {
+function isResult(value: unknown): value is IndicesResult {
   return (
-    esRegistro(valor) &&
-    esNumero(valor.tiempoMs) &&
-    esNumeroONulo(valor.fcMedia) &&
-    esNumeroONulo(valor.rmssd) &&
-    esNumeroONulo(valor.sdnn) &&
-    esNumero(valor.duracionNNms) &&
-    esNumero(valor.coberturaMs) &&
-    esNumero(valor.latidosAceptados) &&
-    esNumero(valor.latidosDescartados) &&
-    CALIDADES.some((calidad) => calidad === valor.calidad)
+    isRecord(value) &&
+    isNumber(value.timeMs) &&
+    isNumberOrNull(value.meanHr) &&
+    isNumberOrNull(value.rmssd) &&
+    isNumberOrNull(value.sdnn) &&
+    isNumber(value.nnDurationMs) &&
+    isNumber(value.coverageMs) &&
+    isNumber(value.acceptedBeats) &&
+    isNumber(value.discardedBeats) &&
+    QUALITIES.some((quality) => quality === value.quality)
   );
 }
 
 /** Valida en la frontera un mensaje recibido por el hilo de señal. */
-export function esMensajeHaciaHilo(valor: unknown): valor is MensajeHaciaHilo {
-  if (!esRegistro(valor)) {
+export function isMessageToThread(value: unknown): value is MessageToThread {
+  if (!isRecord(value)) {
     return false;
   }
-  switch (valor.tipo) {
+  switch (value.kind) {
     case 'notificacion':
-      return esNotificacion(valor.notificacion);
+      return isNotification(value.notification);
     case 'reiniciar':
       return true;
     case 'iniciar-lienzo':
-      return esLienzo(valor.lienzo) && esPaleta(valor.paleta) && esDimensiones(valor.dimensiones);
+      return isCanvas(value.canvas) && isPalette(value.palette) && isDimensions(value.dimensions);
     case 'redimensionar':
-      return esDimensiones(valor.dimensiones);
+      return isDimensions(value.dimensions);
     default:
       return false;
   }
 }
 
 /** Valida en la frontera un mensaje recibido por el hilo principal. */
-export function esMensajeDesdeHilo(valor: unknown): valor is MensajeDesdeHilo {
-  if (!esRegistro(valor)) {
+export function isMessageFromThread(value: unknown): value is MessageFromThread {
+  if (!isRecord(value)) {
     return false;
   }
-  switch (valor.tipo) {
+  switch (value.kind) {
     case 'indices':
-      return esResultado(valor.resultado);
+      return isResult(value.result);
     case 'error':
-      return typeof valor.mensaje === 'string';
+      return typeof value.message === 'string';
     default:
       return false;
   }

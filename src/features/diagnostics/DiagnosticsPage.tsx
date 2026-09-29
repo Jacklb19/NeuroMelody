@@ -1,45 +1,45 @@
 import { useState, useId } from 'react';
-import { useTituloPagina } from '../../app/usePageTitle';
-import { verificarCapacidades } from './checkCapabilities';
-import type { CapacidadesEntorno } from './diagnostics.types';
+import { usePageTitle } from '../../app/usePageTitle';
+import { checkCapabilities } from './checkCapabilities';
+import type { EnvironmentCapabilities } from './diagnostics.types';
 
-export function DiagnosticoPage(): React.JSX.Element {
-  useTituloPagina('Diagnóstico de la plataforma');
-  const [capacidades, setCapacidades] = useState<CapacidadesEntorno>(() =>
-    verificarCapacidades(),
+export function DiagnosticsPage(): React.JSX.Element {
+  usePageTitle('Diagnóstico de la plataforma');
+  const [capabilities, setCapabilities] = useState<EnvironmentCapabilities>(() =>
+    checkCapabilities(),
   );
-  const [contadorPrueba, setContadorPrueba] = useState<number>(0);
-  const listaId = useId();
+  const [checkCounter, setCheckCounter] = useState<number>(0);
+  const listId = useId();
 
-  const handleRecalcular = (): void => {
-    setCapacidades(verificarCapacidades());
-    setContadorPrueba((prev) => prev + 1);
+  const handleRecheck = (): void => {
+    setCapabilities(checkCapabilities());
+    setCheckCounter((prev) => prev + 1);
   };
 
   const items = [
     {
-      etiqueta: 'Aislamiento de origen cruzado (crossOriginIsolated)',
-      descripcion:
+      label: 'Aislamiento de origen cruzado (crossOriginIsolated)',
+      description:
         'Indica si las cabeceras COOP y COEP están activas y habilitan memoria compartida.',
-      activo: capacidades.crossOriginIsolated,
+      available: capabilities.crossOriginIsolated,
     },
     {
-      etiqueta: 'Soporte de Web Workers',
-      descripcion:
+      label: 'Soporte de Web Workers',
+      description:
         'Permite delegar tareas de cómputo en segundo plano sin congelar la interfaz.',
-      activo: capacidades.soportaWorkers,
+      available: capabilities.supportsWorkers,
     },
     {
-      etiqueta: 'Soporte de WebAssembly',
-      descripcion:
+      label: 'Soporte de WebAssembly',
+      description:
         'Habilita la ejecución de módulos compilados de alto rendimiento en el cliente.',
-      activo: capacidades.soportaWebAssembly,
+      available: capabilities.supportsWebAssembly,
     },
     {
-      etiqueta: 'Soporte de SharedArrayBuffer',
-      descripcion:
+      label: 'Soporte de SharedArrayBuffer',
+      description:
         'Permite compartir memoria entre hilos sin copias estructuradas.',
-      activo: capacidades.soportaSharedArrayBuffer,
+      available: capabilities.supportsSharedArrayBuffer,
     },
   ];
 
@@ -56,7 +56,7 @@ export function DiagnosticoPage(): React.JSX.Element {
       </header>
 
       <section
-        aria-labelledby={listaId}
+        aria-labelledby={listId}
         style={{
           border: 'var(--borde-grosor) solid var(--color-borde)',
           borderRadius: 'var(--radio-borde)',
@@ -64,14 +64,14 @@ export function DiagnosticoPage(): React.JSX.Element {
           marginBottom: 'var(--espacio-8)',
         }}
       >
-        <h2 id={listaId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+        <h2 id={listId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
           Capacidades detectadas en tiempo de ejecución
         </h2>
 
         <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--espacio-4)' }}>
           {items.map((item) => (
             <li
-              key={item.etiqueta}
+              key={item.label}
               style={{
                 padding: 'var(--espacio-3)',
                 border: 'var(--borde-grosor) solid var(--color-borde-suave)',
@@ -83,9 +83,9 @@ export function DiagnosticoPage(): React.JSX.Element {
               }}
             >
               <div>
-                <strong style={{ display: 'block' }}>{item.etiqueta}</strong>
+                <strong style={{ display: 'block' }}>{item.label}</strong>
                 <span style={{ fontSize: 'var(--texto-sm)', color: 'var(--color-texto-tenue)' }}>
-                  {item.descripcion}
+                  {item.description}
                 </span>
               </div>
               <span
@@ -94,13 +94,13 @@ export function DiagnosticoPage(): React.JSX.Element {
                   fontWeight: 'var(--peso-destacado)',
                   padding: 'var(--espacio-1) var(--espacio-2)',
                   borderRadius: 'var(--radio-borde)',
-                  backgroundColor: item.activo ? 'var(--color-exito-fondo)' : 'var(--color-error-fondo)',
-                  color: item.activo ? 'var(--color-exito-texto)' : 'var(--color-error-texto)',
+                  backgroundColor: item.available ? 'var(--color-exito-fondo)' : 'var(--color-error-fondo)',
+                  color: item.available ? 'var(--color-exito-texto)' : 'var(--color-error-texto)',
                   fontSize: 'var(--texto-sm)',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {item.activo ? 'Disponible' : 'No disponible'}
+                {item.available ? 'Disponible' : 'No disponible'}
               </span>
             </li>
           ))}
@@ -119,11 +119,11 @@ export function DiagnosticoPage(): React.JSX.Element {
         </h2>
         <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
           Verificaciones realizadas:{' '}
-          <strong data-testid="contador-pruebas">{contadorPrueba}</strong>
+          <strong data-testid="contador-pruebas">{checkCounter}</strong>
         </p>
         <button
           type="button"
-          onClick={handleRecalcular}
+          onClick={handleRecheck}
           style={{
             padding: 'var(--espacio-2) var(--espacio-4)',
             backgroundColor: 'var(--color-boton-fondo)',

@@ -1,30 +1,30 @@
 import { useMemo, useSyncExternalStore } from 'react';
-import type { EstadoConexion, FuenteSenal, NotificacionLatido } from '../acquisition/contract';
+import type { ConnectionState, SignalSource, BeatNotification } from '../acquisition/contract';
 
 /** Lo que la interfaz necesita saber de una fuente de señal. */
-export interface LecturaFuente {
-  readonly estado: EstadoConexion;
-  readonly ultima: NotificacionLatido | null;
+export interface SourceReading {
+  readonly state: ConnectionState;
+  readonly last: BeatNotification | null;
   /** Intervalos RR recibidos desde la conexión. */
-  readonly latidosRecibidos: number;
+  readonly receivedBeats: number;
   readonly error: string | null;
 }
 
-interface AlmacenLecturas {
-  readonly suscribir: (avisar: () => void) => () => void;
-  readonly leer: () => LecturaFuente;
+interface ReadingStore {
+  readonly subscribe: (onStoreChange: () => void) => () => void;
+  readonly read: () => SourceReading;
 }
 
-const LECTURA_SIN_FUENTE: LecturaFuente = {
-  estado: 'desconectada',
-  ultima: null,
-  latidosRecibidos: 0,
+const READING_WITHOUT_SOURCE: SourceReading = {
+  state: 'desconectada',
+  last: null,
+  receivedBeats: 0,
   error: null,
 };
 
-const ALMACEN_SIN_FUENTE: AlmacenLecturas = {
-  suscribir: () => () => undefined,
-  leer: () => LECTURA_SIN_FUENTE,
+const STORE_WITHOUT_SOURCE: ReadingStore = {
+  subscribe: () => () => undefined,
+  read: () => READING_WITHOUT_SOURCE,
 };
 
 /**
@@ -32,44 +32,44 @@ const ALMACEN_SIN_FUENTE: AlmacenLecturas = {
  * una lectura nueva e inmutable, y `leer` devuelve siempre la misma
  * referencia mientras no haya cambios.
  */
-function crearAlmacenLecturas(fuente: FuenteSenal): AlmacenLecturas {
-  let lectura: LecturaFuente = { ...LECTURA_SIN_FUENTE, estado: fuente.estado };
+function createReadingStore(source: SignalSource): ReadingStore {
+  let reading: SourceReading = { ...READING_WITHOUT_SOURCE, state: source.state };
 
   return {
-    suscribir: (avisar) => {
+    subscribe: (onStoreChange) => {
       // La fuente pudo cambiar de estado entre la creación del almacén y la
       // suscripción; React vuelve a leer tras suscribirse y lo detecta.
-      if (lectura.estado !== fuente.estado) {
-        lectura = { ...lectura, estado: fuente.estado };
+      if (reading.state !== source.state) {
+        reading = { ...reading, state: source.state };
       }
-      return fuente.suscribir({
-        alNotificar: (notificacion) => {
-          lectura = {
-            ...lectura,
-            ultima: notificacion,
-            latidosRecibidos: lectura.latidosRecibidos + notificacion.intervalosRRms.length,
+      return source.subscribe({
+        onNotification: (notification) => {
+          reading = {
+            ...reading,
+            last: notification,
+            receivedBeats: reading.receivedBeats + notification.rrIntervalsMs.length,
           };
-          avisar();
+          onStoreChange();
         },
-        alCambiarEstado: (estado) => {
-          lectura = { ...lectura, estado };
-          avisar();
+        onStateChange: (state) => {
+          reading = { ...reading, state };
+          onStoreChange();
         },
-        alError: (error) => {
-          lectura = { ...lectura, error: error.message };
-          avisar();
+        onError: (error) => {
+          reading = { ...reading, error: error.message };
+          onStoreChange();
         },
       });
     },
-    leer: () => lectura,
+    read: () => reading,
   };
 }
 
 /** Suscribe el componente a una fuente de señal (o a ninguna, con `null`). */
-export function useFuenteSenal(fuente: FuenteSenal | null): LecturaFuente {
-  const almacen = useMemo(
-    () => (fuente === null ? ALMACEN_SIN_FUENTE : crearAlmacenLecturas(fuente)),
-    [fuente],
+export function useSignalSource(source: SignalSource | null): SourceReading {
+  const store = useMemo(
+    () => (source === null ? STORE_WITHOUT_SOURCE : createReadingStore(source)),
+    [source],
   );
-  return useSyncExternalStore(almacen.suscribir, almacen.leer);
+  return useSyncExternalStore(store.subscribe, store.read);
 }

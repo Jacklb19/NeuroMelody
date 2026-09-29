@@ -1,54 +1,54 @@
-import { CanalFuente } from '../../acquisition/sourceChannel';
+import { SourceChannel } from '../../acquisition/sourceChannel';
 import type {
-  EstadoConexion,
-  FuenteSenal,
-  NotificacionLatido,
-  ObservadorFuente,
+  ConnectionState,
+  SignalSource,
+  BeatNotification,
+  SourceObserver,
 } from '../../acquisition/contract';
-import { ESCENARIOS, type IdEscenario } from './scenarios';
-import { crearGeneradorRR, type GeneradorRR, type Latido } from './rrGenerator';
+import { SCENARIOS, type ScenarioId } from './scenarios';
+import { createRrGenerator, type RrGenerator, type Beat } from './rrGenerator';
 
 /** Factores de aceleración del tiempo de señal permitidos (RF-02). */
-export type Velocidad = 1 | 2 | 5 | 10;
-export const VELOCIDADES: readonly Velocidad[] = [1, 2, 5, 10];
+export type Speed = 1 | 2 | 5 | 10;
+export const SPEEDS: readonly Speed[] = [1, 2, 5, 10];
 
 /** Fuente de tiempo real en ms; inyectable para pruebas deterministas. */
-export interface Reloj {
-  ahoraMs(): number;
+export interface Clock {
+  nowMs(): number;
 }
 
 /** Ejecuta una tarea periódica y devuelve la función que la cancela. */
-export interface Programador {
-  repetir(tarea: () => void, periodoMs: number): () => void;
+export interface Scheduler {
+  repeat(task: () => void, periodMs: number): () => void;
 }
 
-export const relojDelNavegador: Reloj = {
-  ahoraMs: () => performance.now(),
+export const browserClock: Clock = {
+  nowMs: () => performance.now(),
 };
 
-export const programadorDelNavegador: Programador = {
-  repetir: (tarea, periodoMs) => {
-    const id = setInterval(tarea, periodoMs);
+export const browserScheduler: Scheduler = {
+  repeat: (task, periodMs) => {
+    const id = setInterval(task, periodMs);
     return () => {
       clearInterval(id);
     };
   },
 };
 
-export interface OpcionesFuenteSimulada {
-  readonly escenario: IdEscenario;
-  readonly semilla: number;
-  readonly velocidad: Velocidad;
-  readonly reloj?: Reloj;
-  readonly programador?: Programador;
+export interface SimulatedSourceOptions {
+  readonly scenario: ScenarioId;
+  readonly seed: number;
+  readonly speed: Speed;
+  readonly clock?: Clock;
+  readonly scheduler?: Scheduler;
 }
 
 /** Periodo de las notificaciones en tiempo de señal, como una banda BLE. */
-export const PERIODO_NOTIFICACION_MS = 1000;
+export const NOTIFICATION_PERIOD_MS = 1000;
 /** Periodo real con que se revisa si hay notificaciones pendientes. */
-export const PERIODO_REVISION_MS = 100;
+export const CHECK_PERIOD_MS = 100;
 /** Latidos recientes promediados para reportar la frecuencia cardíaca. */
-const LATIDOS_PARA_FC = 4;
+const BEATS_FOR_HR = 4;
 
 /**
  * Fuente de señal simulada (RF-02) que cumple el mismo contrato que la banda BLE.
@@ -59,126 +59,126 @@ const LATIDOS_PARA_FC = 4;
  * retrasa los temporizadores (pestaña en segundo plano), no se pierden datos
  * y la serie no cambia; solo llegan más tarde.
  */
-export class FuenteSimulada implements FuenteSenal {
-  readonly tipo = 'simulador' as const;
+export class SimulatedSource implements SignalSource {
+  readonly kind = 'simulador' as const;
 
-  readonly #canal = new CanalFuente();
-  readonly #opciones: OpcionesFuenteSimulada;
-  readonly #reloj: Reloj;
-  readonly #programador: Programador;
+  readonly #channel = new SourceChannel();
+  readonly #options: SimulatedSourceOptions;
+  readonly #clock: Clock;
+  readonly #scheduler: Scheduler;
 
-  #cancelarRevision: (() => void) | null = null;
-  #inicioRealMs = 0;
-  #generador: GeneradorRR | null = null;
-  #latidoPendiente: Latido | null = null;
-  #proximaNotificacionMs = PERIODO_NOTIFICACION_MS;
-  #rrRecientes: number[] = [];
+  #cancelCheck: (() => void) | null = null;
+  #realStartMs = 0;
+  #generator: RrGenerator | null = null;
+  #pendingBeat: Beat | null = null;
+  #nextNotificationMs = NOTIFICATION_PERIOD_MS;
+  #recentRr: number[] = [];
 
-  constructor(opciones: OpcionesFuenteSimulada) {
-    this.#opciones = opciones;
-    this.#reloj = opciones.reloj ?? relojDelNavegador;
-    this.#programador = opciones.programador ?? programadorDelNavegador;
+  constructor(options: SimulatedSourceOptions) {
+    this.#options = options;
+    this.#clock = options.clock ?? browserClock;
+    this.#scheduler = options.scheduler ?? browserScheduler;
   }
 
-  get estado(): EstadoConexion {
-    return this.#canal.estado;
+  get state(): ConnectionState {
+    return this.#channel.state;
   }
 
-  suscribir(observador: ObservadorFuente): () => void {
-    return this.#canal.suscribir(observador);
+  subscribe(observer: SourceObserver): () => void {
+    return this.#channel.subscribe(observer);
   }
 
-  conectar(): Promise<void> {
-    if (this.#cancelarRevision !== null) {
+  connect(): Promise<void> {
+    if (this.#cancelCheck !== null) {
       return Promise.resolve();
     }
-    this.#canal.cambiarEstado('conectando');
-    this.#canal.reiniciarTiempo();
-    this.#generador = crearGeneradorRR(
-      ESCENARIOS[this.#opciones.escenario],
-      this.#opciones.semilla,
+    this.#channel.changeState('conectando');
+    this.#channel.resetTime();
+    this.#generator = createRrGenerator(
+      SCENARIOS[this.#options.scenario],
+      this.#options.seed,
     );
-    this.#latidoPendiente = this.#generador.siguiente();
-    this.#proximaNotificacionMs = PERIODO_NOTIFICACION_MS;
-    this.#rrRecientes = [];
-    this.#inicioRealMs = this.#reloj.ahoraMs();
-    this.#cancelarRevision = this.#programador.repetir(() => {
-      this.#emitirPendientes();
-    }, PERIODO_REVISION_MS);
-    this.#canal.cambiarEstado('conectada');
+    this.#pendingBeat = this.#generator.next();
+    this.#nextNotificationMs = NOTIFICATION_PERIOD_MS;
+    this.#recentRr = [];
+    this.#realStartMs = this.#clock.nowMs();
+    this.#cancelCheck = this.#scheduler.repeat(() => {
+      this.#emitPending();
+    }, CHECK_PERIOD_MS);
+    this.#channel.changeState('conectada');
     return Promise.resolve();
   }
 
-  desconectar(): Promise<void> {
-    this.#cancelarRevision?.();
-    this.#cancelarRevision = null;
-    this.#generador = null;
-    this.#latidoPendiente = null;
-    this.#canal.cambiarEstado('desconectada');
+  disconnect(): Promise<void> {
+    this.#cancelCheck?.();
+    this.#cancelCheck = null;
+    this.#generator = null;
+    this.#pendingBeat = null;
+    this.#channel.changeState('desconectada');
     return Promise.resolve();
   }
 
-  #emitirPendientes(): void {
-    const tiempoSenalMs =
-      (this.#reloj.ahoraMs() - this.#inicioRealMs) * this.#opciones.velocidad;
+  #emitPending(): void {
+    const signalTimeMs =
+      (this.#clock.nowMs() - this.#realStartMs) * this.#options.speed;
     // Se comprueba la conexión en cada vuelta: un observador puede desconectar
     // la fuente mientras recibe una notificación.
     while (
-      this.#cancelarRevision !== null &&
-      this.#proximaNotificacionMs <= tiempoSenalMs
+      this.#cancelCheck !== null &&
+      this.#nextNotificationMs <= signalTimeMs
     ) {
-      this.#canal.notificar(this.#construirNotificacion(this.#proximaNotificacionMs));
-      this.#proximaNotificacionMs += PERIODO_NOTIFICACION_MS;
+      this.#channel.notify(this.#buildNotification(this.#nextNotificationMs));
+      this.#nextNotificationMs += NOTIFICATION_PERIOD_MS;
     }
   }
 
-  #construirNotificacion(tiempoMs: number): NotificacionLatido {
-    const generador = this.#generador;
-    let pendiente = this.#latidoPendiente;
-    if (generador === null || pendiente === null) {
+  #buildNotification(timeMs: number): BeatNotification {
+    const generator = this.#generator;
+    let pending = this.#pendingBeat;
+    if (generator === null || pending === null) {
       throw new Error('La fuente simulada no está conectada.');
     }
 
-    const intervalosRRms: number[] = [];
-    while (pendiente.finMs <= tiempoMs) {
-      intervalosRRms.push(pendiente.rrMs);
-      pendiente = generador.siguiente();
+    const rrIntervalsMs: number[] = [];
+    while (pending.endMs <= timeMs) {
+      rrIntervalsMs.push(pending.rrMs);
+      pending = generator.next();
     }
-    this.#latidoPendiente = pendiente;
+    this.#pendingBeat = pending;
 
-    if (this.#sinContacto(tiempoMs)) {
+    if (this.#noContact(timeMs)) {
       // Como una banda real: sigue notificando, sin RR y con la última FC.
       return {
-        tiempoMs,
-        frecuenciaCardiaca: this.#frecuenciaCardiaca(pendiente),
-        intervalosRRms: [],
-        contactoSensor: false,
+        timeMs,
+        heartRate: this.#heartRate(pending),
+        rrIntervalsMs: [],
+        sensorContact: false,
       };
     }
 
-    this.#rrRecientes = [...this.#rrRecientes, ...intervalosRRms].slice(-LATIDOS_PARA_FC);
+    this.#recentRr = [...this.#recentRr, ...rrIntervalsMs].slice(-BEATS_FOR_HR);
     return {
-      tiempoMs,
-      frecuenciaCardiaca: this.#frecuenciaCardiaca(pendiente),
-      intervalosRRms,
-      contactoSensor: true,
+      timeMs,
+      heartRate: this.#heartRate(pending),
+      rrIntervalsMs,
+      sensorContact: true,
     };
   }
 
-  #frecuenciaCardiaca(pendiente: Latido): number {
+  #heartRate(pending: Beat): number {
     // Antes del primer latido completo se usa el que está en curso.
-    const referencia = this.#rrRecientes.length > 0 ? this.#rrRecientes : [pendiente.rrMs];
-    const rrMedio = referencia.reduce((suma, rr) => suma + rr, 0) / referencia.length;
-    return Math.round(60000 / rrMedio);
+    const reference = this.#recentRr.length > 0 ? this.#recentRr : [pending.rrMs];
+    const meanRr = reference.reduce((sum, rr) => sum + rr, 0) / reference.length;
+    return Math.round(60000 / meanRr);
   }
 
   /** Pérdida de contacto periódica del escenario de artefactos: (k·periodo, k·periodo + duración]. */
-  #sinContacto(tiempoMs: number): boolean {
-    const artefactos = ESCENARIOS[this.#opciones.escenario].artefactos;
-    if (artefactos === null || tiempoMs < artefactos.periodoPerdidaContactoMs) {
+  #noContact(timeMs: number): boolean {
+    const artifacts = SCENARIOS[this.#options.scenario].artifacts;
+    if (artifacts === null || timeMs < artifacts.contactLossPeriodMs) {
       return false;
     }
-    const fase = tiempoMs % artefactos.periodoPerdidaContactoMs;
-    return fase > 0 && fase <= artefactos.duracionPerdidaContactoMs;
+    const phase = timeMs % artifacts.contactLossPeriodMs;
+    return phase > 0 && phase <= artifacts.contactLossDurationMs;
   }
 }

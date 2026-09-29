@@ -1,29 +1,29 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useTituloPagina } from '../../app/usePageTitle';
-import type { FuenteSenal } from '../acquisition/contract';
-import { PanelAdquisicion } from '../acquisition/AcquisitionPanel';
-import { PanelReproduccion } from '../audio/ui/PlaybackPanel';
-import { leerDuracion } from '../plan/plan';
-import { PanelSenal } from '../signal/SignalPanel';
+import { usePageTitle } from '../../app/usePageTitle';
+import type { SignalSource } from '../acquisition/contract';
+import { AcquisitionPanel } from '../acquisition/AcquisitionPanel';
+import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
+import { readDuration } from '../plan/plan';
+import { SignalPanel } from '../signal/SignalPanel';
 
 /** Sesión en curso (docs/pantallas.md, `/sesion`). */
-export function PaginaSesion(): React.JSX.Element {
-  useTituloPagina('Sesión');
-  const [parametros] = useSearchParams();
-  const duracionMin = leerDuracion(parametros.get('duracion'));
+export function SessionPage(): React.JSX.Element {
+  usePageTitle('Sesión');
+  const [params] = useSearchParams();
+  const durationMin = readDuration(params.get('duracion'));
   // La fuente se comparte: la adquisición la crea y el análisis la consume.
-  const [fuente, setFuente] = useState<FuenteSenal | null>(null);
+  const [source, setSource] = useState<SignalSource | null>(null);
 
   return (
     <>
       <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-2)' }}>Sesión</h1>
       <p style={{ color: 'var(--color-texto-secundario)', marginBottom: 'var(--espacio-6)' }}>
-        Plan: {duracionMin} minutos.
+        Plan: {durationMin} minutos.
       </p>
-      <PanelReproduccion duracionMin={duracionMin} />
-      <PanelAdquisicion fuente={fuente} alCambiarFuente={setFuente} />
-      <PanelSenal fuente={fuente} />
+      <PlaybackPanel durationMin={durationMin} />
+      <AcquisitionPanel source={source} onSourceChange={setSource} />
+      <SignalPanel source={source} />
     </>
   );
 }

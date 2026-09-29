@@ -1,34 +1,34 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
-import { crearEntornoAudioFalso, type ParametroFalso } from '../../../test/fakeAudio';
-import { MODO } from '../core/theory';
-import { dbAGanancia } from '../engine/ramps';
-import { PanelReproduccion } from './PlaybackPanel';
+import { createFakeAudioEnvironment, type FakeParam } from '../../../test/fakeAudio';
+import { MODE } from '../core/theory';
+import { dbToGain } from '../engine/ramps';
+import { PlaybackPanel } from './PlaybackPanel';
 
-function preparar(duracionMin = 10) {
-  const entorno = crearEntornoAudioFalso();
-  const vista = render(
-    <PanelReproduccion duracionMin={duracionMin} fabrica={entorno.fabrica} generarSemilla={() => 42} />,
+function setup(durationMin = 10) {
+  const env = createFakeAudioEnvironment();
+  const view = render(
+    <PlaybackPanel durationMin={durationMin} factory={env.factory} generateSeed={() => 42} />,
   );
-  const ganancias = () =>
-    entorno.contexto.nodos.filter((n) => n.tipo === 'ganancia') as unknown as { gain: ParametroFalso }[];
+  const gains = () =>
+    env.context.nodes.filter((n) => n.kind === 'ganancia') as unknown as { gain: FakeParam }[];
   // Orden de creación en MotorAudio: reverberación, volumen, envolvente.
-  const envolvente = () => ganancias()[2]?.gain;
-  const volumen = () => ganancias()[1]?.gain;
-  return { entorno, vista, envolvente, volumen };
+  const envelope = () => gains()[2]?.gain;
+  const volume = () => gains()[1]?.gain;
+  return { env, view, envelope, volume };
 }
 
-const estado = () => screen.getByRole('status').textContent;
-const botonDetener = () => screen.getByRole('button', { name: 'Detener' });
+const state = () => screen.getByRole('status').textContent;
+const stopButton = () => screen.getByRole('button', { name: 'Detener' });
 
-async function iniciar() {
+async function start() {
   fireEvent.click(screen.getByRole('button', { name: /iniciar música/i }));
   await waitFor(() => {
-    expect(estado()).toMatch(/sonando/i);
+    expect(state()).toMatch(/sonando/i);
   });
 }
 
-function avanzarSegundoDeRevision() {
+function advanceOneCheck() {
   act(() => {
     vi.advanceTimersByTime(1000);
   });
@@ -44,160 +44,160 @@ describe('PanelReproduccion', () => {
   });
 
   it('muestra el aviso de volumen moderado y el botón Detener siempre visible', () => {
-    preparar();
+    setup();
     expect(screen.getByText('Usa un volumen moderado en tu dispositivo.')).toBeInTheDocument();
-    expect(botonDetener()).toBeVisible();
-    expect(botonDetener()).toBeDisabled();
-    expect(estado()).toMatch(/lista para empezar/i);
+    expect(stopButton()).toBeVisible();
+    expect(stopButton()).toBeDisabled();
+    expect(state()).toMatch(/lista para empezar/i);
   });
 
   it('inicia en el nivel de calibración con −12 dB y agenda el fundido final en el reloj de audio', async () => {
-    const { entorno, envolvente, volumen } = preparar(10);
-    await iniciar();
+    const { env, envelope, volume } = setup(10);
+    await start();
 
-    const sintetizador = entorno.worklets[0];
-    expect(sintetizador?.opciones.processorOptions).toEqual({ semilla: 42, modoInicial: MODO.lidio, capasIniciales: 2 });
-    expect(volumen()?.value).toBeCloseTo(dbAGanancia(-12), 10);
-    expect(botonDetener()).toBeEnabled();
+    const synthesizer = env.worklets[0];
+    expect(synthesizer?.options.processorOptions).toEqual({ seed: 42, initialMode: MODE.lydian, initialLayers: 2 });
+    expect(volume()?.value).toBeCloseTo(dbToGain(-12), 10);
+    expect(stopButton()).toBeEnabled();
     // Plan de 10 min: aviso a los 600 s; sin respuesta, fundido de 720 a 740 s.
-    expect(envolvente()?.eventos.slice(-2)).toEqual([
-      { tipo: 'set', valor: 1, tiempo: 720 },
-      { tipo: 'lineal', valor: 0, tiempo: 740 },
+    expect(envelope()?.events.slice(-2)).toEqual([
+      { kind: 'set', value: 1, time: 720 },
+      { kind: 'lineal', value: 0, time: 740 },
     ]);
   });
 
   it('ajusta el volumen dentro del rango y lo muestra', async () => {
-    const { volumen } = preparar();
-    await iniciar();
+    const { volume } = setup();
+    await start();
     fireEvent.change(screen.getByLabelText('Volumen'), { target: { value: '-20' } });
     expect(screen.getByText('-20 dB')).toBeInTheDocument();
-    expect(volumen()?.ultimo('objetivo')?.valor).toBeCloseTo(dbAGanancia(-20), 10);
+    expect(volume()?.last('objetivo')?.value).toBeCloseTo(dbToGain(-20), 10);
   });
 
   it('la tecla Esc detiene con una rampa de 50 ms (HU-06)', async () => {
-    const { entorno, envolvente } = preparar();
-    await iniciar();
-    entorno.contexto.currentTime = 30;
+    const { env, envelope } = setup();
+    await start();
+    env.context.currentTime = 30;
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    expect(estado()).toMatch(/detenida/i);
-    expect(envolvente()?.ultimo('lineal')).toEqual({ tipo: 'lineal', valor: 0, tiempo: 30.05 });
+    expect(state()).toMatch(/detenida/i);
+    expect(envelope()?.last('lineal')).toEqual({ kind: 'lineal', value: 0, time: 30.05 });
     // La suspensión no cambia el DOM: waitFor no volvería a comprobar con setInterval simulado.
     await act(async () => {
-      await new Promise((resolver) => setTimeout(resolver, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(entorno.contexto.state).toBe('suspended');
+    expect(env.context.state).toBe('suspended');
   });
 
   it('el botón fijo Detener detiene la música', async () => {
-    preparar();
-    await iniciar();
-    fireEvent.click(botonDetener());
-    expect(estado()).toMatch(/detenida/i);
+    setup();
+    await start();
+    fireEvent.click(stopButton());
+    expect(state()).toMatch(/detenida/i);
   });
 
   it('al terminar el plan avisa, y Esc no detiene mientras el aviso está abierto', async () => {
-    const { entorno } = preparar(10);
-    await iniciar();
-    entorno.contexto.currentTime = 600;
-    avanzarSegundoDeRevision();
+    const { env } = setup(10);
+    await start();
+    env.context.currentTime = 600;
+    advanceOneCheck();
 
-    const aviso = screen.getByRole('alertdialog', { name: /la sesión planificada terminó/i });
-    expect(aviso).toHaveTextContent(/se apagará en 2 minutos/i);
+    const warning = screen.getByRole('alertdialog', { name: /la sesión planificada terminó/i });
+    expect(warning).toHaveTextContent(/se apagará en 2 minutos/i);
     expect(screen.getByRole('button', { name: 'Continuar' })).toHaveFocus();
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(estado()).toMatch(/sonando/i);
+    expect(state()).toMatch(/sonando/i);
   });
 
   it('continuar cancela el fundido y agenda el siguiente aviso a los 60 minutos', async () => {
-    const { entorno, envolvente } = preparar(10);
-    await iniciar();
-    entorno.contexto.currentTime = 600;
-    avanzarSegundoDeRevision();
+    const { env, envelope } = setup(10);
+    await start();
+    env.context.currentTime = 600;
+    advanceOneCheck();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    expect(envolvente()?.ultimo('cancelar')?.tiempo).toBe(600);
-    expect(envolvente()?.eventos.slice(-2)).toEqual([
-      { tipo: 'set', valor: 1, tiempo: 3720 },
-      { tipo: 'lineal', valor: 0, tiempo: 3740 },
+    expect(envelope()?.last('cancelar')?.time).toBe(600);
+    expect(envelope()?.events.slice(-2)).toEqual([
+      { kind: 'set', value: 1, time: 3720 },
+      { kind: 'lineal', value: 0, time: 3740 },
     ]);
 
-    entorno.contexto.currentTime = 3600;
-    avanzarSegundoDeRevision();
+    env.context.currentTime = 3600;
+    advanceOneCheck();
     expect(screen.getByRole('alertdialog', { name: /60 minutos de escucha continua/i })).toBeInTheDocument();
   });
 
   it('sin respuesta, la sesión termina cuando acaba el fundido', async () => {
-    const { entorno } = preparar(10);
-    await iniciar();
-    entorno.contexto.currentTime = 600;
-    avanzarSegundoDeRevision();
-    entorno.contexto.currentTime = 740;
-    avanzarSegundoDeRevision();
+    const { env } = setup(10);
+    await start();
+    env.context.currentTime = 600;
+    advanceOneCheck();
+    env.context.currentTime = 740;
+    advanceOneCheck();
 
-    expect(estado()).toMatch(/la sesión terminó/i);
+    expect(state()).toMatch(/la sesión terminó/i);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('terminar desde el aviso detiene la sesión', async () => {
-    const { entorno } = preparar(10);
-    await iniciar();
-    entorno.contexto.currentTime = 600;
-    avanzarSegundoDeRevision();
+    const { env } = setup(10);
+    await start();
+    env.context.currentTime = 600;
+    advanceOneCheck();
     fireEvent.click(screen.getByRole('button', { name: 'Terminar' }));
-    expect(estado()).toMatch(/la sesión terminó/i);
+    expect(state()).toMatch(/la sesión terminó/i);
   });
 
   it('avisa si el audio no se puede iniciar', async () => {
-    const entorno = crearEntornoAudioFalso();
-    const fabrica = {
-      ...entorno.fabrica,
-      crearContexto: () => {
+    const env = createFakeAudioEnvironment();
+    const factory = {
+      ...env.factory,
+      createAudioContext: () => {
         throw new Error('AudioContext no disponible');
       },
     };
-    render(<PanelReproduccion duracionMin={20} fabrica={fabrica} />);
+    render(<PlaybackPanel durationMin={20} factory={factory} />);
     fireEvent.click(screen.getByRole('button', { name: /iniciar música/i }));
     await waitFor(() => {
-      expect(estado()).toMatch(/no se pudo iniciar el audio/i);
+      expect(state()).toMatch(/no se pudo iniciar el audio/i);
     });
     expect(screen.getByText(/audiocontext no disponible/i)).toBeInTheDocument();
   });
 });
 
 describe('PanelReproduccion con Media Session', () => {
-  const manejadores = new Map<string, (() => void) | null>();
-  const sesion = {
+  const handlers = new Map<string, (() => void) | null>();
+  const session = {
     playbackState: 'none' as MediaSessionPlaybackState,
     metadata: null as MediaMetadata | null,
-    setActionHandler: (accion: string, manejador: (() => void) | null) => {
-      manejadores.set(accion, manejador);
+    setActionHandler: (action: string, handler: (() => void) | null) => {
+      handlers.set(action, handler);
     },
   };
 
   beforeEach(() => {
-    Object.defineProperty(navigator, 'mediaSession', { value: sesion, configurable: true });
+    Object.defineProperty(navigator, 'mediaSession', { value: session, configurable: true });
   });
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'mediaSession');
-    manejadores.clear();
+    handlers.clear();
   });
 
   it('registra pausa y detener, refleja el estado y detiene desde el sistema', async () => {
-    preparar();
-    expect(manejadores.has('pause')).toBe(true);
-    expect(manejadores.has('stop')).toBe(true);
+    setup();
+    expect(handlers.has('pause')).toBe(true);
+    expect(handlers.has('stop')).toBe(true);
 
-    await iniciar();
-    expect(sesion.playbackState).toBe('playing');
+    await start();
+    expect(session.playbackState).toBe('playing');
 
     act(() => {
-      manejadores.get('stop')?.();
+      handlers.get('stop')?.();
     });
-    expect(estado()).toMatch(/detenida/i);
-    expect(sesion.playbackState).toBe('paused');
+    expect(state()).toMatch(/detenida/i);
+    expect(session.playbackState).toBe('paused');
   });
 });

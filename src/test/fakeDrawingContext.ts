@@ -1,70 +1,70 @@
-import type { ContextoDibujo } from '../features/signal/drawing/drawTachogram';
+import type { DrawingContext } from '../features/signal/drawing/drawTachogram';
 
-export interface OperacionDibujo {
-  readonly operacion: string;
-  readonly argumentos: readonly unknown[];
+export interface DrawingOperation {
+  readonly operation: string;
+  readonly args: readonly unknown[];
   /** Estilo vigente cuando se ejecutó la operación. */
   readonly fillStyle: unknown;
   readonly strokeStyle: unknown;
 }
 
 /** Contexto 2D que registra cada operación con el estilo vigente; jsdom no tiene canvas. */
-export class ContextoDibujoFalso implements ContextoDibujo {
+export class FakeDrawingContext implements DrawingContext {
   fillStyle: string | CanvasGradient | CanvasPattern = '';
   strokeStyle: string | CanvasGradient | CanvasPattern = '';
   lineWidth = 1;
   font = '';
   textAlign: CanvasTextAlign = 'start';
   textBaseline: CanvasTextBaseline = 'alphabetic';
-  readonly operaciones: OperacionDibujo[] = [];
+  readonly operations: DrawingOperation[] = [];
 
-  #registrar(operacion: string, argumentos: readonly unknown[]): void {
-    this.operaciones.push({
-      operacion,
-      argumentos,
+  #register(operation: string, args: readonly unknown[]): void {
+    this.operations.push({
+      operation,
+      args,
       fillStyle: this.fillStyle,
       strokeStyle: this.strokeStyle,
     });
   }
 
-  contar(operacion: string, filtro: (o: OperacionDibujo) => boolean = () => true): number {
-    return this.operaciones.filter((o) => o.operacion === operacion && filtro(o)).length;
+  count(operation: string, filter: (o: DrawingOperation) => boolean = () => true): number {
+    return this.operations.filter((o) => o.operation === operation && filter(o)).length;
   }
 
-  setTransform(...argumentos: number[]): void {
-    this.#registrar('setTransform', argumentos);
+  setTransform(...args: number[]): void {
+    this.#register('setTransform', args);
   }
-  clearRect(...argumentos: number[]): void {
-    this.#registrar('clearRect', argumentos);
+  clearRect(...args: number[]): void {
+    this.#register('clearRect', args);
   }
-  fillRect(...argumentos: number[]): void {
-    this.#registrar('fillRect', argumentos);
+  fillRect(...args: number[]): void {
+    this.#register('fillRect', args);
   }
-  rect(...argumentos: number[]): void {
-    this.#registrar('rect', argumentos);
+  rect(...args: number[]): void {
+    this.#register('rect', args);
   }
   beginPath(): void {
-    this.#registrar('beginPath', []);
+    this.#register('beginPath', []);
   }
-  moveTo(...argumentos: number[]): void {
-    this.#registrar('moveTo', argumentos);
+  moveTo(...args: number[]): void {
+    this.#register('moveTo', args);
   }
-  lineTo(...argumentos: number[]): void {
-    this.#registrar('lineTo', argumentos);
+  lineTo(...args: number[]): void {
+    this.#register('lineTo', args);
   }
   stroke(): void {
-    this.#registrar('stroke', []);
+    this.#register('stroke', []);
   }
   clip(): void {
-    this.#registrar('clip', []);
+    this.#register('clip', []);
   }
   save(): void {
-    this.#registrar('save', []);
+    this.#register('save', []);
   }
   restore(): void {
-    this.#registrar('restore', []);
+    this.#register('restore', []);
   }
-  fillText(texto: string, x: number, y: number): void {
-    this.#registrar('fillText', [texto, x, y]);
+  fillText(text: string, x: number, y: number): void {
+    this.#register('fillText', [text, x, y]);
   }
 }

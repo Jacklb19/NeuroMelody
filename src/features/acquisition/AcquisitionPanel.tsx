@@ -1,27 +1,27 @@
 import { useEffect, useId, useState } from 'react';
-import type { EstadoConexion, FuenteSenal } from './contract';
+import type { ConnectionState, SignalSource } from './contract';
 import {
-  ESCENARIOS,
-  IDS_ESCENARIOS,
-  type IdEscenario,
+  SCENARIOS,
+  SCENARIO_IDS,
+  type ScenarioId,
 } from './simulator/scenarios';
 import {
-  FuenteSimulada,
-  VELOCIDADES,
-  type OpcionesFuenteSimulada,
-  type Velocidad,
+  SimulatedSource,
+  SPEEDS,
+  type SimulatedSourceOptions,
+  type Speed,
 } from './simulator/SimulatedSource';
-import { useFuenteSenal } from './useSignalSource';
+import { useSignalSource } from './useSignalSource';
 
 /** Semilla fija: la misma sesión simulada se repite al reconectar (RF-02). */
-export const SEMILLA_SIMULADOR = 1;
+export const SIMULATOR_SEED = 1;
 
-export type CrearFuenteSimulada = (opciones: OpcionesFuenteSimulada) => FuenteSenal;
+export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalSource;
 
-const crearFuentePorOmision: CrearFuenteSimulada = (opciones) =>
-  new FuenteSimulada(opciones);
+const createDefaultSource: CreateSimulatedSource = (options) =>
+  new SimulatedSource(options);
 
-const TEXTO_ESTADO: Readonly<Record<EstadoConexion, string>> = {
+const STATE_TEXT: Readonly<Record<ConnectionState, string>> = {
   desconectada: 'Desconectada',
   conectando: 'Conectando…',
   conectada: 'Conectada',
@@ -29,27 +29,27 @@ const TEXTO_ESTADO: Readonly<Record<EstadoConexion, string>> = {
   error: 'Error de conexión',
 };
 
-function formatearTiempo(ms: number): string {
-  const totalSegundos = Math.floor(ms / 1000);
-  const minutos = String(Math.floor(totalSegundos / 60)).padStart(2, '0');
-  const segundos = String(totalSegundos % 60).padStart(2, '0');
-  return `${minutos}:${segundos}`;
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
 }
 
-function aEscenario(valor: string): IdEscenario {
-  return IDS_ESCENARIOS.find((id) => id === valor) ?? 'reposo';
+function toScenario(value: string): ScenarioId {
+  return SCENARIO_IDS.find((id) => id === value) ?? 'reposo';
 }
 
-function aVelocidad(valor: string): Velocidad {
-  return VELOCIDADES.find((v) => String(v) === valor) ?? 1;
+function toSpeed(value: string): Speed {
+  return SPEEDS.find((v) => String(v) === value) ?? 1;
 }
 
-interface PropsPanelAdquisicion {
+interface AcquisitionPanelProps {
   /** Fuente actual; la guarda el componente padre para compartirla con el análisis. */
-  readonly fuente: FuenteSenal | null;
-  readonly alCambiarFuente: (fuente: FuenteSenal) => void;
+  readonly source: SignalSource | null;
+  readonly onSourceChange: (source: SignalSource) => void;
   /** Permite inyectar un reloj falso en las pruebas. */
-  readonly crearFuente?: CrearFuenteSimulada;
+  readonly createSource?: CreateSimulatedSource;
 }
 
 /**
@@ -57,39 +57,39 @@ interface PropsPanelAdquisicion {
  * simulador, conecta o desconecta, y muestra siempre el estado de la
  * conexión (HU-01) junto con la última lectura recibida.
  */
-export function PanelAdquisicion({
-  fuente,
-  alCambiarFuente,
-  crearFuente = crearFuentePorOmision,
-}: PropsPanelAdquisicion): React.JSX.Element {
-  const [escenario, setEscenario] = useState<IdEscenario>('reposo');
-  const [velocidad, setVelocidad] = useState<Velocidad>(1);
-  const lectura = useFuenteSenal(fuente);
-  const tituloId = useId();
+export function AcquisitionPanel({
+  source,
+  onSourceChange,
+  createSource = createDefaultSource,
+}: AcquisitionPanelProps): React.JSX.Element {
+  const [scenario, setScenario] = useState<ScenarioId>('reposo');
+  const [speed, setSpeed] = useState<Speed>(1);
+  const reading = useSignalSource(source);
+  const titleId = useId();
 
   // Detiene la fuente al reemplazarla o al desmontar el panel.
   useEffect(
     () => () => {
-      void fuente?.desconectar();
+      void source?.disconnect();
     },
-    [fuente],
+    [source],
   );
 
-  const activa = lectura.estado !== 'desconectada' && lectura.estado !== 'error';
+  const active = reading.state !== 'desconectada' && reading.state !== 'error';
 
-  const conectar = (): void => {
-    const nueva = crearFuente({ escenario, velocidad, semilla: SEMILLA_SIMULADOR });
-    alCambiarFuente(nueva);
-    void nueva.conectar();
+  const connect = (): void => {
+    const newSource = createSource({ scenario, speed, seed: SIMULATOR_SEED });
+    onSourceChange(newSource);
+    void newSource.connect();
   };
 
-  const desconectar = (): void => {
-    void fuente?.desconectar();
+  const disconnect = (): void => {
+    void source?.disconnect();
   };
 
   return (
     <section
-      aria-labelledby={tituloId}
+      aria-labelledby={titleId}
       style={{
         border: 'var(--borde-grosor) solid var(--color-borde)',
         borderRadius: 'var(--radio-borde)',
@@ -97,7 +97,7 @@ export function PanelAdquisicion({
         marginBottom: 'var(--espacio-8)',
       }}
     >
-      <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
         Fuente de señal
       </h2>
 
@@ -105,15 +105,15 @@ export function PanelAdquisicion({
         <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
           Escenario del simulador
           <select
-            value={escenario}
-            disabled={activa}
-            onChange={(evento) => {
-              setEscenario(aEscenario(evento.target.value));
+            value={scenario}
+            disabled={active}
+            onChange={(event) => {
+              setScenario(toScenario(event.target.value));
             }}
           >
-            {IDS_ESCENARIOS.map((id) => (
+            {SCENARIO_IDS.map((id) => (
               <option key={id} value={id}>
-                {ESCENARIOS[id].nombre}
+                {SCENARIOS[id].name}
               </option>
             ))}
           </select>
@@ -122,13 +122,13 @@ export function PanelAdquisicion({
         <label style={{ display: 'grid', gap: 'var(--espacio-1)' }}>
           Velocidad
           <select
-            value={velocidad}
-            disabled={activa}
-            onChange={(evento) => {
-              setVelocidad(aVelocidad(evento.target.value));
+            value={speed}
+            disabled={active}
+            onChange={(event) => {
+              setSpeed(toSpeed(event.target.value));
             }}
           >
-            {VELOCIDADES.map((v) => (
+            {SPEEDS.map((v) => (
               <option key={v} value={v}>
                 {v}×
               </option>
@@ -139,7 +139,7 @@ export function PanelAdquisicion({
 
       <button
         type="button"
-        onClick={activa ? desconectar : conectar}
+        onClick={active ? disconnect : connect}
         style={{
           padding: 'var(--espacio-2) var(--espacio-4)',
           backgroundColor: 'var(--color-boton-fondo)',
@@ -151,29 +151,29 @@ export function PanelAdquisicion({
           marginBottom: 'var(--espacio-4)',
         }}
       >
-        {activa ? 'Desconectar' : 'Conectar simulador'}
+        {active ? 'Desconectar' : 'Conectar simulador'}
       </button>
 
       <p role="status" style={{ marginBottom: 'var(--espacio-4)' }}>
-        Estado de la conexión: <strong>{TEXTO_ESTADO[lectura.estado]}</strong>
+        Estado de la conexión: <strong>{STATE_TEXT[reading.state]}</strong>
       </p>
 
-      {lectura.error !== null && (
+      {reading.error !== null && (
         <p role="alert" style={{ color: 'var(--color-error-texto)', marginBottom: 'var(--espacio-4)' }}>
-          La medición no es fiable y se descartó ({lectura.error}). Revisa la colocación del dispositivo.
+          La medición no es fiable y se descartó ({reading.error}). Revisa la colocación del dispositivo.
         </p>
       )}
 
       <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--espacio-1) var(--espacio-4)' }}>
         <dt>Frecuencia cardíaca</dt>
         <dd data-testid="frecuencia-cardiaca">
-          {lectura.ultima === null ? '—' : `${String(lectura.ultima.frecuenciaCardiaca)} lpm`}
+          {reading.last === null ? '—' : `${String(reading.last.heartRate)} lpm`}
         </dd>
         <dt>Latidos recibidos</dt>
-        <dd data-testid="latidos-recibidos">{lectura.latidosRecibidos}</dd>
+        <dd data-testid="latidos-recibidos">{reading.receivedBeats}</dd>
         <dt>Tiempo de señal</dt>
         <dd data-testid="tiempo-senal">
-          {lectura.ultima === null ? '—' : formatearTiempo(lectura.ultima.tiempoMs)}
+          {reading.last === null ? '—' : formatTime(reading.last.timeMs)}
         </dd>
       </dl>
     </section>

@@ -1,173 +1,173 @@
 import { describe, it, expect } from 'vitest';
-import { crearEntornoTiempoFalso } from '../../../test/fakeTimeEnvironment';
-import type { NotificacionLatido } from '../../acquisition/contract';
-import type { IdEscenario } from '../../acquisition/simulator/scenarios';
-import { FuenteSimulada, type Velocidad } from '../../acquisition/simulator/SimulatedSource';
-import { ProcesadorSenal, type ResultadoIndices } from './SignalProcessor';
+import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
+import type { BeatNotification } from '../../acquisition/contract';
+import type { ScenarioId } from '../../acquisition/simulator/scenarios';
+import { SimulatedSource, type Speed } from '../../acquisition/simulator/SimulatedSource';
+import { SignalProcessor, type IndicesResult } from './SignalProcessor';
 
-function notificacion(
-  tiempoMs: number,
-  intervalosRRms: number[],
-  contactoSensor: boolean | null = true,
-): NotificacionLatido {
-  return { tiempoMs, frecuenciaCardiaca: 60, intervalosRRms, contactoSensor };
+function notification(
+  timeMs: number,
+  rrIntervalsMs: number[],
+  sensorContact: boolean | null = true,
+): BeatNotification {
+  return { timeMs, heartRate: 60, rrIntervalsMs, sensorContact };
 }
 
-function crearProcesador() {
-  const resultados: ResultadoIndices[] = [];
-  const procesador = new ProcesadorSenal((r) => resultados.push(r));
-  return { procesador, resultados };
+function createProcessor() {
+  const results: IndicesResult[] = [];
+  const processor = new SignalProcessor((r) => results.push(r));
+  return { processor, results };
 }
 
 /** Alimenta el procesador con el simulador (reloj falso) durante `segundosSenal`. */
-async function simular(
-  escenario: IdEscenario,
-  segundosSenal: number,
-  velocidad: Velocidad = 10,
-  semilla = 1,
+async function simulate(
+  scenario: ScenarioId,
+  signalSeconds: number,
+  speed: Speed = 10,
+  seed = 1,
 ) {
-  const entorno = crearEntornoTiempoFalso();
-  const fuente = new FuenteSimulada({ escenario, semilla, velocidad, ...entorno });
-  const { procesador, resultados } = crearProcesador();
-  const notificaciones: NotificacionLatido[] = [];
-  fuente.suscribir({
-    alNotificar: (n) => {
-      notificaciones.push(n);
-      procesador.procesar(n);
+  const env = createFakeTimeEnvironment();
+  const source = new SimulatedSource({ scenario, seed, speed, ...env });
+  const { processor, results } = createProcessor();
+  const notifications: BeatNotification[] = [];
+  source.subscribe({
+    onNotification: (n) => {
+      notifications.push(n);
+      processor.process(n);
     },
   });
-  await fuente.conectar();
-  entorno.avanzar((segundosSenal * 1000) / velocidad);
-  return { procesador, resultados, notificaciones };
+  await source.connect();
+  env.advance((signalSeconds * 1000) / speed);
+  return { processor, results, notifications };
 }
 
-function rmssdSinFiltrar(notificaciones: readonly NotificacionLatido[], desdeMs: number): number {
-  const rr = notificaciones.filter((n) => n.tiempoMs > desdeMs).flatMap((n) => n.intervalosRRms);
-  let suma = 0;
+function unfilteredRmssd(notifications: readonly BeatNotification[], fromMs: number): number {
+  const rr = notifications.filter((n) => n.timeMs > fromMs).flatMap((n) => n.rrIntervalsMs);
+  let sum = 0;
   for (let i = 1; i < rr.length; i++) {
-    suma += ((rr[i] ?? 0) - (rr[i - 1] ?? 0)) ** 2;
+    sum += ((rr[i] ?? 0) - (rr[i - 1] ?? 0)) ** 2;
   }
-  return Math.sqrt(suma / (rr.length - 1));
+  return Math.sqrt(sum / (rr.length - 1));
 }
 
 describe('ProcesadorSenal', () => {
   it('ubica los latidos de una notificación hacia atrás desde su instante', () => {
-    const { procesador } = crearProcesador();
-    procesador.procesar(notificacion(2000, [500, 400]));
-    expect(procesador.instantanea.latidos.map((l) => l.finMs)).toEqual([1600, 2000]);
+    const { processor } = createProcessor();
+    processor.process(notification(2000, [500, 400]));
+    expect(processor.snapshot.beats.map((l) => l.endMs)).toEqual([1600, 2000]);
   });
 
   it('publica índices cada 5 s de tiempo de señal', async () => {
-    const { resultados } = await simular('reposo', 30);
-    expect(resultados.map((r) => r.tiempoMs)).toEqual([5000, 10000, 15000, 20000, 25000, 30000]);
+    const { results } = await simulate('reposo', 30);
+    expect(results.map((r) => r.timeMs)).toEqual([5000, 10000, 15000, 20000, 25000, 30000]);
   });
 
   it('publica los mismos resultados a 1× y a 10×', async () => {
-    const lento = await simular('relajacion_progresiva', 120, 1);
-    const rapido = await simular('relajacion_progresiva', 120, 10);
-    expect(rapido.resultados).toEqual(lento.resultados);
+    const slow = await simulate('relajacion_progresiva', 120, 1);
+    const fast = await simulate('relajacion_progresiva', 120, 10);
+    expect(fast.results).toEqual(slow.results);
   });
 
   it('muestra "reuniendo" sin índices hasta tener 60 s de NN válidos', async () => {
-    const { resultados } = await simular('reposo', 70);
-    const a55 = resultados.find((r) => r.tiempoMs === 55_000);
-    const a70 = resultados.find((r) => r.tiempoMs === 70_000);
+    const { results } = await simulate('reposo', 70);
+    const at55 = results.find((r) => r.timeMs === 55_000);
+    const at70 = results.find((r) => r.timeMs === 70_000);
 
-    expect(a55).toMatchObject({ calidad: 'reuniendo', fcMedia: null, rmssd: null, sdnn: null });
-    expect(a70?.calidad).toBe('buena');
-    expect(a70?.fcMedia).toBeGreaterThan(55);
-    expect(a70?.rmssd).toBeGreaterThan(0);
-    expect(a70?.coberturaMs).toBe(70_000);
+    expect(at55).toMatchObject({ quality: 'reuniendo', meanHr: null, rmssd: null, sdnn: null });
+    expect(at70?.quality).toBe('buena');
+    expect(at70?.meanHr).toBeGreaterThan(55);
+    expect(at70?.rmssd).toBeGreaterThan(0);
+    expect(at70?.coverageMs).toBe(70_000);
   });
 
   it('en reposo limpio no descarta latidos ni marca tramos de baja calidad', async () => {
-    const { procesador, resultados } = await simular('reposo', 300);
-    const ultimo = resultados.at(-1);
-    expect(ultimo?.latidosDescartados).toBe(0);
-    expect(procesador.instantanea.tramos).toEqual([]);
-    expect(ultimo?.coberturaMs).toBe(300_000);
+    const { processor, results } = await simulate('reposo', 300);
+    const last = results.at(-1);
+    expect(last?.discardedBeats).toBe(0);
+    expect(processor.snapshot.segments).toEqual([]);
+    expect(last?.coverageMs).toBe(300_000);
   });
 
   describe('verificación de RF-04 con el escenario artefactos', () => {
     it('el RMSSD filtrado queda a ±10 % del de reposo con la misma semilla y el crudo es claramente mayor', async () => {
-      const referencia = await simular('reposo', 300);
-      const conArtefactos = await simular('artefactos', 300);
-      const rmssdReferencia = referencia.resultados.at(-1)?.rmssd ?? Number.NaN;
-      const rmssdFiltrado = conArtefactos.resultados.at(-1)?.rmssd ?? Number.NaN;
-      const rmssdCrudo = rmssdSinFiltrar(conArtefactos.notificaciones, 0);
+      const reference = await simulate('reposo', 300);
+      const withArtifacts = await simulate('artefactos', 300);
+      const referenceRmssd = reference.results.at(-1)?.rmssd ?? Number.NaN;
+      const filteredRmssd = withArtifacts.results.at(-1)?.rmssd ?? Number.NaN;
+      const rawRmssd = unfilteredRmssd(withArtifacts.notifications, 0);
 
-      expect(Math.abs(rmssdFiltrado - rmssdReferencia) / rmssdReferencia).toBeLessThan(0.1);
-      expect(rmssdCrudo).toBeGreaterThan(1.5 * rmssdReferencia);
-      expect(conArtefactos.resultados.at(-1)?.latidosDescartados).toBeGreaterThan(0);
+      expect(Math.abs(filteredRmssd - referenceRmssd) / referenceRmssd).toBeLessThan(0.1);
+      expect(rawRmssd).toBeGreaterThan(1.5 * referenceRmssd);
+      expect(withArtifacts.results.at(-1)?.discardedBeats).toBeGreaterThan(0);
     });
 
     it('marca como baja calidad cada pérdida de contacto', async () => {
-      const { procesador, resultados } = await simular('artefactos', 200);
-      const tramos = procesador.instantanea.tramos;
+      const { processor, results } = await simulate('artefactos', 200);
+      const segments = processor.snapshot.segments;
 
-      expect(tramos.some((t) => t.inicioMs <= 91_000 && t.finMs >= 95_000)).toBe(true);
-      expect(tramos.some((t) => t.inicioMs <= 181_000 && t.finMs >= 185_000)).toBe(true);
-      expect(resultados.find((r) => r.tiempoMs === 95_000)?.calidad).toBe('baja');
-      expect(resultados.find((r) => r.tiempoMs === 110_000)?.calidad).toBe('buena');
+      expect(segments.some((t) => t.startMs <= 91_000 && t.endMs >= 95_000)).toBe(true);
+      expect(segments.some((t) => t.startMs <= 181_000 && t.endMs >= 185_000)).toBe(true);
+      expect(results.find((r) => r.timeMs === 95_000)?.quality).toBe('baja');
+      expect(results.find((r) => r.timeMs === 110_000)?.quality).toBe('buena');
     });
   });
 
   it('no considera consecutivos los latidos a ambos lados de una pérdida de contacto', () => {
-    const { procesador } = crearProcesador();
-    procesador.procesar(notificacion(1000, [1000]));
-    procesador.procesar(notificacion(2000, [1000]));
-    procesador.procesar(notificacion(3000, [], false));
-    procesador.procesar(notificacion(4000, [1000]));
-    procesador.procesar(notificacion(5000, [1000]));
+    const { processor } = createProcessor();
+    processor.process(notification(1000, [1000]));
+    processor.process(notification(2000, [1000]));
+    processor.process(notification(3000, [], false));
+    processor.process(notification(4000, [1000]));
+    processor.process(notification(5000, [1000]));
 
-    const latidos = procesador.instantanea.latidos;
-    expect(latidos.map((l) => l.contiguoAlAnterior)).toEqual([true, true, false, true]);
-    expect(procesador.instantanea.tramos).toEqual([{ inicioMs: 2000, finMs: 3000 }]);
+    const beats = processor.snapshot.beats;
+    expect(beats.map((l) => l.contiguousWithPrevious)).toEqual([true, true, false, true]);
+    expect(processor.snapshot.segments).toEqual([{ startMs: 2000, endMs: 3000 }]);
   });
 
   it('descarta los RR que llegan sin contacto del sensor', () => {
-    const { procesador } = crearProcesador();
-    procesador.procesar(notificacion(1000, [1000], false));
-    expect(procesador.instantanea.latidos[0]).toMatchObject({
-      aceptado: false,
-      motivoDescarte: 'sin_contacto',
+    const { processor } = createProcessor();
+    processor.process(notification(1000, [1000], false));
+    expect(processor.snapshot.beats[0]).toMatchObject({
+      accepted: false,
+      discardReason: 'sin_contacto',
     });
   });
 
   it('marca un hueco de más de 3 s sin RR y rompe la continuidad', () => {
-    const { procesador } = crearProcesador();
-    procesador.procesar(notificacion(1000, [1000]));
+    const { processor } = createProcessor();
+    processor.process(notification(1000, [1000]));
     for (let t = 2000; t <= 5000; t += 1000) {
-      procesador.procesar(notificacion(t, []));
+      processor.process(notification(t, []));
     }
-    procesador.procesar(notificacion(6000, [1000]));
+    processor.process(notification(6000, [1000]));
 
-    expect(procesador.instantanea.tramos).toEqual([{ inicioMs: 1000, finMs: 6000 }]);
-    expect(procesador.instantanea.latidos.at(-1)?.contiguoAlAnterior).toBe(false);
+    expect(processor.snapshot.segments).toEqual([{ startMs: 1000, endMs: 6000 }]);
+    expect(processor.snapshot.beats.at(-1)?.contiguousWithPrevious).toBe(false);
   });
 
   it('marca baja calidad si se acepta menos del 80 % de los latidos recientes', () => {
-    const { procesador, resultados } = crearProcesador();
+    const { processor, results } = createProcessor();
     // Referencia de 5 latidos en 1000 ms y luego 3 descartes de 5: 7 de 10 aceptados (70 %).
-    const serie = [1000, 1000, 1000, 1000, 1000, 1500, 1000, 1500, 1000, 1500];
-    serie.forEach((rr, i) => {
-      procesador.procesar(notificacion((i + 1) * 1000, [rr]));
+    const series = [1000, 1000, 1000, 1000, 1000, 1500, 1000, 1500, 1000, 1500];
+    series.forEach((rr, i) => {
+      processor.process(notification((i + 1) * 1000, [rr]));
     });
-    expect(resultados.at(-1)?.calidad).toBe('baja');
+    expect(results.at(-1)?.quality).toBe('baja');
   });
 
   it('reiniciar vacía la ventana y vuelve a publicar desde 5 s', () => {
-    const { procesador, resultados } = crearProcesador();
+    const { processor, results } = createProcessor();
     for (let t = 1000; t <= 10_000; t += 1000) {
-      procesador.procesar(notificacion(t, [1000]));
+      processor.process(notification(t, [1000]));
     }
-    procesador.reiniciar();
-    expect(procesador.instantanea.latidos).toEqual([]);
+    processor.reset();
+    expect(processor.snapshot.beats).toEqual([]);
 
-    resultados.length = 0;
+    results.length = 0;
     for (let t = 1000; t <= 5000; t += 1000) {
-      procesador.procesar(notificacion(t, [1000]));
+      processor.process(notification(t, [1000]));
     }
-    expect(resultados.map((r) => r.tiempoMs)).toEqual([5000]);
+    expect(results.map((r) => r.timeMs)).toEqual([5000]);
   });
 });

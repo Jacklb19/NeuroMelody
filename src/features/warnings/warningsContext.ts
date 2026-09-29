@@ -1,10 +1,10 @@
 import { createContext, useContext } from 'react';
-import { RegistroAdvertencias, almacenDelNavegador } from './warningsRegistry';
+import { WarningsRegistry, browserStorage } from './warningsRegistry';
 
-export const ContextoAdvertencias = createContext<RegistroAdvertencias>(
-  new RegistroAdvertencias(almacenDelNavegador()),
+export const WarningsContext = createContext<WarningsRegistry>(
+  new WarningsRegistry(browserStorage()),
 );
 
-export function useRegistroAdvertencias(): RegistroAdvertencias {
-  return useContext(ContextoAdvertencias);
+export function useWarningsRegistry(): WarningsRegistry {
+  return useContext(WarningsContext);
 }

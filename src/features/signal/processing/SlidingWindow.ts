@@ -1,42 +1,42 @@
-import { agregarTramo } from './signalQuality';
-import type { LatidoClasificado, TramoBajaCalidad } from './types';
-import { VENTANA_ANALISIS_MS } from './thresholds';
+import { addSegment } from './signalQuality';
+import type { ClassifiedBeat, LowQualitySegment } from './types';
+import { ANALYSIS_WINDOW_MS } from './thresholds';
 
 /**
  * Últimos 5 minutos de tiempo de señal: latidos clasificados y tramos de baja
  * calidad. Se mide en tiempo de señal, no de pared, para que el análisis sea
  * igual a cualquier velocidad del simulador.
  */
-export class VentanaDeslizante {
-  #latidos: LatidoClasificado[] = [];
-  #tramos: TramoBajaCalidad[] = [];
+export class SlidingWindow {
+  #beats: ClassifiedBeat[] = [];
+  #segments: LowQualitySegment[] = [];
 
-  get latidos(): readonly LatidoClasificado[] {
-    return this.#latidos;
+  get beats(): readonly ClassifiedBeat[] {
+    return this.#beats;
   }
 
-  get tramos(): readonly TramoBajaCalidad[] {
-    return this.#tramos;
+  get segments(): readonly LowQualitySegment[] {
+    return this.#segments;
   }
 
-  agregarLatido(latido: LatidoClasificado): void {
-    this.#latidos.push(latido);
+  addBeat(beat: ClassifiedBeat): void {
+    this.#beats.push(beat);
   }
 
-  agregarTramo(tramo: TramoBajaCalidad): void {
-    this.#tramos = agregarTramo(this.#tramos, tramo);
+  addSegment(segment: LowQualitySegment): void {
+    this.#segments = addSegment(this.#segments, segment);
   }
 
   /** Descarta lo que quedó fuera de la ventana que termina en `tiempoActualMs`. */
-  podar(tiempoActualMs: number): void {
-    const limiteMs = tiempoActualMs - VENTANA_ANALISIS_MS;
-    const primero = this.#latidos.findIndex((latido) => latido.finMs > limiteMs);
-    this.#latidos = primero === -1 ? [] : this.#latidos.slice(primero);
-    this.#tramos = this.#tramos.filter((tramo) => tramo.finMs > limiteMs);
+  prune(currentTimeMs: number): void {
+    const limitMs = currentTimeMs - ANALYSIS_WINDOW_MS;
+    const first = this.#beats.findIndex((beat) => beat.endMs > limitMs);
+    this.#beats = first === -1 ? [] : this.#beats.slice(first);
+    this.#segments = this.#segments.filter((segment) => segment.endMs > limitMs);
   }
 
-  vaciar(): void {
-    this.#latidos = [];
-    this.#tramos = [];
+  clear(): void {
+    this.#beats = [];
+    this.#segments = [];
   }
 }

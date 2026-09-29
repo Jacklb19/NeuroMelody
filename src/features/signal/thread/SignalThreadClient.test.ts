@@ -1,118 +1,118 @@
 import { describe, it, expect, vi } from 'vitest';
-import { crearEntornoTiempoFalso } from '../../../test/fakeTimeEnvironment';
-import { ContextoDibujoFalso } from '../../../test/fakeDrawingContext';
-import { crearPuertoEnProceso } from '../../../test/inProcessThreadPort';
-import { FuenteSimulada } from '../../acquisition/simulator/SimulatedSource';
-import type { ResultadoIndices } from '../processing/SignalProcessor';
-import { ClienteHiloSenal } from './SignalThreadClient';
+import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
+import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
+import { createInProcessPort } from '../../../test/inProcessThreadPort';
+import { SimulatedSource } from '../../acquisition/simulator/SimulatedSource';
+import type { IndicesResult } from '../processing/SignalProcessor';
+import { SignalThreadClient } from './SignalThreadClient';
 
-function crearEscena() {
-  const entorno = crearEntornoTiempoFalso();
-  const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 10, ...entorno });
-  const puerto = crearPuertoEnProceso();
-  const cliente = new ClienteHiloSenal(puerto);
-  const resultados: ResultadoIndices[] = [];
-  const alError = vi.fn();
-  cliente.suscribir({ alIndices: (r) => resultados.push(r), alError });
-  return { entorno, fuente, puerto, cliente, resultados, alError };
+function createScene() {
+  const env = createFakeTimeEnvironment();
+  const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 10, ...env });
+  const port = createInProcessPort();
+  const client = new SignalThreadClient(port);
+  const results: IndicesResult[] = [];
+  const onError = vi.fn();
+  client.subscribe({ onIndices: (r) => results.push(r), onError });
+  return { env, source, port, client, results, onError };
 }
 
 describe('ClienteHiloSenal', () => {
   it('reenvía las notificaciones al hilo de señal y reparte los índices', async () => {
-    const { entorno, fuente, puerto, cliente, resultados } = crearEscena();
-    cliente.conectarFuente(fuente);
-    await fuente.conectar();
-    entorno.avanzar(1000); // 10 s de señal
+    const { env, source, port, client, results } = createScene();
+    client.connectSource(source);
+    await source.connect();
+    env.advance(1000); // 10 s de señal
 
-    expect(puerto.enviados.filter((m) => m.tipo === 'notificacion')).toHaveLength(10);
-    expect(resultados.map((r) => r.tiempoMs)).toEqual([5000, 10000]);
+    expect(port.sent.filter((m) => m.kind === 'notificacion')).toHaveLength(10);
+    expect(results.map((r) => r.timeMs)).toEqual([5000, 10000]);
   });
 
   it('reinicia el hilo de señal al conectar la fuente y en cada nueva conexión', async () => {
-    const { entorno, fuente, puerto, cliente, resultados } = crearEscena();
-    cliente.conectarFuente(fuente);
-    await fuente.conectar();
-    entorno.avanzar(1000);
-    await fuente.desconectar();
-    resultados.length = 0;
+    const { env, source, port, client, results } = createScene();
+    client.connectSource(source);
+    await source.connect();
+    env.advance(1000);
+    await source.disconnect();
+    results.length = 0;
 
-    await fuente.conectar();
-    entorno.avanzar(500);
+    await source.connect();
+    env.advance(500);
 
-    expect(puerto.enviados.filter((m) => m.tipo === 'reiniciar')).toHaveLength(3);
+    expect(port.sent.filter((m) => m.kind === 'reiniciar')).toHaveLength(3);
     // Tras reiniciar, la cadencia vuelve a empezar en 5 s.
-    expect(resultados.map((r) => r.tiempoMs)).toEqual([5000]);
+    expect(results.map((r) => r.timeMs)).toEqual([5000]);
   });
 
   it('deja de reenviar al desconectar la fuente del cliente', async () => {
-    const { entorno, fuente, puerto, cliente } = crearEscena();
-    const desconectarFuente = cliente.conectarFuente(fuente);
-    await fuente.conectar();
-    entorno.avanzar(300);
-    desconectarFuente();
-    entorno.avanzar(1000);
+    const { env, source, port, client } = createScene();
+    const disconnectSource = client.connectSource(source);
+    await source.connect();
+    env.advance(300);
+    disconnectSource();
+    env.advance(1000);
 
-    expect(puerto.enviados.filter((m) => m.tipo === 'notificacion')).toHaveLength(3);
+    expect(port.sent.filter((m) => m.kind === 'notificacion')).toHaveLength(3);
   });
 
   it('avisa de los errores del hilo y de las respuestas no reconocidas', () => {
-    const { puerto, alError, resultados } = crearEscena();
-    puerto.recibirDesdeHilo({ tipo: 'error', mensaje: 'falló el cálculo' });
-    puerto.recibirDesdeHilo({ tipo: 'indices', resultado: { calidad: 'buena' } });
+    const { port, onError, results } = createScene();
+    port.receiveFromThread({ kind: 'error', message: 'falló el cálculo' });
+    port.receiveFromThread({ kind: 'indices', result: { quality: 'buena' } });
 
-    expect(alError.mock.calls).toEqual([
+    expect(onError.mock.calls).toEqual([
       ['falló el cálculo'],
       ['Respuesta no reconocida del hilo de señal.'],
     ]);
-    expect(resultados).toEqual([]);
+    expect(results).toEqual([]);
   });
 
   it('el hilo de señal responde con un error ante un mensaje inválido', () => {
-    const { puerto, alError } = crearEscena();
+    const { port, onError } = createScene();
     // Se salta el tipado a propósito para simular un mensaje corrupto.
-    puerto.enviar(JSON.parse('{"tipo":"borrar"}') as never);
-    expect(alError).toHaveBeenCalledWith('Mensaje no reconocido por el hilo de señal.');
+    port.send(JSON.parse('{"tipo":"borrar"}') as never);
+    expect(onError).toHaveBeenCalledWith('Mensaje no reconocido por el hilo de señal.');
   });
 
   it('terminar cierra el puerto y olvida a los observadores', () => {
-    const { puerto, cliente, alError } = crearEscena();
-    cliente.terminar();
-    puerto.recibirDesdeHilo({ tipo: 'error', mensaje: 'tarde' });
+    const { port, client, onError } = createScene();
+    client.terminate();
+    port.receiveFromThread({ kind: 'error', message: 'tarde' });
 
-    expect(puerto.terminado).toBe(true);
-    expect(alError).not.toHaveBeenCalled();
+    expect(port.terminated).toBe(true);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('transfiere el lienzo con la paleta y reenvía los cambios de tamaño', () => {
-    const { puerto, cliente, alError } = crearEscena();
-    const contexto = new ContextoDibujoFalso();
+    const { port, client, onError } = createScene();
+    const context = new FakeDrawingContext();
     // jsdom no tiene OffscreenCanvas: basta un objeto con la misma forma.
-    const lienzo = { width: 0, height: 0, getContext: () => contexto } as unknown as OffscreenCanvas;
-    const paleta = {
-      linea: 'a',
-      rejilla: 'b',
-      texto: 'c',
-      descartado: 'd',
-      bajaCalidadFondo: 'e',
-      bajaCalidadRayado: 'f',
-      fuente: '14px sans-serif',
+    const canvas = { width: 0, height: 0, getContext: () => context } as unknown as OffscreenCanvas;
+    const palette = {
+      line: 'a',
+      grid: 'b',
+      text: 'c',
+      discarded: 'd',
+      lowQualityBackground: 'e',
+      lowQualityHatch: 'f',
+      font: '14px sans-serif',
     };
 
-    cliente.adjuntarLienzo(lienzo, paleta, { anchoCss: 300, altoCss: 100, escala: 2 });
-    cliente.redimensionar({ anchoCss: 400, altoCss: 100, escala: 2 });
+    client.attachCanvas(canvas, palette, { widthCss: 300, heightCss: 100, scale: 2 });
+    client.resize({ widthCss: 400, heightCss: 100, scale: 2 });
 
-    expect(puerto.enviados.map((m) => m.tipo)).toEqual(['iniciar-lienzo', 'redimensionar']);
-    expect(lienzo.width).toBe(800);
-    expect(contexto.contar('clearRect')).toBe(2);
-    expect(alError).not.toHaveBeenCalled();
+    expect(port.sent.map((m) => m.kind)).toEqual(['iniciar-lienzo', 'redimensionar']);
+    expect(canvas.width).toBe(800);
+    expect(context.count('clearRect')).toBe(2);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('da de baja a un observador', () => {
-    const { puerto, cliente } = crearEscena();
-    const alError = vi.fn();
-    const baja = cliente.suscribir({ alError });
-    baja();
-    puerto.recibirDesdeHilo({ tipo: 'error', mensaje: 'x' });
-    expect(alError).not.toHaveBeenCalled();
+    const { port, client } = createScene();
+    const onError = vi.fn();
+    const unsubscribe = client.subscribe({ onError });
+    unsubscribe();
+    port.receiveFromThread({ kind: 'error', message: 'x' });
+    expect(onError).not.toHaveBeenCalled();
   });
 });

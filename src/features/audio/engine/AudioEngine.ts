@@ -1,87 +1,87 @@
-import { LectorTelemetria } from '../telemetry/telemetryRing';
+import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
-  NOMBRE_RECORTADOR,
-  NOMBRE_SINTETIZADOR,
-  type NombreParametro,
-  type OpcionesRecortador,
-  type OpcionesSintetizador,
+  CLIPPER_NAME,
+  SYNTHESIZER_NAME,
+  type ParamName,
+  type ClipperOptions,
+  type SynthesizerOptions,
 } from '../worklet/workletContract';
-import { leerEstadisticasReproduccion, type EstadisticasReproduccion } from './playbackStats';
-import { NIVELES, type IdNivel } from './levels';
-import { DURACION_RAMPA_TIMBRE_S, dbAGanancia, duracionRampaTempoS, gananciaADb } from './ramps';
-import { generarRespuestaImpulso } from './impulseResponse';
+import { readPlaybackStats, type PlaybackStatistics } from './playbackStats';
+import { LEVELS, type LevelId } from './levels';
+import { TIMBRE_RAMP_DURATION_S, dbToGain, tempoRampDurationS, gainToDb } from './ramps';
+import { generateImpulseResponse } from './impulseResponse';
 
 /** Volumen por omisión y rango del control (RF-18). */
-export const VOLUMEN_POR_OMISION_DB = -12;
-export const VOLUMEN_MINIMO_DB = -40;
-export const VOLUMEN_MAXIMO_DB = 0;
+export const DEFAULT_VOLUME_DB = -12;
+export const MIN_VOLUME_DB = -40;
+export const MAX_VOLUME_DB = 0;
 
 /** Limitador al final de la cadena (antes del recorte de −1 dBFS). */
-export const LIMITADOR = { umbralDb: -6, relacion: 20, rodillaDb: 0, ataqueS: 0.003, liberacionS: 0.25 } as const;
+export const LIMITER = { thresholdDb: -6, ratio: 20, kneeDb: 0, attackS: 0.003, releaseS: 0.25 } as const;
 
-export const FUNDIDO_ENTRADA_S = 1.5;
+export const FADE_IN_S = 1.5;
 /** Detener: rampa a cero en 50 ms y pausa del contexto (HU-06: silencio en menos de 200 ms). */
-export const RAMPA_DETENCION_S = 0.05;
-export const FUNDIDO_FINAL_S = 20;
-const RETORNO_TRAS_CANCELAR_S = 2;
+export const STOP_RAMP_S = 0.05;
+export const FINAL_FADE_S = 20;
+const RESTORE_AFTER_CANCEL_S = 2;
 
 /** Todo lo que el motor necesita del entorno; inyectable para probarlo sin navegador. */
-export interface FabricaAudio {
-  crearContexto(): AudioContext;
+export interface AudioFactory {
+  createAudioContext(): AudioContext;
   /** URLs de los módulos del AudioWorklet (sintetizador y recortador). */
-  readonly modulos: readonly string[];
-  crearNodoWorklet(contexto: AudioContext, nombre: string, opciones: AudioWorkletNodeOptions): AudioWorkletNode;
+  readonly modules: readonly string[];
+  createWorkletNode(context: AudioContext, name: string, options: AudioWorkletNodeOptions): AudioWorkletNode;
   /** `null` sin aislamiento de origen cruzado: no hay telemetría. */
-  crearBuferTelemetria(): SharedArrayBuffer | null;
-  crearElementoAudio(): HTMLAudioElement;
-  esperar(ms: number): Promise<void>;
+  createTelemetryBuffer(): SharedArrayBuffer | null;
+  createAudioElement(): HTMLAudioElement;
+  wait(ms: number): Promise<void>;
 }
 
-export interface OpcionesMotor {
-  readonly semilla: number;
-  readonly nivelInicial: IdNivel;
+export interface EngineOptions {
+  readonly seed: number;
+  readonly initialLevel: LevelId;
   /**
    * Respaldo para Media Session: la salida pasa por un elemento `<audio>`.
    * Con él, `playbackStats` deja de medir lo que realmente suena.
    */
-  readonly salidaPorElementoAudio: boolean;
+  readonly outputThroughAudioElement: boolean;
 }
 
-export type EstadoMotor = 'listo' | 'sonando' | 'detenido' | 'cerrado';
+export type EngineState = 'listo' | 'sonando' | 'detenido' | 'cerrado';
 
-export interface LecturaPico {
-  readonly bloques: number;
+export interface PeakReading {
+  readonly blocks: number;
   /** Pico de la salida desde la lectura anterior, en dBFS; `null` sin datos. */
-  readonly picoDbfs: number | null;
+  readonly peakDbfs: number | null;
 }
 
-export interface Estadisticas extends EstadisticasReproduccion {
+export interface EngineStats extends PlaybackStatistics {
   /** `false` si la salida va por un `<audio>` y la métrica no refleja lo que suena. */
-  readonly midiendoSalidaReal: boolean;
+  readonly measuringRealOutput: boolean;
 }
 
-interface Nodos {
-  readonly sintetizador: AudioWorkletNode;
-  readonly filtro: BiquadFilterNode;
-  readonly humedo: GainNode;
-  readonly volumen: GainNode;
-  readonly envolvente: GainNode;
+interface Nodes {
+  readonly synthesizer: AudioWorkletNode;
+  readonly filter: BiquadFilterNode;
+  readonly wet: GainNode;
+  readonly volume: GainNode;
+  readonly envelope: GainNode;
 }
 
-function parametro(nodo: AudioWorkletNode, nombre: NombreParametro): AudioParam {
-  const param = nodo.parameters.get(nombre);
+function getParam(node: AudioWorkletNode, name: ParamName): AudioParam {
+  const param = node.parameters.get(name);
   if (param === undefined) {
-    throw new Error(`El sintetizador no expone el parámetro ${nombre}.`);
+    throw new Error(`El sintetizador no expone el parámetro ${name}.`);
   }
   return param;
 }
 
 /** Deja un parámetro en su valor actual y descarta lo programado desde `t`. */
-function retener(param: AudioParam, t: number): number {
-  const actual = param.value;
+function hold(param: AudioParam, t: number): number {
+  const current = param.value;
   param.cancelScheduledValues(t);
-  param.setValueAtTime(actual, t);
-  return actual;
+  param.setValueAtTime(current, t);
+  return current;
 }
 
 /**
@@ -92,150 +92,150 @@ function retener(param: AudioParam, t: number): number {
  * sintetizador → pasa bajos (brillo) → seco + reverberación → volumen →
  * envolvente de sesión → limitador → recorte (−1 dBFS) → salida
  */
-export class MotorAudio {
-  readonly #contexto: AudioContext;
-  readonly #nodos: Nodos;
-  readonly #fabrica: FabricaAudio;
-  readonly #telemetria: LectorTelemetria | null;
-  readonly #elementoAudio: HTMLAudioElement | null;
-  #estado: EstadoMotor = 'listo';
-  #nivel: IdNivel;
+export class AudioEngine {
+  readonly #context: AudioContext;
+  readonly #nodes: Nodes;
+  readonly #factory: AudioFactory;
+  readonly #telemetry: TelemetryReader | null;
+  readonly #audioElement: HTMLAudioElement | null;
+  #state: EngineState = 'listo';
+  #level: LevelId;
 
   private constructor(
-    contexto: AudioContext,
-    nodos: Nodos,
-    fabrica: FabricaAudio,
-    telemetria: SharedArrayBuffer | null,
-    elementoAudio: HTMLAudioElement | null,
-    nivel: IdNivel,
+    context: AudioContext,
+    nodes: Nodes,
+    factory: AudioFactory,
+    telemetry: SharedArrayBuffer | null,
+    audioElement: HTMLAudioElement | null,
+    level: LevelId,
   ) {
-    this.#contexto = contexto;
-    this.#nodos = nodos;
-    this.#fabrica = fabrica;
-    this.#telemetria = telemetria === null ? null : new LectorTelemetria(telemetria);
-    this.#elementoAudio = elementoAudio;
-    this.#nivel = nivel;
+    this.#context = context;
+    this.#nodes = nodes;
+    this.#factory = factory;
+    this.#telemetry = telemetry === null ? null : new TelemetryReader(telemetry);
+    this.#audioElement = audioElement;
+    this.#level = level;
   }
 
   /** Crea el contexto, carga los módulos del worklet y arma el grafo (en silencio). */
-  static async crear(fabrica: FabricaAudio, opciones: OpcionesMotor): Promise<MotorAudio> {
-    const contexto = fabrica.crearContexto();
-    for (const modulo of fabrica.modulos) {
-      await contexto.audioWorklet.addModule(modulo);
+  static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
+    const context = factory.createAudioContext();
+    for (const moduleUrl of factory.modules) {
+      await context.audioWorklet.addModule(moduleUrl);
     }
-    const nivel = NIVELES[opciones.nivelInicial];
+    const level = LEVELS[options.initialLevel];
 
-    const opcionesSintetizador: OpcionesSintetizador = {
-      semilla: opciones.semilla,
-      modoInicial: nivel.modo,
-      capasIniciales: nivel.capas,
+    const synthesizerOptions: SynthesizerOptions = {
+      seed: options.seed,
+      initialMode: level.mode,
+      initialLayers: level.layers,
     };
-    const sintetizador = fabrica.crearNodoWorklet(contexto, NOMBRE_SINTETIZADOR, {
+    const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,
       numberOfOutputs: 1,
       outputChannelCount: [2],
-      processorOptions: opcionesSintetizador,
+      processorOptions: synthesizerOptions,
     });
-    parametro(sintetizador, 'tempo').value = nivel.tempo;
-    parametro(sintetizador, 'modo').value = nivel.modo;
-    parametro(sintetizador, 'capas').value = nivel.capas;
+    getParam(synthesizer, 'tempo').value = level.tempo;
+    getParam(synthesizer, 'modo').value = level.mode;
+    getParam(synthesizer, 'capas').value = level.layers;
 
-    const filtro = contexto.createBiquadFilter();
-    filtro.type = 'lowpass';
-    filtro.Q.value = 0.5;
-    filtro.frequency.value = nivel.brilloHz;
+    const filter = context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 0.5;
+    filter.frequency.value = level.brightnessHz;
 
-    const reverberacion = contexto.createConvolver();
-    const [izquierdo, derecho] = generarRespuestaImpulso(contexto.sampleRate);
-    const respuesta = contexto.createBuffer(2, izquierdo.length, contexto.sampleRate);
-    respuesta.copyToChannel(izquierdo, 0);
-    respuesta.copyToChannel(derecho, 1);
-    reverberacion.buffer = respuesta;
+    const reverb = context.createConvolver();
+    const [left, right] = generateImpulseResponse(context.sampleRate);
+    const response = context.createBuffer(2, left.length, context.sampleRate);
+    response.copyToChannel(left, 0);
+    response.copyToChannel(right, 1);
+    reverb.buffer = response;
 
-    const humedo = contexto.createGain();
-    humedo.gain.value = nivel.reverberacion;
-    const volumen = contexto.createGain();
-    volumen.gain.value = dbAGanancia(VOLUMEN_POR_OMISION_DB);
-    const envolvente = contexto.createGain();
-    envolvente.gain.value = 0;
+    const wet = context.createGain();
+    wet.gain.value = level.reverb;
+    const volume = context.createGain();
+    volume.gain.value = dbToGain(DEFAULT_VOLUME_DB);
+    const envelope = context.createGain();
+    envelope.gain.value = 0;
 
-    const limitador = contexto.createDynamicsCompressor();
-    limitador.threshold.value = LIMITADOR.umbralDb;
-    limitador.ratio.value = LIMITADOR.relacion;
-    limitador.knee.value = LIMITADOR.rodillaDb;
-    limitador.attack.value = LIMITADOR.ataqueS;
-    limitador.release.value = LIMITADOR.liberacionS;
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = LIMITER.thresholdDb;
+    limiter.ratio.value = LIMITER.ratio;
+    limiter.knee.value = LIMITER.kneeDb;
+    limiter.attack.value = LIMITER.attackS;
+    limiter.release.value = LIMITER.releaseS;
 
-    const telemetria = fabrica.crearBuferTelemetria();
-    const opcionesRecortador: OpcionesRecortador = { telemetria };
-    const recortador = fabrica.crearNodoWorklet(contexto, NOMBRE_RECORTADOR, {
+    const telemetry = factory.createTelemetryBuffer();
+    const clipperOptions: ClipperOptions = { telemetry };
+    const clipper = factory.createWorkletNode(context, CLIPPER_NAME, {
       numberOfInputs: 1,
       numberOfOutputs: 1,
       outputChannelCount: [2],
-      processorOptions: opcionesRecortador,
+      processorOptions: clipperOptions,
     });
 
-    sintetizador.connect(filtro);
-    filtro.connect(volumen);
-    filtro.connect(reverberacion);
-    reverberacion.connect(humedo);
-    humedo.connect(volumen);
-    volumen.connect(envolvente);
-    envolvente.connect(limitador);
-    limitador.connect(recortador);
+    synthesizer.connect(filter);
+    filter.connect(volume);
+    filter.connect(reverb);
+    reverb.connect(wet);
+    wet.connect(volume);
+    volume.connect(envelope);
+    envelope.connect(limiter);
+    limiter.connect(clipper);
 
-    let elementoAudio: HTMLAudioElement | null = null;
-    if (opciones.salidaPorElementoAudio) {
-      const destinoFlujo = contexto.createMediaStreamDestination();
-      recortador.connect(destinoFlujo);
-      elementoAudio = fabrica.crearElementoAudio();
-      elementoAudio.srcObject = destinoFlujo.stream;
+    let audioElement: HTMLAudioElement | null = null;
+    if (options.outputThroughAudioElement) {
+      const streamDestination = context.createMediaStreamDestination();
+      clipper.connect(streamDestination);
+      audioElement = factory.createAudioElement();
+      audioElement.srcObject = streamDestination.stream;
     } else {
-      recortador.connect(contexto.destination);
+      clipper.connect(context.destination);
     }
 
-    return new MotorAudio(
-      contexto,
-      { sintetizador, filtro, humedo, volumen, envolvente },
-      fabrica,
-      telemetria,
-      elementoAudio,
-      opciones.nivelInicial,
+    return new AudioEngine(
+      context,
+      { synthesizer, filter, wet, volume, envelope },
+      factory,
+      telemetry,
+      audioElement,
+      options.initialLevel,
     );
   }
 
-  get estado(): EstadoMotor {
-    return this.#estado;
+  get state(): EngineState {
+    return this.#state;
   }
 
-  get nivel(): IdNivel {
-    return this.#nivel;
+  get level(): LevelId {
+    return this.#level;
   }
 
   /** Tiempo del reloj de audio, en segundos: la referencia de toda la temporización. */
-  get tiempoAudio(): number {
-    return this.#contexto.currentTime;
+  get audioTime(): number {
+    return this.#context.currentTime;
   }
 
-  get volumenDb(): number {
-    return gananciaADb(this.#nodos.volumen.gain.value);
+  get volumeDb(): number {
+    return gainToDb(this.#nodes.volume.gain.value);
   }
 
-  get salidaPorElementoAudio(): boolean {
-    return this.#elementoAudio !== null;
+  get outputThroughAudioElement(): boolean {
+    return this.#audioElement !== null;
   }
 
   /** Reanuda el contexto y sube la envolvente de sesión en 1,5 s. */
-  async iniciar(): Promise<void> {
-    await this.#contexto.resume();
-    if (this.#elementoAudio !== null) {
-      await this.#elementoAudio.play();
+  async start(): Promise<void> {
+    await this.#context.resume();
+    if (this.#audioElement !== null) {
+      await this.#audioElement.play();
     }
-    const t = this.#contexto.currentTime;
-    const envolvente = this.#nodos.envolvente.gain;
-    retener(envolvente, t);
-    envolvente.linearRampToValueAtTime(1, t + FUNDIDO_ENTRADA_S);
-    this.#estado = 'sonando';
+    const t = this.#context.currentTime;
+    const envelope = this.#nodes.envelope.gain;
+    hold(envelope, t);
+    envelope.linearRampToValueAtTime(1, t + FADE_IN_S);
+    this.#state = 'sonando';
   }
 
   /**
@@ -245,52 +245,52 @@ export class MotorAudio {
    *
    * @returns la duración de la rampa de tempo, en segundos.
    */
-  aplicarNivel(id: IdNivel): number {
-    const nivel = NIVELES[id];
-    const t = this.#contexto.currentTime;
-    const { sintetizador, filtro, humedo } = this.#nodos;
+  applyLevel(id: LevelId): number {
+    const level = LEVELS[id];
+    const t = this.#context.currentTime;
+    const { synthesizer, filter, wet } = this.#nodes;
 
-    const tempo = parametro(sintetizador, 'tempo');
-    const desde = retener(tempo, t);
-    const duracion = duracionRampaTempoS(desde, nivel.tempo);
-    tempo.linearRampToValueAtTime(nivel.tempo, t + duracion);
+    const tempo = getParam(synthesizer, 'tempo');
+    const from = hold(tempo, t);
+    const duration = tempoRampDurationS(from, level.tempo);
+    tempo.linearRampToValueAtTime(level.tempo, t + duration);
 
-    retener(parametro(sintetizador, 'modo'), t);
-    parametro(sintetizador, 'modo').setValueAtTime(nivel.modo, t);
-    retener(parametro(sintetizador, 'capas'), t);
-    parametro(sintetizador, 'capas').setValueAtTime(nivel.capas, t);
+    hold(getParam(synthesizer, 'modo'), t);
+    getParam(synthesizer, 'modo').setValueAtTime(level.mode, t);
+    hold(getParam(synthesizer, 'capas'), t);
+    getParam(synthesizer, 'capas').setValueAtTime(level.layers, t);
 
-    retener(filtro.frequency, t);
-    filtro.frequency.exponentialRampToValueAtTime(nivel.brilloHz, t + DURACION_RAMPA_TIMBRE_S);
-    retener(humedo.gain, t);
-    humedo.gain.linearRampToValueAtTime(nivel.reverberacion, t + DURACION_RAMPA_TIMBRE_S);
+    hold(filter.frequency, t);
+    filter.frequency.exponentialRampToValueAtTime(level.brightnessHz, t + TIMBRE_RAMP_DURATION_S);
+    hold(wet.gain, t);
+    wet.gain.linearRampToValueAtTime(level.reverb, t + TIMBRE_RAMP_DURATION_S);
 
-    this.#nivel = id;
-    return duracion;
+    this.#level = id;
+    return duration;
   }
 
   /** Fija el volumen dentro de −40 a 0 dB y devuelve el valor aplicado. */
-  fijarVolumenDb(db: number): number {
-    const acotado = Math.min(VOLUMEN_MAXIMO_DB, Math.max(VOLUMEN_MINIMO_DB, db));
+  setVolumeDb(db: number): number {
+    const clamped = Math.min(MAX_VOLUME_DB, Math.max(MIN_VOLUME_DB, db));
     // Constante de tiempo corta: responde de inmediato sin chasquidos.
-    this.#nodos.volumen.gain.setTargetAtTime(dbAGanancia(acotado), this.#contexto.currentTime, 0.05);
-    return acotado;
+    this.#nodes.volume.gain.setTargetAtTime(dbToGain(clamped), this.#context.currentTime, 0.05);
+    return clamped;
   }
 
   /** Detención inmediata: rampa a cero en 50 ms y pausa del contexto. */
-  async detener(): Promise<void> {
-    if (this.#estado !== 'sonando') {
+  async stop(): Promise<void> {
+    if (this.#state !== 'sonando') {
       return;
     }
-    const t = this.#contexto.currentTime;
-    const envolvente = this.#nodos.envolvente.gain;
-    retener(envolvente, t);
-    envolvente.linearRampToValueAtTime(0, t + RAMPA_DETENCION_S);
-    this.#estado = 'detenido';
+    const t = this.#context.currentTime;
+    const envelope = this.#nodes.envelope.gain;
+    hold(envelope, t);
+    envelope.linearRampToValueAtTime(0, t + STOP_RAMP_S);
+    this.#state = 'detenido';
     // La rampa ya silencia en el hilo de audio; la espera solo evita cortarla.
-    await this.#fabrica.esperar(RAMPA_DETENCION_S * 1000 + 10);
-    this.#elementoAudio?.pause();
-    await this.#contexto.suspend();
+    await this.#factory.wait(STOP_RAMP_S * 1000 + 10);
+    this.#audioElement?.pause();
+    await this.#context.suspend();
   }
 
   /**
@@ -300,40 +300,40 @@ export class MotorAudio {
    *
    * @returns el instante (reloj de audio) en que termina el fundido.
    */
-  programarFundidoFinal(enSegundos: number): number {
+  scheduleFinalFade(inSeconds: number): number {
     // Solo agenda a futuro: no cancela el fundido de entrada si aún está en curso.
-    const inicio = this.#contexto.currentTime + Math.max(0, enSegundos);
-    const envolvente = this.#nodos.envolvente.gain;
-    envolvente.setValueAtTime(1, inicio);
-    envolvente.linearRampToValueAtTime(0, inicio + FUNDIDO_FINAL_S);
-    return inicio + FUNDIDO_FINAL_S;
+    const startTime = this.#context.currentTime + Math.max(0, inSeconds);
+    const envelope = this.#nodes.envelope.gain;
+    envelope.setValueAtTime(1, startTime);
+    envelope.linearRampToValueAtTime(0, startTime + FINAL_FADE_S);
+    return startTime + FINAL_FADE_S;
   }
 
   /** Cancela un fundido final programado y vuelve al volumen pleno en 2 s. */
-  cancelarFundidoFinal(): void {
-    const t = this.#contexto.currentTime;
-    const envolvente = this.#nodos.envolvente.gain;
-    retener(envolvente, t);
-    envolvente.linearRampToValueAtTime(1, t + RETORNO_TRAS_CANCELAR_S);
+  cancelFinalFade(): void {
+    const t = this.#context.currentTime;
+    const envelope = this.#nodes.envelope.gain;
+    hold(envelope, t);
+    envelope.linearRampToValueAtTime(1, t + RESTORE_AFTER_CANCEL_S);
   }
 
-  estadisticas(): Estadisticas | null {
-    const leidas = leerEstadisticasReproduccion(this.#contexto);
-    return leidas === null ? null : { ...leidas, midiendoSalidaReal: this.#elementoAudio === null };
+  stats(): EngineStats | null {
+    const readStats = readPlaybackStats(this.#context);
+    return readStats === null ? null : { ...readStats, measuringRealOutput: this.#audioElement === null };
   }
 
   /** Pico de la salida (tras el recorte) desde la lectura anterior. */
-  leerPico(): LecturaPico | null {
-    if (this.#telemetria === null) {
+  readPeak(): PeakReading | null {
+    if (this.#telemetry === null) {
       return null;
     }
-    const { bloques, maximo } = this.#telemetria.leer();
-    return { bloques, picoDbfs: maximo === null || maximo === 0 ? null : gananciaADb(maximo) };
+    const { blocks, max } = this.#telemetry.read();
+    return { blocks, peakDbfs: max === null || max === 0 ? null : gainToDb(max) };
   }
 
-  async cerrar(): Promise<void> {
-    this.#elementoAudio?.pause();
-    this.#estado = 'cerrado';
-    await this.#contexto.close();
+  async close(): Promise<void> {
+    this.#audioElement?.pause();
+    this.#state = 'cerrado';
+    await this.#context.close();
   }
 }

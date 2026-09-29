@@ -5,7 +5,7 @@
  */
 
 /** Motivo por el que un intervalo RR no entra en el análisis. */
-export type MotivoDescarte =
+export type DiscardReason =
   /** Fuera del rango plausible de 300–2000 ms. */
   | 'fuera_de_rango'
   /** Se aparta más de un 20 % de la mediana de referencia (latido ectópico o artefacto). */
@@ -14,21 +14,21 @@ export type MotivoDescarte =
   | 'sin_contacto';
 
 /** Un intervalo RR ya clasificado por el filtro. */
-export interface LatidoClasificado {
+export interface ClassifiedBeat {
   /** Tiempo de señal (ms desde la conexión) en que termina el latido. */
-  readonly finMs: number;
+  readonly endMs: number;
   readonly rrMs: number;
-  readonly aceptado: boolean;
-  readonly motivoDescarte: MotivoDescarte | null;
+  readonly accepted: boolean;
+  readonly discardReason: DiscardReason | null;
   /**
    * `false` si entre este latido y el anterior hubo un hueco o una pérdida
    * de contacto: el par no cuenta como consecutivo para el RMSSD.
    */
-  readonly contiguoAlAnterior: boolean;
+  readonly contiguousWithPrevious: boolean;
 }
 
 /** Intervalo de tiempo de señal marcado como de baja calidad. */
-export interface TramoBajaCalidad {
-  readonly inicioMs: number;
-  readonly finMs: number;
+export interface LowQualitySegment {
+  readonly startMs: number;
+  readonly endMs: number;
 }

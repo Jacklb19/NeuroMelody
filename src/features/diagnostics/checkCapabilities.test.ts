@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { verificarCapacidades } from './checkCapabilities';
+import { checkCapabilities } from './checkCapabilities';
 
 describe('verificarCapacidades', () => {
   afterEach(() => {
@@ -7,12 +7,12 @@ describe('verificarCapacidades', () => {
   });
 
   it('debe retornar un objeto con todas las propiedades requeridas', () => {
-    const resultado = verificarCapacidades();
+    const result = checkCapabilities();
 
-    expect(resultado).toHaveProperty('crossOriginIsolated');
-    expect(resultado).toHaveProperty('soportaWorkers');
-    expect(resultado).toHaveProperty('soportaWebAssembly');
-    expect(resultado).toHaveProperty('soportaSharedArrayBuffer');
+    expect(result).toHaveProperty('crossOriginIsolated');
+    expect(result).toHaveProperty('supportsWorkers');
+    expect(result).toHaveProperty('supportsWebAssembly');
+    expect(result).toHaveProperty('supportsSharedArrayBuffer');
   });
 
   it('debe reflejar crossOriginIsolated cuando está activo en window', () => {
@@ -22,8 +22,8 @@ describe('verificarCapacidades', () => {
       configurable: true,
     });
 
-    const resultado = verificarCapacidades();
-    expect(resultado.crossOriginIsolated).toBe(true);
+    const result = checkCapabilities();
+    expect(result.crossOriginIsolated).toBe(true);
 
     Object.defineProperty(window, 'crossOriginIsolated', {
       value: originalValue,

@@ -1,4 +1,4 @@
-import type { CapacidadesEntorno } from '../diagnostics/diagnostics.types';
+import type { EnvironmentCapabilities } from '../diagnostics/diagnostics.types';
 
 /**
  * Evalúa las capacidades del navegador necesarias para la ejecución
@@ -6,25 +6,25 @@ import type { CapacidadesEntorno } from '../diagnostics/diagnostics.types';
  *
  * @returns Objeto con el estado de cada capacidad en el entorno actual.
  */
-export function verificarCapacidades(): CapacidadesEntorno {
-  const tieneVentana = typeof window !== 'undefined';
+export function checkCapabilities(): EnvironmentCapabilities {
+  const hasWindow = typeof window !== 'undefined';
 
-  const crossOriginIsolated = tieneVentana
+  const crossOriginIsolated = hasWindow
     ? window.crossOriginIsolated
     : false;
 
-  const soportaWorkers = typeof Worker !== 'undefined';
+  const supportsWorkers = typeof Worker !== 'undefined';
 
-  const soportaWebAssembly =
+  const supportsWebAssembly =
     typeof WebAssembly === 'object' &&
     typeof WebAssembly.instantiate === 'function';
 
-  const soportaSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
+  const supportsSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
 
   return {
     crossOriginIsolated,
-    soportaWorkers,
-    soportaWebAssembly,
-    soportaSharedArrayBuffer,
+    supportsWorkers,
+    supportsWebAssembly,
+    supportsSharedArrayBuffer,
   };
 }

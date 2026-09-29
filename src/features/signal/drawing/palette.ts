@@ -3,64 +3,64 @@
  * src/index.css, leídas en el hilo principal y enviadas al Worker, que no
  * tiene acceso al DOM: así el Worker no contiene ningún color escrito a mano.
  */
-export interface PaletaGrafica {
-  readonly linea: string;
-  readonly rejilla: string;
-  readonly texto: string;
-  readonly descartado: string;
-  readonly bajaCalidadFondo: string;
-  readonly bajaCalidadRayado: string;
+export interface ChartPalette {
+  readonly line: string;
+  readonly grid: string;
+  readonly text: string;
+  readonly discarded: string;
+  readonly lowQualityBackground: string;
+  readonly lowQualityHatch: string;
   /** Fuente completa para el canvas, por ejemplo `14px system-ui, sans-serif`. */
-  readonly fuente: string;
+  readonly font: string;
 }
 
-type ColorPaleta = Exclude<keyof PaletaGrafica, 'fuente'>;
+type PaletteColor = Exclude<keyof ChartPalette, 'font'>;
 
 /** Variable CSS de la que sale cada color de la paleta. */
-export const VARIABLES_PALETA: Readonly<Record<ColorPaleta, string>> = {
-  linea: '--color-grafica-linea',
-  rejilla: '--color-grafica-rejilla',
-  texto: '--color-grafica-texto',
-  descartado: '--color-grafica-descartado',
-  bajaCalidadFondo: '--color-grafica-baja-calidad-fondo',
-  bajaCalidadRayado: '--color-grafica-baja-calidad-rayado',
+export const PALETTE_VARIABLES: Readonly<Record<PaletteColor, string>> = {
+  line: '--color-grafica-linea',
+  grid: '--color-grafica-rejilla',
+  text: '--color-grafica-texto',
+  discarded: '--color-grafica-descartado',
+  lowQualityBackground: '--color-grafica-baja-calidad-fondo',
+  lowQualityHatch: '--color-grafica-baja-calidad-rayado',
 };
 
-export const VARIABLE_FAMILIA = '--fuente-base';
-export const VARIABLE_TAMANO = '--texto-sm';
+export const FAMILY_VARIABLE = '--fuente-base';
+export const SIZE_VARIABLE = '--texto-sm';
 
 /** Falta una variable de la paleta: la gráfica no se puede dibujar con fidelidad. */
-export class ErrorPaletaGrafica extends Error {
-  constructor(mensaje: string) {
-    super(mensaje);
+export class ChartPaletteError extends Error {
+  constructor(message: string) {
+    super(message);
     this.name = 'ErrorPaletaGrafica';
   }
 }
 
 /** Lo único que se necesita de los estilos calculados; facilita las pruebas. */
-export type EstilosCalculados = Pick<CSSStyleDeclaration, 'getPropertyValue'>;
+export type ComputedStyles = Pick<CSSStyleDeclaration, 'getPropertyValue'>;
 
-function leerVariable(estilos: EstilosCalculados, nombre: string): string {
-  const valor = estilos.getPropertyValue(nombre).trim();
-  if (valor === '') {
-    throw new ErrorPaletaGrafica(`Falta la variable CSS ${nombre}.`);
+function readVariable(styles: ComputedStyles, name: string): string {
+  const value = styles.getPropertyValue(name).trim();
+  if (value === '') {
+    throw new ChartPaletteError(`Falta la variable CSS ${name}.`);
   }
-  return valor;
+  return value;
 }
 
 /** Convierte un tamaño en px o rem a px; en el Worker no hay elemento raíz para resolver rem. */
-function tamanoEnPx(valor: string, estilos: EstilosCalculados): number {
-  const numero = Number.parseFloat(valor);
-  if (valor.endsWith('px') && Number.isFinite(numero)) {
-    return numero;
+function sizeInPx(value: string, styles: ComputedStyles): number {
+  const parsed = Number.parseFloat(value);
+  if (value.endsWith('px') && Number.isFinite(parsed)) {
+    return parsed;
   }
-  if (valor.endsWith('rem') && Number.isFinite(numero)) {
-    const raizPx = Number.parseFloat(estilos.getPropertyValue('font-size'));
-    if (Number.isFinite(raizPx)) {
-      return numero * raizPx;
+  if (value.endsWith('rem') && Number.isFinite(parsed)) {
+    const rootPx = Number.parseFloat(styles.getPropertyValue('font-size'));
+    if (Number.isFinite(rootPx)) {
+      return parsed * rootPx;
     }
   }
-  throw new ErrorPaletaGrafica(`Tamaño de fuente no válido: ${valor}.`);
+  throw new ChartPaletteError(`Tamaño de fuente no válido: ${value}.`);
 }
 
 /**
@@ -68,19 +68,19 @@ function tamanoEnPx(valor: string, estilos: EstilosCalculados): number {
  *
  * @throws ErrorPaletaGrafica si falta alguna variable o no se puede interpretar.
  */
-export function leerPaletaGrafica(
-  estilos: EstilosCalculados = getComputedStyle(document.documentElement),
-): PaletaGrafica {
-  const color = (clave: ColorPaleta): string => leerVariable(estilos, VARIABLES_PALETA[clave]);
-  const tamano = tamanoEnPx(leerVariable(estilos, VARIABLE_TAMANO), estilos);
-  const familia = leerVariable(estilos, VARIABLE_FAMILIA);
+export function readChartPalette(
+  styles: ComputedStyles = getComputedStyle(document.documentElement),
+): ChartPalette {
+  const color = (key: PaletteColor): string => readVariable(styles, PALETTE_VARIABLES[key]);
+  const size = sizeInPx(readVariable(styles, SIZE_VARIABLE), styles);
+  const family = readVariable(styles, FAMILY_VARIABLE);
   return {
-    linea: color('linea'),
-    rejilla: color('rejilla'),
-    texto: color('texto'),
-    descartado: color('descartado'),
-    bajaCalidadFondo: color('bajaCalidadFondo'),
-    bajaCalidadRayado: color('bajaCalidadRayado'),
-    fuente: `${String(tamano)}px ${familia}`,
+    line: color('line'),
+    grid: color('grid'),
+    text: color('text'),
+    discarded: color('discarded'),
+    lowQualityBackground: color('lowQualityBackground'),
+    lowQualityHatch: color('lowQualityHatch'),
+    font: `${String(size)}px ${family}`,
   };
 }

@@ -1,14 +1,14 @@
 import type {
-  EstadoConexion,
-  NotificacionLatido,
-  ObservadorFuente,
+  ConnectionState,
+  BeatNotification,
+  SourceObserver,
 } from './contract';
-import { validarNotificacion } from './validateNotification';
+import { validateNotification } from './validateNotification';
 
 /** Error emitido por una fuente de señal hacia sus observadores. */
-export class ErrorFuenteSenal extends Error {
-  constructor(mensaje: string) {
-    super(mensaje);
+export class SignalSourceError extends Error {
+  constructor(message: string) {
+    super(message);
     this.name = 'ErrorFuenteSenal';
   }
 }
@@ -18,53 +18,53 @@ export class ErrorFuenteSenal extends Error {
  * de frontera. Centralizarla garantiza que el simulador y la banda BLE
  * entreguen exactamente las mismas garantías al resto del sistema.
  */
-export class CanalFuente {
-  readonly #observadores = new Set<ObservadorFuente>();
-  #estado: EstadoConexion = 'desconectada';
-  #ultimoTiempoMs = 0;
+export class SourceChannel {
+  readonly #observers = new Set<SourceObserver>();
+  #state: ConnectionState = 'desconectada';
+  #lastTimeMs = 0;
 
-  get estado(): EstadoConexion {
-    return this.#estado;
+  get state(): ConnectionState {
+    return this.#state;
   }
 
-  suscribir(observador: ObservadorFuente): () => void {
-    this.#observadores.add(observador);
+  subscribe(observer: SourceObserver): () => void {
+    this.#observers.add(observer);
     return () => {
-      this.#observadores.delete(observador);
+      this.#observers.delete(observer);
     };
   }
 
-  cambiarEstado(estado: EstadoConexion): void {
-    if (estado === this.#estado) {
+  changeState(state: ConnectionState): void {
+    if (state === this.#state) {
       return;
     }
-    this.#estado = estado;
-    for (const observador of this.#observadores) {
-      observador.alCambiarEstado?.(estado);
+    this.#state = state;
+    for (const observer of this.#observers) {
+      observer.onStateChange?.(state);
     }
   }
 
   /** Reinicia la referencia de tiempo al iniciar una nueva conexión. */
-  reiniciarTiempo(): void {
-    this.#ultimoTiempoMs = 0;
+  resetTime(): void {
+    this.#lastTimeMs = 0;
   }
 
   /** Entrega la notificación si es válida; si no, la descarta y avisa del error. */
-  notificar(notificacion: NotificacionLatido): void {
-    const resultado = validarNotificacion(notificacion, this.#ultimoTiempoMs);
-    if (!resultado.valida) {
-      this.emitirError(new ErrorFuenteSenal(resultado.motivo));
+  notify(notification: BeatNotification): void {
+    const result = validateNotification(notification, this.#lastTimeMs);
+    if (!result.valid) {
+      this.emitError(new SignalSourceError(result.reason));
       return;
     }
-    this.#ultimoTiempoMs = notificacion.tiempoMs;
-    for (const observador of this.#observadores) {
-      observador.alNotificar?.(notificacion);
+    this.#lastTimeMs = notification.timeMs;
+    for (const observer of this.#observers) {
+      observer.onNotification?.(notification);
     }
   }
 
-  emitirError(error: Error): void {
-    for (const observador of this.#observadores) {
-      observador.alError?.(error);
+  emitError(error: Error): void {
+    for (const observer of this.#observers) {
+      observer.onError?.(error);
     }
   }
 }

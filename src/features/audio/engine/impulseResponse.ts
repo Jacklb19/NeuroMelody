@@ -1,43 +1,43 @@
-import { crearAleatorio } from '../../acquisition/simulator/prng';
+import { createRandom } from '../../acquisition/simulator/prng';
 
-export interface OpcionesRespuesta {
-  readonly duracionS: number;
+export interface ImpulseResponseOptions {
+  readonly durationS: number;
   /** Tiempo en que la cola cae 60 dB. */
   readonly rt60S: number;
-  readonly semilla: number;
+  readonly seed: number;
 }
 
-export const RESPUESTA_POR_OMISION: OpcionesRespuesta = { duracionS: 3.5, rt60S: 2.8, semilla: 20260929 };
+export const DEFAULT_IMPULSE_RESPONSE: ImpulseResponseOptions = { durationS: 3.5, rt60S: 2.8, seed: 20260929 };
 
 /** Ln(1000): una caída de 60 dB en amplitud. */
-const CAIDA_60_DB = Math.log(1000);
-const FUNDIDO_ENTRADA_S = 0.005;
+const DECAY_60_DB = Math.log(1000);
+const FADE_IN_S = 0.005;
 
 /**
  * Respuesta al impulso estéreo generada en código (ruido con caída
  * exponencial), sin archivos externos. Cada canal usa una secuencia distinta
  * para dar amplitud estéreo. Es determinista para una misma semilla.
  */
-export function generarRespuestaImpulso(
-  frecuenciaMuestreo: number,
-  opciones: OpcionesRespuesta = RESPUESTA_POR_OMISION,
+export function generateImpulseResponse(
+  sampleRate: number,
+  options: ImpulseResponseOptions = DEFAULT_IMPULSE_RESPONSE,
 ): [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] {
-  const longitud = Math.round(opciones.duracionS * frecuenciaMuestreo);
-  const muestrasFundido = Math.max(1, Math.round(FUNDIDO_ENTRADA_S * frecuenciaMuestreo));
-  const canales: [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] = [
-    new Float32Array(longitud),
-    new Float32Array(longitud),
+  const length = Math.round(options.durationS * sampleRate);
+  const fadeSamples = Math.max(1, Math.round(FADE_IN_S * sampleRate));
+  const channels: [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] = [
+    new Float32Array(length),
+    new Float32Array(length),
   ];
 
-  canales.forEach((canal, indice) => {
-    const aleatorio = crearAleatorio(opciones.semilla + indice);
-    for (let i = 0; i < longitud; i++) {
-      const t = i / frecuenciaMuestreo;
-      const caida = Math.exp((-CAIDA_60_DB * t) / opciones.rt60S);
+  channels.forEach((channel, index) => {
+    const random = createRandom(options.seed + index);
+    for (let i = 0; i < length; i++) {
+      const t = i / sampleRate;
+      const decay = Math.exp((-DECAY_60_DB * t) / options.rt60S);
       // Entrada suave de 5 ms para que la cola no empiece con un chasquido.
-      const entrada = Math.min(1, i / muestrasFundido);
-      canal[i] = (aleatorio() * 2 - 1) * caida * entrada;
+      const input = Math.min(1, i / fadeSamples);
+      channel[i] = (random() * 2 - 1) * decay * input;
     }
   });
-  return canales;
+  return channels;
 }

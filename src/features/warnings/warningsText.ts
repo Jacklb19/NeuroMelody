@@ -3,7 +3,7 @@
  * incorporadas al producto" del documento de definición, en lenguaje
  * descriptivo y sin afirmaciones clínicas (R-06).
  */
-export const ADVERTENCIAS: readonly string[] = [
+export const WARNINGS: readonly string[] = [
   'NeuroMelody es una herramienta de bienestar y acompañamiento. No es un dispositivo médico ni está certificada como tal.',
   'No mide el dolor ni sugiere modificar, suspender o sustituir un tratamiento prescrito.',
   'Su uso es complementario al seguimiento de tu profesional de la salud.',
@@ -11,5 +11,5 @@ export const ADVERTENCIAS: readonly string[] = [
   'Puedes detener la música en cualquier momento con el botón «Detener», siempre visible, o con la tecla Esc.',
 ];
 
-export const TEXTO_CONFIRMACION =
+export const CONFIRMATION_TEXT =
   'He leído estas condiciones y entiendo que el uso de NeuroMelody es complementario al seguimiento de mi profesional de la salud.';

@@ -1,9 +1,9 @@
 /**
  * Representa el conjunto de capacidades web verificadas en tiempo de ejecución.
  */
-export interface CapacidadesEntorno {
+export interface EnvironmentCapabilities {
   readonly crossOriginIsolated: boolean;
-  readonly soportaWorkers: boolean;
-  readonly soportaWebAssembly: boolean;
-  readonly soportaSharedArrayBuffer: boolean;
+  readonly supportsWorkers: boolean;
+  readonly supportsWebAssembly: boolean;
+  readonly supportsSharedArrayBuffer: boolean;
 }

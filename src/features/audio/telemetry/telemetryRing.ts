@@ -6,60 +6,60 @@
  * Distribución: [0] muestras escritas en total (Int32, con Atomics), y a
  * continuación CAPACIDAD valores Float32.
  */
-export const CAPACIDAD_TELEMETRIA = 512;
-const BYTES_CABECERA = 8;
+export const TELEMETRY_CAPACITY = 512;
+const HEADER_BYTES = 8;
 
-export function crearBuferTelemetria(): SharedArrayBuffer {
-  return new SharedArrayBuffer(BYTES_CABECERA + CAPACIDAD_TELEMETRIA * Float32Array.BYTES_PER_ELEMENT);
+export function createTelemetryBuffer(): SharedArrayBuffer {
+  return new SharedArrayBuffer(HEADER_BYTES + TELEMETRY_CAPACITY * Float32Array.BYTES_PER_ELEMENT);
 }
 
 /** Lado del hilo de audio. */
-export class EscritorTelemetria {
-  readonly #cabecera: Int32Array;
-  readonly #datos: Float32Array;
+export class TelemetryWriter {
+  readonly #header: Int32Array;
+  readonly #data: Float32Array;
 
-  constructor(bufer: SharedArrayBuffer) {
-    this.#cabecera = new Int32Array(bufer, 0, 2);
-    this.#datos = new Float32Array(bufer, BYTES_CABECERA, CAPACIDAD_TELEMETRIA);
+  constructor(buffer: SharedArrayBuffer) {
+    this.#header = new Int32Array(buffer, 0, 2);
+    this.#data = new Float32Array(buffer, HEADER_BYTES, TELEMETRY_CAPACITY);
   }
 
-  escribir(valor: number): void {
-    const escritos = Atomics.load(this.#cabecera, 0);
-    this.#datos[escritos % CAPACIDAD_TELEMETRIA] = valor;
+  write(value: number): void {
+    const written = Atomics.load(this.#header, 0);
+    this.#data[written % TELEMETRY_CAPACITY] = value;
     // Se publica el índice después del dato para que el lector nunca lea a medias.
-    Atomics.store(this.#cabecera, 0, (escritos + 1) | 0);
+    Atomics.store(this.#header, 0, (written + 1) | 0);
   }
 }
 
-export interface LecturaTelemetria {
+export interface TelemetryReading {
   /** Bloques nuevos desde la lectura anterior. */
-  readonly bloques: number;
+  readonly blocks: number;
   /** Máximo de los valores nuevos; `null` si no hubo bloques. */
-  readonly maximo: number | null;
+  readonly max: number | null;
 }
 
 /** Lado del hilo principal. */
-export class LectorTelemetria {
-  readonly #cabecera: Int32Array;
-  readonly #datos: Float32Array;
-  #leidos = 0;
+export class TelemetryReader {
+  readonly #header: Int32Array;
+  readonly #data: Float32Array;
+  #readCount = 0;
 
-  constructor(bufer: SharedArrayBuffer) {
-    this.#cabecera = new Int32Array(bufer, 0, 2);
-    this.#datos = new Float32Array(bufer, BYTES_CABECERA, CAPACIDAD_TELEMETRIA);
+  constructor(buffer: SharedArrayBuffer) {
+    this.#header = new Int32Array(buffer, 0, 2);
+    this.#data = new Float32Array(buffer, HEADER_BYTES, TELEMETRY_CAPACITY);
   }
 
   /** Lee lo escrito desde la última vez; si el escritor dio la vuelta, solo lo más reciente. */
-  leer(): LecturaTelemetria {
-    const escritos = Atomics.load(this.#cabecera, 0);
-    const nuevos = escritos - this.#leidos;
-    const desde = escritos - Math.min(nuevos, CAPACIDAD_TELEMETRIA);
-    let maximo: number | null = null;
-    for (let i = desde; i < escritos; i++) {
-      const valor = this.#datos[i % CAPACIDAD_TELEMETRIA] ?? 0;
-      maximo = maximo === null ? valor : Math.max(maximo, valor);
+  read(): TelemetryReading {
+    const written = Atomics.load(this.#header, 0);
+    const newCount = written - this.#readCount;
+    const from = written - Math.min(newCount, TELEMETRY_CAPACITY);
+    let max: number | null = null;
+    for (let i = from; i < written; i++) {
+      const value = this.#data[i % TELEMETRY_CAPACITY] ?? 0;
+      max = max === null ? value : Math.max(max, value);
     }
-    this.#leidos = escritos;
-    return { bloques: nuevos, maximo };
+    this.#readCount = written;
+    return { blocks: newCount, max };
   }
 }

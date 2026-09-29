@@ -1,17 +1,17 @@
-import type { LatidoClasificado } from './types';
+import type { ClassifiedBeat } from './types';
 
 /** Índices de variabilidad en el dominio temporal (RF-05). */
-export interface IndicesTemporales {
+export interface TimeDomainIndices {
   /** Frecuencia cardíaca media (60000 / NN medio), en lpm; `null` sin NN. */
-  readonly fcMedia: number | null;
+  readonly meanHr: number | null;
   /** Raíz cuadrática media de las diferencias sucesivas, en ms; `null` sin pares. */
   readonly rmssd: number | null;
   /** Desviación estándar de los NN (con n − 1), en ms; `null` con menos de 2 NN. */
   readonly sdnn: number | null;
   /** Número de intervalos NN (aceptados) usados. */
-  readonly nnValidos: number;
+  readonly validNn: number;
   /** Suma de los NN aceptados, en ms: cuánta señal válida respalda los índices. */
-  readonly duracionNNms: number;
+  readonly nnDurationMs: number;
 }
 
 /**
@@ -21,38 +21,38 @@ export interface IndicesTemporales {
  * y sin hueco entre ellos: una diferencia que atraviesa un descarte o una
  * pérdida de contacto no es una diferencia latido a latido.
  */
-export function calcularIndicesTemporales(
-  latidos: readonly LatidoClasificado[],
-): IndicesTemporales {
+export function computeTimeDomainIndices(
+  beats: readonly ClassifiedBeat[],
+): TimeDomainIndices {
   const nn: number[] = [];
-  let sumaCuadradosDiferencias = 0;
-  let pares = 0;
-  let anterior: LatidoClasificado | null = null;
+  let sumSquaredDiffs = 0;
+  let pairs = 0;
+  let previous: ClassifiedBeat | null = null;
 
-  for (const latido of latidos) {
-    if (latido.aceptado) {
-      nn.push(latido.rrMs);
-      if (anterior?.aceptado === true && latido.contiguoAlAnterior) {
-        sumaCuadradosDiferencias += (latido.rrMs - anterior.rrMs) ** 2;
-        pares++;
+  for (const beat of beats) {
+    if (beat.accepted) {
+      nn.push(beat.rrMs);
+      if (previous?.accepted === true && beat.contiguousWithPrevious) {
+        sumSquaredDiffs += (beat.rrMs - previous.rrMs) ** 2;
+        pairs++;
       }
     }
-    anterior = latido;
+    previous = beat;
   }
 
-  const duracionNNms = nn.reduce((suma, rr) => suma + rr, 0);
-  const nnMedio = nn.length > 0 ? duracionNNms / nn.length : null;
+  const nnDurationMs = nn.reduce((sum, rr) => sum + rr, 0);
+  const meanNn = nn.length > 0 ? nnDurationMs / nn.length : null;
 
   return {
-    fcMedia: nnMedio === null ? null : 60000 / nnMedio,
-    rmssd: pares > 0 ? Math.sqrt(sumaCuadradosDiferencias / pares) : null,
-    sdnn: nnMedio === null || nn.length < 2 ? null : desviacionMuestral(nn, nnMedio),
-    nnValidos: nn.length,
-    duracionNNms,
+    meanHr: meanNn === null ? null : 60000 / meanNn,
+    rmssd: pairs > 0 ? Math.sqrt(sumSquaredDiffs / pairs) : null,
+    sdnn: meanNn === null || nn.length < 2 ? null : sampleStdDev(nn, meanNn),
+    validNn: nn.length,
+    nnDurationMs,
   };
 }
 
-function desviacionMuestral(valores: readonly number[], media: number): number {
-  const suma = valores.reduce((acumulado, v) => acumulado + (v - media) ** 2, 0);
-  return Math.sqrt(suma / (valores.length - 1));
+function sampleStdDev(values: readonly number[], mean: number): number {
+  const sum = values.reduce((accumulated, v) => accumulated + (v - mean) ** 2, 0);
+  return Math.sqrt(sum / (values.length - 1));
 }

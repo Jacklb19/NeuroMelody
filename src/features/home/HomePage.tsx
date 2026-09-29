@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
-import { useTituloPagina } from '../../app/usePageTitle';
-import { DURACION_POR_OMISION_MIN } from '../plan/plan';
+import { usePageTitle } from '../../app/usePageTitle';
+import { DEFAULT_DURATION_MIN } from '../plan/plan';
 
-const estiloEnlace: React.CSSProperties = {
+const linkStyle: React.CSSProperties = {
   display: 'inline-block',
   padding: 'var(--espacio-2) var(--espacio-4)',
   borderRadius: 'var(--radio-borde)',
@@ -11,8 +11,8 @@ const estiloEnlace: React.CSSProperties = {
 };
 
 /** Punto de entrada (docs/pantallas.md, `/`). */
-export function PaginaInicio(): React.JSX.Element {
-  useTituloPagina('Inicio');
+export function HomePage(): React.JSX.Element {
+  usePageTitle('Inicio');
   return (
     <>
       <h1 style={{ fontSize: 'var(--texto-2xl)', marginBottom: 'var(--espacio-2)' }}>NeuroMelody</h1>
@@ -22,13 +22,13 @@ export function PaginaInicio(): React.JSX.Element {
       </p>
       <ul style={{ listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)' }}>
         <li>
-          <Link to="/plan" style={estiloEnlace}>
+          <Link to="/plan" style={linkStyle}>
             Preparar una sesión
           </Link>
         </li>
         <li>
-          <Link to="/sesion" style={estiloEnlace}>
-            Empezar con el plan por defecto ({DURACION_POR_OMISION_MIN} minutos)
+          <Link to="/sesion" style={linkStyle}>
+            Empezar con el plan por defecto ({DEFAULT_DURATION_MIN} minutos)
           </Link>
         </li>
       </ul>

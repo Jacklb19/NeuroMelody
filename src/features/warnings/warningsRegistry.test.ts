@@ -1,18 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { CLAVE_ADVERTENCIAS, RegistroAdvertencias, type AlmacenClaveValor } from './warningsRegistry';
+import { WARNINGS_STORAGE_KEY, WarningsRegistry, type KeyValueStorage } from './warningsRegistry';
 
-function almacenEnMemoria(): AlmacenClaveValor & { datos: Map<string, string> } {
-  const datos = new Map<string, string>();
+function inMemoryStorage(): KeyValueStorage & { data: Map<string, string> } {
+  const data = new Map<string, string>();
   return {
-    datos,
-    getItem: (clave) => datos.get(clave) ?? null,
-    setItem: (clave, valor) => {
-      datos.set(clave, valor);
+    data,
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => {
+      data.set(key, value);
     },
   };
 }
 
-const almacenQueFalla: AlmacenClaveValor = {
+const failingStorage: KeyValueStorage = {
   getItem: () => {
     throw new Error('SecurityError');
   },
@@ -23,28 +23,28 @@ const almacenQueFalla: AlmacenClaveValor = {
 
 describe('RegistroAdvertencias', () => {
   it('guarda la fecha de aceptación y la recuerda en la siguiente visita', () => {
-    const almacen = almacenEnMemoria();
-    const registro = new RegistroAdvertencias(almacen);
-    expect(registro.aceptadas()).toBe(false);
+    const storage = inMemoryStorage();
+    const registry = new WarningsRegistry(storage);
+    expect(registry.isAccepted()).toBe(false);
 
-    expect(registro.aceptar(new Date('2026-09-29T10:00:00Z'))).toBe(true);
-    expect(almacen.datos.get(CLAVE_ADVERTENCIAS)).toBe('2026-09-29T10:00:00.000Z');
-    expect(new RegistroAdvertencias(almacen).aceptadas()).toBe(true);
+    expect(registry.accept(new Date('2026-09-29T10:00:00Z'))).toBe(true);
+    expect(storage.data.get(WARNINGS_STORAGE_KEY)).toBe('2026-09-29T10:00:00.000Z');
+    expect(new WarningsRegistry(storage).isAccepted()).toBe(true);
   });
 
   it('si el almacenamiento falla, acepta solo para la visita actual y vuelve a pedirlas después', () => {
-    const registro = new RegistroAdvertencias(almacenQueFalla);
-    expect(registro.aceptadas()).toBe(false);
-    expect(registro.aceptar(new Date())).toBe(false);
-    expect(registro.aceptadas()).toBe(true);
+    const registry = new WarningsRegistry(failingStorage);
+    expect(registry.isAccepted()).toBe(false);
+    expect(registry.accept(new Date())).toBe(false);
+    expect(registry.isAccepted()).toBe(true);
 
-    expect(new RegistroAdvertencias(almacenQueFalla).aceptadas()).toBe(false);
+    expect(new WarningsRegistry(failingStorage).isAccepted()).toBe(false);
   });
 
   it('funciona sin almacenamiento disponible', () => {
-    const registro = new RegistroAdvertencias(null);
-    expect(registro.aceptadas()).toBe(false);
-    expect(registro.aceptar(new Date())).toBe(false);
-    expect(registro.aceptadas()).toBe(true);
+    const registry = new WarningsRegistry(null);
+    expect(registry.isAccepted()).toBe(false);
+    expect(registry.accept(new Date())).toBe(false);
+    expect(registry.isAccepted()).toBe(true);
   });
 });

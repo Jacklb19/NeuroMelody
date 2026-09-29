@@ -4,41 +4,41 @@
  */
 
 /** Re3 (≈ 146,8 Hz): centro tonal fijo durante toda la sesión. */
-export const MIDI_TONICA = 50;
+export const MIDI_TONIC = 50;
 /** Re2, una octava bajo la tónica. */
-export const MIDI_BORDON = MIDI_TONICA - 12;
+export const MIDI_DRONE = MIDI_TONIC - 12;
 
 /** Modos, en el orden en que los recibe el parámetro `modo` del sintetizador. */
-export const MODO = {
-  pentatonicaMayor: 0,
-  lidio: 1,
-  bordonPentatonica: 2,
+export const MODE = {
+  majorPentatonic: 0,
+  lydian: 1,
+  dronePentatonic: 2,
 } as const;
 
-export type Modo = (typeof MODO)[keyof typeof MODO];
+export type Mode = (typeof MODE)[keyof typeof MODE];
 
 /**
  * Semitonos sobre la tónica. La pentatónica mayor de re (re, mi, fa#, la, si)
  * está contenida en el lidio de re, así que los fundidos entre ambos
  * comparten notas.
  */
-export const ESCALAS: Readonly<Record<Modo, readonly number[]>> = {
-  [MODO.pentatonicaMayor]: [0, 2, 4, 7, 9],
-  [MODO.lidio]: [0, 2, 4, 6, 7, 9, 11],
-  [MODO.bordonPentatonica]: [0, 2, 4, 7, 9],
+export const SCALES: Readonly<Record<Mode, readonly number[]>> = {
+  [MODE.majorPentatonic]: [0, 2, 4, 7, 9],
+  [MODE.lydian]: [0, 2, 4, 6, 7, 9, 11],
+  [MODE.dronePentatonic]: [0, 2, 4, 7, 9],
 };
 
-export function esModo(valor: number): valor is Modo {
-  return valor === MODO.pentatonicaMayor || valor === MODO.lidio || valor === MODO.bordonPentatonica;
+export function isMode(value: number): value is Mode {
+  return value === MODE.majorPentatonic || value === MODE.lydian || value === MODE.dronePentatonic;
 }
 
-export function frecuenciaMidi(midi: number): number {
+export function midiFrequency(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
 /** Nota MIDI del grado `grado` de la escala (admite grados por encima de la octava). */
-export function notaDeGrado(escala: readonly number[], grado: number, midiBase: number): number {
-  const octava = Math.floor(grado / escala.length);
-  const indice = grado - octava * escala.length;
-  return midiBase + 12 * octava + (escala[indice] ?? 0);
+export function degreeNote(scale: readonly number[], degree: number, midiBase: number): number {
+  const octave = Math.floor(degree / scale.length);
+  const index = degree - octave * scale.length;
+  return midiBase + 12 * octave + (scale[index] ?? 0);
 }

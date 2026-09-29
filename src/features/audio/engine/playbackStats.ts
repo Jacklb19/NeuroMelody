@@ -3,34 +3,34 @@
  * contador de subdesbordamientos con el que se verifica RNF-01. En los
  * navegadores sin la API devuelve `null` y la interfaz oculta la métrica.
  */
-export interface EstadisticasReproduccion {
+export interface PlaybackStatistics {
   /** Veces que el hilo de audio no entregó su bloque a tiempo. */
-  readonly subdesbordamientos: number;
-  readonly duracionSubdesbordamientosS: number;
+  readonly underruns: number;
+  readonly underrunDurationS: number;
   /** Duración total reproducida según el navegador. */
-  readonly duracionTotalS: number;
+  readonly totalDurationS: number;
 }
 
-type Registro = Record<string, unknown>;
+type UnknownRecord = Record<string, unknown>;
 
-function esRegistro(valor: unknown): valor is Registro {
-  return typeof valor === 'object' && valor !== null;
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
 }
 
-function numero(valor: unknown): number | null {
-  return typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
+function finiteOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-export function leerEstadisticasReproduccion(contexto: unknown): EstadisticasReproduccion | null {
-  if (!esRegistro(contexto) || !esRegistro(contexto.playbackStats)) {
+export function readPlaybackStats(context: unknown): PlaybackStatistics | null {
+  if (!isRecord(context) || !isRecord(context.playbackStats)) {
     return null;
   }
-  const { underrunEvents, underrunDuration, totalDuration } = contexto.playbackStats;
-  const subdesbordamientos = numero(underrunEvents);
-  const duracionSubdesbordamientosS = numero(underrunDuration);
-  const duracionTotalS = numero(totalDuration);
-  if (subdesbordamientos === null || duracionSubdesbordamientosS === null || duracionTotalS === null) {
+  const { underrunEvents, underrunDuration, totalDuration } = context.playbackStats;
+  const underruns = finiteOrNull(underrunEvents);
+  const underrunDurationS = finiteOrNull(underrunDuration);
+  const totalDurationS = finiteOrNull(totalDuration);
+  if (underruns === null || underrunDurationS === null || totalDurationS === null) {
     return null;
   }
-  return { subdesbordamientos, duracionSubdesbordamientosS, duracionTotalS };
+  return { underruns, underrunDurationS, totalDurationS };
 }

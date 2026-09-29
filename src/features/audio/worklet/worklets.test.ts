@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { TECHO } from '../core/softClip';
-import { MODO } from '../core/theory';
-import { LectorTelemetria, crearBuferTelemetria } from '../telemetry/telemetryRing';
-import type { ClaseProcesador, ParametrosBloque } from './workletScope';
+import { CEILING } from '../core/softClip';
+import { MODE } from '../core/theory';
+import { TelemetryReader, createTelemetryBuffer } from '../telemetry/telemetryRing';
+import type { ProcessorClass, BlockParams } from './workletScope';
 import {
-  DESCRIPTORES_SINTETIZADOR,
-  NOMBRE_RECORTADOR,
-  NOMBRE_SINTETIZADOR,
-  leerOpcionesRecortador,
-  leerOpcionesSintetizador,
+  SYNTHESIZER_DESCRIPTORS,
+  CLIPPER_NAME,
+  SYNTHESIZER_NAME,
+  readClipperOptions,
+  readSynthesizerOptions,
 } from './workletContract';
 
-const registrados = new Map<string, ClaseProcesador>();
+const registered = new Map<string, ProcessorClass>();
 
 // Ámbito del AudioWorklet simulado: los módulos lo leen de globalThis al cargarse.
 beforeAll(async () => {
@@ -20,39 +20,39 @@ beforeAll(async () => {
     AudioWorkletProcessor: class {
       readonly port = new MessageChannel().port1;
     },
-    registerProcessor: (nombre: string, clase: ClaseProcesador) => {
-      registrados.set(nombre, clase);
+    registerProcessor: (name: string, processorClass: ProcessorClass) => {
+      registered.set(name, processorClass);
     },
   });
   await import('./synthesizer.worklet');
   await import('./clipper.worklet');
 });
 
-function bloque(canales: number): Float32Array[] {
-  return Array.from({ length: canales }, () => new Float32Array(128));
+function block(channels: number): Float32Array[] {
+  return Array.from({ length: channels }, () => new Float32Array(128));
 }
 
-function crear(nombre: string, processorOptions: unknown) {
-  const Clase = registrados.get(nombre);
-  if (Clase === undefined) {
-    throw new Error(`No se registró ${nombre}`);
+function create(name: string, processorOptions: unknown) {
+  const Processor = registered.get(name);
+  if (Processor === undefined) {
+    throw new Error(`No se registró ${name}`);
   }
-  return new Clase({ processorOptions });
+  return new Processor({ processorOptions });
 }
 
 describe('procesador sintetizador', () => {
-  const opciones = { semilla: 1, modoInicial: MODO.lidio, capasIniciales: 2 };
-  const parametros: ParametrosBloque = {
+  const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2 };
+  const params: BlockParams = {
     tempo: new Float32Array([66]),
-    modo: new Float32Array([MODO.lidio]),
-    capas: new Float32Array([2]),
+    mode: new Float32Array([MODE.lydian]),
+    layers: new Float32Array([2]),
   };
 
   it('se registra con sus parámetros de tasa k', () => {
-    const Clase = registrados.get(NOMBRE_SINTETIZADOR) as unknown as {
-      parameterDescriptors: typeof DESCRIPTORES_SINTETIZADOR;
+    const Processor = registered.get(SYNTHESIZER_NAME) as unknown as {
+      parameterDescriptors: typeof SYNTHESIZER_DESCRIPTORS;
     };
-    expect(Clase.parameterDescriptors.map((d) => [d.name, d.automationRate])).toEqual([
+    expect(Processor.parameterDescriptors.map((d) => [d.name, d.automationRate])).toEqual([
       ['tempo', 'k-rate'],
       ['modo', 'k-rate'],
       ['capas', 'k-rate'],
@@ -60,74 +60,74 @@ describe('procesador sintetizador', () => {
   });
 
   it('produce sonido y copia el canal izquierdo al derecho', () => {
-    const procesador = crear(NOMBRE_SINTETIZADOR, opciones);
-    const salida = bloque(2);
-    let energia = 0;
+    const processor = create(SYNTHESIZER_NAME, options);
+    const output = block(2);
+    let energy = 0;
     for (let i = 0; i < 100; i++) {
-      expect(procesador.process([], [salida], parametros)).toBe(true);
-      energia += (salida[0] ?? new Float32Array()).reduce((s, x) => s + x * x, 0);
-      expect(salida[1]).toEqual(salida[0]);
+      expect(processor.process([], [output], params)).toBe(true);
+      energy += (output[0] ?? new Float32Array()).reduce((s, x) => s + x * x, 0);
+      expect(output[1]).toEqual(output[0]);
     }
-    expect(energia).toBeGreaterThan(0);
+    expect(energy).toBeGreaterThan(0);
   });
 
   it('tolera una salida sin canales', () => {
-    expect(crear(NOMBRE_SINTETIZADOR, opciones).process([], [], parametros)).toBe(true);
+    expect(create(SYNTHESIZER_NAME, options).process([], [], params)).toBe(true);
   });
 
   it('rechaza opciones no válidas', () => {
-    expect(() => crear(NOMBRE_SINTETIZADOR, { ...opciones, modoInicial: 7 })).toThrow(TypeError);
-    expect(() => crear(NOMBRE_SINTETIZADOR, undefined)).toThrow(TypeError);
+    expect(() => create(SYNTHESIZER_NAME, { ...options, initialMode: 7 })).toThrow(TypeError);
+    expect(() => create(SYNTHESIZER_NAME, undefined)).toThrow(TypeError);
   });
 });
 
 describe('procesador recortador', () => {
   it('limita cada muestra al techo y publica el pico en la telemetría', () => {
-    const bufer = crearBuferTelemetria();
-    const procesador = crear(NOMBRE_RECORTADOR, { telemetria: bufer });
-    const entrada = bloque(2);
-    entrada[0]?.fill(3);
-    entrada[1]?.fill(-0.2);
-    const salida = bloque(2);
+    const buffer = createTelemetryBuffer();
+    const processor = create(CLIPPER_NAME, { telemetry: buffer });
+    const input = block(2);
+    input[0]?.fill(3);
+    input[1]?.fill(-0.2);
+    const output = block(2);
 
-    procesador.process([entrada], [salida], {});
+    processor.process([input], [output], {});
 
-    expect(Math.max(...Array.from(salida[0] ?? [], Math.abs))).toBeLessThanOrEqual(TECHO);
-    expect(salida[1]?.[0]).toBeCloseTo(-0.2, 2);
-    const lectura = new LectorTelemetria(bufer).leer();
-    expect(lectura.bloques).toBe(1);
-    expect(lectura.maximo).toBeCloseTo(TECHO * Math.tanh(3 / TECHO), 5);
+    expect(Math.max(...Array.from(output[0] ?? [], Math.abs))).toBeLessThanOrEqual(CEILING);
+    expect(output[1]?.[0]).toBeCloseTo(-0.2, 2);
+    const reading = new TelemetryReader(buffer).read();
+    expect(reading.blocks).toBe(1);
+    expect(reading.max).toBeCloseTo(CEILING * Math.tanh(3 / CEILING), 5);
   });
 
   it('sin entrada conectada entrega silencio', () => {
-    const procesador = crear(NOMBRE_RECORTADOR, { telemetria: null });
-    const salida = bloque(1);
-    salida[0]?.fill(1);
-    procesador.process([], [salida], {});
-    expect(salida[0]?.every((x) => x === 0)).toBe(true);
+    const processor = create(CLIPPER_NAME, { telemetry: null });
+    const output = block(1);
+    output[0]?.fill(1);
+    processor.process([], [output], {});
+    expect(output[0]?.every((x) => x === 0)).toBe(true);
   });
 });
 
 describe('validación de opciones', () => {
   it('acepta opciones correctas', () => {
-    expect(leerOpcionesSintetizador({ semilla: 3, modoInicial: 2, capasIniciales: 3 })).toEqual({
-      semilla: 3,
-      modoInicial: 2,
-      capasIniciales: 3,
+    expect(readSynthesizerOptions({ seed: 3, initialMode: 2, initialLayers: 3 })).toEqual({
+      seed: 3,
+      initialMode: 2,
+      initialLayers: 3,
     });
-    expect(leerOpcionesRecortador({ telemetria: null })).toEqual({ telemetria: null });
+    expect(readClipperOptions({ telemetry: null })).toEqual({ telemetry: null });
   });
 
   it.each([
-    { semilla: 1.5, modoInicial: 1, capasIniciales: 2 },
-    { semilla: 1, modoInicial: 1, capasIniciales: 0 },
-    { semilla: '1', modoInicial: 1, capasIniciales: 2 },
-  ])('rechaza el sintetizador con %o', (opciones) => {
-    expect(() => leerOpcionesSintetizador(opciones)).toThrow(TypeError);
+    { seed: 1.5, initialMode: 1, initialLayers: 2 },
+    { seed: 1, initialMode: 1, initialLayers: 0 },
+    { seed: '1', initialMode: 1, initialLayers: 2 },
+  ])('rechaza el sintetizador con %o', (options) => {
+    expect(() => readSynthesizerOptions(options)).toThrow(TypeError);
   });
 
   it('rechaza una telemetría que no es memoria compartida', () => {
-    expect(() => leerOpcionesRecortador({ telemetria: new ArrayBuffer(8) })).toThrow(TypeError);
-    expect(() => leerOpcionesRecortador(null)).toThrow(TypeError);
+    expect(() => readClipperOptions({ telemetry: new ArrayBuffer(8) })).toThrow(TypeError);
+    expect(() => readClipperOptions(null)).toThrow(TypeError);
   });
 });

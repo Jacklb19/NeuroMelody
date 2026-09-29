@@ -1,45 +1,45 @@
-import { crearAleatorio, type Aleatorio } from '../../acquisition/simulator/prng';
+import { createRandom, type RandomSource } from '../../acquisition/simulator/prng';
 import {
-  ESCALAS,
-  MIDI_BORDON,
-  MIDI_TONICA,
-  MODO,
-  esModo,
-  frecuenciaMidi,
-  notaDeGrado,
-  type Modo,
+  SCALES,
+  MIDI_DRONE,
+  MIDI_TONIC,
+  MODE,
+  isMode,
+  midiFrequency,
+  degreeNote,
+  type Mode,
 } from './theory';
 
 /** Pulsos de un ciclo armónico: los cambios de modo esperan a que cierre. */
-export const PULSOS_POR_CICLO = 16;
+export const BEATS_PER_CYCLE = 16;
 /** Cada cuántos pulsos cambia el acorde de la capa de armonía. */
-export const PULSOS_POR_ACORDE = 4;
+export const BEATS_PER_CHORD = 4;
 /** Duración de los fundidos de capas y de modo (docs/diseno-musical.md). */
-export const DURACION_FUNDIDO_S = 30;
+export const FADE_DURATION_S = 30;
 /** Voces reservadas al iniciar; nunca se crean más. */
-export const MAX_VOCES = 32;
+export const MAX_VOICES = 32;
 
-const PROBABILIDAD_NOTA_MELODIA = 0.35;
+const MELODY_NOTE_PROBABILITY = 0.35;
 /** Amplitud por debajo de la cual una voz se libera (≈ −80 dB, inaudible). */
-const UMBRAL_SILENCIO = 1e-4;
+const SILENCE_THRESHOLD = 1e-4;
 
-const CAPA_BORDON = 0;
-const CAPA_ARMONIA = 1;
-const CAPA_MELODIA = 2;
-const ESTADO_LIBRE = 0;
-const ESTADO_ATAQUE = 1;
-const ESTADO_CAIDA = 2;
+const LAYER_DRONE = 0;
+const LAYER_HARMONY = 1;
+const LAYER_MELODY = 2;
+const STATE_FREE = 0;
+const STATE_ATTACK = 1;
+const STATE_DECAY = 2;
 
-interface Envolvente {
-  readonly amplitud: number;
-  readonly ataqueS: number;
-  readonly caidaS: number;
+interface Envelope {
+  readonly amplitude: number;
+  readonly attackS: number;
+  readonly decayS: number;
 }
 
-const ENVOLVENTE_ACORDE: Envolvente = { amplitud: 0.07, ataqueS: 0.8, caidaS: 2.5 };
-const ENVOLVENTE_DIADA: Envolvente = { amplitud: 0.08, ataqueS: 2, caidaS: 4 };
-const ENVOLVENTE_MELODIA: Envolvente = { amplitud: 0.09, ataqueS: 0.02, caidaS: 1.2 };
-const AMPLITUD_BORDON = 0.11;
+const CHORD_ENVELOPE: Envelope = { amplitude: 0.07, attackS: 0.8, decayS: 2.5 };
+const DYAD_ENVELOPE: Envelope = { amplitude: 0.08, attackS: 2, decayS: 4 };
+const MELODY_ENVELOPE: Envelope = { amplitude: 0.09, attackS: 0.02, decayS: 1.2 };
+const DRONE_AMPLITUDE = 0.11;
 
 /**
  * Síntesis generativa por capas (RF-08), sin dependencias del navegador para
@@ -55,241 +55,241 @@ const AMPLITUD_BORDON = 0.11;
  * en ese orden, con un fundido de 30 s. Un cambio de `modo` se aplica al cerrar
  * el ciclo armónico, con un fundido cruzado de 30 s entre dos bancos de voces.
  */
-export class NucleoSintesis {
+export class SynthesisCore {
   readonly #fs: number;
-  readonly #aleatorio: Aleatorio;
-  readonly #pasoFundido: number;
+  readonly #random: RandomSource;
+  readonly #fadeStep: number;
 
   // Voces: un arreglo por campo, reservados una sola vez.
-  readonly #fase = new Float64Array(MAX_VOCES);
-  readonly #incremento = new Float64Array(MAX_VOCES);
-  readonly #amplitud = new Float64Array(MAX_VOCES);
-  readonly #pico = new Float64Array(MAX_VOCES);
-  readonly #pasoAtaque = new Float64Array(MAX_VOCES);
-  readonly #factorCaida = new Float64Array(MAX_VOCES);
-  readonly #estado = new Int8Array(MAX_VOCES);
-  readonly #capa = new Int8Array(MAX_VOCES);
-  readonly #banco = new Int8Array(MAX_VOCES);
+  readonly #phase = new Float64Array(MAX_VOICES);
+  readonly #increment = new Float64Array(MAX_VOICES);
+  readonly #amplitude = new Float64Array(MAX_VOICES);
+  readonly #peak = new Float64Array(MAX_VOICES);
+  readonly #attackStep = new Float64Array(MAX_VOICES);
+  readonly #decayFactor = new Float64Array(MAX_VOICES);
+  readonly #state = new Int8Array(MAX_VOICES);
+  readonly #layer = new Int8Array(MAX_VOICES);
+  readonly #bank = new Int8Array(MAX_VOICES);
 
-  readonly #gananciaCapa = new Float64Array(3);
-  readonly #objetivoCapa = new Float64Array(3);
-  readonly #gananciaBanco = new Float64Array(2);
+  readonly #layerGain = new Float64Array(3);
+  readonly #layerTarget = new Float64Array(3);
+  readonly #bankGain = new Float64Array(2);
 
-  #faseBordon = 0;
-  #faseQuinta = 0;
-  #faseVida = 0;
-  #fasePulso = 1;
-  #pulso = -1;
-  #modoActual: Modo = MODO.pentatonicaMayor;
-  #modoPendiente: Modo = MODO.pentatonicaMayor;
-  #bancoActivo = 0;
-  #robos = 0;
+  #dronePhase = 0;
+  #fifthPhase = 0;
+  #lifePhase = 0;
+  #beatPhase = 1;
+  #beat = -1;
+  #currentMode: Mode = MODE.majorPentatonic;
+  #pendingMode: Mode = MODE.majorPentatonic;
+  #activeBank = 0;
+  #steals = 0;
 
-  constructor(frecuenciaMuestreo: number, semilla: number, modoInicial: Modo = MODO.pentatonicaMayor) {
-    this.#fs = frecuenciaMuestreo;
-    this.#aleatorio = crearAleatorio(semilla);
-    this.#pasoFundido = 1 / (DURACION_FUNDIDO_S * frecuenciaMuestreo);
-    this.#modoActual = modoInicial;
-    this.#modoPendiente = modoInicial;
-    this.#gananciaBanco[0] = 1;
-    this.#gananciaCapa[CAPA_BORDON] = 1;
-    this.#objetivoCapa[CAPA_BORDON] = 1;
+  constructor(sampleRate: number, seed: number, initialMode: Mode = MODE.majorPentatonic) {
+    this.#fs = sampleRate;
+    this.#random = createRandom(seed);
+    this.#fadeStep = 1 / (FADE_DURATION_S * sampleRate);
+    this.#currentMode = initialMode;
+    this.#pendingMode = initialMode;
+    this.#bankGain[0] = 1;
+    this.#layerGain[LAYER_DRONE] = 1;
+    this.#layerTarget[LAYER_DRONE] = 1;
   }
 
   /** Datos de inspección para pruebas y telemetría; no forman parte del sonido. */
-  get pulso(): number {
-    return this.#pulso;
+  get beat(): number {
+    return this.#beat;
   }
-  get modoActual(): Modo {
-    return this.#modoActual;
+  get currentMode(): Mode {
+    return this.#currentMode;
   }
-  get bancoActivo(): number {
-    return this.#bancoActivo;
+  get activeBank(): number {
+    return this.#activeBank;
   }
-  get robosDeVoz(): number {
-    return this.#robos;
+  get voiceSteals(): number {
+    return this.#steals;
   }
-  gananciaBanco(banco: number): number {
-    return this.#gananciaBanco[banco] ?? 0;
+  bankGain(bank: number): number {
+    return this.#bankGain[bank] ?? 0;
   }
-  gananciaCapa(capa: number): number {
-    return this.#gananciaCapa[capa] ?? 0;
+  layerGain(layer: number): number {
+    return this.#layerGain[layer] ?? 0;
   }
 
   /**
    * Fija la ganancia de cada capa sin fundido. Solo para el primer bloque de
    * una sesión: el sonido empieza ya con las capas del nivel inicial.
    */
-  fijarCapasIniciales(capas: number): void {
-    this.#actualizarObjetivoCapas(capas);
-    this.#gananciaCapa.set(this.#objetivoCapa);
+  setInitialLayers(layers: number): void {
+    this.#updateLayerTargets(layers);
+    this.#layerGain.set(this.#layerTarget);
   }
 
   /**
    * Sintetiza `salida.length` muestras con los parámetros del bloque.
    *
    * @param tempo Pulsos por minuto.
-   * @param modo 0 pentatónica mayor, 1 lidio, 2 bordón con pentatónica.
-   * @param capas Número de capas activas (1 a 3).
+   * @param mode 0 pentatónica mayor, 1 lidio, 2 bordón con pentatónica.
+   * @param layers Número de capas activas (1 a 3).
    */
-  procesar(salida: Float32Array, tempo: number, modo: number, capas: number): void {
-    const modoRedondeado = Math.round(modo);
-    if (esModo(modoRedondeado)) {
-      this.#modoPendiente = modoRedondeado;
+  process(output: Float32Array, tempo: number, mode: number, layers: number): void {
+    const roundedMode = Math.round(mode);
+    if (isMode(roundedMode)) {
+      this.#pendingMode = roundedMode;
     }
-    this.#actualizarObjetivoCapas(capas);
+    this.#updateLayerTargets(layers);
 
-    const avancePulso = tempo / (60 * this.#fs);
-    const incrementoBordon = (2 * Math.PI * frecuenciaMidi(MIDI_BORDON)) / this.#fs;
-    const incrementoQuinta = (2 * Math.PI * frecuenciaMidi(MIDI_BORDON + 7)) / this.#fs;
-    const incrementoVida = (2 * Math.PI * 0.07) / this.#fs;
+    const beatAdvance = tempo / (60 * this.#fs);
+    const droneIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE)) / this.#fs;
+    const fifthIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE + 7)) / this.#fs;
+    const lifeIncrement = (2 * Math.PI * 0.07) / this.#fs;
 
-    for (let n = 0; n < salida.length; n++) {
-      this.#fasePulso += avancePulso;
-      if (this.#fasePulso >= 1) {
-        this.#fasePulso -= 1;
-        this.#alPulso();
+    for (let n = 0; n < output.length; n++) {
+      this.#beatPhase += beatAdvance;
+      if (this.#beatPhase >= 1) {
+        this.#beatPhase -= 1;
+        this.#onBeat();
       }
-      this.#suavizarGanancias();
+      this.#smoothGains();
 
       // Bordón continuo con una respiración lenta de amplitud.
-      this.#faseBordon += incrementoBordon;
-      this.#faseQuinta += incrementoQuinta;
-      this.#faseVida += incrementoVida;
-      const respiracion = 0.85 + 0.15 * Math.sin(this.#faseVida);
-      let muestra =
-        (this.#gananciaCapa[CAPA_BORDON] ?? 0) *
-        AMPLITUD_BORDON *
-        respiracion *
-        (Math.sin(this.#faseBordon) + 0.6 * Math.sin(this.#faseQuinta));
+      this.#dronePhase += droneIncrement;
+      this.#fifthPhase += fifthIncrement;
+      this.#lifePhase += lifeIncrement;
+      const breathing = 0.85 + 0.15 * Math.sin(this.#lifePhase);
+      let sample =
+        (this.#layerGain[LAYER_DRONE] ?? 0) *
+        DRONE_AMPLITUDE *
+        breathing *
+        (Math.sin(this.#dronePhase) + 0.6 * Math.sin(this.#fifthPhase));
 
-      for (let v = 0; v < MAX_VOCES; v++) {
-        if (this.#estado[v] !== ESTADO_LIBRE) {
-          muestra += this.#muestraVoz(v);
+      for (let v = 0; v < MAX_VOICES; v++) {
+        if (this.#state[v] !== STATE_FREE) {
+          sample += this.#voiceSample(v);
         }
       }
-      salida[n] = muestra;
+      output[n] = sample;
     }
 
     // Evita que las fases crezcan sin límite y pierdan precisión.
-    this.#faseBordon %= 2 * Math.PI;
-    this.#faseQuinta %= 2 * Math.PI;
-    this.#faseVida %= 2 * Math.PI;
+    this.#dronePhase %= 2 * Math.PI;
+    this.#fifthPhase %= 2 * Math.PI;
+    this.#lifePhase %= 2 * Math.PI;
   }
 
-  #actualizarObjetivoCapas(capas: number): void {
-    const activas = Math.min(3, Math.max(1, Math.round(capas)));
-    this.#objetivoCapa[CAPA_BORDON] = 1;
-    this.#objetivoCapa[CAPA_ARMONIA] = activas >= 2 ? 1 : 0;
-    this.#objetivoCapa[CAPA_MELODIA] = activas >= 3 ? 1 : 0;
+  #updateLayerTargets(layers: number): void {
+    const activeLayers = Math.min(3, Math.max(1, Math.round(layers)));
+    this.#layerTarget[LAYER_DRONE] = 1;
+    this.#layerTarget[LAYER_HARMONY] = activeLayers >= 2 ? 1 : 0;
+    this.#layerTarget[LAYER_MELODY] = activeLayers >= 3 ? 1 : 0;
   }
 
-  #suavizarGanancias(): void {
+  #smoothGains(): void {
     for (let c = 0; c < 3; c++) {
-      this.#gananciaCapa[c] = acercar(this.#gananciaCapa[c] ?? 0, this.#objetivoCapa[c] ?? 0, this.#pasoFundido);
+      this.#layerGain[c] = moveTowards(this.#layerGain[c] ?? 0, this.#layerTarget[c] ?? 0, this.#fadeStep);
     }
     for (let b = 0; b < 2; b++) {
-      const objetivo = b === this.#bancoActivo ? 1 : 0;
-      this.#gananciaBanco[b] = acercar(this.#gananciaBanco[b] ?? 0, objetivo, this.#pasoFundido);
+      const target = b === this.#activeBank ? 1 : 0;
+      this.#bankGain[b] = moveTowards(this.#bankGain[b] ?? 0, target, this.#fadeStep);
     }
   }
 
-  #alPulso(): void {
-    this.#pulso++;
-    const posicion = this.#pulso % PULSOS_POR_CICLO;
+  #onBeat(): void {
+    this.#beat++;
+    const position = this.#beat % BEATS_PER_CYCLE;
 
-    if (posicion === 0 && this.#modoPendiente !== this.#modoActual) {
+    if (position === 0 && this.#pendingMode !== this.#currentMode) {
       // Cierre del ciclo armónico: empieza el fundido cruzado hacia el nuevo modo.
-      this.#modoActual = this.#modoPendiente;
-      this.#bancoActivo = 1 - this.#bancoActivo;
+      this.#currentMode = this.#pendingMode;
+      this.#activeBank = 1 - this.#activeBank;
     }
 
-    if (posicion % PULSOS_POR_ACORDE === 0 && (this.#objetivoCapa[CAPA_ARMONIA] ?? 0) > 0) {
-      this.#dispararAcorde();
+    if (position % BEATS_PER_CHORD === 0 && (this.#layerTarget[LAYER_HARMONY] ?? 0) > 0) {
+      this.#triggerChord();
     }
     if (
-      (this.#objetivoCapa[CAPA_MELODIA] ?? 0) > 0 &&
-      this.#aleatorio() < PROBABILIDAD_NOTA_MELODIA
+      (this.#layerTarget[LAYER_MELODY] ?? 0) > 0 &&
+      this.#random() < MELODY_NOTE_PROBABILITY
     ) {
-      const escala = ESCALAS[this.#modoActual];
-      const grado = Math.floor(this.#aleatorio() * escala.length * 2);
-      this.#dispararVoz(notaDeGrado(escala, grado, MIDI_TONICA + 12), CAPA_MELODIA, ENVOLVENTE_MELODIA);
+      const scale = SCALES[this.#currentMode];
+      const degree = Math.floor(this.#random() * scale.length * 2);
+      this.#triggerVoice(degreeNote(scale, degree, MIDI_TONIC + 12), LAYER_MELODY, MELODY_ENVELOPE);
     }
   }
 
-  #dispararAcorde(): void {
-    const escala = ESCALAS[this.#modoActual];
-    const raiz = Math.floor(this.#aleatorio() * escala.length);
-    if (this.#modoActual === MODO.bordonPentatonica) {
+  #triggerChord(): void {
+    const scale = SCALES[this.#currentMode];
+    const root = Math.floor(this.#random() * scale.length);
+    if (this.#currentMode === MODE.dronePentatonic) {
       // Díada abierta sobre el bordón: más quieta que un acorde completo.
-      this.#dispararVoz(notaDeGrado(escala, raiz, MIDI_TONICA), CAPA_ARMONIA, ENVOLVENTE_DIADA);
-      this.#dispararVoz(notaDeGrado(escala, raiz + 3, MIDI_TONICA), CAPA_ARMONIA, ENVOLVENTE_DIADA);
+      this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
+      this.#triggerVoice(degreeNote(scale, root + 3, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
       return;
     }
     // Tres llamadas explícitas en lugar de recorrer un arreglo literal: no se reserva memoria.
-    this.#dispararVoz(notaDeGrado(escala, raiz, MIDI_TONICA), CAPA_ARMONIA, ENVOLVENTE_ACORDE);
-    this.#dispararVoz(notaDeGrado(escala, raiz + 2, MIDI_TONICA), CAPA_ARMONIA, ENVOLVENTE_ACORDE);
-    this.#dispararVoz(notaDeGrado(escala, raiz + 4, MIDI_TONICA), CAPA_ARMONIA, ENVOLVENTE_ACORDE);
+    this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
+    this.#triggerVoice(degreeNote(scale, root + 2, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
+    this.#triggerVoice(degreeNote(scale, root + 4, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
   }
 
-  #dispararVoz(midi: number, capa: number, envolvente: Envolvente): void {
-    let elegida = -1;
-    let menor = Number.POSITIVE_INFINITY;
-    for (let v = 0; v < MAX_VOCES; v++) {
-      if (this.#estado[v] === ESTADO_LIBRE) {
-        elegida = v;
+  #triggerVoice(midi: number, layer: number, envelope: Envelope): void {
+    let chosen = -1;
+    let lowest = Number.POSITIVE_INFINITY;
+    for (let v = 0; v < MAX_VOICES; v++) {
+      if (this.#state[v] === STATE_FREE) {
+        chosen = v;
         break;
       }
-      const amplitud = this.#amplitud[v] ?? 0;
-      if (amplitud < menor) {
-        menor = amplitud;
-        elegida = v;
+      const amplitude = this.#amplitude[v] ?? 0;
+      if (amplitude < lowest) {
+        lowest = amplitude;
+        chosen = v;
       }
     }
-    if (this.#estado[elegida] !== ESTADO_LIBRE) {
-      this.#robos++;
+    if (this.#state[chosen] !== STATE_FREE) {
+      this.#steals++;
     }
-    this.#fase[elegida] = 0;
-    this.#incremento[elegida] = (2 * Math.PI * frecuenciaMidi(midi)) / this.#fs;
-    this.#amplitud[elegida] = 0;
-    this.#pico[elegida] = envolvente.amplitud;
-    this.#pasoAtaque[elegida] = envolvente.amplitud / (envolvente.ataqueS * this.#fs);
-    this.#factorCaida[elegida] = Math.exp(-1 / (envolvente.caidaS * this.#fs));
-    this.#estado[elegida] = ESTADO_ATAQUE;
-    this.#capa[elegida] = capa;
-    this.#banco[elegida] = this.#bancoActivo;
+    this.#phase[chosen] = 0;
+    this.#increment[chosen] = (2 * Math.PI * midiFrequency(midi)) / this.#fs;
+    this.#amplitude[chosen] = 0;
+    this.#peak[chosen] = envelope.amplitude;
+    this.#attackStep[chosen] = envelope.amplitude / (envelope.attackS * this.#fs);
+    this.#decayFactor[chosen] = Math.exp(-1 / (envelope.decayS * this.#fs));
+    this.#state[chosen] = STATE_ATTACK;
+    this.#layer[chosen] = layer;
+    this.#bank[chosen] = this.#activeBank;
   }
 
-  #muestraVoz(v: number): number {
-    let amplitud = this.#amplitud[v] ?? 0;
-    if (this.#estado[v] === ESTADO_ATAQUE) {
-      amplitud += this.#pasoAtaque[v] ?? 0;
-      if (amplitud >= (this.#pico[v] ?? 0)) {
-        amplitud = this.#pico[v] ?? 0;
-        this.#estado[v] = ESTADO_CAIDA;
+  #voiceSample(v: number): number {
+    let amplitude = this.#amplitude[v] ?? 0;
+    if (this.#state[v] === STATE_ATTACK) {
+      amplitude += this.#attackStep[v] ?? 0;
+      if (amplitude >= (this.#peak[v] ?? 0)) {
+        amplitude = this.#peak[v] ?? 0;
+        this.#state[v] = STATE_DECAY;
       }
     } else {
-      amplitud *= this.#factorCaida[v] ?? 0;
-      if (amplitud < UMBRAL_SILENCIO) {
-        this.#estado[v] = ESTADO_LIBRE;
-        this.#amplitud[v] = 0;
+      amplitude *= this.#decayFactor[v] ?? 0;
+      if (amplitude < SILENCE_THRESHOLD) {
+        this.#state[v] = STATE_FREE;
+        this.#amplitude[v] = 0;
         return 0;
       }
     }
-    this.#amplitud[v] = amplitud;
+    this.#amplitude[v] = amplitude;
 
-    const fase = (this.#fase[v] ?? 0) + (this.#incremento[v] ?? 0);
-    this.#fase[v] = fase > 2 * Math.PI ? fase - 2 * Math.PI : fase;
-    const ganancia =
-      (this.#gananciaCapa[this.#capa[v] ?? 0] ?? 0) * (this.#gananciaBanco[this.#banco[v] ?? 0] ?? 0);
+    const phase = (this.#phase[v] ?? 0) + (this.#increment[v] ?? 0);
+    this.#phase[v] = phase > 2 * Math.PI ? phase - 2 * Math.PI : phase;
+    const gain =
+      (this.#layerGain[this.#layer[v] ?? 0] ?? 0) * (this.#bankGain[this.#bank[v] ?? 0] ?? 0);
     // Seno con un poco de segundo armónico: timbre suave y cálido.
-    return ganancia * amplitud * (Math.sin(fase) + 0.15 * Math.sin(2 * fase));
+    return gain * amplitude * (Math.sin(phase) + 0.15 * Math.sin(2 * phase));
   }
 }
 
-function acercar(actual: number, objetivo: number, paso: number): number {
-  if (actual < objetivo) {
-    return Math.min(objetivo, actual + paso);
+function moveTowards(current: number, target: number, step: number): number {
+  if (current < target) {
+    return Math.min(target, current + step);
   }
-  return Math.max(objetivo, actual - paso);
+  return Math.max(target, current - step);
 }

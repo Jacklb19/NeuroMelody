@@ -1,12 +1,12 @@
-import type { NotificacionLatido } from '../acquisition/contract';
+import type { BeatNotification } from '../acquisition/contract';
 
 /** Límites de frecuencia cardíaca aceptados en la frontera de la capa. */
-export const FC_MINIMA = 20;
-export const FC_MAXIMA = 250;
+export const MIN_HR = 20;
+export const MAX_HR = 250;
 
-export type ResultadoValidacion =
-  | { readonly valida: true }
-  | { readonly valida: false; readonly motivo: string };
+export type ValidationResult =
+  | { readonly valid: true }
+  | { readonly valid: false; readonly reason: string };
 
 /**
  * Valida la estructura de una notificación antes de que entre al sistema.
@@ -15,33 +15,33 @@ export type ResultadoValidacion =
  * pero posibles (ectópicos, artefactos) es responsabilidad del hilo de señal
  * (RF-04), no de esta frontera.
  *
- * @param notificacion Notificación recibida de la fuente.
- * @param tiempoPrevioMs Tiempo de la última notificación aceptada.
+ * @param notification Notificación recibida de la fuente.
+ * @param previousTimeMs Tiempo de la última notificación aceptada.
  */
-export function validarNotificacion(
-  notificacion: NotificacionLatido,
-  tiempoPrevioMs: number,
-): ResultadoValidacion {
-  const { tiempoMs, frecuenciaCardiaca, intervalosRRms } = notificacion;
+export function validateNotification(
+  notification: BeatNotification,
+  previousTimeMs: number,
+): ValidationResult {
+  const { timeMs, heartRate, rrIntervalsMs } = notification;
 
-  if (!Number.isFinite(tiempoMs) || tiempoMs < 0) {
-    return { valida: false, motivo: 'Tiempo de señal no válido.' };
+  if (!Number.isFinite(timeMs) || timeMs < 0) {
+    return { valid: false, reason: 'Tiempo de señal no válido.' };
   }
-  if (tiempoMs < tiempoPrevioMs) {
-    return { valida: false, motivo: 'El tiempo de señal retrocedió.' };
+  if (timeMs < previousTimeMs) {
+    return { valid: false, reason: 'El tiempo de señal retrocedió.' };
   }
   if (
-    !Number.isFinite(frecuenciaCardiaca) ||
-    frecuenciaCardiaca < FC_MINIMA ||
-    frecuenciaCardiaca > FC_MAXIMA
+    !Number.isFinite(heartRate) ||
+    heartRate < MIN_HR ||
+    heartRate > MAX_HR
   ) {
     return {
-      valida: false,
-      motivo: `Frecuencia cardíaca fuera del rango ${String(FC_MINIMA)}–${String(FC_MAXIMA)} lpm.`,
+      valid: false,
+      reason: `Frecuencia cardíaca fuera del rango ${String(MIN_HR)}–${String(MAX_HR)} lpm.`,
     };
   }
-  if (intervalosRRms.some((rr) => !Number.isFinite(rr) || rr <= 0)) {
-    return { valida: false, motivo: 'Intervalo entre latidos no válido.' };
+  if (rrIntervalsMs.some((rr) => !Number.isFinite(rr) || rr <= 0)) {
+    return { valid: false, reason: 'Intervalo entre latidos no válido.' };
   }
-  return { valida: true };
+  return { valid: true };
 }

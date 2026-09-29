@@ -5,127 +5,127 @@
  */
 
 /** Parámetros del modelo de la serie RR en un instante dado. */
-export interface ParametrosFisiologicos {
+export interface PhysiologicalParams {
   /** Frecuencia cardíaca media, en latidos por minuto. */
-  readonly fcMedia: number;
+  readonly meanHr: number;
   /** Amplitud de la oscilación respiratoria (banda HF, 0,25 Hz), en ms. */
-  readonly amplitudRespiratoriaMs: number;
+  readonly respiratoryAmplitudeMs: number;
   /** Amplitud de la onda de Mayer (banda LF, 0,1 Hz), en ms. */
-  readonly amplitudMayerMs: number;
+  readonly mayerAmplitudeMs: number;
   /** Desviación estándar del ruido gaussiano latido a latido, en ms. */
-  readonly ruidoMs: number;
+  readonly noiseMs: number;
 }
 
-export type IdEscenario = 'reposo' | 'activacion' | 'relajacion_progresiva' | 'artefactos';
+export type ScenarioId = 'reposo' | 'activacion' | 'relajacion_progresiva' | 'artefactos';
 
 /**
  * Fallos de lectura simulados para probar el filtrado (RF-04): latidos
  * prematuros seguidos de uno compensatorio y pérdidas periódicas de contacto.
  */
-export interface ConfiguracionArtefactos {
+export interface ArtifactConfig {
   /** Probabilidad de que un latido sea prematuro. */
-  readonly probabilidadPrematuro: number;
+  readonly prematureProbability: number;
   /** Duración del latido prematuro como fracción del RR normal. */
-  readonly fraccionPrematuro: number;
+  readonly prematureFraction: number;
   /** Cada cuánto tiempo de señal se pierde el contacto del sensor. */
-  readonly periodoPerdidaContactoMs: number;
+  readonly contactLossPeriodMs: number;
   /** Cuánto dura cada pérdida de contacto. */
-  readonly duracionPerdidaContactoMs: number;
+  readonly contactLossDurationMs: number;
 }
 
-export interface Escenario {
-  readonly id: IdEscenario;
+export interface Scenario {
+  readonly id: ScenarioId;
   /** Nombre descriptivo (no clínico) que muestra la interfaz. */
-  readonly nombre: string;
+  readonly name: string;
   /** Parámetros vigentes a los `tiempoMs` de señal desde la conexión. */
-  parametrosEn(tiempoMs: number): ParametrosFisiologicos;
+  paramsAt(timeMs: number): PhysiologicalParams;
   /** Fallos de lectura simulados; `null` en los escenarios limpios. */
-  readonly artefactos: ConfiguracionArtefactos | null;
+  readonly artifacts: ArtifactConfig | null;
 }
 
 /** RMSSD esperado ≈ 45 ms. */
-export const PARAMETROS_REPOSO: ParametrosFisiologicos = {
-  fcMedia: 62,
-  amplitudRespiratoriaMs: 40,
-  amplitudMayerMs: 25,
-  ruidoMs: 15,
+export const REST_PARAMS: PhysiologicalParams = {
+  meanHr: 62,
+  respiratoryAmplitudeMs: 40,
+  mayerAmplitudeMs: 25,
+  noiseMs: 15,
 };
 
 /** RMSSD esperado ≈ 10 ms. */
-export const PARAMETROS_ACTIVACION: ParametrosFisiologicos = {
-  fcMedia: 92,
-  amplitudRespiratoriaMs: 8,
-  amplitudMayerMs: 15,
-  ruidoMs: 5,
+export const ACTIVATION_PARAMS: PhysiologicalParams = {
+  meanHr: 92,
+  respiratoryAmplitudeMs: 8,
+  mayerAmplitudeMs: 15,
+  noiseMs: 5,
 };
 
 /** Valores aprobados en el sprint 2 (docs/propuestas.md). */
-export const ARTEFACTOS_POR_OMISION: ConfiguracionArtefactos = {
-  probabilidadPrematuro: 0.02,
-  fraccionPrematuro: 0.7,
-  periodoPerdidaContactoMs: 90_000,
-  duracionPerdidaContactoMs: 5000,
+export const DEFAULT_ARTIFACTS: ArtifactConfig = {
+  prematureProbability: 0.02,
+  prematureFraction: 0.7,
+  contactLossPeriodMs: 90_000,
+  contactLossDurationMs: 5000,
 };
 
 /** Duración de la transición del escenario de relajación progresiva. */
-export const DURACION_RELAJACION_MS = 10 * 60 * 1000;
+export const RELAXATION_DURATION_MS = 10 * 60 * 1000;
 
-function interpolar(a: number, b: number, fraccion: number): number {
-  return a + (b - a) * fraccion;
+function interpolate(a: number, b: number, fraction: number): number {
+  return a + (b - a) * fraction;
 }
 
-function interpolarParametros(
-  desde: ParametrosFisiologicos,
-  hasta: ParametrosFisiologicos,
-  fraccion: number,
-): ParametrosFisiologicos {
+function interpolateParameters(
+  from: PhysiologicalParams,
+  to: PhysiologicalParams,
+  fraction: number,
+): PhysiologicalParams {
   return {
-    fcMedia: interpolar(desde.fcMedia, hasta.fcMedia, fraccion),
-    amplitudRespiratoriaMs: interpolar(
-      desde.amplitudRespiratoriaMs,
-      hasta.amplitudRespiratoriaMs,
-      fraccion,
+    meanHr: interpolate(from.meanHr, to.meanHr, fraction),
+    respiratoryAmplitudeMs: interpolate(
+      from.respiratoryAmplitudeMs,
+      to.respiratoryAmplitudeMs,
+      fraction,
     ),
-    amplitudMayerMs: interpolar(desde.amplitudMayerMs, hasta.amplitudMayerMs, fraccion),
-    ruidoMs: interpolar(desde.ruidoMs, hasta.ruidoMs, fraccion),
+    mayerAmplitudeMs: interpolate(from.mayerAmplitudeMs, to.mayerAmplitudeMs, fraction),
+    noiseMs: interpolate(from.noiseMs, to.noiseMs, fraction),
   };
 }
 
-export const ESCENARIOS: Readonly<Record<IdEscenario, Escenario>> = {
+export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
   reposo: {
     id: 'reposo',
-    nombre: 'Reposo',
-    parametrosEn: () => PARAMETROS_REPOSO,
-    artefactos: null,
+    name: 'Reposo',
+    paramsAt: () => REST_PARAMS,
+    artifacts: null,
   },
   activacion: {
     id: 'activacion',
-    nombre: 'Activación',
-    parametrosEn: () => PARAMETROS_ACTIVACION,
-    artefactos: null,
+    name: 'Activación',
+    paramsAt: () => ACTIVATION_PARAMS,
+    artifacts: null,
   },
   relajacion_progresiva: {
     id: 'relajacion_progresiva',
-    nombre: 'Relajación progresiva',
+    name: 'Relajación progresiva',
     // Pasa linealmente de activación a reposo y luego se mantiene en reposo.
-    parametrosEn: (tiempoMs) =>
-      interpolarParametros(
-        PARAMETROS_ACTIVACION,
-        PARAMETROS_REPOSO,
-        Math.min(Math.max(tiempoMs / DURACION_RELAJACION_MS, 0), 1),
+    paramsAt: (timeMs) =>
+      interpolateParameters(
+        ACTIVATION_PARAMS,
+        REST_PARAMS,
+        Math.min(Math.max(timeMs / RELAXATION_DURATION_MS, 0), 1),
       ),
-    artefactos: null,
+    artifacts: null,
   },
   artefactos: {
     id: 'artefactos',
     // Describe el dispositivo, no el cuerpo: la interfaz no interpreta la señal.
-    nombre: 'Reposo con fallos de lectura',
-    parametrosEn: () => PARAMETROS_REPOSO,
-    artefactos: ARTEFACTOS_POR_OMISION,
+    name: 'Reposo con fallos de lectura',
+    paramsAt: () => REST_PARAMS,
+    artifacts: DEFAULT_ARTIFACTS,
   },
 };
 
-export const IDS_ESCENARIOS: readonly IdEscenario[] = [
+export const SCENARIO_IDS: readonly ScenarioId[] = [
   'reposo',
   'activacion',
   'relajacion_progresiva',

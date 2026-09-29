@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import type { FabricaAudio, MotorAudio } from '../engine/AudioEngine';
-import { VOLUMEN_MAXIMO_DB, VOLUMEN_MINIMO_DB, VOLUMEN_POR_OMISION_DB } from '../engine/AudioEngine';
-import { NIVEL_CALIBRACION } from '../engine/levels';
-import { inicioFundidoS, instanteAvisoS } from '../session/durationWarnings';
-import { useMotorAudio, type EstadoAudio } from './useAudioEngine';
+import type { AudioFactory, AudioEngine } from '../engine/AudioEngine';
+import { MAX_VOLUME_DB, MIN_VOLUME_DB, DEFAULT_VOLUME_DB } from '../engine/AudioEngine';
+import { CALIBRATION_LEVEL } from '../engine/levels';
+import { fadeStartS, warningInstantS } from '../session/durationWarnings';
+import { useAudioEngine, type AudioState } from './useAudioEngine';
 
-interface PropsPanelReproduccion {
-  readonly duracionMin: number;
+interface PlaybackPanelProps {
+  readonly durationMin: number;
   /** Inyectables para probar sin navegador. */
-  readonly fabrica?: FabricaAudio;
-  readonly generarSemilla?: () => number;
+  readonly factory?: AudioFactory;
+  readonly generateSeed?: () => number;
 }
 
-const TEXTO_ESTADO: Readonly<Record<EstadoAudio, string>> = {
+const STATE_TEXT: Readonly<Record<AudioState, string>> = {
   inactivo: 'Lista para empezar',
   cargando: 'Preparando el audio…',
   sonando: 'Sonando',
@@ -20,9 +20,9 @@ const TEXTO_ESTADO: Readonly<Record<EstadoAudio, string>> = {
   error: 'No se pudo iniciar el audio',
 };
 
-const semillaAleatoria = (): number => Math.floor(Math.random() * 2 ** 31);
+const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31);
 
-const estiloBoton: React.CSSProperties = {
+const buttonStyle: React.CSSProperties = {
   padding: 'var(--espacio-2) var(--espacio-4)',
   backgroundColor: 'var(--color-boton-fondo)',
   color: 'var(--color-boton-texto)',
@@ -32,7 +32,7 @@ const estiloBoton: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-function hayDialogoAbierto(): boolean {
+function isDialogOpen(): boolean {
   return document.querySelector('dialog[open]') !== null;
 }
 
@@ -46,146 +46,146 @@ function hayDialogoAbierto(): boolean {
  *   20 s que sigue si no hay respuesta en 2 minutos se agenda en el reloj de
  *   audio al iniciar: ocurre aunque la pestaña esté en segundo plano.
  */
-export function PanelReproduccion({
-  duracionMin,
-  fabrica,
-  generarSemilla = semillaAleatoria,
-}: PropsPanelReproduccion): React.JSX.Element {
-  const control = useMotorAudio(fabrica);
-  const { estado, detener, motor: obtenerMotor } = control;
-  const [volumenDb, setVolumenDb] = useState(VOLUMEN_POR_OMISION_DB);
+export function PlaybackPanel({
+  durationMin,
+  factory,
+  generateSeed = randomSeed,
+}: PlaybackPanelProps): React.JSX.Element {
+  const control = useAudioEngine(factory);
+  const { state, stop, engine: getEngine } = control;
+  const [volumeDb, setVolumeDb] = useState(DEFAULT_VOLUME_DB);
   // Índice del aviso abierto (0 = fin del plan); `null` si no hay aviso.
-  const [aviso, setAviso] = useState<number | null>(null);
-  const [terminada, setTerminada] = useState(false);
-  const inicioSesionRef = useRef<number | null>(null);
-  const indiceAvisoRef = useRef(0);
-  const finFundidoRef = useRef<number | null>(null);
-  const botonContinuarRef = useRef<HTMLButtonElement | null>(null);
-  const tituloId = useId();
-  const volumenId = useId();
-  const avisoTituloId = useId();
-  const avisoTextoId = useId();
-  const duracionPlanS = duracionMin * 60;
+  const [warning, setWarning] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
+  const sessionStartRef = useRef<number | null>(null);
+  const warningIndexRef = useRef(0);
+  const fadeEndRef = useRef<number | null>(null);
+  const continueButtonRef = useRef<HTMLButtonElement | null>(null);
+  const titleId = useId();
+  const volumeId = useId();
+  const warningTitleId = useId();
+  const warningTextId = useId();
+  const planDurationS = durationMin * 60;
 
-  const programarFundido = useCallback(
-    (motor: MotorAudio): void => {
-      const inicio = inicioSesionRef.current;
-      if (inicio === null) {
+  const scheduleFade = useCallback(
+    (engine: AudioEngine): void => {
+      const startTime = sessionStartRef.current;
+      if (startTime === null) {
         return;
       }
-      const empieza = inicio + inicioFundidoS(duracionPlanS, indiceAvisoRef.current);
-      finFundidoRef.current = motor.programarFundidoFinal(empieza - motor.tiempoAudio);
+      const startsAt = startTime + fadeStartS(planDurationS, warningIndexRef.current);
+      fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime);
     },
-    [duracionPlanS],
+    [planDurationS],
   );
 
-  const iniciar = async (): Promise<void> => {
-    const motor = await control.iniciar(
-      { semilla: generarSemilla(), nivelInicial: NIVEL_CALIBRACION, salidaPorElementoAudio: false },
-      volumenDb,
+  const start = async (): Promise<void> => {
+    const engine = await control.start(
+      { seed: generateSeed(), initialLevel: CALIBRATION_LEVEL, outputThroughAudioElement: false },
+      volumeDb,
     );
-    if (motor === null) {
+    if (engine === null) {
       return;
     }
-    inicioSesionRef.current ??= motor.tiempoAudio;
-    setTerminada(false);
-    programarFundido(motor);
+    sessionStartRef.current ??= engine.audioTime;
+    setFinished(false);
+    scheduleFade(engine);
   };
 
-  const detenerAhora = useCallback((): void => {
-    setAviso(null);
-    void detener();
-  }, [detener]);
+  const stopNow = useCallback((): void => {
+    setWarning(null);
+    void stop();
+  }, [stop]);
 
-  const continuar = (): void => {
-    const motor = obtenerMotor();
-    if (motor === null) {
+  const continueSession = (): void => {
+    const engine = getEngine();
+    if (engine === null) {
       return;
     }
-    motor.cancelarFundidoFinal();
-    indiceAvisoRef.current++;
-    programarFundido(motor);
-    setAviso(null);
+    engine.cancelFinalFade();
+    warningIndexRef.current++;
+    scheduleFade(engine);
+    setWarning(null);
   };
 
-  const terminar = (): void => {
-    setTerminada(true);
-    detenerAhora();
+  const finishSession = (): void => {
+    setFinished(true);
+    stopNow();
   };
 
   // Revisa el reloj de audio para mostrar el aviso y para cerrar la sesión si
   // el fundido terminó. El sonido no depende de este temporizador.
   useEffect(() => {
-    if (estado !== 'sonando') {
+    if (state !== 'sonando') {
       return undefined;
     }
     const id = setInterval(() => {
-      const motor = obtenerMotor();
-      const inicio = inicioSesionRef.current;
-      if (motor === null || inicio === null) {
+      const engine = getEngine();
+      const startTime = sessionStartRef.current;
+      if (engine === null || startTime === null) {
         return;
       }
-      if (motor.tiempoAudio - inicio >= instanteAvisoS(duracionPlanS, indiceAvisoRef.current)) {
-        setAviso(indiceAvisoRef.current);
+      if (engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
+        setWarning(warningIndexRef.current);
       }
-      const fin = finFundidoRef.current;
-      if (fin !== null && motor.tiempoAudio >= fin) {
-        setTerminada(true);
-        detenerAhora();
+      const end = fadeEndRef.current;
+      if (end !== null && engine.audioTime >= end) {
+        setFinished(true);
+        stopNow();
       }
     }, 1000);
     return () => {
       clearInterval(id);
     };
-  }, [estado, obtenerMotor, duracionPlanS, detenerAhora]);
+  }, [state, getEngine, planDurationS, stopNow]);
 
   // Tecla Esc: detiene la música, salvo que haya un diálogo abierto.
   useEffect(() => {
-    const alPulsar = (evento: KeyboardEvent): void => {
-      if (evento.key === 'Escape' && !hayDialogoAbierto()) {
-        detenerAhora();
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !isDialogOpen()) {
+        stopNow();
       }
     };
-    document.addEventListener('keydown', alPulsar);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('keydown', alPulsar);
+      document.removeEventListener('keydown', onKeyDown);
     };
-  }, [detenerAhora]);
+  }, [stopNow]);
 
   // Media Session: controles del sistema operativo y del auricular.
   useEffect(() => {
     if (!('mediaSession' in navigator)) {
       return undefined;
     }
-    const sesion = navigator.mediaSession;
+    const session = navigator.mediaSession;
     if (typeof MediaMetadata !== 'undefined') {
-      sesion.metadata = new MediaMetadata({ title: 'NeuroMelody', artist: 'Sesión de escucha' });
+      session.metadata = new MediaMetadata({ title: 'NeuroMelody', artist: 'Sesión de escucha' });
     }
-    sesion.setActionHandler('pause', detenerAhora);
-    sesion.setActionHandler('stop', detenerAhora);
+    session.setActionHandler('pause', stopNow);
+    session.setActionHandler('stop', stopNow);
     return () => {
-      sesion.setActionHandler('pause', null);
-      sesion.setActionHandler('stop', null);
+      session.setActionHandler('pause', null);
+      session.setActionHandler('stop', null);
     };
-  }, [detenerAhora]);
+  }, [stopNow]);
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = estado === 'sonando' ? 'playing' : 'paused';
+      navigator.mediaSession.playbackState = state === 'sonando' ? 'playing' : 'paused';
     }
-  }, [estado]);
+  }, [state]);
 
   useEffect(() => {
-    if (aviso !== null) {
-      botonContinuarRef.current?.focus();
+    if (warning !== null) {
+      continueButtonRef.current?.focus();
     }
-  }, [aviso]);
+  }, [warning]);
 
-  const textoEstado = terminada && estado !== 'sonando' ? 'La sesión terminó' : TEXTO_ESTADO[estado];
+  const stateText = finished && state !== 'sonando' ? 'La sesión terminó' : STATE_TEXT[state];
 
   return (
     <section
-      aria-labelledby={tituloId}
+      aria-labelledby={titleId}
       style={{
         border: 'var(--borde-grosor) solid var(--color-borde)',
         borderRadius: 'var(--radio-borde)',
@@ -193,7 +193,7 @@ export function PanelReproduccion({
         marginBottom: 'var(--espacio-8)',
       }}
     >
-      <h2 id={tituloId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
+      <h2 id={titleId} style={{ fontSize: 'var(--texto-xl)', marginBottom: 'var(--espacio-4)' }}>
         Música
       </h2>
       <p style={{ marginBottom: 'var(--espacio-4)' }}>Usa un volumen moderado en tu dispositivo.</p>
@@ -201,36 +201,36 @@ export function PanelReproduccion({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--espacio-4)', alignItems: 'center', marginBottom: 'var(--espacio-4)' }}>
         <button
           type="button"
-          style={estiloBoton}
-          disabled={estado === 'sonando' || estado === 'cargando'}
+          style={buttonStyle}
+          disabled={state === 'sonando' || state === 'cargando'}
           onClick={() => {
-            void iniciar();
+            void start();
           }}
         >
           Iniciar música
         </button>
-        <label htmlFor={volumenId}>Volumen</label>
+        <label htmlFor={volumeId}>Volumen</label>
         <input
-          id={volumenId}
+          id={volumeId}
           type="range"
-          min={VOLUMEN_MINIMO_DB}
-          max={VOLUMEN_MAXIMO_DB}
+          min={MIN_VOLUME_DB}
+          max={MAX_VOLUME_DB}
           step={1}
-          value={volumenDb}
-          aria-valuetext={`${String(volumenDb)} dB`}
-          onChange={(evento) => {
-            const aplicado = obtenerMotor()?.fijarVolumenDb(Number(evento.target.value)) ?? Number(evento.target.value);
-            setVolumenDb(aplicado);
+          value={volumeDb}
+          aria-valuetext={`${String(volumeDb)} dB`}
+          onChange={(event) => {
+            const applied = getEngine()?.setVolumeDb(Number(event.target.value)) ?? Number(event.target.value);
+            setVolumeDb(applied);
           }}
         />
         {/* Solo visual: el control ya anuncia el valor con aria-valuetext. */}
         <span aria-hidden="true" style={{ fontVariantNumeric: 'tabular-nums' }}>
-          {volumenDb} dB
+          {volumeDb} dB
         </span>
       </div>
 
       <p role="status">
-        Estado de la música: <strong>{textoEstado}</strong>
+        Estado de la música: <strong>{stateText}</strong>
       </p>
       {control.error !== null && (
         <p style={{ marginTop: 'var(--espacio-2)' }}>
@@ -238,12 +238,12 @@ export function PanelReproduccion({
         </p>
       )}
 
-      {aviso !== null && (
+      {warning !== null && (
         <dialog
           open
           role="alertdialog"
-          aria-labelledby={avisoTituloId}
-          aria-describedby={avisoTextoId}
+          aria-labelledby={warningTitleId}
+          aria-describedby={warningTextId}
           style={{
             position: 'static',
             marginTop: 'var(--espacio-4)',
@@ -252,17 +252,17 @@ export function PanelReproduccion({
             borderRadius: 'var(--radio-borde)',
           }}
         >
-          <h3 id={avisoTituloId} style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-2)' }}>
-            {aviso === 0 ? 'La sesión planificada terminó' : 'Llevas 60 minutos de escucha continua'}
+          <h3 id={warningTitleId} style={{ fontSize: 'var(--texto-lg)', marginBottom: 'var(--espacio-2)' }}>
+            {warning === 0 ? 'La sesión planificada terminó' : 'Llevas 60 minutos de escucha continua'}
           </h3>
-          <p id={avisoTextoId} style={{ marginBottom: 'var(--espacio-4)' }}>
+          <p id={warningTextId} style={{ marginBottom: 'var(--espacio-4)' }}>
             Si no respondes, la música se apagará en 2 minutos con un fundido suave.
           </p>
           <div style={{ display: 'flex', gap: 'var(--espacio-4)' }}>
-            <button ref={botonContinuarRef} type="button" style={estiloBoton} onClick={continuar}>
+            <button ref={continueButtonRef} type="button" style={buttonStyle} onClick={continueSession}>
               Continuar
             </button>
-            <button type="button" style={estiloBoton} onClick={terminar}>
+            <button type="button" style={buttonStyle} onClick={finishSession}>
               Terminar
             </button>
           </div>
@@ -271,17 +271,17 @@ export function PanelReproduccion({
 
       <button
         type="button"
-        onClick={detenerAhora}
-        disabled={estado !== 'sonando'}
+        onClick={stopNow}
+        disabled={state !== 'sonando'}
         aria-keyshortcuts="Escape"
         style={{
-          ...estiloBoton,
+          ...buttonStyle,
           position: 'fixed',
           right: 'var(--espacio-4)',
           bottom: 'var(--espacio-4)',
           zIndex: 10,
           padding: 'var(--espacio-3) var(--espacio-6)',
-          opacity: estado === 'sonando' ? 1 : 0.6,
+          opacity: state === 'sonando' ? 1 : 0.6,
         }}
       >
         Detener

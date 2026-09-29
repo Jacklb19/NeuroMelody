@@ -1,43 +1,43 @@
-import type { PuertoHilo } from '../features/signal/thread/SignalThreadClient';
-import { crearManejadorHiloSenal } from '../features/signal/thread/threadHandler';
-import type { MensajeHaciaHilo } from '../features/signal/thread/protocol';
+import type { ThreadPort } from '../features/signal/thread/SignalThreadClient';
+import { createSignalThreadHandler } from '../features/signal/thread/threadHandler';
+import type { MessageToThread } from '../features/signal/thread/protocol';
 
-export interface PuertoEnProceso extends PuertoHilo {
-  readonly enviados: MensajeHaciaHilo[];
-  readonly terminado: boolean;
+export interface InProcessPort extends ThreadPort {
+  readonly sent: MessageToThread[];
+  readonly terminated: boolean;
   /** Simula un mensaje arbitrario que llega desde el hilo de señal. */
-  recibirDesdeHilo(dato: unknown): void;
+  receiveFromThread(data: unknown): void;
 }
 
 /**
  * Puerto que ejecuta el manejador del hilo de señal en el mismo proceso y de
  * forma síncrona: jsdom no tiene Workers.
  */
-export function crearPuertoEnProceso(): PuertoEnProceso {
-  let receptor: (dato: unknown) => void = () => undefined;
-  let terminado = false;
-  const enviados: MensajeHaciaHilo[] = [];
-  const manejar = crearManejadorHiloSenal((mensaje) => {
-    receptor(mensaje);
+export function createInProcessPort(): InProcessPort {
+  let receiver: (data: unknown) => void = () => undefined;
+  let terminated = false;
+  const sent: MessageToThread[] = [];
+  const handle = createSignalThreadHandler((message) => {
+    receiver(message);
   });
 
   return {
-    enviados,
-    get terminado() {
-      return terminado;
+    sent,
+    get terminated() {
+      return terminated;
     },
-    enviar: (mensaje) => {
-      enviados.push(mensaje);
-      manejar(mensaje);
+    send: (message) => {
+      sent.push(message);
+      handle(message);
     },
-    alRecibir: (nuevo) => {
-      receptor = nuevo;
+    onReceive: (incoming) => {
+      receiver = incoming;
     },
-    terminar: () => {
-      terminado = true;
+    terminate: () => {
+      terminated = true;
     },
-    recibirDesdeHilo: (dato) => {
-      receptor(dato);
+    receiveFromThread: (data) => {
+      receiver(data);
     },
   };
 }

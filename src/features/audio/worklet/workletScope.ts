@@ -6,25 +6,25 @@
  * las pruebas.
  */
 
-export type ParametrosBloque = Record<string, Float32Array>;
+export type BlockParams = Record<string, Float32Array>;
 
-export interface ProcesadorAudio {
-  process(entradas: Float32Array[][], salidas: Float32Array[][], parametros: ParametrosBloque): boolean;
+export interface AudioProcessor {
+  process(inputs: Float32Array[][], outputs: Float32Array[][], params: BlockParams): boolean;
 }
 
-export type ClaseProcesador = new (opciones: AudioWorkletNodeOptions) => ProcesadorAudio;
+export type ProcessorClass = new (options: AudioWorkletNodeOptions) => AudioProcessor;
 
-interface AmbitoWorklet {
+interface WorkletScope {
   readonly sampleRate: number;
   readonly AudioWorkletProcessor: new () => { readonly port: MessagePort };
-  registerProcessor(nombre: string, clase: ClaseProcesador): void;
+  registerProcessor(name: string, processorClass: ProcessorClass): void;
 }
 
 // La forma del ámbito la garantiza el navegador al cargar el módulo con
 // audioWorklet.addModule(); aquí solo se le da tipo.
-export const ambito = globalThis as unknown as AmbitoWorklet;
+export const scope = globalThis as unknown as WorkletScope;
 
 /** Valor del parámetro en el bloque (los de tasa k traen un solo valor). */
-export function valorParametro(parametros: ParametrosBloque, nombre: string, porOmision: number): number {
-  return parametros[nombre]?.[0] ?? porOmision;
+export function paramValue(params: BlockParams, name: string, fallback: number): number {
+  return params[name]?.[0] ?? fallback;
 }

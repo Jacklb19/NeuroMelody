@@ -1,74 +1,74 @@
 import { describe, it, expect, vi } from 'vitest';
-import { CanalFuente, ErrorFuenteSenal } from './sourceChannel';
-import type { NotificacionLatido } from './contract';
+import { SourceChannel, SignalSourceError } from './sourceChannel';
+import type { BeatNotification } from './contract';
 
-function notificacion(tiempoMs: number, frecuenciaCardiaca = 70): NotificacionLatido {
-  return { tiempoMs, frecuenciaCardiaca, intervalosRRms: [857], contactoSensor: null };
+function notification(timeMs: number, heartRate = 70): BeatNotification {
+  return { timeMs, heartRate, rrIntervalsMs: [857], sensorContact: null };
 }
 
 describe('CanalFuente', () => {
   it('empieza desconectado y avisa los cambios de estado una sola vez', () => {
-    const canal = new CanalFuente();
-    const alCambiarEstado = vi.fn();
-    canal.suscribir({ alCambiarEstado });
+    const channel = new SourceChannel();
+    const onStateChange = vi.fn();
+    channel.subscribe({ onStateChange });
 
-    expect(canal.estado).toBe('desconectada');
-    canal.cambiarEstado('conectando');
-    canal.cambiarEstado('conectando');
-    canal.cambiarEstado('conectada');
+    expect(channel.state).toBe('desconectada');
+    channel.changeState('conectando');
+    channel.changeState('conectando');
+    channel.changeState('conectada');
 
-    expect(alCambiarEstado.mock.calls).toEqual([['conectando'], ['conectada']]);
+    expect(onStateChange.mock.calls).toEqual([['conectando'], ['conectada']]);
   });
 
   it('entrega las notificaciones válidas a todos los observadores', () => {
-    const canal = new CanalFuente();
+    const channel = new SourceChannel();
     const a = vi.fn();
     const b = vi.fn();
-    canal.suscribir({ alNotificar: a });
-    canal.suscribir({ alNotificar: b });
+    channel.subscribe({ onNotification: a });
+    channel.subscribe({ onNotification: b });
 
-    canal.notificar(notificacion(1000));
+    channel.notify(notification(1000));
 
-    expect(a).toHaveBeenCalledWith(notificacion(1000));
-    expect(b).toHaveBeenCalledWith(notificacion(1000));
+    expect(a).toHaveBeenCalledWith(notification(1000));
+    expect(b).toHaveBeenCalledWith(notification(1000));
   });
 
   it('descarta una notificación inválida y emite un error', () => {
-    const canal = new CanalFuente();
-    const alNotificar = vi.fn();
-    const alError = vi.fn();
-    canal.suscribir({ alNotificar, alError });
+    const channel = new SourceChannel();
+    const onNotification = vi.fn();
+    const onError = vi.fn();
+    channel.subscribe({ onNotification, onError });
 
-    canal.notificar(notificacion(1000, 300));
+    channel.notify(notification(1000, 300));
 
-    expect(alNotificar).not.toHaveBeenCalled();
-    expect(alError).toHaveBeenCalledOnce();
-    expect(alError.mock.calls[0]?.[0]).toBeInstanceOf(ErrorFuenteSenal);
+    expect(onNotification).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(SignalSourceError);
   });
 
   it('rechaza tiempos que retroceden hasta que se reinicia el tiempo', () => {
-    const canal = new CanalFuente();
-    const alNotificar = vi.fn();
-    const alError = vi.fn();
-    canal.suscribir({ alNotificar, alError });
+    const channel = new SourceChannel();
+    const onNotification = vi.fn();
+    const onError = vi.fn();
+    channel.subscribe({ onNotification, onError });
 
-    canal.notificar(notificacion(5000));
-    canal.notificar(notificacion(1000));
-    expect(alError).toHaveBeenCalledOnce();
+    channel.notify(notification(5000));
+    channel.notify(notification(1000));
+    expect(onError).toHaveBeenCalledOnce();
 
-    canal.reiniciarTiempo();
-    canal.notificar(notificacion(1000));
-    expect(alNotificar).toHaveBeenCalledTimes(2);
+    channel.resetTime();
+    channel.notify(notification(1000));
+    expect(onNotification).toHaveBeenCalledTimes(2);
   });
 
   it('deja de avisar a un observador dado de baja', () => {
-    const canal = new CanalFuente();
-    const alNotificar = vi.fn();
-    const baja = canal.suscribir({ alNotificar });
+    const channel = new SourceChannel();
+    const onNotification = vi.fn();
+    const unsubscribe = channel.subscribe({ onNotification });
 
-    baja();
-    canal.notificar(notificacion(1000));
+    unsubscribe();
+    channel.notify(notification(1000));
 
-    expect(alNotificar).not.toHaveBeenCalled();
+    expect(onNotification).not.toHaveBeenCalled();
   });
 });

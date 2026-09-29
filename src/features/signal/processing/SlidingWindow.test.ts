@@ -1,44 +1,44 @@
 import { describe, it, expect } from 'vitest';
-import type { LatidoClasificado } from './types';
-import { VentanaDeslizante } from './SlidingWindow';
+import type { ClassifiedBeat } from './types';
+import { SlidingWindow } from './SlidingWindow';
 
-function latido(finMs: number): LatidoClasificado {
-  return { finMs, rrMs: 1000, aceptado: true, motivoDescarte: null, contiguoAlAnterior: true };
+function beat(endMs: number): ClassifiedBeat {
+  return { endMs, rrMs: 1000, accepted: true, discardReason: null, contiguousWithPrevious: true };
 }
 
 describe('VentanaDeslizante', () => {
   it('conserva solo los latidos de los últimos 5 minutos de señal', () => {
-    const ventana = new VentanaDeslizante();
-    for (let fin = 1000; fin <= 400_000; fin += 1000) {
-      ventana.agregarLatido(latido(fin));
+    const slidingWindow = new SlidingWindow();
+    for (let end = 1000; end <= 400_000; end += 1000) {
+      slidingWindow.addBeat(beat(end));
     }
-    ventana.podar(400_000);
+    slidingWindow.prune(400_000);
 
-    expect(ventana.latidos[0]?.finMs).toBe(101_000);
-    expect(ventana.latidos.at(-1)?.finMs).toBe(400_000);
-    expect(ventana.latidos).toHaveLength(300);
+    expect(slidingWindow.beats[0]?.endMs).toBe(101_000);
+    expect(slidingWindow.beats.at(-1)?.endMs).toBe(400_000);
+    expect(slidingWindow.beats).toHaveLength(300);
   });
 
   it('descarta los tramos que terminaron fuera de la ventana y fusiona los contiguos', () => {
-    const ventana = new VentanaDeslizante();
-    ventana.agregarTramo({ inicioMs: 10_000, finMs: 20_000 });
-    ventana.agregarTramo({ inicioMs: 150_000, finMs: 155_000 });
-    ventana.agregarTramo({ inicioMs: 155_000, finMs: 160_000 });
-    ventana.podar(330_000);
+    const slidingWindow = new SlidingWindow();
+    slidingWindow.addSegment({ startMs: 10_000, endMs: 20_000 });
+    slidingWindow.addSegment({ startMs: 150_000, endMs: 155_000 });
+    slidingWindow.addSegment({ startMs: 155_000, endMs: 160_000 });
+    slidingWindow.prune(330_000);
 
-    expect(ventana.tramos).toEqual([{ inicioMs: 150_000, finMs: 160_000 }]);
+    expect(slidingWindow.segments).toEqual([{ startMs: 150_000, endMs: 160_000 }]);
   });
 
   it('queda vacía si todo quedó fuera, y al vaciarla', () => {
-    const ventana = new VentanaDeslizante();
-    ventana.agregarLatido(latido(1000));
-    ventana.podar(1_000_000);
-    expect(ventana.latidos).toEqual([]);
+    const slidingWindow = new SlidingWindow();
+    slidingWindow.addBeat(beat(1000));
+    slidingWindow.prune(1_000_000);
+    expect(slidingWindow.beats).toEqual([]);
 
-    ventana.agregarLatido(latido(1_000_000));
-    ventana.agregarTramo({ inicioMs: 0, finMs: 1_000_000 });
-    ventana.vaciar();
-    expect(ventana.latidos).toEqual([]);
-    expect(ventana.tramos).toEqual([]);
+    slidingWindow.addBeat(beat(1_000_000));
+    slidingWindow.addSegment({ startMs: 0, endMs: 1_000_000 });
+    slidingWindow.clear();
+    expect(slidingWindow.beats).toEqual([]);
+    expect(slidingWindow.segments).toEqual([]);
   });
 });

@@ -3,22 +3,22 @@
  * si se continúa, cada 60 minutos continuos. Si no hay respuesta en 2
  * minutos, un fundido de 20 s termina la sesión.
  */
-export const ESPERA_RESPUESTA_S = 120;
-export const PERIODO_AVISO_CONTINUO_S = 60 * 60;
+export const RESPONSE_WAIT_S = 120;
+export const CONTINUOUS_WARNING_PERIOD_S = 60 * 60;
 
 /**
  * Instante del aviso número `indice` (0 = fin del plan), en segundos de
  * reproducción desde el inicio de la sesión.
  */
-export function instanteAvisoS(duracionPlanS: number, indice: number): number {
-  let instante = duracionPlanS;
-  for (let i = 0; i < indice; i++) {
-    instante = (Math.floor(instante / PERIODO_AVISO_CONTINUO_S) + 1) * PERIODO_AVISO_CONTINUO_S;
+export function warningInstantS(planDurationS: number, index: number): number {
+  let instant = planDurationS;
+  for (let i = 0; i < index; i++) {
+    instant = (Math.floor(instant / CONTINUOUS_WARNING_PERIOD_S) + 1) * CONTINUOUS_WARNING_PERIOD_S;
   }
-  return instante;
+  return instant;
 }
 
 /** Instante en que empieza el fundido si nadie responde al aviso `indice`. */
-export function inicioFundidoS(duracionPlanS: number, indice: number): number {
-  return instanteAvisoS(duracionPlanS, indice) + ESPERA_RESPUESTA_S;
+export function fadeStartS(planDurationS: number, index: number): number {
+  return warningInstantS(planDurationS, index) + RESPONSE_WAIT_S;
 }

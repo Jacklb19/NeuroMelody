@@ -1,9 +1,9 @@
-import type { FabricaAudio } from '../features/audio/engine/AudioEngine';
+import type { AudioFactory } from '../features/audio/engine/AudioEngine';
 
-export interface EventoParametro {
-  readonly tipo: 'set' | 'lineal' | 'exponencial' | 'objetivo' | 'cancelar';
-  readonly valor: number;
-  readonly tiempo: number;
+export interface ParamEvent {
+  readonly kind: 'set' | 'lineal' | 'exponencial' | 'objetivo' | 'cancelar';
+  readonly value: number;
+  readonly time: number;
 }
 
 /**
@@ -11,133 +11,133 @@ export interface EventoParametro {
  * valor fijado (suficiente para verificar qué se programa; la interpolación
  * real ocurre en el navegador).
  */
-export class ParametroFalso {
+export class FakeParam {
   value: number;
-  readonly eventos: EventoParametro[] = [];
+  readonly events: ParamEvent[] = [];
 
-  constructor(valor = 0) {
-    this.value = valor;
+  constructor(value = 0) {
+    this.value = value;
   }
 
-  setValueAtTime(valor: number, tiempo: number): this {
-    this.eventos.push({ tipo: 'set', valor, tiempo });
+  setValueAtTime(value: number, time: number): this {
+    this.events.push({ kind: 'set', value, time });
     return this;
   }
-  linearRampToValueAtTime(valor: number, tiempo: number): this {
-    this.eventos.push({ tipo: 'lineal', valor, tiempo });
+  linearRampToValueAtTime(value: number, time: number): this {
+    this.events.push({ kind: 'lineal', value, time });
     return this;
   }
-  exponentialRampToValueAtTime(valor: number, tiempo: number): this {
-    this.eventos.push({ tipo: 'exponencial', valor, tiempo });
+  exponentialRampToValueAtTime(value: number, time: number): this {
+    this.events.push({ kind: 'exponencial', value, time });
     return this;
   }
-  setTargetAtTime(valor: number, tiempo: number): this {
-    this.eventos.push({ tipo: 'objetivo', valor, tiempo });
-    this.value = valor;
+  setTargetAtTime(value: number, time: number): this {
+    this.events.push({ kind: 'objetivo', value, time });
+    this.value = value;
     return this;
   }
-  cancelScheduledValues(tiempo: number): this {
-    this.eventos.push({ tipo: 'cancelar', valor: Number.NaN, tiempo });
+  cancelScheduledValues(time: number): this {
+    this.events.push({ kind: 'cancelar', value: Number.NaN, time });
     return this;
   }
   /** Último evento de un tipo. */
-  ultimo(tipo: EventoParametro['tipo']): EventoParametro | undefined {
-    return this.eventos.filter((e) => e.tipo === tipo).at(-1);
+  last(kind: ParamEvent['kind']): ParamEvent | undefined {
+    return this.events.filter((e) => e.kind === kind).at(-1);
   }
 }
 
-export class NodoFalso {
-  readonly conexiones: NodoFalso[] = [];
-  constructor(readonly tipo: string) {}
-  connect(destino: NodoFalso): NodoFalso {
-    this.conexiones.push(destino);
-    return destino;
+export class FakeNode {
+  readonly connections: FakeNode[] = [];
+  constructor(readonly kind: string) {}
+  connect(target: FakeNode): FakeNode {
+    this.connections.push(target);
+    return target;
   }
 }
 
-class GananciaFalsa extends NodoFalso {
-  readonly gain = new ParametroFalso(1);
+class FakeGain extends FakeNode {
+  readonly gain = new FakeParam(1);
   constructor() {
     super('ganancia');
   }
 }
 
-class FiltroFalso extends NodoFalso {
+class FakeFilter extends FakeNode {
   type = 'lowpass';
-  readonly frequency = new ParametroFalso(350);
-  readonly Q = new ParametroFalso(1);
+  readonly frequency = new FakeParam(350);
+  readonly Q = new FakeParam(1);
   constructor() {
     super('filtro');
   }
 }
 
-class ConvolucionFalsa extends NodoFalso {
+class FakeConvolver extends FakeNode {
   buffer: unknown = null;
   constructor() {
     super('convolucion');
   }
 }
 
-class LimitadorFalso extends NodoFalso {
-  readonly threshold = new ParametroFalso(-24);
-  readonly ratio = new ParametroFalso(12);
-  readonly knee = new ParametroFalso(30);
-  readonly attack = new ParametroFalso(0.003);
-  readonly release = new ParametroFalso(0.25);
+class FakeCompressor extends FakeNode {
+  readonly threshold = new FakeParam(-24);
+  readonly ratio = new FakeParam(12);
+  readonly knee = new FakeParam(30);
+  readonly attack = new FakeParam(0.003);
+  readonly release = new FakeParam(0.25);
   constructor() {
     super('limitador');
   }
 }
 
-export class NodoWorkletFalso extends NodoFalso {
-  readonly parameters = new Map<string, ParametroFalso>();
+export class FakeWorkletNode extends FakeNode {
+  readonly parameters = new Map<string, FakeParam>();
   constructor(
-    readonly nombre: string,
-    readonly opciones: AudioWorkletNodeOptions,
+    readonly name: string,
+    readonly options: AudioWorkletNodeOptions,
   ) {
-    super(`worklet:${nombre}`);
-    for (const nombreParametro of ['tempo', 'modo', 'capas']) {
-      this.parameters.set(nombreParametro, new ParametroFalso());
+    super(`worklet:${name}`);
+    for (const paramName of ['tempo', 'modo', 'capas']) {
+      this.parameters.set(paramName, new FakeParam());
     }
   }
 }
 
-export class ContextoFalso {
+export class FakeAudioContext {
   currentTime = 0;
   state: 'suspended' | 'running' | 'closed' = 'suspended';
   readonly sampleRate = 48_000;
-  readonly destination = new NodoFalso('destino');
-  readonly modulosCargados: string[] = [];
-  readonly nodos: NodoFalso[] = [];
+  readonly destination = new FakeNode('destino');
+  readonly loadedModules: string[] = [];
+  readonly nodes: FakeNode[] = [];
   playbackStats: unknown = undefined;
   readonly audioWorklet = {
     addModule: (url: string) => {
-      this.modulosCargados.push(url);
+      this.loadedModules.push(url);
       return Promise.resolve();
     },
   };
 
-  #registrar<T extends NodoFalso>(nodo: T): T {
-    this.nodos.push(nodo);
-    return nodo;
+  #register<T extends FakeNode>(node: T): T {
+    this.nodes.push(node);
+    return node;
   }
-  createGain(): GananciaFalsa {
-    return this.#registrar(new GananciaFalsa());
+  createGain(): FakeGain {
+    return this.#register(new FakeGain());
   }
-  createBiquadFilter(): FiltroFalso {
-    return this.#registrar(new FiltroFalso());
+  createBiquadFilter(): FakeFilter {
+    return this.#register(new FakeFilter());
   }
-  createConvolver(): ConvolucionFalsa {
-    return this.#registrar(new ConvolucionFalsa());
+  createConvolver(): FakeConvolver {
+    return this.#register(new FakeConvolver());
   }
-  createDynamicsCompressor(): LimitadorFalso {
-    return this.#registrar(new LimitadorFalso());
+  createDynamicsCompressor(): FakeCompressor {
+    return this.#register(new FakeCompressor());
   }
-  createMediaStreamDestination(): NodoFalso & { stream: object } {
-    return Object.assign(this.#registrar(new NodoFalso('flujo')), { stream: { id: 'flujo' } });
+  createMediaStreamDestination(): FakeNode & { stream: object } {
+    return Object.assign(this.#register(new FakeNode('flujo')), { stream: { id: 'flujo' } });
   }
-  createBuffer(canales: number, longitud: number, frecuencia: number) {
-    return { canales, longitud, frecuencia, copiados: [] as number[], copyToChannel(_d: Float32Array, c: number) { this.copiados.push(c); } };
+  createBuffer(channels: number, length: number, frequency: number) {
+    return { channels, length, frequency, copied: [] as number[], copyToChannel(_d: Float32Array, c: number) { this.copied.push(c); } };
   }
   resume(): Promise<void> {
     this.state = 'running';
@@ -153,47 +153,47 @@ export class ContextoFalso {
   }
 }
 
-export class ElementoAudioFalso {
+export class FakeAudioElement {
   srcObject: unknown = null;
-  reproduciendo = false;
+  playing = false;
   play(): Promise<void> {
-    this.reproduciendo = true;
+    this.playing = true;
     return Promise.resolve();
   }
   pause(): void {
-    this.reproduciendo = false;
+    this.playing = false;
   }
 }
 
-export interface EntornoAudioFalso {
-  readonly contexto: ContextoFalso;
-  readonly worklets: NodoWorkletFalso[];
-  readonly elemento: ElementoAudioFalso;
-  readonly esperas: number[];
-  readonly fabrica: FabricaAudio;
+export interface FakeAudioEnvironment {
+  readonly context: FakeAudioContext;
+  readonly worklets: FakeWorkletNode[];
+  readonly element: FakeAudioElement;
+  readonly waits: number[];
+  readonly factory: AudioFactory;
 }
 
 /** Fábrica de audio en memoria: las clases falsas se entregan con el tipo real a propósito. */
-export function crearEntornoAudioFalso(telemetria: SharedArrayBuffer | null = null): EntornoAudioFalso {
-  const contexto = new ContextoFalso();
-  const worklets: NodoWorkletFalso[] = [];
-  const elemento = new ElementoAudioFalso();
-  const esperas: number[] = [];
-  const fabrica: FabricaAudio = {
-    crearContexto: () => contexto as unknown as AudioContext,
-    modulos: ['sintetizador.js', 'recortador.js'],
-    crearNodoWorklet: (_contexto, nombre, opciones) => {
-      const nodo = new NodoWorkletFalso(nombre, opciones);
-      worklets.push(nodo);
-      contexto.nodos.push(nodo);
-      return nodo as unknown as AudioWorkletNode;
+export function createFakeAudioEnvironment(telemetry: SharedArrayBuffer | null = null): FakeAudioEnvironment {
+  const context = new FakeAudioContext();
+  const worklets: FakeWorkletNode[] = [];
+  const element = new FakeAudioElement();
+  const waits: number[] = [];
+  const factory: AudioFactory = {
+    createAudioContext: () => context as unknown as AudioContext,
+    modules: ['sintetizador.js', 'recortador.js'],
+    createWorkletNode: (_context, name, options) => {
+      const node = new FakeWorkletNode(name, options);
+      worklets.push(node);
+      context.nodes.push(node);
+      return node as unknown as AudioWorkletNode;
     },
-    crearBuferTelemetria: () => telemetria,
-    crearElementoAudio: () => elemento as unknown as HTMLAudioElement,
-    esperar: (ms) => {
-      esperas.push(ms);
+    createTelemetryBuffer: () => telemetry,
+    createAudioElement: () => element as unknown as HTMLAudioElement,
+    wait: (ms) => {
+      waits.push(ms);
       return Promise.resolve();
     },
   };
-  return { contexto, worklets, elemento, esperas, fabrica };
+  return { context, worklets, element, waits, factory };
 }

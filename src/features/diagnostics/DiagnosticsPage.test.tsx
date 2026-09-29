@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
-import { DiagnosticoPage } from './DiagnosticsPage';
+import { DiagnosticsPage } from './DiagnosticsPage';
 
 describe('DiagnosticoPage', () => {
   it('renderiza el título principal y la lista de capacidades', () => {
-    render(<DiagnosticoPage />);
+    render(<DiagnosticsPage />);
 
     expect(
       screen.getByRole('heading', {
@@ -23,16 +23,16 @@ describe('DiagnosticoPage', () => {
 
   it('permite reevaluar las capacidades e incrementa el contador interactivo', async () => {
     const user = userEvent.setup();
-    render(<DiagnosticoPage />);
+    render(<DiagnosticsPage />);
 
-    const contador = screen.getByTestId('contador-pruebas');
-    expect(contador).toHaveTextContent('0');
+    const counter = screen.getByTestId('contador-pruebas');
+    expect(counter).toHaveTextContent('0');
 
-    const boton = screen.getByRole('button', {
+    const button = screen.getByRole('button', {
       name: /reevaluar capacidades/i,
     });
-    await user.click(boton);
+    await user.click(button);
 
-    expect(contador).toHaveTextContent('1');
+    expect(counter).toHaveTextContent('1');
   });
 });

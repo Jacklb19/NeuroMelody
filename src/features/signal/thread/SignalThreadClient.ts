@@ -1,73 +1,73 @@
-import type { FuenteSenal } from '../../acquisition/contract';
-import type { DimensionesLienzo } from '../../signal/drawing/drawTachogram';
-import type { PaletaGrafica } from '../../signal/drawing/palette';
-import type { ResultadoIndices } from '../processing/SignalProcessor';
-import { esMensajeDesdeHilo, type MensajeHaciaHilo } from './protocol';
+import type { SignalSource } from '../../acquisition/contract';
+import type { CanvasDimensions } from '../../signal/drawing/drawTachogram';
+import type { ChartPalette } from '../../signal/drawing/palette';
+import type { IndicesResult } from '../processing/SignalProcessor';
+import { isMessageFromThread, type MessageToThread } from './protocol';
 
 /** Canal con el hilo de señal; inyectable para probar sin un Worker real. */
-export interface PuertoHilo {
-  enviar(mensaje: MensajeHaciaHilo, transferibles?: Transferable[]): void;
-  alRecibir(receptor: (dato: unknown) => void): void;
-  terminar(): void;
+export interface ThreadPort {
+  send(message: MessageToThread, transferables?: Transferable[]): void;
+  onReceive(receiver: (data: unknown) => void): void;
+  terminate(): void;
 }
 
 /** Puerto sobre el Worker real, empaquetado por Vite como archivo del mismo origen. */
-export function crearPuertoWorker(): PuertoHilo {
+export function createWorkerPort(): ThreadPort {
   const worker = new Worker(new URL('./signal.worker.ts', import.meta.url), {
     type: 'module',
   });
   return {
-    enviar: (mensaje, transferibles = []) => {
-      worker.postMessage(mensaje, transferibles);
+    send: (message, transferables = []) => {
+      worker.postMessage(message, transferables);
     },
-    alRecibir: (receptor) => {
-      worker.onmessage = (evento: MessageEvent<unknown>) => {
-        receptor(evento.data);
+    onReceive: (receiver) => {
+      worker.onmessage = (event: MessageEvent<unknown>) => {
+        receiver(event.data);
       };
-      worker.onerror = (evento) => {
-        receptor({ tipo: 'error', mensaje: evento.message });
+      worker.onerror = (event) => {
+        receiver({ kind: 'error', message: event.message });
       };
       worker.onmessageerror = () => {
-        receptor({ tipo: 'error', mensaje: 'No se pudo leer un mensaje del hilo de señal.' });
+        receiver({ kind: 'error', message: 'No se pudo leer un mensaje del hilo de señal.' });
       };
     },
-    terminar: () => {
+    terminate: () => {
       worker.terminate();
     },
   };
 }
 
-export interface ObservadorHiloSenal {
-  readonly alIndices?: (resultado: ResultadoIndices) => void;
-  readonly alError?: (mensaje: string) => void;
+export interface SignalThreadObserver {
+  readonly onIndices?: (result: IndicesResult) => void;
+  readonly onError?: (message: string) => void;
 }
 
 /**
  * Lado del hilo principal: reenvía las notificaciones de la fuente al hilo
  * de señal y reparte sus resultados. No hace ningún cálculo (RNF-04).
  */
-export class ClienteHiloSenal {
-  readonly #puerto: PuertoHilo;
-  readonly #observadores = new Set<ObservadorHiloSenal>();
+export class SignalThreadClient {
+  readonly #port: ThreadPort;
+  readonly #observers = new Set<SignalThreadObserver>();
 
-  constructor(puerto: PuertoHilo) {
-    this.#puerto = puerto;
-    puerto.alRecibir((dato) => {
-      this.#recibir(dato);
+  constructor(port: ThreadPort) {
+    this.#port = port;
+    port.onReceive((data) => {
+      this.#receive(data);
     });
   }
 
   /** Conecta una fuente: el hilo de señal se reinicia con cada nueva conexión. */
-  conectarFuente(fuente: FuenteSenal): () => void {
-    this.#puerto.enviar({ tipo: 'reiniciar' });
-    return fuente.suscribir({
-      alNotificar: (notificacion) => {
-        this.#puerto.enviar({ tipo: 'notificacion', notificacion });
+  connectSource(source: SignalSource): () => void {
+    this.#port.send({ kind: 'reiniciar' });
+    return source.subscribe({
+      onNotification: (notification) => {
+        this.#port.send({ kind: 'notificacion', notification });
       },
-      alCambiarEstado: (estado) => {
+      onStateChange: (state) => {
         // conectar() reinicia el tiempo de señal en 0.
-        if (estado === 'conectando') {
-          this.#puerto.enviar({ tipo: 'reiniciar' });
+        if (state === 'conectando') {
+          this.#port.send({ kind: 'reiniciar' });
         }
       },
     });
@@ -77,47 +77,47 @@ export class ClienteHiloSenal {
    * Transfiere el lienzo al hilo de señal, que dibuja en él a partir de ese
    * momento. La paleta se lee en el hilo principal, donde están las variables CSS.
    */
-  adjuntarLienzo(
-    lienzo: OffscreenCanvas,
-    paleta: PaletaGrafica,
-    dimensiones: DimensionesLienzo,
+  attachCanvas(
+    canvas: OffscreenCanvas,
+    palette: ChartPalette,
+    dimensions: CanvasDimensions,
   ): void {
-    this.#puerto.enviar({ tipo: 'iniciar-lienzo', lienzo, paleta, dimensiones }, [lienzo]);
+    this.#port.send({ kind: 'iniciar-lienzo', canvas, palette, dimensions }, [canvas]);
   }
 
-  redimensionar(dimensiones: DimensionesLienzo): void {
-    this.#puerto.enviar({ tipo: 'redimensionar', dimensiones });
+  resize(dimensions: CanvasDimensions): void {
+    this.#port.send({ kind: 'redimensionar', dimensions });
   }
 
-  suscribir(observador: ObservadorHiloSenal): () => void {
-    this.#observadores.add(observador);
+  subscribe(observer: SignalThreadObserver): () => void {
+    this.#observers.add(observer);
     return () => {
-      this.#observadores.delete(observador);
+      this.#observers.delete(observer);
     };
   }
 
-  terminar(): void {
-    this.#puerto.terminar();
-    this.#observadores.clear();
+  terminate(): void {
+    this.#port.terminate();
+    this.#observers.clear();
   }
 
-  #recibir(dato: unknown): void {
-    if (!esMensajeDesdeHilo(dato)) {
-      this.#avisarError('Respuesta no reconocida del hilo de señal.');
+  #receive(data: unknown): void {
+    if (!isMessageFromThread(data)) {
+      this.#notifyError('Respuesta no reconocida del hilo de señal.');
       return;
     }
-    if (dato.tipo === 'error') {
-      this.#avisarError(dato.mensaje);
+    if (data.kind === 'error') {
+      this.#notifyError(data.message);
       return;
     }
-    for (const observador of this.#observadores) {
-      observador.alIndices?.(dato.resultado);
+    for (const observer of this.#observers) {
+      observer.onIndices?.(data.result);
     }
   }
 
-  #avisarError(mensaje: string): void {
-    for (const observador of this.#observadores) {
-      observador.alError?.(mensaje);
+  #notifyError(message: string): void {
+    for (const observer of this.#observers) {
+      observer.onError?.(message);
     }
   }
 }

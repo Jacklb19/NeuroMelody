@@ -1,166 +1,166 @@
 import { describe, it, expect, vi } from 'vitest';
-import { crearEntornoTiempoFalso } from '../../../test/fakeTimeEnvironment';
-import type { NotificacionLatido } from '../../acquisition/contract';
-import { UNIDADES_RR_POR_SEGUNDO } from '../rrUnits';
-import type { IdEscenario } from './scenarios';
-import { FuenteSimulada, type Velocidad } from './SimulatedSource';
+import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
+import type { BeatNotification } from '../../acquisition/contract';
+import { RR_UNITS_PER_SECOND } from '../rrUnits';
+import type { ScenarioId } from './scenarios';
+import { SimulatedSource, type Speed } from './SimulatedSource';
 
-async function crearFuenteConectada(
-  velocidad: Velocidad = 1,
-  escenario: IdEscenario = 'reposo',
-  semilla = 1,
+async function createConnectedSource(
+  speed: Speed = 1,
+  scenario: ScenarioId = 'reposo',
+  seed = 1,
 ) {
-  const entorno = crearEntornoTiempoFalso();
-  const fuente = new FuenteSimulada({ escenario, semilla, velocidad, ...entorno });
-  const notificaciones: NotificacionLatido[] = [];
-  const alError = vi.fn();
-  fuente.suscribir({ alNotificar: (n) => notificaciones.push(n), alError });
-  await fuente.conectar();
-  return { entorno, fuente, notificaciones, alError };
+  const env = createFakeTimeEnvironment();
+  const source = new SimulatedSource({ scenario, seed, speed, ...env });
+  const notifications: BeatNotification[] = [];
+  const onError = vi.fn();
+  source.subscribe({ onNotification: (n) => notifications.push(n), onError });
+  await source.connect();
+  return { env, source, notifications, onError };
 }
 
 describe('FuenteSimulada', () => {
   it('declara el tipo simulador y empieza desconectada', () => {
-    const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 1 });
-    expect(fuente.tipo).toBe('simulador');
-    expect(fuente.estado).toBe('desconectada');
+    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1 });
+    expect(source.kind).toBe('simulador');
+    expect(source.state).toBe('desconectada');
   });
 
   it('pasa por conectando y conectada, y vuelve a desconectada', async () => {
-    const entorno = crearEntornoTiempoFalso();
-    const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 1, ...entorno });
-    const alCambiarEstado = vi.fn();
-    fuente.suscribir({ alCambiarEstado });
+    const env = createFakeTimeEnvironment();
+    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1, ...env });
+    const onStateChange = vi.fn();
+    source.subscribe({ onStateChange });
 
-    await fuente.conectar();
-    expect(fuente.estado).toBe('conectada');
-    expect(entorno.activa).toBe(true);
+    await source.connect();
+    expect(source.state).toBe('conectada');
+    expect(env.active).toBe(true);
 
-    await fuente.desconectar();
-    expect(fuente.estado).toBe('desconectada');
-    expect(entorno.activa).toBe(false);
-    expect(alCambiarEstado.mock.calls).toEqual([['conectando'], ['conectada'], ['desconectada']]);
+    await source.disconnect();
+    expect(source.state).toBe('desconectada');
+    expect(env.active).toBe(false);
+    expect(onStateChange.mock.calls).toEqual([['conectando'], ['conectada'], ['desconectada']]);
   });
 
   it('ignora una segunda conexión mientras ya está conectada', async () => {
-    const { entorno, fuente } = await crearFuenteConectada();
-    await fuente.conectar();
-    expect(entorno.tareasProgramadas).toBe(1);
+    const { env, source } = await createConnectedSource();
+    await source.connect();
+    expect(env.scheduledTasks).toBe(1);
   });
 
   it('emite una notificación por segundo de señal a velocidad 1×', async () => {
-    const { entorno, notificaciones } = await crearFuenteConectada(1);
-    entorno.avanzar(10_000);
-    expect(notificaciones.map((n) => n.tiempoMs)).toEqual([
+    const { env, notifications } = await createConnectedSource(1);
+    env.advance(10_000);
+    expect(notifications.map((n) => n.timeMs)).toEqual([
       1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
     ]);
   });
 
   it('acelera el tiempo de señal a velocidad 10×', async () => {
-    const { entorno, notificaciones } = await crearFuenteConectada(10);
-    entorno.avanzar(1000);
-    expect(notificaciones).toHaveLength(10);
-    expect(notificaciones.at(-1)?.tiempoMs).toBe(10_000);
+    const { env, notifications } = await createConnectedSource(10);
+    env.advance(1000);
+    expect(notifications).toHaveLength(10);
+    expect(notifications.at(-1)?.timeMs).toBe(10_000);
   });
 
-  it.each<Velocidad>([2, 5, 10])(
+  it.each<Speed>([2, 5, 10])(
     'produce la misma serie a 1× y a %i× (reproducible)',
-    async (velocidad) => {
-      const lenta = await crearFuenteConectada(1, 'relajacion_progresiva', 7);
-      const rapida = await crearFuenteConectada(velocidad, 'relajacion_progresiva', 7);
-      lenta.entorno.avanzar(300_000);
-      rapida.entorno.avanzar(300_000 / velocidad);
-      expect(rapida.notificaciones).toHaveLength(300);
-      expect(rapida.notificaciones).toEqual(lenta.notificaciones);
+    async (speed) => {
+      const slow = await createConnectedSource(1, 'relajacion_progresiva', 7);
+      const fast = await createConnectedSource(speed, 'relajacion_progresiva', 7);
+      slow.env.advance(300_000);
+      fast.env.advance(300_000 / speed);
+      expect(fast.notifications).toHaveLength(300);
+      expect(fast.notifications).toEqual(slow.notifications);
     },
   );
 
   it('entrega en orden todo lo pendiente tras un temporizador retrasado', async () => {
-    const continua = await crearFuenteConectada();
-    const retrasada = await crearFuenteConectada();
-    continua.entorno.avanzar(30_000);
-    retrasada.entorno.saltar(30_000);
-    expect(retrasada.notificaciones).toHaveLength(30);
-    expect(retrasada.notificaciones).toEqual(continua.notificaciones);
+    const continuous = await createConnectedSource();
+    const delayed = await createConnectedSource();
+    continuous.env.advance(30_000);
+    delayed.env.jump(30_000);
+    expect(delayed.notifications).toHaveLength(30);
+    expect(delayed.notifications).toEqual(continuous.notifications);
   });
 
   it('emite intervalos cuantizados a 1/1024 s y una FC coherente, sin errores de validación', async () => {
-    const { entorno, notificaciones, alError } = await crearFuenteConectada(10, 'relajacion_progresiva');
-    entorno.avanzar(60_000); // 10 minutos de señal
+    const { env, notifications, onError } = await createConnectedSource(10, 'relajacion_progresiva');
+    env.advance(60_000); // 10 minutos de señal
 
-    const todosLosRR = notificaciones.flatMap((n) => n.intervalosRRms);
-    for (const rr of todosLosRR) {
-      expect(Number.isInteger((rr * UNIDADES_RR_POR_SEGUNDO) / 1000)).toBe(true);
+    const allRr = notifications.flatMap((n) => n.rrIntervalsMs);
+    for (const rr of allRr) {
+      expect(Number.isInteger((rr * RR_UNITS_PER_SECOND) / 1000)).toBe(true);
     }
     // La suma de los RR entregados no puede superar el tiempo de señal transcurrido.
-    const sumaRR = todosLosRR.reduce((s, rr) => s + rr, 0);
-    expect(sumaRR).toBeLessThanOrEqual(600_000);
-    expect(sumaRR).toBeGreaterThan(600_000 - 1500);
+    const rrSum = allRr.reduce((s, rr) => s + rr, 0);
+    expect(rrSum).toBeLessThanOrEqual(600_000);
+    expect(rrSum).toBeGreaterThan(600_000 - 1500);
 
-    for (const n of notificaciones) {
-      expect(Number.isInteger(n.frecuenciaCardiaca)).toBe(true);
-      expect(n.frecuenciaCardiaca).toBeGreaterThan(50);
-      expect(n.frecuenciaCardiaca).toBeLessThan(110);
-      expect(n.contactoSensor).toBe(true);
+    for (const n of notifications) {
+      expect(Number.isInteger(n.heartRate)).toBe(true);
+      expect(n.heartRate).toBeGreaterThan(50);
+      expect(n.heartRate).toBeLessThan(110);
+      expect(n.sensorContact).toBe(true);
     }
-    expect(alError).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('en el escenario artefactos pierde el contacto 5 s cada 90 s', async () => {
-    const { entorno, notificaciones, alError } = await crearFuenteConectada(10, 'artefactos');
-    entorno.avanzar(20_000); // 200 s de señal
+    const { env, notifications, onError } = await createConnectedSource(10, 'artefactos');
+    env.advance(20_000); // 200 s de señal
 
-    const sinContacto = notificaciones.filter((n) => n.contactoSensor === false);
-    expect(sinContacto.map((n) => n.tiempoMs)).toEqual([
+    const noContact = notifications.filter((n) => n.sensorContact === false);
+    expect(noContact.map((n) => n.timeMs)).toEqual([
       91_000, 92_000, 93_000, 94_000, 95_000, 181_000, 182_000, 183_000, 184_000, 185_000,
     ]);
-    expect(sinContacto.every((n) => n.intervalosRRms.length === 0)).toBe(true);
+    expect(noContact.every((n) => n.rrIntervalsMs.length === 0)).toBe(true);
 
     // Durante la pérdida se mantiene la última FC reportada.
-    const antes = notificaciones.find((n) => n.tiempoMs === 90_000);
-    expect(sinContacto[0]?.frecuenciaCardiaca).toBe(antes?.frecuenciaCardiaca);
-    expect(notificaciones.find((n) => n.tiempoMs === 96_000)?.contactoSensor).toBe(true);
-    expect(alError).not.toHaveBeenCalled();
+    const before = notifications.find((n) => n.timeMs === 90_000);
+    expect(noContact[0]?.heartRate).toBe(before?.heartRate);
+    expect(notifications.find((n) => n.timeMs === 96_000)?.sensorContact).toBe(true);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('los escenarios limpios nunca pierden el contacto', async () => {
-    const { entorno, notificaciones } = await crearFuenteConectada(10, 'reposo');
-    entorno.avanzar(20_000);
-    expect(notificaciones.every((n) => n.contactoSensor === true)).toBe(true);
+    const { env, notifications } = await createConnectedSource(10, 'reposo');
+    env.advance(20_000);
+    expect(notifications.every((n) => n.sensorContact === true)).toBe(true);
   });
 
   it('no emite nada tras desconectar', async () => {
-    const { entorno, fuente, notificaciones } = await crearFuenteConectada();
-    entorno.avanzar(3000);
-    await fuente.desconectar();
-    entorno.saltar(10_000);
-    expect(notificaciones).toHaveLength(3);
+    const { env, source, notifications } = await createConnectedSource();
+    env.advance(3000);
+    await source.disconnect();
+    env.jump(10_000);
+    expect(notifications).toHaveLength(3);
   });
 
   it('deja de emitir si un observador desconecta durante una notificación', async () => {
-    const entorno = crearEntornoTiempoFalso();
-    const fuente = new FuenteSimulada({ escenario: 'reposo', semilla: 1, velocidad: 1, ...entorno });
-    const alNotificar = vi.fn(() => {
-      void fuente.desconectar();
+    const env = createFakeTimeEnvironment();
+    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1, ...env });
+    const onNotification = vi.fn(() => {
+      void source.disconnect();
     });
-    fuente.suscribir({ alNotificar });
-    await fuente.conectar();
+    source.subscribe({ onNotification });
+    await source.connect();
 
-    entorno.saltar(10_000);
+    env.jump(10_000);
 
-    expect(alNotificar).toHaveBeenCalledOnce();
+    expect(onNotification).toHaveBeenCalledOnce();
   });
 
   it('al reconectar reinicia el tiempo de señal y repite la serie', async () => {
-    const { entorno, fuente, notificaciones } = await crearFuenteConectada();
-    entorno.avanzar(5000);
-    const primeraConexion = [...notificaciones];
+    const { env, source, notifications } = await createConnectedSource();
+    env.advance(5000);
+    const firstConnection = [...notifications];
 
-    await fuente.desconectar();
-    notificaciones.length = 0;
-    await fuente.conectar();
-    entorno.avanzar(5000);
+    await source.disconnect();
+    notifications.length = 0;
+    await source.connect();
+    env.advance(5000);
 
-    expect(notificaciones).toEqual(primeraConexion);
+    expect(notifications).toEqual(firstConnection);
   });
 });

@@ -3,42 +3,42 @@
  * El compresor nativo no garantiza el máximo; este recorte sí. Publica el
  * pico de cada bloque en el búfer circular de telemetría.
  */
-import { recortarBloque } from '../core/softClip';
-import { EscritorTelemetria } from '../telemetry/telemetryRing';
-import { ambito } from './workletScope';
-import { NOMBRE_RECORTADOR, leerOpcionesRecortador } from './workletContract';
+import { softClipBlock } from '../core/softClip';
+import { TelemetryWriter } from '../telemetry/telemetryRing';
+import { scope } from './workletScope';
+import { CLIPPER_NAME, readClipperOptions } from './workletContract';
 
-class ProcesadorRecortador extends ambito.AudioWorkletProcessor {
-  readonly #telemetria: EscritorTelemetria | null;
+class ClipperProcessor extends scope.AudioWorkletProcessor {
+  readonly #telemetry: TelemetryWriter | null;
 
-  constructor(opciones: AudioWorkletNodeOptions) {
+  constructor(options: AudioWorkletNodeOptions) {
     super();
-    const { telemetria } = leerOpcionesRecortador(opciones.processorOptions);
-    this.#telemetria = telemetria === null ? null : new EscritorTelemetria(telemetria);
+    const { telemetry } = readClipperOptions(options.processorOptions);
+    this.#telemetry = telemetry === null ? null : new TelemetryWriter(telemetry);
   }
 
-  process(entradas: Float32Array[][], salidas: Float32Array[][]): boolean {
-    const entrada = entradas[0];
-    const salida = salidas[0];
-    let pico = 0;
-    if (salida !== undefined) {
-      for (let c = 0; c < salida.length; c++) {
-        const canalSalida = salida[c];
-        const canalEntrada = entrada?.[c];
-        if (canalSalida === undefined) {
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    const input = inputs[0];
+    const output = outputs[0];
+    let peak = 0;
+    if (output !== undefined) {
+      for (let c = 0; c < output.length; c++) {
+        const outputChannel = output[c];
+        const inputChannel = input?.[c];
+        if (outputChannel === undefined) {
           continue;
         }
-        if (canalEntrada === undefined) {
-          canalSalida.fill(0);
+        if (inputChannel === undefined) {
+          outputChannel.fill(0);
           continue;
         }
-        canalSalida.set(canalEntrada);
-        pico = Math.max(pico, recortarBloque(canalSalida));
+        outputChannel.set(inputChannel);
+        peak = Math.max(peak, softClipBlock(outputChannel));
       }
     }
-    this.#telemetria?.escribir(pico);
+    this.#telemetry?.write(peak);
     return true;
   }
 }
 
-ambito.registerProcessor(NOMBRE_RECORTADOR, ProcesadorRecortador);
+scope.registerProcessor(CLIPPER_NAME, ClipperProcessor);

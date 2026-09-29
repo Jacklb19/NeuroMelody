@@ -1,17 +1,17 @@
 import {
-  dibujarTacograma,
-  type ContextoDibujo,
-  type DimensionesLienzo,
+  drawTachogram,
+  type DrawingContext,
+  type CanvasDimensions,
 } from '../../signal/drawing/drawTachogram';
-import type { PaletaGrafica } from '../../signal/drawing/palette';
-import { ProcesadorSenal } from '../processing/SignalProcessor';
-import { esMensajeHaciaHilo, type LienzoHilo, type MensajeDesdeHilo } from './protocol';
+import type { ChartPalette } from '../../signal/drawing/palette';
+import { SignalProcessor } from '../processing/SignalProcessor';
+import { isMessageToThread, type ThreadCanvas, type MessageFromThread } from './protocol';
 
-interface Grafica {
-  readonly lienzo: LienzoHilo;
-  readonly contexto: ContextoDibujo;
-  readonly paleta: PaletaGrafica;
-  dimensiones: DimensionesLienzo;
+interface Chart {
+  readonly canvas: ThreadCanvas;
+  readonly context: DrawingContext;
+  readonly palette: ChartPalette;
+  dimensions: CanvasDimensions;
 }
 
 /**
@@ -22,54 +22,54 @@ interface Grafica {
  * Si hay un lienzo transferido, redibuja el tacograma tras cada cambio; sin
  * lienzo, el análisis funciona igual.
  */
-export function crearManejadorHiloSenal(
-  enviar: (mensaje: MensajeDesdeHilo) => void,
-): (dato: unknown) => void {
-  const procesador = new ProcesadorSenal((resultado) => {
-    enviar({ tipo: 'indices', resultado });
+export function createSignalThreadHandler(
+  send: (message: MessageFromThread) => void,
+): (data: unknown) => void {
+  const processor = new SignalProcessor((result) => {
+    send({ kind: 'indices', result });
   });
-  let grafica: Grafica | null = null;
+  let chart: Chart | null = null;
 
-  const redibujar = (): void => {
-    if (grafica !== null) {
-      dibujarTacograma(grafica.contexto, procesador.instantanea, grafica.paleta, grafica.dimensiones);
+  const redraw = (): void => {
+    if (chart !== null) {
+      drawTachogram(chart.context, processor.snapshot, chart.palette, chart.dimensions);
     }
   };
 
-  const ajustarLienzo = (g: Grafica): void => {
-    g.lienzo.width = Math.round(g.dimensiones.anchoCss * g.dimensiones.escala);
-    g.lienzo.height = Math.round(g.dimensiones.altoCss * g.dimensiones.escala);
+  const resizeCanvas = (g: Chart): void => {
+    g.canvas.width = Math.round(g.dimensions.widthCss * g.dimensions.scale);
+    g.canvas.height = Math.round(g.dimensions.heightCss * g.dimensions.scale);
   };
 
-  return (dato) => {
-    if (!esMensajeHaciaHilo(dato)) {
-      enviar({ tipo: 'error', mensaje: 'Mensaje no reconocido por el hilo de señal.' });
+  return (data) => {
+    if (!isMessageToThread(data)) {
+      send({ kind: 'error', message: 'Mensaje no reconocido por el hilo de señal.' });
       return;
     }
-    switch (dato.tipo) {
+    switch (data.kind) {
       case 'notificacion':
-        procesador.procesar(dato.notificacion);
+        processor.process(data.notification);
         break;
       case 'reiniciar':
-        procesador.reiniciar();
+        processor.reset();
         break;
       case 'iniciar-lienzo': {
-        const contexto = dato.lienzo.getContext('2d');
-        if (contexto === null) {
-          enviar({ tipo: 'error', mensaje: 'No se pudo obtener el contexto 2D del lienzo.' });
+        const context = data.canvas.getContext('2d');
+        if (context === null) {
+          send({ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' });
           return;
         }
-        grafica = { lienzo: dato.lienzo, contexto, paleta: dato.paleta, dimensiones: dato.dimensiones };
-        ajustarLienzo(grafica);
+        chart = { canvas: data.canvas, context, palette: data.palette, dimensions: data.dimensions };
+        resizeCanvas(chart);
         break;
       }
       case 'redimensionar':
-        if (grafica !== null) {
-          grafica.dimensiones = dato.dimensiones;
-          ajustarLienzo(grafica);
+        if (chart !== null) {
+          chart.dimensions = data.dimensions;
+          resizeCanvas(chart);
         }
         break;
     }
-    redibujar();
+    redraw();
   };
 }
