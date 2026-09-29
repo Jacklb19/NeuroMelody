@@ -37,3 +37,12 @@ Decisiones tomadas durante la construcción que completan o se desvían del docu
 | Decisión | Sincronizar y leer datos de salud de la nube exige autenticación con segundo factor TOTP (nivel `aal2`), tanto en las políticas de seguridad a nivel de fila de `sessions` y `session_metrics` como en la API. Las sesiones con el simulador y el historial guardado en el dispositivo no exigen cuenta. |
 | Desviación | Amplía la Tabla 18 (acceso a sesiones de otro usuario) con un segundo factor. |
 | Consecuencias | Quien obtenga la contraseña no accede a los datos de salud sin el segundo factor. Se admiten dos dispositivos de segundo factor por cuenta. |
+
+## ADR-11. El código se escribe en inglés
+
+| Campo | Contenido |
+|---|---|
+| Contexto | Hasta el S3 el código mezclaba nombres en español. La interfaz se ofrecerá también en inglés, y el código se comparte con herramientas y bibliotecas que usan el inglés. |
+| Decisión | Todo el código va en inglés: clases, componentes, funciones, variables, tipos, constantes, archivos, carpetas, rutas de la URL, variables CSS, nombres de pruebas y comentarios. Los mensajes de commit también, desde el 29 sep 2026. Solo quedan en español los textos que ve el usuario (en los diccionarios de traducción) y los documentos de `docs/`. |
+| Desviación | Ninguna respecto del documento de definición, que no fija el idioma del código. |
+| Consecuencias | El código existente se renombra con el renombrado de TypeScript, en commits aparte por área y sin cambiar el comportamiento. Las rutas de la URL cambian (por ejemplo, `/sesion` pasa a `/session`), y `docs/pantallas.md` se actualiza en consecuencia. |
