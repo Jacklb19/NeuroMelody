@@ -31,6 +31,10 @@ async function start() {
     },
     { timeout: 5000 },
   );
+  // Passive effects (the check interval) may still be pending after the DOM update.
+  await act(async () => {
+    await Promise.resolve();
+  });
 }
 
 function advanceOneCheck() {
