@@ -32,7 +32,8 @@ export interface ContextoDibujo {
   fillText(texto: string, x: number, y: number): void;
 }
 
-const MARGEN = { izquierda: 56, derecha: 8, arriba: 8, abajo: 24 } as const;
+// El margen derecho deja sitio a la etiqueta centrada del último minuto.
+const MARGEN = { izquierda: 56, derecha: 24, arriba: 8, abajo: 24 } as const;
 const SEPARACION_RAYADO_PX = 8;
 const TAMANO_CRUZ_PX = 4;
 const RR_POR_OMISION = { minimo: 600, maximo: 1200 } as const;
@@ -110,7 +111,8 @@ function dibujarEjes(ctx: ContextoDibujo, e: Escalas, paleta: PaletaGrafica): vo
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  for (let t = e.inicioMs; t <= e.finMs; t += 60_000) {
+  // Marcas en minutos enteros de señal, aunque la ventana empiece a mitad de minuto.
+  for (let t = Math.ceil(e.inicioMs / 60_000) * 60_000; t <= e.finMs; t += 60_000) {
     ctx.fillText(formatearMinutos(t), e.x(t), e.area.y + e.area.alto + 6);
   }
 }

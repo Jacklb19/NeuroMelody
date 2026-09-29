@@ -108,6 +108,14 @@ describe('dibujarTacograma', () => {
     expect(textos).not.toContain('0:00');
   });
 
+  it('pone las marcas de tiempo en minutos enteros aunque la ventana empiece a mitad de minuto', () => {
+    const textos = dibujar({ tiempoMs: 350_000, latidos: [], tramos: [] })
+      .operaciones.filter((o) => o.operacion === 'fillText')
+      .map((o) => o.argumentos[0])
+      .filter((t) => typeof t === 'string' && !t.endsWith('ms'));
+    expect(textos).toEqual(['1:00', '2:00', '3:00', '4:00', '5:00']);
+  });
+
   it('dibuja ejes sin fallar cuando no hay datos', () => {
     const ctx = dibujar({ tiempoMs: 0, latidos: [], tramos: [] });
     expect(ctx.contar('fillText')).toBeGreaterThan(0);
