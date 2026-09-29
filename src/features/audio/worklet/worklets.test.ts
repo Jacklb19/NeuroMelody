@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { TECHO } from '../nucleo/recorte';
-import { MODO } from '../nucleo/teoria';
-import { LectorTelemetria, crearBuferTelemetria } from '../telemetria/anilloTelemetria';
-import type { ClaseProcesador, ParametrosBloque } from './ambitoWorklet';
+import { TECHO } from '../core/softClip';
+import { MODO } from '../core/theory';
+import { LectorTelemetria, crearBuferTelemetria } from '../telemetry/telemetryRing';
+import type { ClaseProcesador, ParametrosBloque } from './workletScope';
 import {
   DESCRIPTORES_SINTETIZADOR,
   NOMBRE_RECORTADOR,
   NOMBRE_SINTETIZADOR,
   leerOpcionesRecortador,
   leerOpcionesSintetizador,
-} from './contratoWorklet';
+} from './workletContract';
 
 const registrados = new Map<string, ClaseProcesador>();
 
@@ -24,8 +24,8 @@ beforeAll(async () => {
       registrados.set(nombre, clase);
     },
   });
-  await import('./sintetizador.worklet');
-  await import('./recortador.worklet');
+  await import('./synthesizer.worklet');
+  await import('./clipper.worklet');
 });
 
 function bloque(canales: number): Float32Array[] {

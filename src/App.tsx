@@ -1,5 +1,5 @@
 import { BrowserRouter } from 'react-router';
-import { Rutas } from './app/Rutas';
+import { Rutas } from './app/AppRoutes';
 
 export function App(): React.JSX.Element {
   return (
