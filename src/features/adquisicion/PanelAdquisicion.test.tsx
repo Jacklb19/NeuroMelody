@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { crearEntornoTiempoFalso } from '../../test/entornoTiempoFalso';
 import { CanalFuente } from './canalFuente';
@@ -7,12 +8,18 @@ import type { FuenteSenal } from './contrato';
 import { PanelAdquisicion, SEMILLA_SIMULADOR, type CrearFuenteSimulada } from './PanelAdquisicion';
 import { FuenteSimulada } from './simulador/FuenteSimulada';
 
+/** El panel es controlado: este arnés guarda la fuente como lo hace App. */
+function PanelConEstado({ crearFuente }: { readonly crearFuente: CrearFuenteSimulada }) {
+  const [fuente, setFuente] = useState<FuenteSenal | null>(null);
+  return <PanelAdquisicion fuente={fuente} alCambiarFuente={setFuente} crearFuente={crearFuente} />;
+}
+
 function renderizarConTiempoFalso() {
   const entorno = crearEntornoTiempoFalso();
   const crearFuente = vi.fn<CrearFuenteSimulada>(
     (opciones) => new FuenteSimulada({ ...opciones, reloj: entorno.reloj, programador: entorno.programador }),
   );
-  const resultado = render(<PanelAdquisicion crearFuente={crearFuente} />);
+  const resultado = render(<PanelConEstado crearFuente={crearFuente} />);
   return { entorno, crearFuente, ...resultado };
 }
 
@@ -120,7 +127,7 @@ describe('PanelAdquisicion', () => {
       },
       suscribir: (observador) => canal.suscribir(observador),
     };
-    render(<PanelAdquisicion crearFuente={() => fuente} />);
+    render(<PanelConEstado crearFuente={() => fuente} />);
 
     await user.click(screen.getByRole('button', { name: /conectar simulador/i }));
     act(() => {
