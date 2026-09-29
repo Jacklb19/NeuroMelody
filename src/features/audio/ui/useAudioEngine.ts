@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioEngine, type AudioFactory, type EngineOptions } from '../engine/AudioEngine';
 
-export type AudioState = 'inactivo' | 'cargando' | 'sonando' | 'detenido' | 'error';
+export type AudioState = 'idle' | 'loading' | 'playing' | 'stopped' | 'error';
 
 export interface AudioEngineControl {
   /** Motor actual; `null` antes del primer inicio. */
@@ -26,22 +26,22 @@ async function defaultFactory(): Promise<AudioFactory> {
  */
 export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const engineRef = useRef<AudioEngine | null>(null);
-  const [state, setState] = useState<AudioState>('inactivo');
+  const [state, setState] = useState<AudioState>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const start = useCallback(
     async (options: EngineOptions, volumeDb: number): Promise<AudioEngine | null> => {
-      setState('cargando');
+      setState('loading');
       setError(null);
       try {
         let engine = engineRef.current;
-        if (engine === null || engine.state === 'cerrado') {
+        if (engine === null || engine.state === 'closed') {
           engine = await AudioEngine.create(factory ?? (await defaultFactory()), options);
           engineRef.current = engine;
         }
         engine.setVolumeDb(volumeDb);
         await engine.start();
-        setState('sonando');
+        setState('playing');
         return engine;
       } catch (cause) {
         setState('error');
@@ -54,19 +54,19 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
 
   const stop = useCallback(async (): Promise<void> => {
     const engine = engineRef.current;
-    if (engine?.state !== 'sonando') {
+    if (engine?.state !== 'playing') {
       return;
     }
     // La rampa de 50 ms ya quedó programada: la interfaz refleja la detención de inmediato.
     const stopping = engine.stop();
-    setState('detenido');
+    setState('stopped');
     await stopping;
   }, []);
 
   const discard = useCallback(async (): Promise<void> => {
     const engine = engineRef.current;
     engineRef.current = null;
-    setState('inactivo');
+    setState('idle');
     await engine?.close();
   }, []);
 

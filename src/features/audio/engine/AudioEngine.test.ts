@@ -10,7 +10,7 @@ async function createEngine(outputThroughAudioElement = false, telemetry: Shared
   const env = createFakeAudioEnvironment(telemetry);
   const engine = await AudioEngine.create(env.factory, {
     seed: 7,
-    initialLevel: 'intermedio',
+    initialLevel: 'intermediate',
     outputThroughAudioElement,
   });
   const [synthesizer, clipper] = env.worklets;
@@ -19,8 +19,8 @@ async function createEngine(outputThroughAudioElement = false, telemetry: Shared
   }
   const nodesOfKind = (kind: string) => env.context.nodes.filter((n) => n.kind === kind);
   const param = (name: string) => synthesizer.parameters.get(name) as FakeParam;
-  const [volume, wet, envelope] = [nodesOfKind('ganancia')[1], nodesOfKind('ganancia')[0], nodesOfKind('ganancia')[2]] as unknown as { gain: FakeParam }[];
-  const filter = nodesOfKind('filtro')[0] as unknown as { frequency: FakeParam; type: string };
+  const [volume, wet, envelope] = [nodesOfKind('gain')[1], nodesOfKind('gain')[0], nodesOfKind('gain')[2]] as unknown as { gain: FakeParam }[];
+  const filter = nodesOfKind('filter')[0] as unknown as { frequency: FakeParam; type: string };
   return { env, engine, synthesizer, clipper, param, volume, wet, envelope, filter, nodesOfKind };
 }
 
@@ -38,28 +38,28 @@ function chain(from: FakeNode): string[] {
 describe('MotorAudio.crear', () => {
   it('carga los dos módulos del worklet en orden', async () => {
     const { env } = await createEngine();
-    expect(env.context.loadedModules).toEqual(['sintetizador.js', 'recortador.js']);
+    expect(env.context.loadedModules).toEqual(['synthesizer.js', 'clipper.js']);
   });
 
   it('arma la cadena sintetizador → brillo → volumen → envolvente → limitador → recorte → salida', async () => {
     const { synthesizer } = await createEngine();
     expect(chain(synthesizer)).toEqual([
       `worklet:${SYNTHESIZER_NAME}`,
-      'filtro',
-      'ganancia',
-      'ganancia',
-      'limitador',
+      'filter',
+      'gain',
+      'gain',
+      'compressor',
       `worklet:${CLIPPER_NAME}`,
-      'destino',
+      'destination',
     ]);
   });
 
   it('manda el brillo también a la reverberación, que vuelve al volumen', async () => {
     const { nodesOfKind } = await createEngine();
-    const filter = nodesOfKind('filtro')[0];
-    const convolution = nodesOfKind('convolucion')[0];
-    expect(filter?.connections.map((n) => n.kind)).toEqual(['ganancia', 'convolucion']);
-    expect(chain(convolution as FakeNode).slice(0, 3)).toEqual(['convolucion', 'ganancia', 'ganancia']);
+    const filter = nodesOfKind('filter')[0];
+    const convolution = nodesOfKind('convolver')[0];
+    expect(filter?.connections.map((n) => n.kind)).toEqual(['gain', 'convolver']);
+    expect(chain(convolution as FakeNode).slice(0, 3)).toEqual(['convolver', 'gain', 'gain']);
   });
 
   it('empieza en el nivel de calibración, con volumen de −12 dB y en silencio', async () => {
@@ -70,7 +70,7 @@ describe('MotorAudio.crear', () => {
       initialLayers: 2,
     });
     expect(synthesizer.options.outputChannelCount).toEqual([2]);
-    expect([param('tempo').value, param('modo').value, param('capas').value]).toEqual([66, MODE.lydian, 2]);
+    expect([param('tempo').value, param('mode').value, param('layers').value]).toEqual([66, MODE.lydian, 2]);
     expect(filter.type).toBe('lowpass');
     expect(filter.frequency.value).toBe(3500);
     expect(wet?.gain.value).toBe(0.35);
@@ -80,7 +80,7 @@ describe('MotorAudio.crear', () => {
 
   it('configura el limitador con umbral −6 dBFS y relación 20:1', async () => {
     const { nodesOfKind } = await createEngine();
-    const limiter = nodesOfKind('limitador')[0] as unknown as Record<string, FakeParam>;
+    const limiter = nodesOfKind('compressor')[0] as unknown as Record<string, FakeParam>;
     expect(limiter.threshold?.value).toBe(LIMITER.thresholdDb);
     expect(limiter.ratio?.value).toBe(20);
     expect(limiter.knee?.value).toBe(0);
@@ -99,42 +99,42 @@ describe('MotorAudio en uso', () => {
     env.context.currentTime = 2;
     await engine.start();
     expect(env.context.state).toBe('running');
-    expect(engine.state).toBe('sonando');
-    expect(envelope?.gain.last('lineal')).toEqual({ kind: 'lineal', value: 1, time: 3.5 });
+    expect(engine.state).toBe('playing');
+    expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 3.5 });
   });
 
   it('programa una rampa de tempo de 20 s de Intermedio a Activación alta (ΔBPM = 10)', async () => {
     const { engine, env, param } = await createEngine();
     env.context.currentTime = 10;
-    const duration = engine.applyLevel('alta');
+    const duration = engine.applyLevel('high');
     expect(duration).toBe(20);
     expect(param('tempo').events.slice(-2)).toEqual([
       { kind: 'set', value: 66, time: 10 },
-      { kind: 'lineal', value: 76, time: 30 },
+      { kind: 'linear', value: 76, time: 30 },
     ]);
-    expect(param('modo').last('set')).toEqual({ kind: 'set', value: MODE.majorPentatonic, time: 10 });
-    expect(param('capas').last('set')).toEqual({ kind: 'set', value: 3, time: 10 });
-    expect(engine.level).toBe('alta');
+    expect(param('mode').last('set')).toEqual({ kind: 'set', value: MODE.majorPentatonic, time: 10 });
+    expect(param('layers').last('set')).toEqual({ kind: 'set', value: 3, time: 10 });
+    expect(engine.level).toBe('high');
   });
 
   it('alarga la rampa de tempo según |ΔBPM| × 2 s: de 76 a 59 BPM dura 34 s', async () => {
     const { engine, env, param } = await createEngine();
     param('tempo').value = 76; // como si la rampa anterior hubiera terminado
     env.context.currentTime = 100;
-    expect(engine.applyLevel('meta')).toBe(34);
-    expect(param('tempo').last('lineal')).toEqual({ kind: 'lineal', value: 59, time: 134 });
+    expect(engine.applyLevel('target')).toBe(34);
+    expect(param('tempo').last('linear')).toEqual({ kind: 'linear', value: 59, time: 134 });
   });
 
   it('interpola brillo y reverberación en 45 s', async () => {
     const { engine, env, filter, wet } = await createEngine();
     env.context.currentTime = 5;
-    engine.applyLevel('meta');
-    expect(filter.frequency.last('exponencial')).toEqual({
-      kind: 'exponencial',
+    engine.applyLevel('target');
+    expect(filter.frequency.last('exponential')).toEqual({
+      kind: 'exponential',
       value: 2000,
       time: 5 + TIMBRE_RAMP_DURATION_S,
     });
-    expect(wet?.gain.last('lineal')).toEqual({ kind: 'lineal', value: 0.5, time: 50 });
+    expect(wet?.gain.last('linear')).toEqual({ kind: 'linear', value: 0.5, time: 50 });
   });
 
   it('acota el volumen entre −40 y 0 dB', async () => {
@@ -150,10 +150,10 @@ describe('MotorAudio en uso', () => {
     await engine.start();
     env.context.currentTime = 30;
     await engine.stop();
-    expect(envelope?.gain.last('lineal')).toEqual({ kind: 'lineal', value: 0, time: 30 + STOP_RAMP_S });
+    expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 0, time: 30 + STOP_RAMP_S });
     expect(env.waits).toEqual([60]);
     expect(env.context.state).toBe('suspended');
-    expect(engine.state).toBe('detenido');
+    expect(engine.state).toBe('stopped');
   });
 
   it('detener no hace nada si no está sonando', async () => {
@@ -177,13 +177,13 @@ describe('MotorAudio en uso', () => {
     // No cancela nada de lo ya programado (el fundido de entrada puede seguir en curso).
     expect(envelope.gain.events.slice(eventsBefore)).toEqual([
       { kind: 'set', value: 1, time: 720 },
-      { kind: 'lineal', value: 0, time: 740 },
+      { kind: 'linear', value: 0, time: 740 },
     ]);
 
     env.context.currentTime = 650;
     engine.cancelFinalFade();
-    expect(envelope.gain.last('cancelar')?.time).toBe(650);
-    expect(envelope.gain.last('lineal')).toEqual({ kind: 'lineal', value: 1, time: 652 });
+    expect(envelope.gain.last('cancel')?.time).toBe(650);
+    expect(envelope.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 652 });
   });
 
   it('lee playbackStats cuando existe y marca si mide la salida real', async () => {
@@ -219,15 +219,15 @@ describe('MotorAudio en uso', () => {
     const { engine, env } = await createEngine();
     await engine.close();
     expect(env.context.state).toBe('closed');
-    expect(engine.state).toBe('cerrado');
+    expect(engine.state).toBe('closed');
   });
 });
 
 describe('respaldo de Media Session por un elemento <audio>', () => {
   it('envía la salida a un flujo que reproduce un <audio> y avisa que la métrica no es la real', async () => {
     const { engine, env, clipper } = await createEngine(true);
-    expect(clipper.connections.map((n) => n.kind)).toEqual(['flujo']);
-    expect(env.element.srcObject).toEqual({ id: 'flujo' });
+    expect(clipper.connections.map((n) => n.kind)).toEqual(['stream']);
+    expect(env.element.srcObject).toEqual({ id: 'stream' });
 
     await engine.start();
     expect(env.element.playing).toBe(true);

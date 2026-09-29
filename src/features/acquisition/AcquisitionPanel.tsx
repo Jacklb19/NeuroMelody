@@ -22,10 +22,10 @@ const createDefaultSource: CreateSimulatedSource = (options) =>
   new SimulatedSource(options);
 
 const STATE_TEXT: Readonly<Record<ConnectionState, string>> = {
-  desconectada: 'Desconectada',
-  conectando: 'Conectando…',
-  conectada: 'Conectada',
-  reconectando: 'Reconectando…',
+  disconnected: 'Desconectada',
+  connecting: 'Conectando…',
+  connected: 'Conectada',
+  reconnecting: 'Reconectando…',
   error: 'Error de conexión',
 };
 
@@ -37,7 +37,7 @@ function formatTime(ms: number): string {
 }
 
 function toScenario(value: string): ScenarioId {
-  return SCENARIO_IDS.find((id) => id === value) ?? 'reposo';
+  return SCENARIO_IDS.find((id) => id === value) ?? 'rest';
 }
 
 function toSpeed(value: string): Speed {
@@ -62,7 +62,7 @@ export function AcquisitionPanel({
   onSourceChange,
   createSource = createDefaultSource,
 }: AcquisitionPanelProps): React.JSX.Element {
-  const [scenario, setScenario] = useState<ScenarioId>('reposo');
+  const [scenario, setScenario] = useState<ScenarioId>('rest');
   const [speed, setSpeed] = useState<Speed>(1);
   const reading = useSignalSource(source);
   const titleId = useId();
@@ -75,7 +75,7 @@ export function AcquisitionPanel({
     [source],
   );
 
-  const active = reading.state !== 'desconectada' && reading.state !== 'error';
+  const active = reading.state !== 'disconnected' && reading.state !== 'error';
 
   const connect = (): void => {
     const newSource = createSource({ scenario, speed, seed: SIMULATOR_SEED });
@@ -166,13 +166,13 @@ export function AcquisitionPanel({
 
       <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--espacio-1) var(--espacio-4)' }}>
         <dt>Frecuencia cardíaca</dt>
-        <dd data-testid="frecuencia-cardiaca">
+        <dd data-testid="heart-rate">
           {reading.last === null ? '—' : `${String(reading.last.heartRate)} lpm`}
         </dd>
         <dt>Latidos recibidos</dt>
-        <dd data-testid="latidos-recibidos">{reading.receivedBeats}</dd>
+        <dd data-testid="received-beats">{reading.receivedBeats}</dd>
         <dt>Tiempo de señal</dt>
-        <dd data-testid="tiempo-senal">
+        <dd data-testid="signal-time">
           {reading.last === null ? '—' : formatTime(reading.last.timeMs)}
         </dd>
       </dl>

@@ -58,30 +58,30 @@ describe('ProcesadorSenal', () => {
   });
 
   it('publica índices cada 5 s de tiempo de señal', async () => {
-    const { results } = await simulate('reposo', 30);
+    const { results } = await simulate('rest', 30);
     expect(results.map((r) => r.timeMs)).toEqual([5000, 10000, 15000, 20000, 25000, 30000]);
   });
 
   it('publica los mismos resultados a 1× y a 10×', async () => {
-    const slow = await simulate('relajacion_progresiva', 120, 1);
-    const fast = await simulate('relajacion_progresiva', 120, 10);
+    const slow = await simulate('progressive_relaxation', 120, 1);
+    const fast = await simulate('progressive_relaxation', 120, 10);
     expect(fast.results).toEqual(slow.results);
   });
 
   it('muestra "reuniendo" sin índices hasta tener 60 s de NN válidos', async () => {
-    const { results } = await simulate('reposo', 70);
+    const { results } = await simulate('rest', 70);
     const at55 = results.find((r) => r.timeMs === 55_000);
     const at70 = results.find((r) => r.timeMs === 70_000);
 
-    expect(at55).toMatchObject({ quality: 'reuniendo', meanHr: null, rmssd: null, sdnn: null });
-    expect(at70?.quality).toBe('buena');
+    expect(at55).toMatchObject({ quality: 'collecting', meanHr: null, rmssd: null, sdnn: null });
+    expect(at70?.quality).toBe('good');
     expect(at70?.meanHr).toBeGreaterThan(55);
     expect(at70?.rmssd).toBeGreaterThan(0);
     expect(at70?.coverageMs).toBe(70_000);
   });
 
   it('en reposo limpio no descarta latidos ni marca tramos de baja calidad', async () => {
-    const { processor, results } = await simulate('reposo', 300);
+    const { processor, results } = await simulate('rest', 300);
     const last = results.at(-1);
     expect(last?.discardedBeats).toBe(0);
     expect(processor.snapshot.segments).toEqual([]);
@@ -90,8 +90,8 @@ describe('ProcesadorSenal', () => {
 
   describe('verificación de RF-04 con el escenario artefactos', () => {
     it('el RMSSD filtrado queda a ±10 % del de reposo con la misma semilla y el crudo es claramente mayor', async () => {
-      const reference = await simulate('reposo', 300);
-      const withArtifacts = await simulate('artefactos', 300);
+      const reference = await simulate('rest', 300);
+      const withArtifacts = await simulate('artifacts', 300);
       const referenceRmssd = reference.results.at(-1)?.rmssd ?? Number.NaN;
       const filteredRmssd = withArtifacts.results.at(-1)?.rmssd ?? Number.NaN;
       const rawRmssd = unfilteredRmssd(withArtifacts.notifications, 0);
@@ -102,13 +102,13 @@ describe('ProcesadorSenal', () => {
     });
 
     it('marca como baja calidad cada pérdida de contacto', async () => {
-      const { processor, results } = await simulate('artefactos', 200);
+      const { processor, results } = await simulate('artifacts', 200);
       const segments = processor.snapshot.segments;
 
       expect(segments.some((t) => t.startMs <= 91_000 && t.endMs >= 95_000)).toBe(true);
       expect(segments.some((t) => t.startMs <= 181_000 && t.endMs >= 185_000)).toBe(true);
-      expect(results.find((r) => r.timeMs === 95_000)?.quality).toBe('baja');
-      expect(results.find((r) => r.timeMs === 110_000)?.quality).toBe('buena');
+      expect(results.find((r) => r.timeMs === 95_000)?.quality).toBe('low');
+      expect(results.find((r) => r.timeMs === 110_000)?.quality).toBe('good');
     });
   });
 
@@ -130,7 +130,7 @@ describe('ProcesadorSenal', () => {
     processor.process(notification(1000, [1000], false));
     expect(processor.snapshot.beats[0]).toMatchObject({
       accepted: false,
-      discardReason: 'sin_contacto',
+      discardReason: 'no_contact',
     });
   });
 
@@ -153,7 +153,7 @@ describe('ProcesadorSenal', () => {
     series.forEach((rr, i) => {
       processor.process(notification((i + 1) * 1000, [rr]));
     });
-    expect(results.at(-1)?.quality).toBe('baja');
+    expect(results.at(-1)?.quality).toBe('low');
   });
 
   it('reiniciar vacía la ventana y vuelve a publicar desde 5 s', () => {

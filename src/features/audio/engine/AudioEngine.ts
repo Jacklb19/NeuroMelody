@@ -47,7 +47,7 @@ export interface EngineOptions {
   readonly outputThroughAudioElement: boolean;
 }
 
-export type EngineState = 'listo' | 'sonando' | 'detenido' | 'cerrado';
+export type EngineState = 'ready' | 'playing' | 'stopped' | 'closed';
 
 export interface PeakReading {
   readonly blocks: number;
@@ -98,7 +98,7 @@ export class AudioEngine {
   readonly #factory: AudioFactory;
   readonly #telemetry: TelemetryReader | null;
   readonly #audioElement: HTMLAudioElement | null;
-  #state: EngineState = 'listo';
+  #state: EngineState = 'ready';
   #level: LevelId;
 
   private constructor(
@@ -137,8 +137,8 @@ export class AudioEngine {
       processorOptions: synthesizerOptions,
     });
     getParam(synthesizer, 'tempo').value = level.tempo;
-    getParam(synthesizer, 'modo').value = level.mode;
-    getParam(synthesizer, 'capas').value = level.layers;
+    getParam(synthesizer, 'mode').value = level.mode;
+    getParam(synthesizer, 'layers').value = level.layers;
 
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
@@ -235,7 +235,7 @@ export class AudioEngine {
     const envelope = this.#nodes.envelope.gain;
     hold(envelope, t);
     envelope.linearRampToValueAtTime(1, t + FADE_IN_S);
-    this.#state = 'sonando';
+    this.#state = 'playing';
   }
 
   /**
@@ -255,10 +255,10 @@ export class AudioEngine {
     const duration = tempoRampDurationS(from, level.tempo);
     tempo.linearRampToValueAtTime(level.tempo, t + duration);
 
-    hold(getParam(synthesizer, 'modo'), t);
-    getParam(synthesizer, 'modo').setValueAtTime(level.mode, t);
-    hold(getParam(synthesizer, 'capas'), t);
-    getParam(synthesizer, 'capas').setValueAtTime(level.layers, t);
+    hold(getParam(synthesizer, 'mode'), t);
+    getParam(synthesizer, 'mode').setValueAtTime(level.mode, t);
+    hold(getParam(synthesizer, 'layers'), t);
+    getParam(synthesizer, 'layers').setValueAtTime(level.layers, t);
 
     hold(filter.frequency, t);
     filter.frequency.exponentialRampToValueAtTime(level.brightnessHz, t + TIMBRE_RAMP_DURATION_S);
@@ -279,14 +279,14 @@ export class AudioEngine {
 
   /** Detención inmediata: rampa a cero en 50 ms y pausa del contexto. */
   async stop(): Promise<void> {
-    if (this.#state !== 'sonando') {
+    if (this.#state !== 'playing') {
       return;
     }
     const t = this.#context.currentTime;
     const envelope = this.#nodes.envelope.gain;
     hold(envelope, t);
     envelope.linearRampToValueAtTime(0, t + STOP_RAMP_S);
-    this.#state = 'detenido';
+    this.#state = 'stopped';
     // La rampa ya silencia en el hilo de audio; la espera solo evita cortarla.
     await this.#factory.wait(STOP_RAMP_S * 1000 + 10);
     this.#audioElement?.pause();
@@ -333,7 +333,7 @@ export class AudioEngine {
 
   async close(): Promise<void> {
     this.#audioElement?.pause();
-    this.#state = 'cerrado';
+    this.#state = 'closed';
     await this.#context.close();
   }
 }

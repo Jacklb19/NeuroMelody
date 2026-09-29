@@ -14,8 +14,8 @@ function withReference(rr = 1000): BeatFilter {
 describe('FiltroLatidos', () => {
   it('descarta los RR fuera de 300–2000 ms y acepta los límites', () => {
     const filter = new BeatFilter();
-    expect(filter.classify(299)).toEqual({ accepted: false, discardReason: 'fuera_de_rango' });
-    expect(filter.classify(2001)).toEqual({ accepted: false, discardReason: 'fuera_de_rango' });
+    expect(filter.classify(299)).toEqual({ accepted: false, discardReason: 'out_of_range' });
+    expect(filter.classify(2001)).toEqual({ accepted: false, discardReason: 'out_of_range' });
     expect(filter.classify(300).accepted).toBe(true);
     expect(filter.classify(2000).accepted).toBe(true);
   });
@@ -28,7 +28,7 @@ describe('FiltroLatidos', () => {
 
   it('aplica la regla del 20 % sobre la mediana de los últimos 5 aceptados', () => {
     const filter = withReference(1000);
-    expect(filter.classify(1210)).toEqual({ accepted: false, discardReason: 'desviacion' });
+    expect(filter.classify(1210)).toEqual({ accepted: false, discardReason: 'deviation' });
     expect(filter.classify(790).accepted).toBe(false);
     expect(filter.classify(1190).accepted).toBe(true);
     expect(filter.classify(810).accepted).toBe(true);
@@ -63,7 +63,7 @@ describe('FiltroLatidos', () => {
 
     expect(before.every((c) => c.accepted)).toBe(true);
     // 1000 se aparta un 25 % de 800: los 5 primeros se descartan y reinician la referencia.
-    expect(after.slice(0, 5).every((c) => c.discardReason === 'desviacion')).toBe(true);
+    expect(after.slice(0, 5).every((c) => c.discardReason === 'deviation')).toBe(true);
     expect(after.slice(5).every((c) => c.accepted)).toBe(true);
   });
 

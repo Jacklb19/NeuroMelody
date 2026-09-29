@@ -8,7 +8,7 @@ import { SignalThreadClient } from './SignalThreadClient';
 
 function createScene() {
   const env = createFakeTimeEnvironment();
-  const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 10, ...env });
+  const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 10, ...env });
   const port = createInProcessPort();
   const client = new SignalThreadClient(port);
   const results: IndicesResult[] = [];
@@ -24,7 +24,7 @@ describe('ClienteHiloSenal', () => {
     await source.connect();
     env.advance(1000); // 10 s de señal
 
-    expect(port.sent.filter((m) => m.kind === 'notificacion')).toHaveLength(10);
+    expect(port.sent.filter((m) => m.kind === 'notification')).toHaveLength(10);
     expect(results.map((r) => r.timeMs)).toEqual([5000, 10000]);
   });
 
@@ -39,7 +39,7 @@ describe('ClienteHiloSenal', () => {
     await source.connect();
     env.advance(500);
 
-    expect(port.sent.filter((m) => m.kind === 'reiniciar')).toHaveLength(3);
+    expect(port.sent.filter((m) => m.kind === 'reset')).toHaveLength(3);
     // Tras reiniciar, la cadencia vuelve a empezar en 5 s.
     expect(results.map((r) => r.timeMs)).toEqual([5000]);
   });
@@ -52,13 +52,13 @@ describe('ClienteHiloSenal', () => {
     disconnectSource();
     env.advance(1000);
 
-    expect(port.sent.filter((m) => m.kind === 'notificacion')).toHaveLength(3);
+    expect(port.sent.filter((m) => m.kind === 'notification')).toHaveLength(3);
   });
 
   it('avisa de los errores del hilo y de las respuestas no reconocidas', () => {
     const { port, onError, results } = createScene();
     port.receiveFromThread({ kind: 'error', message: 'falló el cálculo' });
-    port.receiveFromThread({ kind: 'indices', result: { quality: 'buena' } });
+    port.receiveFromThread({ kind: 'indices', result: { quality: 'good' } });
 
     expect(onError.mock.calls).toEqual([
       ['falló el cálculo'],
@@ -101,7 +101,7 @@ describe('ClienteHiloSenal', () => {
     client.attachCanvas(canvas, palette, { widthCss: 300, heightCss: 100, scale: 2 });
     client.resize({ widthCss: 400, heightCss: 100, scale: 2 });
 
-    expect(port.sent.map((m) => m.kind)).toEqual(['iniciar-lienzo', 'redimensionar']);
+    expect(port.sent.map((m) => m.kind)).toEqual(['init-canvas', 'resize']);
     expect(canvas.width).toBe(800);
     expect(context.count('clearRect')).toBe(2);
     expect(onError).not.toHaveBeenCalled();

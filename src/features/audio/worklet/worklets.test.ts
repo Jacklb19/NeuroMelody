@@ -54,8 +54,8 @@ describe('procesador sintetizador', () => {
     };
     expect(Processor.parameterDescriptors.map((d) => [d.name, d.automationRate])).toEqual([
       ['tempo', 'k-rate'],
-      ['modo', 'k-rate'],
-      ['capas', 'k-rate'],
+      ['mode', 'k-rate'],
+      ['layers', 'k-rate'],
     ]);
   });
 

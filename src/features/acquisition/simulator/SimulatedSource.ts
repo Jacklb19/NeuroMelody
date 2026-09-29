@@ -60,7 +60,7 @@ const BEATS_FOR_HR = 4;
  * y la serie no cambia; solo llegan más tarde.
  */
 export class SimulatedSource implements SignalSource {
-  readonly kind = 'simulador' as const;
+  readonly kind = 'simulator' as const;
 
   readonly #channel = new SourceChannel();
   readonly #options: SimulatedSourceOptions;
@@ -92,7 +92,7 @@ export class SimulatedSource implements SignalSource {
     if (this.#cancelCheck !== null) {
       return Promise.resolve();
     }
-    this.#channel.changeState('conectando');
+    this.#channel.changeState('connecting');
     this.#channel.resetTime();
     this.#generator = createRrGenerator(
       SCENARIOS[this.#options.scenario],
@@ -105,7 +105,7 @@ export class SimulatedSource implements SignalSource {
     this.#cancelCheck = this.#scheduler.repeat(() => {
       this.#emitPending();
     }, CHECK_PERIOD_MS);
-    this.#channel.changeState('conectada');
+    this.#channel.changeState('connected');
     return Promise.resolve();
   }
 
@@ -114,7 +114,7 @@ export class SimulatedSource implements SignalSource {
     this.#cancelCheck = null;
     this.#generator = null;
     this.#pendingBeat = null;
-    this.#channel.changeState('desconectada');
+    this.#channel.changeState('disconnected');
     return Promise.resolve();
   }
 

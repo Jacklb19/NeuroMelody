@@ -7,14 +7,14 @@
  */
 
 /** Tipos de fuente de señal previstos en el documento de definición. */
-export type SourceKind = 'simulador' | 'ble' | 'registro';
+export type SourceKind = 'simulator' | 'ble' | 'recording';
 
 /** Estado de la conexión con la fuente; la interfaz lo muestra siempre (HU-01). */
 export type ConnectionState =
-  | 'desconectada'
-  | 'conectando'
-  | 'conectada'
-  | 'reconectando'
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
   | 'error';
 
 /**

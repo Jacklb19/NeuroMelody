@@ -7,7 +7,7 @@ import { SimulatedSource, type Speed } from './SimulatedSource';
 
 async function createConnectedSource(
   speed: Speed = 1,
-  scenario: ScenarioId = 'reposo',
+  scenario: ScenarioId = 'rest',
   seed = 1,
 ) {
   const env = createFakeTimeEnvironment();
@@ -21,25 +21,25 @@ async function createConnectedSource(
 
 describe('FuenteSimulada', () => {
   it('declara el tipo simulador y empieza desconectada', () => {
-    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1 });
-    expect(source.kind).toBe('simulador');
-    expect(source.state).toBe('desconectada');
+    const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1 });
+    expect(source.kind).toBe('simulator');
+    expect(source.state).toBe('disconnected');
   });
 
   it('pasa por conectando y conectada, y vuelve a desconectada', async () => {
     const env = createFakeTimeEnvironment();
-    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1, ...env });
+    const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1, ...env });
     const onStateChange = vi.fn();
     source.subscribe({ onStateChange });
 
     await source.connect();
-    expect(source.state).toBe('conectada');
+    expect(source.state).toBe('connected');
     expect(env.active).toBe(true);
 
     await source.disconnect();
-    expect(source.state).toBe('desconectada');
+    expect(source.state).toBe('disconnected');
     expect(env.active).toBe(false);
-    expect(onStateChange.mock.calls).toEqual([['conectando'], ['conectada'], ['desconectada']]);
+    expect(onStateChange.mock.calls).toEqual([['connecting'], ['connected'], ['disconnected']]);
   });
 
   it('ignora una segunda conexión mientras ya está conectada', async () => {
@@ -66,8 +66,8 @@ describe('FuenteSimulada', () => {
   it.each<Speed>([2, 5, 10])(
     'produce la misma serie a 1× y a %i× (reproducible)',
     async (speed) => {
-      const slow = await createConnectedSource(1, 'relajacion_progresiva', 7);
-      const fast = await createConnectedSource(speed, 'relajacion_progresiva', 7);
+      const slow = await createConnectedSource(1, 'progressive_relaxation', 7);
+      const fast = await createConnectedSource(speed, 'progressive_relaxation', 7);
       slow.env.advance(300_000);
       fast.env.advance(300_000 / speed);
       expect(fast.notifications).toHaveLength(300);
@@ -85,7 +85,7 @@ describe('FuenteSimulada', () => {
   });
 
   it('emite intervalos cuantizados a 1/1024 s y una FC coherente, sin errores de validación', async () => {
-    const { env, notifications, onError } = await createConnectedSource(10, 'relajacion_progresiva');
+    const { env, notifications, onError } = await createConnectedSource(10, 'progressive_relaxation');
     env.advance(60_000); // 10 minutos de señal
 
     const allRr = notifications.flatMap((n) => n.rrIntervalsMs);
@@ -107,7 +107,7 @@ describe('FuenteSimulada', () => {
   });
 
   it('en el escenario artefactos pierde el contacto 5 s cada 90 s', async () => {
-    const { env, notifications, onError } = await createConnectedSource(10, 'artefactos');
+    const { env, notifications, onError } = await createConnectedSource(10, 'artifacts');
     env.advance(20_000); // 200 s de señal
 
     const noContact = notifications.filter((n) => n.sensorContact === false);
@@ -124,7 +124,7 @@ describe('FuenteSimulada', () => {
   });
 
   it('los escenarios limpios nunca pierden el contacto', async () => {
-    const { env, notifications } = await createConnectedSource(10, 'reposo');
+    const { env, notifications } = await createConnectedSource(10, 'rest');
     env.advance(20_000);
     expect(notifications.every((n) => n.sensorContact === true)).toBe(true);
   });
@@ -139,7 +139,7 @@ describe('FuenteSimulada', () => {
 
   it('deja de emitir si un observador desconecta durante una notificación', async () => {
     const env = createFakeTimeEnvironment();
-    const source = new SimulatedSource({ scenario: 'reposo', seed: 1, speed: 1, ...env });
+    const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1, ...env });
     const onNotification = vi.fn(() => {
       void source.disconnect();
     });

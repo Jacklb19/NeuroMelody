@@ -1,7 +1,7 @@
 import type { AudioFactory } from '../features/audio/engine/AudioEngine';
 
 export interface ParamEvent {
-  readonly kind: 'set' | 'lineal' | 'exponencial' | 'objetivo' | 'cancelar';
+  readonly kind: 'set' | 'linear' | 'exponential' | 'target' | 'cancel';
   readonly value: number;
   readonly time: number;
 }
@@ -24,20 +24,20 @@ export class FakeParam {
     return this;
   }
   linearRampToValueAtTime(value: number, time: number): this {
-    this.events.push({ kind: 'lineal', value, time });
+    this.events.push({ kind: 'linear', value, time });
     return this;
   }
   exponentialRampToValueAtTime(value: number, time: number): this {
-    this.events.push({ kind: 'exponencial', value, time });
+    this.events.push({ kind: 'exponential', value, time });
     return this;
   }
   setTargetAtTime(value: number, time: number): this {
-    this.events.push({ kind: 'objetivo', value, time });
+    this.events.push({ kind: 'target', value, time });
     this.value = value;
     return this;
   }
   cancelScheduledValues(time: number): this {
-    this.events.push({ kind: 'cancelar', value: Number.NaN, time });
+    this.events.push({ kind: 'cancel', value: Number.NaN, time });
     return this;
   }
   /** Último evento de un tipo. */
@@ -58,7 +58,7 @@ export class FakeNode {
 class FakeGain extends FakeNode {
   readonly gain = new FakeParam(1);
   constructor() {
-    super('ganancia');
+    super('gain');
   }
 }
 
@@ -67,14 +67,14 @@ class FakeFilter extends FakeNode {
   readonly frequency = new FakeParam(350);
   readonly Q = new FakeParam(1);
   constructor() {
-    super('filtro');
+    super('filter');
   }
 }
 
 class FakeConvolver extends FakeNode {
   buffer: unknown = null;
   constructor() {
-    super('convolucion');
+    super('convolver');
   }
 }
 
@@ -85,7 +85,7 @@ class FakeCompressor extends FakeNode {
   readonly attack = new FakeParam(0.003);
   readonly release = new FakeParam(0.25);
   constructor() {
-    super('limitador');
+    super('compressor');
   }
 }
 
@@ -96,7 +96,7 @@ export class FakeWorkletNode extends FakeNode {
     readonly options: AudioWorkletNodeOptions,
   ) {
     super(`worklet:${name}`);
-    for (const paramName of ['tempo', 'modo', 'capas']) {
+    for (const paramName of ['tempo', 'mode', 'layers']) {
       this.parameters.set(paramName, new FakeParam());
     }
   }
@@ -106,7 +106,7 @@ export class FakeAudioContext {
   currentTime = 0;
   state: 'suspended' | 'running' | 'closed' = 'suspended';
   readonly sampleRate = 48_000;
-  readonly destination = new FakeNode('destino');
+  readonly destination = new FakeNode('destination');
   readonly loadedModules: string[] = [];
   readonly nodes: FakeNode[] = [];
   playbackStats: unknown = undefined;
@@ -134,7 +134,7 @@ export class FakeAudioContext {
     return this.#register(new FakeCompressor());
   }
   createMediaStreamDestination(): FakeNode & { stream: object } {
-    return Object.assign(this.#register(new FakeNode('flujo')), { stream: { id: 'flujo' } });
+    return Object.assign(this.#register(new FakeNode('stream')), { stream: { id: 'stream' } });
   }
   createBuffer(channels: number, length: number, frequency: number) {
     return { channels, length, frequency, copied: [] as number[], copyToChannel(_d: Float32Array, c: number) { this.copied.push(c); } };
@@ -181,7 +181,7 @@ export function createFakeAudioEnvironment(telemetry: SharedArrayBuffer | null =
   const waits: number[] = [];
   const factory: AudioFactory = {
     createAudioContext: () => context as unknown as AudioContext,
-    modules: ['sintetizador.js', 'recortador.js'],
+    modules: ['synthesizer.js', 'clipper.js'],
     createWorkletNode: (_context, name, options) => {
       const node = new FakeWorkletNode(name, options);
       worklets.push(node);

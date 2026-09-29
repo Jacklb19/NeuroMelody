@@ -34,8 +34,8 @@ class SynthesizerProcessor extends scope.AudioWorkletProcessor {
     this.#core.process(
       channel,
       paramValue(params, 'tempo', 66),
-      paramValue(params, 'modo', 1),
-      paramValue(params, 'capas', 2),
+      paramValue(params, 'mode', 1),
+      paramValue(params, 'layers', 2),
     );
     for (let c = 1; c < output.length; c++) {
       output[c]?.set(channel);

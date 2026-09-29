@@ -20,7 +20,7 @@ export class SignalSourceError extends Error {
  */
 export class SourceChannel {
   readonly #observers = new Set<SourceObserver>();
-  #state: ConnectionState = 'desconectada';
+  #state: ConnectionState = 'disconnected';
   #lastTimeMs = 0;
 
   get state(): ConnectionState {

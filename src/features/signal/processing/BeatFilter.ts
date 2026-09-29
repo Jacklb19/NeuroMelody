@@ -39,7 +39,7 @@ export class BeatFilter {
 
   classify(rrMs: number): Classification {
     if (rrMs < MIN_RR_MS || rrMs > MAX_RR_MS) {
-      return { accepted: false, discardReason: 'fuera_de_rango' };
+      return { accepted: false, discardReason: 'out_of_range' };
     }
 
     if (this.#reference.length < REFERENCE_BEATS) {
@@ -54,7 +54,7 @@ export class BeatFilter {
         this.#reference = this.#consecutiveDiscards;
         this.#consecutiveDiscards = [];
       }
-      return { accepted: false, discardReason: 'desviacion' };
+      return { accepted: false, discardReason: 'deviation' };
     }
 
     this.#accept(rrMs);

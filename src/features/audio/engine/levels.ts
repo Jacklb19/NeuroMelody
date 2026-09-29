@@ -4,7 +4,7 @@ import { MODE, type Mode } from '../core/theory';
  * Niveles musicales de la guía (docs/diseno-musical.md). Valores iniciales
  * aprobados en el S3; se ajustan con oyentes al cerrar el S4.
  */
-export type LevelId = 'alta' | 'intermedio' | 'meta';
+export type LevelId = 'high' | 'intermediate' | 'target';
 
 export interface MusicLevel {
   readonly id: LevelId;
@@ -20,8 +20,8 @@ export interface MusicLevel {
 }
 
 export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
-  alta: {
-    id: 'alta',
+  high: {
+    id: 'high',
     name: 'Activación alta',
     tempo: 76,
     mode: MODE.majorPentatonic,
@@ -29,8 +29,8 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
     brightnessHz: 6000,
     reverb: 0.25,
   },
-  intermedio: {
-    id: 'intermedio',
+  intermediate: {
+    id: 'intermediate',
     name: 'Intermedio',
     tempo: 66,
     mode: MODE.lydian,
@@ -38,8 +38,8 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
     brightnessHz: 3500,
     reverb: 0.35,
   },
-  meta: {
-    id: 'meta',
+  target: {
+    id: 'target',
     name: 'Activación baja (meta)',
     // Centro del rango de 58 a 60 BPM del diseño.
     tempo: 59,
@@ -50,7 +50,7 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
   },
 };
 
-export const LEVEL_IDS: readonly LevelId[] = ['alta', 'intermedio', 'meta'];
+export const LEVEL_IDS: readonly LevelId[] = ['high', 'intermediate', 'target'];
 
 /** Los primeros 3 minutos de cada sesión suenan en Intermedio (calibración). */
-export const CALIBRATION_LEVEL: LevelId = 'intermedio';
+export const CALIBRATION_LEVEL: LevelId = 'intermediate';

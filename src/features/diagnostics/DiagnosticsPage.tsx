@@ -119,7 +119,7 @@ export function DiagnosticsPage(): React.JSX.Element {
         </h2>
         <p style={{ marginBottom: 'var(--espacio-4)', color: 'var(--color-texto-secundario)' }}>
           Verificaciones realizadas:{' '}
-          <strong data-testid="contador-pruebas">{checkCounter}</strong>
+          <strong data-testid="check-counter">{checkCounter}</strong>
         </p>
         <button
           type="button"

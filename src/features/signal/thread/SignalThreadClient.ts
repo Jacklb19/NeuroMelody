@@ -59,15 +59,15 @@ export class SignalThreadClient {
 
   /** Conecta una fuente: el hilo de señal se reinicia con cada nueva conexión. */
   connectSource(source: SignalSource): () => void {
-    this.#port.send({ kind: 'reiniciar' });
+    this.#port.send({ kind: 'reset' });
     return source.subscribe({
       onNotification: (notification) => {
-        this.#port.send({ kind: 'notificacion', notification });
+        this.#port.send({ kind: 'notification', notification });
       },
       onStateChange: (state) => {
         // conectar() reinicia el tiempo de señal en 0.
-        if (state === 'conectando') {
-          this.#port.send({ kind: 'reiniciar' });
+        if (state === 'connecting') {
+          this.#port.send({ kind: 'reset' });
         }
       },
     });
@@ -82,11 +82,11 @@ export class SignalThreadClient {
     palette: ChartPalette,
     dimensions: CanvasDimensions,
   ): void {
-    this.#port.send({ kind: 'iniciar-lienzo', canvas, palette, dimensions }, [canvas]);
+    this.#port.send({ kind: 'init-canvas', canvas, palette, dimensions }, [canvas]);
   }
 
   resize(dimensions: CanvasDimensions): void {
-    this.#port.send({ kind: 'redimensionar', dimensions });
+    this.#port.send({ kind: 'resize', dimensions });
   }
 
   subscribe(observer: SignalThreadObserver): () => void {

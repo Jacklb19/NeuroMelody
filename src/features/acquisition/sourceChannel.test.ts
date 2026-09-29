@@ -12,12 +12,12 @@ describe('CanalFuente', () => {
     const onStateChange = vi.fn();
     channel.subscribe({ onStateChange });
 
-    expect(channel.state).toBe('desconectada');
-    channel.changeState('conectando');
-    channel.changeState('conectando');
-    channel.changeState('conectada');
+    expect(channel.state).toBe('disconnected');
+    channel.changeState('connecting');
+    channel.changeState('connecting');
+    channel.changeState('connected');
 
-    expect(onStateChange.mock.calls).toEqual([['conectando'], ['conectada']]);
+    expect(onStateChange.mock.calls).toEqual([['connecting'], ['connected']]);
   });
 
   it('entrega las notificaciones válidas a todos los observadores', () => {

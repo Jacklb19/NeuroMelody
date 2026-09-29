@@ -22,7 +22,7 @@ function createScene(context: FakeDrawingContext | null = new FakeDrawingContext
 }
 
 const notification = (timeMs: number) => ({
-  kind: 'notificacion',
+  kind: 'notification',
   notification: { timeMs, heartRate: 60, rrIntervalsMs: [1000], sensorContact: true },
 });
 
@@ -30,7 +30,7 @@ describe('crearManejadorHiloSenal', () => {
   it('ajusta el lienzo a la densidad de pantalla y dibuja al iniciarlo', () => {
     const { handle, canvas, context } = createScene();
     handle({
-      kind: 'iniciar-lienzo',
+      kind: 'init-canvas',
       canvas,
       palette: PALETTE,
       dimensions: { widthCss: 500, heightCss: 200, scale: 1.5 },
@@ -42,10 +42,10 @@ describe('crearManejadorHiloSenal', () => {
 
   it('redibuja con cada notificación y al redimensionar', () => {
     const { handle, canvas, context } = createScene();
-    handle({ kind: 'iniciar-lienzo', canvas, palette: PALETTE, dimensions: { widthCss: 500, heightCss: 200, scale: 1 } });
+    handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 500, heightCss: 200, scale: 1 } });
     handle(notification(1000));
     handle(notification(2000));
-    handle({ kind: 'redimensionar', dimensions: { widthCss: 400, heightCss: 200, scale: 2 } });
+    handle({ kind: 'resize', dimensions: { widthCss: 400, heightCss: 200, scale: 2 } });
 
     expect(context?.count('clearRect')).toBe(4);
     expect(canvas.width).toBe(800);
@@ -53,7 +53,7 @@ describe('crearManejadorHiloSenal', () => {
 
   it('procesa las notificaciones aunque no haya lienzo', () => {
     const { handle, received } = createScene();
-    handle({ kind: 'redimensionar', dimensions: { widthCss: 400, heightCss: 200, scale: 1 } });
+    handle({ kind: 'resize', dimensions: { widthCss: 400, heightCss: 200, scale: 1 } });
     for (let t = 1000; t <= 5000; t += 1000) {
       handle(notification(t));
     }
@@ -63,14 +63,14 @@ describe('crearManejadorHiloSenal', () => {
 
   it('avisa si el lienzo no da un contexto 2D', () => {
     const { handle, canvas, received } = createScene(null);
-    handle({ kind: 'iniciar-lienzo', canvas, palette: PALETTE, dimensions: { widthCss: 1, heightCss: 1, scale: 1 } });
+    handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 1, heightCss: 1, scale: 1 } });
     expect(received).toEqual([{ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' }]);
   });
 
   it('rechaza un lienzo con una paleta incompleta', () => {
     const { handle, canvas, received, context } = createScene();
     handle({
-      kind: 'iniciar-lienzo',
+      kind: 'init-canvas',
       canvas,
       palette: { ...PALETTE, discarded: '' },
       dimensions: { widthCss: 1, heightCss: 1, scale: 1 },

@@ -11,7 +11,7 @@ function setup(durationMin = 10) {
     <PlaybackPanel durationMin={durationMin} factory={env.factory} generateSeed={() => 42} />,
   );
   const gains = () =>
-    env.context.nodes.filter((n) => n.kind === 'ganancia') as unknown as { gain: FakeParam }[];
+    env.context.nodes.filter((n) => n.kind === 'gain') as unknown as { gain: FakeParam }[];
   // Orden de creación en MotorAudio: reverberación, volumen, envolvente.
   const envelope = () => gains()[2]?.gain;
   const volume = () => gains()[1]?.gain;
@@ -67,7 +67,7 @@ describe('PanelReproduccion', () => {
     // Plan de 10 min: aviso a los 600 s; sin respuesta, fundido de 720 a 740 s.
     expect(envelope()?.events.slice(-2)).toEqual([
       { kind: 'set', value: 1, time: 720 },
-      { kind: 'lineal', value: 0, time: 740 },
+      { kind: 'linear', value: 0, time: 740 },
     ]);
   });
 
@@ -76,7 +76,7 @@ describe('PanelReproduccion', () => {
     await start();
     fireEvent.change(screen.getByLabelText('Volumen'), { target: { value: '-20' } });
     expect(screen.getByText('-20 dB')).toBeInTheDocument();
-    expect(volume()?.last('objetivo')?.value).toBeCloseTo(dbToGain(-20), 10);
+    expect(volume()?.last('target')?.value).toBeCloseTo(dbToGain(-20), 10);
   });
 
   it('la tecla Esc detiene con una rampa de 50 ms (HU-06)', async () => {
@@ -86,7 +86,7 @@ describe('PanelReproduccion', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(state()).toMatch(/detenida/i);
-    expect(envelope()?.last('lineal')).toEqual({ kind: 'lineal', value: 0, time: 30.05 });
+    expect(envelope()?.last('linear')).toEqual({ kind: 'linear', value: 0, time: 30.05 });
     // La suspensión no cambia el DOM: waitFor no volvería a comprobar con setInterval simulado.
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -124,10 +124,10 @@ describe('PanelReproduccion', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    expect(envelope()?.last('cancelar')?.time).toBe(600);
+    expect(envelope()?.last('cancel')?.time).toBe(600);
     expect(envelope()?.events.slice(-2)).toEqual([
       { kind: 'set', value: 1, time: 3720 },
-      { kind: 'lineal', value: 0, time: 3740 },
+      { kind: 'linear', value: 0, time: 3740 },
     ]);
 
     env.context.currentTime = 3600;

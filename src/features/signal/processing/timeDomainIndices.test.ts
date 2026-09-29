@@ -50,7 +50,7 @@ describe('calcularIndicesTemporales', () => {
     // Pares válidos: (800, 810) y (790, 820) → diferencias 10 y 30
     // RMSSD = √((100 + 900) / 2) = √500 = 22,361 ms
     const series = acceptedCount([800, 810, 500, 790, 820]).map((beat, i) =>
-      i === 2 ? { ...beat, accepted: false, discardReason: 'desviacion' as const } : beat,
+      i === 2 ? { ...beat, accepted: false, discardReason: 'deviation' as const } : beat,
     );
     const indices = computeTimeDomainIndices(series);
     expect(indices.rmssd).toBeCloseTo(22.361, 3);

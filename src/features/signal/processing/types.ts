@@ -7,11 +7,11 @@
 /** Motivo por el que un intervalo RR no entra en el análisis. */
 export type DiscardReason =
   /** Fuera del rango plausible de 300–2000 ms. */
-  | 'fuera_de_rango'
+  | 'out_of_range'
   /** Se aparta más de un 20 % de la mediana de referencia (latido ectópico o artefacto). */
-  | 'desviacion'
+  | 'deviation'
   /** Llegó con el sensor sin contacto con la piel. */
-  | 'sin_contacto';
+  | 'no_contact';
 
 /** Un intervalo RR ya clasificado por el filtro. */
 export interface ClassifiedBeat {

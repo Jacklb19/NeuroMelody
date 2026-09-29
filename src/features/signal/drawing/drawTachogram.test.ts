@@ -28,8 +28,8 @@ const SNAPSHOT: WindowSnapshot = {
   beats: [
     beat(1000, 1000),
     beat(2000, 1000),
-    beat(2700, 700, { accepted: false, discardReason: 'desviacion' }),
-    beat(4000, 1300, { accepted: false, discardReason: 'desviacion' }),
+    beat(2700, 700, { accepted: false, discardReason: 'deviation' }),
+    beat(4000, 1300, { accepted: false, discardReason: 'deviation' }),
     beat(5000, 1000),
     beat(6000, 1000),
     beat(9000, 1000, { contiguousWithPrevious: false }),

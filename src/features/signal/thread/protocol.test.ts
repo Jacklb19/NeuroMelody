@@ -12,23 +12,23 @@ const result = {
   coverageMs: 5000,
   acceptedBeats: 5,
   discardedBeats: 0,
-  quality: 'reuniendo',
+  quality: 'collecting',
 };
 
 describe('esMensajeHaciaHilo', () => {
   it('acepta los mensajes válidos', () => {
-    expect(isMessageToThread({ kind: 'notificacion', notification })).toBe(true);
-    expect(isMessageToThread({ kind: 'reiniciar' })).toBe(true);
+    expect(isMessageToThread({ kind: 'notification', notification })).toBe(true);
+    expect(isMessageToThread({ kind: 'reset' })).toBe(true);
   });
 
   it.each([
     ['nulo', null],
-    ['texto', 'reiniciar'],
+    ['texto', 'reset'],
     ['tipo desconocido', { kind: 'borrar' }],
-    ['notificación sin datos', { kind: 'notificacion' }],
-    ['RR no numérico', { kind: 'notificacion', notification: { ...notification, rrIntervalsMs: ['1000'] } }],
-    ['tiempo no finito', { kind: 'notificacion', notification: { ...notification, timeMs: Number.NaN } }],
-    ['contacto inválido', { kind: 'notificacion', notification: { ...notification, sensorContact: 'sí' } }],
+    ['notificación sin datos', { kind: 'notification' }],
+    ['RR no numérico', { kind: 'notification', notification: { ...notification, rrIntervalsMs: ['1000'] } }],
+    ['tiempo no finito', { kind: 'notification', notification: { ...notification, timeMs: Number.NaN } }],
+    ['contacto inválido', { kind: 'notification', notification: { ...notification, sensorContact: 'sí' } }],
   ])('rechaza %s', (_case, message) => {
     expect(isMessageToThread(message)).toBe(false);
   });
@@ -48,16 +48,16 @@ describe('esMensajeHaciaHilo con lienzo', () => {
   const dimensions = { widthCss: 600, heightCss: 224, scale: 2 };
 
   it('acepta iniciar-lienzo y redimensionar válidos', () => {
-    expect(isMessageToThread({ kind: 'iniciar-lienzo', canvas, palette, dimensions })).toBe(true);
-    expect(isMessageToThread({ kind: 'redimensionar', dimensions })).toBe(true);
+    expect(isMessageToThread({ kind: 'init-canvas', canvas, palette, dimensions })).toBe(true);
+    expect(isMessageToThread({ kind: 'resize', dimensions })).toBe(true);
   });
 
   it.each([
-    ['lienzo sin getContext', { kind: 'iniciar-lienzo', canvas: { width: 1, height: 1 }, palette, dimensions }],
-    ['paleta con un color vacío', { kind: 'iniciar-lienzo', canvas, palette: { ...palette, line: ' ' }, dimensions }],
-    ['paleta sin fuente', { kind: 'iniciar-lienzo', canvas, palette: { ...palette, font: undefined }, dimensions }],
-    ['escala cero', { kind: 'redimensionar', dimensions: { ...dimensions, scale: 0 } }],
-    ['ancho negativo', { kind: 'redimensionar', dimensions: { ...dimensions, widthCss: -1 } }],
+    ['lienzo sin getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, dimensions }],
+    ['paleta con un color vacío', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, dimensions }],
+    ['paleta sin fuente', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, dimensions }],
+    ['escala cero', { kind: 'resize', dimensions: { ...dimensions, scale: 0 } }],
+    ['ancho negativo', { kind: 'resize', dimensions: { ...dimensions, widthCss: -1 } }],
   ])('rechaza %s', (_case, message) => {
     expect(isMessageToThread(message)).toBe(false);
   });
@@ -66,7 +66,7 @@ describe('esMensajeHaciaHilo con lienzo', () => {
 describe('esMensajeDesdeHilo', () => {
   it('acepta índices y errores válidos', () => {
     expect(isMessageFromThread({ kind: 'indices', result })).toBe(true);
-    expect(isMessageFromThread({ kind: 'indices', result: { ...result, rmssd: 45.2, quality: 'buena' } })).toBe(true);
+    expect(isMessageFromThread({ kind: 'indices', result: { ...result, rmssd: 45.2, quality: 'good' } })).toBe(true);
     expect(isMessageFromThread({ kind: 'error', message: 'falló' })).toBe(true);
   });
 

@@ -25,7 +25,7 @@ describe('DiagnosticoPage', () => {
     const user = userEvent.setup();
     render(<DiagnosticsPage />);
 
-    const counter = screen.getByTestId('contador-pruebas');
+    const counter = screen.getByTestId('check-counter');
     expect(counter).toHaveTextContent('0');
 
     const button = screen.getByRole('button', {

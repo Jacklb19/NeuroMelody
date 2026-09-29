@@ -16,7 +16,7 @@ export interface PhysiologicalParams {
   readonly noiseMs: number;
 }
 
-export type ScenarioId = 'reposo' | 'activacion' | 'relajacion_progresiva' | 'artefactos';
+export type ScenarioId = 'rest' | 'activation' | 'progressive_relaxation' | 'artifacts';
 
 /**
  * Fallos de lectura simulados para probar el filtrado (RF-04): latidos
@@ -92,20 +92,20 @@ function interpolateParameters(
 }
 
 export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
-  reposo: {
-    id: 'reposo',
+  rest: {
+    id: 'rest',
     name: 'Reposo',
     paramsAt: () => REST_PARAMS,
     artifacts: null,
   },
-  activacion: {
-    id: 'activacion',
+  activation: {
+    id: 'activation',
     name: 'Activación',
     paramsAt: () => ACTIVATION_PARAMS,
     artifacts: null,
   },
-  relajacion_progresiva: {
-    id: 'relajacion_progresiva',
+  progressive_relaxation: {
+    id: 'progressive_relaxation',
     name: 'Relajación progresiva',
     // Pasa linealmente de activación a reposo y luego se mantiene en reposo.
     paramsAt: (timeMs) =>
@@ -116,8 +116,8 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
       ),
     artifacts: null,
   },
-  artefactos: {
-    id: 'artefactos',
+  artifacts: {
+    id: 'artifacts',
     // Describe el dispositivo, no el cuerpo: la interfaz no interpreta la señal.
     name: 'Reposo con fallos de lectura',
     paramsAt: () => REST_PARAMS,
@@ -126,8 +126,8 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
 };
 
 export const SCENARIO_IDS: readonly ScenarioId[] = [
-  'reposo',
-  'activacion',
-  'relajacion_progresiva',
-  'artefactos',
+  'rest',
+  'activation',
+  'progressive_relaxation',
+  'artifacts',
 ];

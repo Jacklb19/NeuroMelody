@@ -10,7 +10,7 @@ import { AppRoutes } from './AppRoutes';
 
 function CurrentLocation() {
   const { pathname, search } = useLocation();
-  return <output data-testid="ubicacion">{`${pathname}${search}`}</output>;
+  return <output data-testid="current-path">{`${pathname}${search}`}</output>;
 }
 
 function renderWith(route: string, accepted = false) {
@@ -29,7 +29,7 @@ function renderWith(route: string, accepted = false) {
   return { registry };
 }
 
-const currentPath = () => screen.getByTestId('ubicacion').textContent;
+const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('rutas', () => {
   it('el inicio lleva al plan y a la sesión; la navegación no incluye el diagnóstico', () => {

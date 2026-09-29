@@ -12,15 +12,15 @@ export interface ThreadCanvas {
 
 /** Mensajes del hilo principal al hilo de señal. */
 export type MessageToThread =
-  | { readonly kind: 'notificacion'; readonly notification: BeatNotification }
-  | { readonly kind: 'reiniciar' }
+  | { readonly kind: 'notification'; readonly notification: BeatNotification }
+  | { readonly kind: 'reset' }
   | {
-      readonly kind: 'iniciar-lienzo';
+      readonly kind: 'init-canvas';
       readonly canvas: ThreadCanvas;
       readonly palette: ChartPalette;
       readonly dimensions: CanvasDimensions;
     }
-  | { readonly kind: 'redimensionar'; readonly dimensions: CanvasDimensions };
+  | { readonly kind: 'resize'; readonly dimensions: CanvasDimensions };
 
 /** Mensajes del hilo de señal al hilo principal. */
 export type MessageFromThread =
@@ -85,7 +85,7 @@ function isCanvas(value: unknown): value is ThreadCanvas {
   );
 }
 
-const QUALITIES: readonly SignalQuality[] = ['reuniendo', 'buena', 'baja'];
+const QUALITIES: readonly SignalQuality[] = ['collecting', 'good', 'low'];
 
 function isResult(value: unknown): value is IndicesResult {
   return (
@@ -108,13 +108,13 @@ export function isMessageToThread(value: unknown): value is MessageToThread {
     return false;
   }
   switch (value.kind) {
-    case 'notificacion':
+    case 'notification':
       return isNotification(value.notification);
-    case 'reiniciar':
+    case 'reset':
       return true;
-    case 'iniciar-lienzo':
+    case 'init-canvas':
       return isCanvas(value.canvas) && isPalette(value.palette) && isDimensions(value.dimensions);
-    case 'redimensionar':
+    case 'resize':
       return isDimensions(value.dimensions);
     default:
       return false;

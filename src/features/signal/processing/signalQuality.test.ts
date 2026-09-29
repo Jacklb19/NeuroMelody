@@ -7,7 +7,7 @@ function beat(endMs: number, accepted: boolean): ClassifiedBeat {
     endMs,
     rrMs: 1000,
     accepted,
-    discardReason: accepted ? null : 'desviacion',
+    discardReason: accepted ? null : 'deviation',
     contiguousWithPrevious: true,
   };
 }

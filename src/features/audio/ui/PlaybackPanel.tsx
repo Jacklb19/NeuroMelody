@@ -13,10 +13,10 @@ interface PlaybackPanelProps {
 }
 
 const STATE_TEXT: Readonly<Record<AudioState, string>> = {
-  inactivo: 'Lista para empezar',
-  cargando: 'Preparando el audio…',
-  sonando: 'Sonando',
-  detenido: 'Detenida',
+  idle: 'Lista para empezar',
+  loading: 'Preparando el audio…',
+  playing: 'Sonando',
+  stopped: 'Detenida',
   error: 'No se pudo iniciar el audio',
 };
 
@@ -116,7 +116,7 @@ export function PlaybackPanel({
   // Revisa el reloj de audio para mostrar el aviso y para cerrar la sesión si
   // el fundido terminó. El sonido no depende de este temporizador.
   useEffect(() => {
-    if (state !== 'sonando') {
+    if (state !== 'playing') {
       return undefined;
     }
     const id = setInterval(() => {
@@ -171,7 +171,7 @@ export function PlaybackPanel({
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = state === 'sonando' ? 'playing' : 'paused';
+      navigator.mediaSession.playbackState = state === 'playing' ? 'playing' : 'paused';
     }
   }, [state]);
 
@@ -181,7 +181,7 @@ export function PlaybackPanel({
     }
   }, [warning]);
 
-  const stateText = finished && state !== 'sonando' ? 'La sesión terminó' : STATE_TEXT[state];
+  const stateText = finished && state !== 'playing' ? 'La sesión terminó' : STATE_TEXT[state];
 
   return (
     <section
@@ -202,7 +202,7 @@ export function PlaybackPanel({
         <button
           type="button"
           style={buttonStyle}
-          disabled={state === 'sonando' || state === 'cargando'}
+          disabled={state === 'playing' || state === 'loading'}
           onClick={() => {
             void start();
           }}
@@ -272,7 +272,7 @@ export function PlaybackPanel({
       <button
         type="button"
         onClick={stopNow}
-        disabled={state !== 'sonando'}
+        disabled={state !== 'playing'}
         aria-keyshortcuts="Escape"
         style={{
           ...buttonStyle,
@@ -281,7 +281,7 @@ export function PlaybackPanel({
           bottom: 'var(--espacio-4)',
           zIndex: 10,
           padding: 'var(--espacio-3) var(--espacio-6)',
-          opacity: state === 'sonando' ? 1 : 0.6,
+          opacity: state === 'playing' ? 1 : 0.6,
         }}
       >
         Detener

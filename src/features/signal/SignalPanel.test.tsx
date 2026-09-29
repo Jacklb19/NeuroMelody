@@ -19,7 +19,7 @@ const PALETTE: ChartPalette = {
   font: '14px sans-serif',
 };
 
-function createScene(scenario: ScenarioId = 'reposo', readPalette: () => ChartPalette = () => PALETTE) {
+function createScene(scenario: ScenarioId = 'rest', readPalette: () => ChartPalette = () => PALETTE) {
   const env = createFakeTimeEnvironment();
   const source = new SimulatedSource({ scenario, seed: 1, speed: 10, ...env });
   const port = createInProcessPort();
@@ -74,16 +74,16 @@ describe('PanelSenal', () => {
 
     scene.advanceSignalSeconds(30);
     expect(visibleQuality()).toMatch(/reuniendo datos/i);
-    expect(screen.getByTestId('fc-media')).toHaveTextContent('—');
-    expect(screen.getByTestId('ventana')).toHaveTextContent('0:30 de 5:00');
+    expect(screen.getByTestId('mean-hr')).toHaveTextContent('—');
+    expect(screen.getByTestId('analysis-window')).toHaveTextContent('0:30 de 5:00');
 
     scene.advanceSignalSeconds(40);
     expect(visibleQuality()).toMatch(/buena/i);
-    expect(screen.getByTestId('fc-media')).toHaveTextContent(/^\d+ lpm$/);
+    expect(screen.getByTestId('mean-hr')).toHaveTextContent(/^\d+ lpm$/);
     expect(screen.getByTestId('rmssd')).toHaveTextContent(/^\d+ ms$/);
     expect(screen.getByTestId('sdnn')).toHaveTextContent(/^\d+ ms$/);
-    expect(Number(screen.getByTestId('aceptados').textContent)).toBeGreaterThan(60);
-    expect(screen.getByTestId('descartados')).toHaveTextContent('0');
+    expect(Number(screen.getByTestId('accepted-beats').textContent)).toBeGreaterThan(60);
+    expect(screen.getByTestId('discarded-beats')).toHaveTextContent('0');
   });
 
   it('la gráfica tiene nombre accesible, apunta al resumen en texto y se dibuja con la paleta', async () => {
@@ -99,7 +99,7 @@ describe('PanelSenal', () => {
   });
 
   it('con una variable de la paleta ausente oculta solo la gráfica', async () => {
-    const scene = createScene('reposo', () => {
+    const scene = createScene('rest', () => {
       throw new ChartPaletteError('Falta la variable CSS --color-grafica-linea.');
     });
     await scene.connect();
@@ -111,14 +111,14 @@ describe('PanelSenal', () => {
   });
 
   it('avisa la baja calidad en texto y usa un vocabulario no clínico', async () => {
-    const scene = createScene('artefactos');
+    const scene = createScene('artifacts');
     await scene.connect();
     scene.advanceSignalSeconds(95); // pérdida de contacto entre 90 y 95 s
     expect(visibleQuality()).toMatch(/baja: revisa la colocación del dispositivo/i);
 
     scene.advanceSignalSeconds(205);
     expect(visibleQuality()).toMatch(/buena/i);
-    expect(Number(screen.getByTestId('descartados').textContent)).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId('discarded-beats').textContent)).toBeGreaterThan(0);
     expect(screen.getByText(/descartados por calidad de señal/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/anómal|prematur|ectópic|arritmi/i);
   });

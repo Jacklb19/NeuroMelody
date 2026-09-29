@@ -16,7 +16,7 @@ interface ReadingStore {
 }
 
 const READING_WITHOUT_SOURCE: SourceReading = {
-  state: 'desconectada',
+  state: 'disconnected',
   last: null,
   receivedBeats: 0,
   error: null,

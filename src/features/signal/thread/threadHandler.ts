@@ -47,13 +47,13 @@ export function createSignalThreadHandler(
       return;
     }
     switch (data.kind) {
-      case 'notificacion':
+      case 'notification':
         processor.process(data.notification);
         break;
-      case 'reiniciar':
+      case 'reset':
         processor.reset();
         break;
-      case 'iniciar-lienzo': {
+      case 'init-canvas': {
         const context = data.canvas.getContext('2d');
         if (context === null) {
           send({ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' });
@@ -63,7 +63,7 @@ export function createSignalThreadHandler(
         resizeCanvas(chart);
         break;
       }
-      case 'redimensionar':
+      case 'resize':
         if (chart !== null) {
           chart.dimensions = data.dimensions;
           resizeCanvas(chart);

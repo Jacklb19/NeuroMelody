@@ -40,12 +40,12 @@ describe('niveles musicales', () => {
       [66, 1, 2, 3500, 0.35],
       [59, 2, 2, 2000, 0.5],
     ]);
-    expect(CALIBRATION_LEVEL).toBe('intermedio');
+    expect(CALIBRATION_LEVEL).toBe('intermediate');
   });
 
   it('el tempo de la meta está entre 58 y 60 BPM', () => {
-    expect(LEVELS.meta.tempo).toBeGreaterThanOrEqual(58);
-    expect(LEVELS.meta.tempo).toBeLessThanOrEqual(60);
+    expect(LEVELS.target.tempo).toBeGreaterThanOrEqual(58);
+    expect(LEVELS.target.tempo).toBeLessThanOrEqual(60);
   });
 });
 

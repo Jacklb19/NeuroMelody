@@ -5,8 +5,8 @@
  */
 import { MODE, isMode, type Mode } from '../core/theory';
 
-export const SYNTHESIZER_NAME = 'sintetizador-neuromelody';
-export const CLIPPER_NAME = 'recortador-neuromelody';
+export const SYNTHESIZER_NAME = 'neuromelody-synthesizer';
+export const CLIPPER_NAME = 'neuromelody-clipper';
 
 /** Descriptor de un AudioParam propio (la biblioteca DOM de TypeScript no lo declara). */
 interface ParameterDescriptor {
@@ -24,8 +24,8 @@ interface ParameterDescriptor {
  */
 export const SYNTHESIZER_DESCRIPTORS = [
   { name: 'tempo', defaultValue: 66, minValue: 40, maxValue: 120, automationRate: 'k-rate' },
-  { name: 'modo', defaultValue: MODE.lydian, minValue: 0, maxValue: 2, automationRate: 'k-rate' },
-  { name: 'capas', defaultValue: 2, minValue: 1, maxValue: 3, automationRate: 'k-rate' },
+  { name: 'mode', defaultValue: MODE.lydian, minValue: 0, maxValue: 2, automationRate: 'k-rate' },
+  { name: 'layers', defaultValue: 2, minValue: 1, maxValue: 3, automationRate: 'k-rate' },
 ] as const satisfies readonly ParameterDescriptor[];
 
 export type ParamName = (typeof SYNTHESIZER_DESCRIPTORS)[number]['name'];

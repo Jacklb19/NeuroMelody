@@ -35,7 +35,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByLabelText(/escenario del simulador/i)).toBeEnabled();
     expect(screen.getByLabelText(/velocidad/i)).toBeEnabled();
     expect(visibleState()).toMatch(/desconectada/i);
-    expect(screen.getByTestId('frecuencia-cardiaca')).toHaveTextContent('—');
+    expect(screen.getByTestId('heart-rate')).toHaveTextContent('—');
   });
 
   it('ofrece los cuatro escenarios y las cuatro velocidades', () => {
@@ -58,13 +58,13 @@ describe('PanelAdquisicion', () => {
     const user = userEvent.setup();
     const { createSource } = renderWithFakeTime();
 
-    await user.selectOptions(screen.getByLabelText(/escenario del simulador/i), 'activacion');
+    await user.selectOptions(screen.getByLabelText(/escenario del simulador/i), 'activation');
     await user.selectOptions(screen.getByLabelText(/velocidad/i), '10');
     screen.getByRole('button', { name: /conectar simulador/i }).focus();
     await user.keyboard('{Enter}');
 
     expect(createSource).toHaveBeenCalledWith({
-      scenario: 'activacion',
+      scenario: 'activation',
       speed: 10,
       seed: SIMULATOR_SEED,
     });
@@ -82,9 +82,9 @@ describe('PanelAdquisicion', () => {
       env.advance(3000);
     });
 
-    expect(screen.getByTestId('frecuencia-cardiaca')).toHaveTextContent(/^\d+ lpm$/);
-    expect(Number(screen.getByTestId('latidos-recibidos').textContent)).toBeGreaterThan(0);
-    expect(screen.getByTestId('tiempo-senal')).toHaveTextContent('00:03');
+    expect(screen.getByTestId('heart-rate')).toHaveTextContent(/^\d+ lpm$/);
+    expect(Number(screen.getByTestId('received-beats').textContent)).toBeGreaterThan(0);
+    expect(screen.getByTestId('signal-time')).toHaveTextContent('00:03');
   });
 
   it('desconecta, detiene la fuente y vuelve a habilitar los controles', async () => {
@@ -113,16 +113,16 @@ describe('PanelAdquisicion', () => {
     const user = userEvent.setup();
     const channel = new SourceChannel();
     const source: SignalSource = {
-      kind: 'simulador',
+      kind: 'simulator',
       get state() {
         return channel.state;
       },
       connect: () => {
-        channel.changeState('conectada');
+        channel.changeState('connected');
         return Promise.resolve();
       },
       disconnect: () => {
-        channel.changeState('desconectada');
+        channel.changeState('disconnected');
         return Promise.resolve();
       },
       subscribe: (observer) => channel.subscribe(observer),

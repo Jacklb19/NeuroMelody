@@ -18,13 +18,13 @@ interface SignalPanelProps {
 }
 
 type ChartState =
-  | { readonly kind: 'lista'; readonly palette: ChartPalette; readonly transfer: TransferCanvas }
-  | { readonly kind: 'no-disponible'; readonly reason: string };
+  | { readonly kind: 'ready'; readonly palette: ChartPalette; readonly transfer: TransferCanvas }
+  | { readonly kind: 'unavailable'; readonly reason: string };
 
 const QUALITY_TEXT: Readonly<Record<SignalQuality, { icon: string; text: string }>> = {
-  reuniendo: { icon: '…', text: 'Reuniendo datos…' },
-  buena: { icon: '✓', text: 'Buena' },
-  baja: { icon: '△', text: 'Baja: revisa la colocación del dispositivo.' },
+  collecting: { icon: '…', text: 'Reuniendo datos…' },
+  good: { icon: '✓', text: 'Buena' },
+  low: { icon: '△', text: 'Baja: revisa la colocación del dispositivo.' },
 };
 
 const createDefaultClient = (): SignalThreadClient => new SignalThreadClient(createWorkerPort());
@@ -41,14 +41,14 @@ function evaluateChart(
   readPalette: () => ChartPalette,
 ): ChartState {
   if (transfer === null) {
-    return { kind: 'no-disponible', reason: 'Este navegador no puede dibujar la gráfica en segundo plano.' };
+    return { kind: 'unavailable', reason: 'Este navegador no puede dibujar la gráfica en segundo plano.' };
   }
   try {
-    return { kind: 'lista', palette: readPalette(), transfer };
+    return { kind: 'ready', palette: readPalette(), transfer };
   } catch (error) {
     // Solo se oculta la gráfica: los indicadores en texto siguen funcionando.
     if (error instanceof ChartPaletteError) {
-      return { kind: 'no-disponible', reason: `Faltan estilos de la gráfica (${error.message})` };
+      return { kind: 'unavailable', reason: `Faltan estilos de la gráfica (${error.message})` };
     }
     throw error;
   }
@@ -110,7 +110,7 @@ export function SignalPanel({
 
     const container = containerRef.current;
     let cleanupCanvas = (): void => undefined;
-    if (chart.kind === 'lista' && container !== null) {
+    if (chart.kind === 'ready' && container !== null) {
       const canvas = document.createElement('canvas');
       canvas.setAttribute('aria-hidden', 'true');
       canvas.style.width = '100%';
@@ -201,7 +201,7 @@ export function SignalPanel({
         </p>
       )}
 
-      {chart.kind === 'lista' ? (
+      {chart.kind === 'ready' ? (
         <div
           ref={containerRef}
           role="img"
@@ -226,19 +226,19 @@ export function SignalPanel({
         }}
       >
         <dt>Frecuencia cardíaca media</dt>
-        <dd data-testid="fc-media">{format(result?.meanHr ?? null, 'lpm')}</dd>
+        <dd data-testid="mean-hr">{format(result?.meanHr ?? null, 'lpm')}</dd>
         <dt>Variabilidad entre latidos (RMSSD)</dt>
         <dd data-testid="rmssd">{format(result?.rmssd ?? null, 'ms')}</dd>
         <dt>Variabilidad global (SDNN)</dt>
         <dd data-testid="sdnn">{format(result?.sdnn ?? null, 'ms')}</dd>
         <dt>Ventana analizada</dt>
-        <dd data-testid="ventana">
+        <dd data-testid="analysis-window">
           {formatMinutes(result?.coverageMs ?? 0)} de {formatMinutes(ANALYSIS_WINDOW_MS)}
         </dd>
         <dt>Latidos aceptados</dt>
-        <dd data-testid="aceptados">{result?.acceptedBeats ?? 0}</dd>
+        <dd data-testid="accepted-beats">{result?.acceptedBeats ?? 0}</dd>
         <dt>Descartados por calidad de señal</dt>
-        <dd data-testid="descartados">{result?.discardedBeats ?? 0}</dd>
+        <dd data-testid="discarded-beats">{result?.discardedBeats ?? 0}</dd>
       </dl>
     </section>
   );

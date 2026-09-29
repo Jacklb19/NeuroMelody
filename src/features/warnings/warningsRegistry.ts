@@ -6,7 +6,7 @@
  * lectura se trata como "no aceptadas" y las advertencias se vuelven a
  * pedir; la aceptación vale solo para la visita en curso.
  */
-export const WARNINGS_STORAGE_KEY = 'neuromelody.advertencias-aceptadas';
+export const WARNINGS_STORAGE_KEY = 'neuromelody.warnings-accepted';
 
 export type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

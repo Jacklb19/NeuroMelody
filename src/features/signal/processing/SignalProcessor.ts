@@ -12,7 +12,7 @@ import {
 import { SlidingWindow } from './SlidingWindow';
 
 /** Estado de la señal que ve el usuario (siempre en lenguaje descriptivo). */
-export type SignalQuality = 'reuniendo' | 'buena' | 'baja';
+export type SignalQuality = 'collecting' | 'good' | 'low';
 
 /** Resultado publicado cada 5 s de señal (RF-05). */
 export interface IndicesResult {
@@ -86,7 +86,7 @@ export class SignalProcessor {
       low = true;
       this.#addBeats(notification, () => ({
         accepted: false,
-        discardReason: 'sin_contacto',
+        discardReason: 'no_contact',
       }));
     } else if (notification.rrIntervalsMs.length > 0) {
       this.#addBeats(notification, (rr) => this.#filter.classify(rr));
@@ -148,9 +148,9 @@ export class SignalProcessor {
     const beats = this.#slidingWindow.beats;
     const indices = computeTimeDomainIndices(beats);
     const enough = indices.nnDurationMs >= MIN_NN_FOR_INDICES_MS;
-    let quality: SignalQuality = enough ? 'buena' : 'reuniendo';
+    let quality: SignalQuality = enough ? 'good' : 'collecting';
     if (this.#lowNow) {
-      quality = 'baja';
+      quality = 'low';
     }
     return {
       timeMs,
