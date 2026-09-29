@@ -159,7 +159,7 @@ Las siguientes advertencias no son un anexo legal sino requisitos funcionales de
 | RNF-09 | Accesibilidad                | Nivel AA de las WCAG 2.1, con controles alcanzables por teclado y alternativas no sonoras al estado.                                          |
 | RNF-10 | Compatibilidad               | Chrome y Edge de escritorio y Android para la función Bluetooth; el resto de navegadores operan con el simulador.                             |
 | RNF-11 | Mantenibilidad               | Cobertura de pruebas ≥ 70 % en el procesamiento de señal y el motor de adaptación.                                                            |
-| RNF-12 | Costo                        | Menos de cinco dólares mensuales en condiciones académicas.                                                                                   |
+| RNF-12 | Costo                        | Cero dólares, usando solo planes gratuitos que no exigen tarjeta de crédito.                                                                  |
 
 Conviene señalar que el RNF-10 refleja una limitación real y no una omisión del diseño: la interfaz Web Bluetooth no está implementada en Safari ni en Firefox. Lejos de ser un obstáculo, esta restricción justifica arquitectónicamente la existencia del simulador y obliga a diseñar la capa de adquisición de modo que la fuente de señal sea intercambiable, lo que constituye una buena práctica con independencia del soporte de los navegadores.
 
@@ -195,16 +195,16 @@ Internamente el sistema se descompone en cuatro etapas encadenadas —adquisici�
 
 *Responsabilidad de cada contenedor*
 
-| **Contenedor**             | **Responsabilidad**                                                       | **Tecnología**                       |
-|----------------------------|---------------------------------------------------------------------------|--------------------------------------|
-| Aplicación de página única | Presentar la interfaz y coordinar las etapas; no realiza cálculo pesado.  | React 19, TypeScript, Vite           |
-| Procesador de audio        | Sintetizar el audio muestra a muestra en el hilo de audio de tiempo real. | AudioWorklet, Web Audio API, Tone.js |
-| Hilo de señal              | Filtrar la señal, calcular los índices y ejecutar el clasificador.        | Web Worker, ONNX Runtime Web         |
-| Capa de adquisición        | Abstraer la fuente de señal tras una interfaz común.                      | Web Bluetooth o simulador            |
-| Trabajador de servicio     | Permitir el funcionamiento sin conexión y almacenar la sesión.            | Workbox, IndexedDB                   |
-| Interfaz de programación   | Autorizar, persistir sesiones y consultar el modelo de lenguaje.          | FastAPI sobre AWS Lambda             |
-| Servicio de identidad      | Autenticar usuarios y emitir credenciales.                                | Amazon Cognito                       |
-| Almacén de sesiones        | Guardar series temporales de indicadores por sesión.                      | Amazon DynamoDB                      |
+| **Contenedor**             | **Responsabilidad**                                                       | **Tecnología**                        |
+|----------------------------|---------------------------------------------------------------------------|---------------------------------------|
+| Aplicación de página única | Presentar la interfaz y coordinar las etapas; no realiza cálculo pesado.  | React 19, TypeScript, Vite            |
+| Procesador de audio        | Sintetizar el audio muestra a muestra en el hilo de audio de tiempo real. | AudioWorklet, Web Audio API, Tone.js  |
+| Hilo de señal              | Filtrar la señal, calcular los índices y ejecutar el clasificador.        | Web Worker, ONNX Runtime Web          |
+| Capa de adquisición        | Abstraer la fuente de señal tras una interfaz común.                      | Web Bluetooth o simulador             |
+| Trabajador de servicio     | Permitir el funcionamiento sin conexión y almacenar la sesión.            | Workbox, IndexedDB                    |
+| Interfaz de programación   | Autorizar, persistir sesiones y consultar el modelo de lenguaje.          | FastAPI en funciones Python de Vercel |
+| Servicio de identidad      | Autenticar usuarios y emitir credenciales.                                | Supabase Auth                         |
+| Almacén de sesiones        | Guardar series temporales de indicadores por sesión.                      | Supabase PostgreSQL                   |
 
 ## **El lazo de adaptación**
 
@@ -273,6 +273,17 @@ Cada registro documenta una elección estructural, las alternativas consideradas
 | Alternativas  | Delegar en el modelo la selección continua de parámetros musicales.                                                 |
 | Consecuencias | El comportamiento en tiempo real es determinista, reproducible y funciona sin conexión.                             |
 
+**Tabla 12**
+
+*ADR-06. Desplegar sobre plataformas gratuitas con portabilidad a AWS*
+
+| **Campo**     | **Contenido**                                                                                                                                                                                                                                                               |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Contexto      | El proyecto es académico, con tráfico intermitente y sin presupuesto; no es posible registrar un medio de pago.                                                                                                                                                             |
+| Decisión      | Aplicación y API en Vercel; identidad, base de datos PostgreSQL y archivos en Supabase. El diseño se mantiene portable a AWS.                                                                                                                                               |
+| Alternativas  | Arquitectura sin servidor en AWS; servidor propio con contenedores.                                                                                                                                                                                                         |
+| Consecuencias | Costo cero y sin servidores que administrar. A cambio se aceptan los límites de los planes gratuitos —pausa por inactividad, tamaño de base de datos, cuerpo máximo de 4,5 MB— y el riesgo de que sus condiciones cambien, mitigado con la equivalencia documentada en AWS. |
+
 # **Modelo de concurrencia y tiempo real**
 
 Esta sección aborda el aspecto más exigente del proyecto y el de mayor valor formativo, pues obliga a distinguir con claridad tres contextos de ejecución con requisitos temporales radicalmente distintos.
@@ -287,7 +298,7 @@ Esta sección aborda el aspecto más exigente del proyecto y el de mayor valor f
 
 *Nota.* Elaboración propia.
 
-**Tabla 12**
+**Tabla 13**
 
 *Contextos de ejecución y sus presupuestos temporales*
 
@@ -335,21 +346,25 @@ Tres restricciones gobiernan su uso. El modelo **no participa en el lazo de cont
 
 # **Modelo de datos y diseño de la interfaz de programación**
 
-**Tabla 13**
-
-*Diseño de claves de la tabla única*
-
-| **Entidad**          | **Clave de partición** | **Clave de ordenación**  | **Atributos principales**                                 |
-|----------------------|------------------------|--------------------------|-----------------------------------------------------------|
-| Usuario              | USER#\<id\>            | PROFILE                  | alias, preferencias, consentimiento aceptado              |
-| Sesión               | USER#\<id\>            | SESS#\<marca de tiempo\> | duración, plan aplicado, estado final                     |
-| Serie de indicadores | SESS#\<id\>            | TS#\<segundo\>           | frecuencia media, RMSSD, SDNN, estado estimado, confianza |
-| Resumen              | SESS#\<id\>            | SUMMARY                  | texto generado, indicadores agregados                     |
-| Plan                 | USER#\<id\>            | PLAN#\<id\>              | objetivos, parámetros iniciales, duración                 |
-
-*Nota.* Las series temporales se agregan a una muestra cada cinco segundos antes de sincronizarse, lo que reduce el volumen almacenado en un factor cercano a cinco sin pérdida relevante de información.
+Los datos se guardan en PostgreSQL, provisto por Supabase. La estructura es relacional —un usuario tiene planes y sesiones, una sesión tiene una serie de indicadores— y se beneficia de integridad referencial y de borrado en cascada, propiedad que aquí tiene valor ético además de técnico: cuando el usuario elimina una sesión o su cuenta, todos los datos fisiológicos asociados desaparecen con ella.
 
 **Tabla 14**
+
+*Tablas principales de la base de datos*
+
+| **Tabla**       | **Clave y relaciones**                       | **Columnas principales**                                               |
+|-----------------|----------------------------------------------|------------------------------------------------------------------------|
+| profiles        | id (= usuario de Supabase Auth)              | alias, preferencias (JSONB), fecha de aceptación de las advertencias   |
+| plans           | id; owner_id → profiles                      | objetivos, parámetros iniciales (JSONB), duración                      |
+| sessions        | id; owner_id → profiles; plan_id → plans     | inicio, fin, estado final, resumen generado                            |
+| session_metrics | (session_id, segundo); session_id → sessions | frecuencia media, RMSSD, SDNN, razón LF/HF, estado estimado, confianza |
+| model_versions  | versión                                      | ruta en Storage, huella SHA-256, métricas, fecha de publicación        |
+
+*Nota.* Las series temporales se agregan a una muestra cada cinco segundos antes de sincronizarse: una sesión de 30 minutos ocupa 360 filas, lo que permite guardar miles de sesiones dentro de los 500 MB del plan gratuito.
+
+Todas las tablas con datos de usuario tienen activada la seguridad a nivel de fila, de modo que la propia base de datos impide que un usuario lea sesiones ajenas aunque la API tuviera un error.
+
+**Tabla 15**
 
 *Puntos de acceso principales de la interfaz*
 
@@ -363,52 +378,89 @@ Tres restricciones gobiernan su uso. El modelo **no participa en el lazo de cont
 | GET /v1/models/classifier      | Descargar la versión vigente del clasificador               | Requerida         |
 | GET /v1/health                 | Verificar el estado del servicio                            | Pública           |
 
-El clasificador se entrega desde la interfaz y no se empaqueta dentro de la aplicación, decisión que permite publicar una versión mejorada del modelo sin volver a desplegar el cliente. El trabajador de servicio lo almacena en caché con su número de versión, de modo que la aplicación siga funcionando sin conexión con el último modelo descargado.
+El clasificador se guarda en Supabase Storage, se entrega desde la interfaz y no se empaqueta dentro de la aplicación, decisión que permite publicar una versión mejorada del modelo sin volver a desplegar el cliente. El trabajador de servicio lo almacena en caché con su número de versión, de modo que la aplicación siga funcionando sin conexión con el último modelo descargado.
 
 # **Infraestructura, despliegue y operación**
 
-**Tabla 15**
+## **Plataforma de despliegue**
 
-*Servicios de AWS empleados y su función*
+El sistema se despliega sobre plataformas con **plan gratuito que no exigen tarjeta de crédito**: Vercel para la aplicación y la API, y Supabase para identidad, base de datos y archivos. La elección es viable precisamente por la arquitectura adoptada: como el cómputo intensivo ocurre en el navegador, al servidor solo le quedan tareas ligeras —autenticar, guardar datos y llamar al modelo de lenguaje— que caben holgadamente en los límites de esos planes.
 
-| **Servicio**    | **Función en el sistema**                                                                            | **Consideración de costo**          |
-|-----------------|------------------------------------------------------------------------------------------------------|-------------------------------------|
-| S3              | Alojar la aplicación, el modelo ONNX y los informes generados                                        | Capa gratuita                       |
-| CloudFront      | Distribuir el contenido y aplicar las cabeceras de aislamiento necesarias para la memoria compartida | Capa gratuita de 1 TB               |
-| API Gateway     | Exponer la interfaz y limitar la tasa de peticiones                                                  | Por millón de peticiones            |
-| Lambda          | Ejecutar la aplicación FastAPI                                                                       | Un millón de invocaciones sin costo |
-| DynamoDB        | Persistir sesiones y series de indicadores                                                           | Modo bajo demanda                   |
-| Cognito         | Autenticar usuarios                                                                                  | Gratuito en el rango previsto       |
-| Secrets Manager | Custodiar la clave del modelo de lenguaje                                                            | Costo marginal                      |
-| CloudWatch      | Trazas, métricas y alarmas                                                                           | Capa gratuita                       |
+**Tabla 16**
 
-La cabecera de aislamiento de origen cruzado merece una mención particular en este proyecto. La comunicación entre el hilo de audio y el resto del sistema mediante memoria compartida exige que el documento esté aislado, lo que a su vez requiere configurar dos cabeceras específicas en la distribución de contenidos mediante una función de borde. Es una dependencia poco evidente entre una decisión de programación concurrente y un ajuste de infraestructura, y constituye un buen ejemplo de por qué conviene diseñar ambos planos a la vez.
+*Servicios empleados en la opción gratuita*
 
-El proceso de integración continua replica el de los demás proyectos e incorpora dos verificaciones propias: una prueba automatizada que ejecuta una sesión simulada completa y comprueba que no se produzcan subdesbordamientos del búfer de audio, y una prueba de regresión del clasificador que verifica que la exactitud del modelo publicado no descienda por debajo del umbral acordado.
+| **Servicio**                   | **Función en el sistema**                                                                                                                 | **Límite del plan gratuito**                                                |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| Vercel (plan Hobby)            | Alojar la aplicación, distribuirla desde su red de entrega y aplicar las cabeceras de seguridad y de aislamiento definidas en vercel.json | Gratuito para uso no comercial                                              |
+| Funciones Python de Vercel     | Ejecutar la API FastAPI como funciones sin servidor                                                                                       | Incluidas en el plan gratuito; hasta 2 GB de memoria y 300 s por invocación |
+| Supabase Auth                  | Registro, inicio de sesión y emisión de credenciales JWT                                                                                  | Hasta 50.000 usuarios activos mensuales                                     |
+| Supabase PostgreSQL            | Persistir los datos con seguridad a nivel de fila                                                                                         | Hasta 500 MB de base de datos                                               |
+| Supabase Storage               | Guardar archivos: informes y demás objetos binarios                                                                                       | Hasta 1 GB de almacenamiento                                                |
+| Variables de entorno de Vercel | Custodiar la clave de Gemini y la clave de servicio de Supabase, cifradas y solo accesibles desde el servidor                             | Sin costo                                                                   |
+| GitHub Actions                 | Integración continua y tareas programadas de mantenimiento                                                                                | Gratuito en repositorios públicos; 2.000 minutos mensuales en privados      |
+| Registros de Vercel y Sentry   | Trazas, errores y alertas                                                                                                                 | Planes gratuitos                                                            |
+| Supabase Storage (modelo)      | Publicar las versiones del clasificador ONNX, de unas decenas de kilobytes cada una                                                       | Incluido en 1 GB                                                            |
+
+*Nota.* Límites vigentes a septiembre de 2026. Los planes gratuitos cambian con frecuencia, por lo que deben revisarse al iniciar la construcción.
+
+Tres restricciones de estos planes condicionan el diseño y conviene tenerlas presentes desde ahora. La primera es que el plan Hobby de Vercel admite solo uso no comercial, condición que un proyecto académico cumple. La segunda es que una función de Vercel no acepta cuerpos de petición mayores de 4,5 MB, de modo que los archivos voluminosos no pasan por la API: el cliente los sube directamente a Supabase Storage mediante una URL firmada que la API emite. La tercera es que Supabase **pausa los proyectos gratuitos tras una semana sin actividad**; para evitar que el sistema amanezca detenido el día de la sustentación, un flujo programado de GitHub Actions realiza una consulta ligera cada tres días.
+
+## **Estrategia de despliegue**
+
+Vercel se integra directamente con el repositorio de GitHub. Cada propuesta de cambio genera automáticamente un **despliegue de vista previa** con su propia dirección, que cumple la función de entorno de preproducción, y cada integración a la rama principal se publica en producción. El esquema de la base de datos se versiona en el mismo repositorio como migraciones SQL gestionadas con la interfaz de línea de comandos de Supabase, y las cabeceras de seguridad se declaran en vercel.json. De este modo toda la configuración queda descrita en archivos versionados, que es el propósito de la infraestructura como código.
+
+El proceso de integración continua, implementado con GitHub Actions, ejecuta en cada propuesta de cambio la verificación de tipos, el análisis estático, las pruebas unitarias del cliente y del servidor, la construcción de la aplicación, las pruebas de extremo a extremo sobre el despliegue de vista previa y la auditoría de rendimiento y accesibilidad. Una propuesta que no supere todas las etapas no puede integrarse.
+
+Las cabeceras de aislamiento de origen cruzado merecen mención particular en este proyecto. La comunicación entre el hilo de audio y el resto del sistema mediante memoria compartida exige que el documento esté aislado, lo que requiere declarar dos cabeceras específicas en vercel.json. Es una dependencia poco evidente entre una decisión de programación concurrente y un ajuste de infraestructura, y un buen ejemplo de por qué conviene diseñar ambos planos a la vez.
+
+La integración continua incorpora además dos verificaciones propias: una sesión simulada completa que comprueba que no se produzcan subdesbordamientos del búfer de audio, y una prueba de regresión que verifica que la exactitud del clasificador publicado no descienda por debajo del umbral acordado.
+
+## **Alternativa de despliegue en AWS**
+
+El diseño se mantiene **portable a Amazon Web Services** sin reescribir la aplicación, gracias a tres decisiones. La API es una aplicación ASGI estándar, que se ejecuta igual en una función de Vercel que en AWS Lambda mediante un adaptador. La API valida las credenciales JWT contra el conjunto de claves públicas del proveedor de identidad, de modo que Supabase Auth y Cognito resultan intercambiables cambiando una variable de configuración. Y los datos viven en PostgreSQL en ambos casos, por lo que el esquema y las migraciones no cambian.
+
+**Tabla 17**
+
+*Equivalencia entre la opción gratuita y AWS*
+
+| **Función**                 | **Opción gratuita (principal)** | **Equivalente en AWS**                           |
+|-----------------------------|---------------------------------|--------------------------------------------------|
+| Aplicación y red de entrega | Vercel                          | S3 + CloudFront                                  |
+| API FastAPI                 | Funciones Python de Vercel      | Lambda + API Gateway, con el adaptador Mangum    |
+| Identidad                   | Supabase Auth                   | Amazon Cognito                                   |
+| Base de datos               | Supabase PostgreSQL             | Amazon RDS for PostgreSQL (mismo esquema)        |
+| Archivos                    | Supabase Storage                | Amazon S3                                        |
+| Secretos                    | Variables de entorno de Vercel  | AWS Secrets Manager                              |
+| Cabeceras de seguridad      | vercel.json                     | Política de cabeceras de respuesta de CloudFront |
+| Observabilidad              | Registros de Vercel y Sentry    | Amazon CloudWatch                                |
+
+La única pieza que requiere adaptación son las políticas de seguridad a nivel de fila, que en Supabase leen el usuario desde la credencial de la petición: en RDS se reescriben para leerlo de una variable de sesión que la API fija al abrir cada transacción. Cabe advertir, por último, que una cuenta de AWS exige registrar una tarjeta aunque se use su plan gratuito con créditos iniciales; por ello la opción de Vercel y Supabase se mantiene como la principal.
 
 # **Seguridad, privacidad y consideraciones éticas**
 
 Los datos que maneja este sistema son datos de salud, lo que eleva el estándar exigible con independencia de que el proyecto sea académico. El diseño adopta el principio de minimización: se recoge únicamente lo necesario y se procesa tan cerca del usuario como resulte posible.
 
-**Tabla 16**
+**Tabla 18**
 
 *Medidas de seguridad y privacidad*
 
-| **Amenaza o riesgo**                                | **Medida adoptada**                                                                                                                |
-|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| Exposición de datos fisiológicos en tránsito        | La señal cruda nunca abandona el dispositivo; solo se sincronizan indicadores agregados, y siempre sobre TLS.                      |
-| Acceso a sesiones de otro usuario                   | Toda consulta verifica la correspondencia entre el identificador de la credencial y el propietario del recurso.                    |
-| Exposición de la clave del modelo de lenguaje       | Reside únicamente en el gestor de secretos y se emplea desde la función Lambda.                                                    |
-| Inyección de instrucciones en el modelo de lenguaje | El contexto se construye mediante plantillas con campos delimitados y la salida se valida contra un esquema cerrado de parámetros. |
-| Uso del sistema como sustituto de atención médica   | Advertencias explícitas, aceptación previa obligatoria y ausencia total de lenguaje clínico en la interfaz.                        |
-| Daño auditivo por exposición prolongada             | Limitación del nivel de salida y aviso al superar la duración recomendada.                                                         |
-| Retención indefinida de datos sensibles             | El usuario puede eliminar sesiones individuales o su cuenta completa, con borrado efectivo en la base de datos.                    |
+| **Amenaza o riesgo**                                | **Medida adoptada**                                                                                                                                                                    |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Exposición de datos fisiológicos en tránsito        | La señal cruda nunca abandona el dispositivo; solo se sincronizan indicadores agregados, y siempre sobre TLS.                                                                          |
+| Acceso a sesiones de otro usuario                   | Doble barrera: la API verifica la propiedad del recurso y la seguridad a nivel de fila de PostgreSQL lo impone de nuevo en la base de datos.                                           |
+| Uso indebido de la clave pública de Supabase        | La clave anónima solo es segura con seguridad a nivel de fila activa en todas las tablas, lo que se verifica con una prueba automatizada; la clave de servicio nunca llega al cliente. |
+| Exposición de la clave del modelo de lenguaje       | Reside únicamente en una variable de entorno cifrada de Vercel y se emplea desde la API.                                                                                               |
+| Inyección de instrucciones en el modelo de lenguaje | El contexto se construye mediante plantillas con campos delimitados y la salida se valida contra un esquema cerrado de parámetros.                                                     |
+| Uso del sistema como sustituto de atención médica   | Advertencias explícitas, aceptación previa obligatoria y ausencia total de lenguaje clínico en la interfaz.                                                                            |
+| Daño auditivo por exposición prolongada             | Limitación del nivel de salida y aviso al superar la duración recomendada.                                                                                                             |
+| Retención indefinida de datos sensibles             | El usuario puede eliminar sesiones individuales o su cuenta completa, con borrado efectivo en la base de datos.                                                                        |
 
 Existe además una consideración ética que trasciende lo técnico. Un sistema que responde al cuerpo del usuario puede generar la impresión de que lo comprende mejor de lo que realmente lo hace. El diseño evita deliberadamente alimentar esa impresión: la interfaz emplea vocabulario descriptivo antes que interpretativo, muestra la confianza de la estimación junto al estado, y no afirma en ningún momento saber cómo se siente la persona.
 
 # **Estrategia de pruebas y calidad**
 
-**Tabla 17**
+**Tabla 19**
 
 *Niveles de prueba previstos*
 
@@ -427,23 +479,24 @@ La verificación del audio merece un comentario. No basta con comprobar que suen
 
 # **Riesgos y plan de mitigación**
 
-**Tabla 18**
+**Tabla 20**
 
 *Registro de riesgos del proyecto*
 
-| **Id** | **Riesgo**                                                           | **Prob.** | **Impacto** | **Mitigación**                                                                                             |
-|--------|----------------------------------------------------------------------|-----------|-------------|------------------------------------------------------------------------------------------------------------|
-| R-01   | No se dispone de banda cardíaca para probar con señal real           | Media     | Medio       | El simulador es un componente de primera clase desde la semana 1; también se reproducen registros públicos |
-| R-02   | Aparecen chasquidos por cálculo indebido en el hilo de audio         | Media     | Alto        | Separación estricta de contextos y prueba de continuidad automatizada desde la semana 3                    |
-| R-03   | La música generativa resulta monótona o desagradable                 | Alta      | Medio       | Evaluación temprana con oyentes y biblioteca de capas ampliable sin tocar el motor                         |
-| R-04   | Las cabeceras de aislamiento rompen la carga de recursos externos    | Media     | Medio       | Alojar todos los recursos en el propio dominio; verificar en la semana 2                                   |
-| R-05   | El clasificador resulta poco fiable con datos reales                 | Media     | Medio       | Reglas deterministas como alternativa y exposición visible de la confianza                                 |
-| R-06   | La complejidad del dominio induce afirmaciones clínicas indebidas    | Baja      | Alto        | Revisión del texto de la interfaz como criterio de aceptación explícito                                    |
-| R-07   | El alcance de tres proyectos simultáneos supera el tiempo disponible | Alta      | Alto        | Plantilla común y funcionalidades de prioridad media declaradas prescindibles                              |
+| **Id** | **Riesgo**                                                                                     | **Prob.** | **Impacto** | **Mitigación**                                                                                                |
+|--------|------------------------------------------------------------------------------------------------|-----------|-------------|---------------------------------------------------------------------------------------------------------------|
+| R-01   | No se dispone de banda cardíaca para probar con señal real                                     | Media     | Medio       | El simulador es un componente de primera clase desde la semana 1; también se reproducen registros públicos    |
+| R-02   | Aparecen chasquidos por cálculo indebido en el hilo de audio                                   | Media     | Alto        | Separación estricta de contextos y prueba de continuidad automatizada desde la semana 3                       |
+| R-03   | La música generativa resulta monótona o desagradable                                           | Alta      | Medio       | Evaluación temprana con oyentes y biblioteca de capas ampliable sin tocar el motor                            |
+| R-04   | Las cabeceras de aislamiento rompen la carga de recursos externos                              | Media     | Medio       | Alojar todos los recursos en el propio dominio; verificar en la semana 2                                      |
+| R-05   | El clasificador resulta poco fiable con datos reales                                           | Media     | Medio       | Reglas deterministas como alternativa y exposición visible de la confianza                                    |
+| R-06   | La complejidad del dominio induce afirmaciones clínicas indebidas                              | Baja      | Alto        | Revisión del texto de la interfaz como criterio de aceptación explícito                                       |
+| R-07   | El alcance de tres proyectos simultáneos supera el tiempo disponible                           | Alta      | Alto        | Plantilla común y funcionalidades de prioridad media declaradas prescindibles                                 |
+| R-08   | Cambian las condiciones de un plan gratuito o el proyecto de Supabase se pausa por inactividad | Media     | Medio       | Consulta programada cada tres días, respaldos del esquema en el repositorio y equivalencia en AWS documentada |
 
 # **Plan de trabajo**
 
-**Tabla 19**
+**Tabla 21**
 
 *Cronograma por sprints*
 
@@ -494,6 +547,12 @@ Richards, M., y Ford, N. (2020). *Fundamentals of software architecture: An engi
 
 Shaffer, F., y Ginsberg, J. P. (2017). An overview of heart rate variability metrics and norms. *Frontiers in Public Health*, 5, 258. https://doi.org/10.3389/fpubh.2017.00258
 
+Supabase. (2026). *Row Level Security*. Supabase Docs. https://supabase.com/docs/guides/database/postgres/row-level-security
+
 Task Force of the European Society of Cardiology and the North American Society of Pacing and Electrophysiology. (1996). Heart rate variability: Standards of measurement, physiological interpretation, and clinical use. *Circulation*, 93(5), 1043–1065. https://doi.org/10.1161/01.CIR.93.5.1043
+
+Vercel. (2026). *Deploy a FastAPI app on Vercel*. Vercel Docs. https://vercel.com/docs/frameworks/backend/fastapi
+
+Vercel. (2026). *Vercel Functions limits*. Vercel Docs. https://vercel.com/docs/functions/limitations
 
 World Health Organization. (2022). *WHO global standard for safe listening venues and events*. World Health Organization. https://www.who.int/publications/i/item/9789240043114
