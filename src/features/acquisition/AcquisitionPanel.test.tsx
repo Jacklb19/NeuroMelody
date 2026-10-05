@@ -7,11 +7,16 @@ import { SourceChannel } from './sourceChannel';
 import type { SignalSource } from './contract';
 import { AcquisitionPanel, SIMULATOR_SEED, type CreateSimulatedSource } from './AcquisitionPanel';
 import { SimulatedSource } from './simulator/SimulatedSource';
+import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
+import { readFileSync } from 'node:fs';
 
 /** The panel is controlled: this harness keeps the source the way App does. */
-function StatefulPanel({ createSource }: { readonly createSource: CreateSimulatedSource }) {
+function StatefulPanel({ createSource, createRecording }: {
+  readonly createSource: CreateSimulatedSource;
+  readonly createRecording?: (options: RecordedSourceOptions) => SignalSource;
+}) {
   const [source, setSource] = useState<SignalSource | null>(null);
-  return <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} />;
+  return <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} createRecording={createRecording} />;
 }
 
 function renderWithFakeTime() {
@@ -28,6 +33,24 @@ function visibleState(): string {
 }
 
 describe('AcquisitionPanel', () => {
+  it('plays a selected recording and re-enables the controls at the end', async () => {
+    const user = userEvent.setup();
+    const env = createFakeTimeEnvironment();
+    const createRecording = vi.fn((options: RecordedSourceOptions) => new RecordedSource({ ...options, ...env,
+      load: () => Promise.resolve(JSON.parse(readFileSync(`public/recordings/${options.recordId}.json`, 'utf8')) as unknown),
+    }));
+    render(<StatefulPanel createSource={options => new SimulatedSource(options)} createRecording={createRecording} />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Origen de la señal' }), 'recording');
+    await user.selectOptions(screen.getByRole('combobox', { name: /^Registro$/ }), 'nsr002');
+    await user.selectOptions(screen.getByLabelText(/velocidad/i), '10');
+    await user.click(screen.getByRole('button', { name: 'Reproducir registro' }));
+    expect(createRecording).toHaveBeenCalledWith({ recordId: 'nsr002', speed: 10 });
+    expect(screen.getByRole('combobox', { name: /^Registro$/ })).toBeDisabled();
+    act(() => { env.jump(180_000); });
+    expect(screen.getByTestId('signal-time')).toHaveTextContent('30:00');
+    expect(visibleState()).toMatch(/desconectada/i);
+    expect(screen.getByRole('combobox', { name: /^Registro$/ })).toBeEnabled();
+  });
   it('shows the disconnected state and labelled controls', () => {
     renderWithFakeTime();
 
@@ -43,6 +66,8 @@ describe('AcquisitionPanel', () => {
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
     expect(scenarios).toEqual([
+      'Simulador',
+      'Registro de ejemplo',
       'Reposo',
       'Activación',
       'Relajación progresiva',

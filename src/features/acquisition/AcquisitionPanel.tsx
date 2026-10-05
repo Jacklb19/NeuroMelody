@@ -12,6 +12,8 @@ import {
   type Speed,
 } from './simulator/SimulatedSource';
 import { useSignalSource } from './useSignalSource';
+import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
+import { RECORDING_IDS, type RecordingId } from './recording/recording';
 
 /** Fixed seed: the same simulated session repeats on reconnect (RF-02). */
 export const SIMULATOR_SEED = 1;
@@ -20,6 +22,7 @@ export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalS
 
 const createDefaultSource: CreateSimulatedSource = (options) =>
   new SimulatedSource(options);
+const createDefaultRecording = (options: RecordedSourceOptions): SignalSource => new RecordedSource(options);
 
 const STATE_TEXT: Readonly<Record<ConnectionState, string>> = {
   disconnected: 'Desconectada',
@@ -50,6 +53,7 @@ interface AcquisitionPanelProps {
   readonly onSourceChange: (source: SignalSource) => void;
   /** Lets tests inject a fake clock. */
   readonly createSource?: CreateSimulatedSource;
+  readonly createRecording?: (options: RecordedSourceOptions) => SignalSource;
 }
 
 /**
@@ -61,7 +65,10 @@ export function AcquisitionPanel({
   source,
   onSourceChange,
   createSource = createDefaultSource,
+  createRecording = createDefaultRecording,
 }: AcquisitionPanelProps): React.JSX.Element {
+  const [kind, setKind] = useState<'simulator' | 'recording'>('simulator');
+  const [recordId, setRecordId] = useState<RecordingId>('nsr001');
   const [scenario, setScenario] = useState<ScenarioId>('rest');
   const [speed, setSpeed] = useState<Speed>(1);
   const reading = useSignalSource(source);
@@ -78,7 +85,9 @@ export function AcquisitionPanel({
   const active = reading.state !== 'disconnected' && reading.state !== 'error';
 
   const connect = (): void => {
-    const newSource = createSource({ scenario, speed, seed: SIMULATOR_SEED });
+    const newSource = kind === 'simulator'
+      ? createSource({ scenario, speed, seed: SIMULATOR_SEED })
+      : createRecording({ recordId, speed });
     onSourceChange(newSource);
     void newSource.connect();
   };
@@ -103,6 +112,15 @@ export function AcquisitionPanel({
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+          Origen de la señal
+          <select value={kind} disabled={active} onChange={event => {
+            setKind(event.target.value === 'recording' ? 'recording' : 'simulator');
+          }}>
+            <option value="simulator">Simulador</option>
+            <option value="recording">Registro de ejemplo</option>
+          </select>
+        </label>
+        {kind === 'simulator' ? <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
           Escenario del simulador
           <select
             value={scenario}
@@ -117,7 +135,16 @@ export function AcquisitionPanel({
               </option>
             ))}
           </select>
-        </label>
+        </label> : <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+          Registro
+          <select value={recordId} disabled={active} onChange={event => {
+            setRecordId(RECORDING_IDS.find(id => id === event.target.value) ?? 'nsr001');
+          }}>
+            {RECORDING_IDS.map((id, index) => <option key={id} value={id}>
+              Registro {index + 1} · 30 minutos
+            </option>)}
+          </select>
+        </label>}
 
         <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
           Velocidad
@@ -136,6 +163,10 @@ export function AcquisitionPanel({
           </select>
         </label>
       </div>
+      {kind === 'recording' && <p style={{ marginBottom: 'var(--space-4)' }}>
+        Datos públicos de ejemplo de PhysioNet nsr2db. La reproducción termina al completar el registro.{' '}
+        <a href="/recordings/CREDITS.md">Origen y licencia de los datos</a>
+      </p>}
 
       <button
         type="button"
@@ -151,7 +182,7 @@ export function AcquisitionPanel({
           marginBottom: 'var(--space-4)',
         }}
       >
-        {active ? 'Desconectar' : 'Conectar simulador'}
+        {active ? 'Desconectar' : kind === 'simulator' ? 'Conectar simulador' : 'Reproducir registro'}
       </button>
 
       <p role="status" style={{ marginBottom: 'var(--space-4)' }}>
@@ -160,7 +191,9 @@ export function AcquisitionPanel({
 
       {reading.error !== null && (
         <p role="alert" style={{ color: 'var(--color-error-text)', marginBottom: 'var(--space-4)' }}>
-          La medición no es fiable y se descartó ({reading.error}). Revisa la colocación del dispositivo.
+          {kind === 'recording'
+            ? `No se pudo reproducir el registro (${reading.error}). Intenta conectarlo de nuevo.`
+            : `La medición no es fiable y se descartó (${reading.error}). Revisa la colocación del dispositivo.`}
         </p>
       )}
 
