@@ -46,3 +46,23 @@ Decisiones tomadas durante la construcción que completan o se desvían del docu
 | Decisión | Todo el código va en inglés: clases, componentes, funciones, variables, tipos, constantes, archivos, carpetas, rutas de la URL, variables CSS, nombres de pruebas y comentarios. Los mensajes de commit también, desde el 29 sep 2026. Solo quedan en español los textos que ve el usuario (en los diccionarios de traducción) y los documentos de `docs/`. |
 | Desviación | Ninguna respecto del documento de definición, que no fija el idioma del código. |
 | Consecuencias | El código existente se renombra con el renombrado de TypeScript, en commits aparte por área y sin cambiar el comportamiento. Las rutas de la URL cambian (por ejemplo, `/sesion` pasa a `/session`), y `docs/pantallas.md` se actualiza en consecuencia. |
+
+## ADR-12. Reglas provisionales y prioridades de adaptación S4
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 5 de octubre de 2026; aclaración RNF-02 del avance pendiente. |
+| Contexto | ONNX se integra en S5. R-05 prevé reglas deterministas; la guía anterior tenía ambigüedades en Incierta y el retroceso. |
+| Decisión | Comparar FC ±10 % y RMSSD ∓20 % con la base de al menos 12 publicaciones válidas y de buena calidad durante la calibración de 3 minutos de señal; continuar si faltan. Histéresis de 3 estados consecutivos y confianza no calibrada. Incierta permite avanzar sin Alta reciente tras 3 minutos de audio y con calidad buena. Alta aceptada retrocede un escalón inmediatamente, interrumpe las rampas desde su valor actual y reinicia la permanencia. No hay cola de cambios obsoletos. |
+| Desviación | Completa los umbrales de R-05 y reemplaza las prioridades previas de `diseno-musical.md`. La latencia de Alta se mide desde la aceptación. La latencia de Baja antes de vencer la permanencia sigue en consulta porque la lectura literal de RNF-02 y esa permanencia se contradicen. |
+| Consecuencias | Lazo verificable con simulador/registro, sin dependencia nueva ni afirmaciones clínicas. La base no identifica categorías absolutas de activación. ONNX sigue previsto en S5 y la evaluación con oyentes queda pendiente manual. |
+
+## ADR-13. Calendario de entrega hasta el 17 de noviembre
+
+| Campo | Contenido |
+|---|---|
+| Estado | Propuesto el 5 de octubre de 2026, pendiente de aprobación. La fecha límite y la reserva final fueron fijadas por el usuario. |
+| Contexto | El cronograma de la especificación termina el 19 de noviembre, después de la entrega obligatoria del 17. |
+| Decisión propuesta | Desarrollo hasta el 12 de noviembre; 13–17 de noviembre para publicación, comprobaciones manuales y correcciones. S4: 5–8 oct; S5: 9–20 oct; S6: 21 oct–4 nov; S7: 6–12 nov. Reserva interna: 8 oct y 5 nov. Detalle y esfuerzos en `plan-entrega.md`. |
+| Desviación | Sustituye únicamente el calendario de ejecución. No modifica `definicion-proyecto.md`, no elimina RF ni HU y no autoriza operaciones remotas. |
+| Consecuencias | 27 jornadas efectivas estimadas y 2 de reserva. Ruta crítica en BLE, persistencia, autenticación/aal2/RLS, sincronización, offline y validación. El ONNX tiene alternativa R-05; Google, TOTP y Groq siguen incluidos, con nube bloqueada hasta completar aal2. La viabilidad depende de dedicación y recursos del usuario a tiempo. |

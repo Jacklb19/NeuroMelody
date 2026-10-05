@@ -14,15 +14,16 @@ El motor nunca salta más de un escalón en una transición, y toda transición 
 
 "Intermedio" es un escalón de la guía, no un estado estimado: el clasificador solo estima activación alta, baja o incierta.
 
-1. **Calibración.** Los primeros 3 minutos suenan en Intermedio, todavía sin estimación. En ese tiempo se toma la línea base de la sesión.
+1. **Calibración.** Los primeros 3 minutos de señal se usan para la línea base, con al menos 12 publicaciones válidas y de buena calidad. Si faltan, continúa la calibración en Intermedio hasta reunirlas.
 2. **Primera estimación.**
    - Alta: pasa al nivel Activación alta (acompañar).
-   - Baja: pasa a la meta.
-   - Incierta: se queda en Intermedio.
-3. **Duración mínima.** Cada escalón dura como mínimo 3 minutos.
-4. **Avance.** Se avanza un escalón hacia la meta solo si ninguna de las últimas 3 estimaciones fue alta.
-5. **Retroceso.** Si la histéresis acepta un estado alto, se sube un escalón (volver a acompañar).
-6. **Incierta.** Una estimación incierta mantiene el nivel actual.
+   - Baja o Incierta: espera la permanencia mínima antes de avanzar.
+3. **Duración mínima.** El avance espera 3 minutos en el reloj de audio desde el comienzo de la última transición. Acelerar la señal no acelera las rampas ni la permanencia.
+4. **Avance.** Se avanza un escalón hacia la meta cuando vence la permanencia, hay buena calidad y ninguna de las últimas 3 estimaciones fue Alta. Incierta cuenta como «sin Alta».
+5. **Retroceso.** Si la histéresis acepta Alta, se sube un escalón inmediatamente, incluso durante la permanencia o una rampa. Se reprograma desde los valores actuales, sin saltos ni apilar rampas, y se reinicia la permanencia.
+6. **Incierta y calidad.** Incierta nunca provoca retrocesos. La calidad insuficiente bloquea transiciones y rompe candidaturas pendientes. Al vencer la permanencia se decide con datos vigentes, sin cambios obsoletos en cola.
+
+Estas prioridades reemplazan las anteriores por decisión explícita del usuario del 5 de octubre de 2026. El estimador temporal compara FC ±10 % y RMSSD ∓20 % con la línea base; no es una probabilidad calibrada. Histéresis: 3 estimaciones consecutivas también para Incierta. RNF-02 se verifica desde la aceptación de Alta; sigue pendiente aclarar el conflicto entre la latencia de Baja y la permanencia obligatoria del avance.
 
 ## Niveles musicales (valores iniciales)
 

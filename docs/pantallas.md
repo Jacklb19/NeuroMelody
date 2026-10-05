@@ -36,3 +36,9 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | Panel | Propósito | RF | Sprint |
 |---|---|---|---|
 | Estado musical | Tempo, modo y capas actuales, y el estado estimado con su confianza en lenguaje descriptivo. | RF-09, RF-12 | S4 |
+
+S4 incorpora `MusicalStatePanel` en `/session`: estado aceptado, confianza no calibrada, espera por calidad, escalón, tempo actual leído del AudioParam y tempo de destino. El modo y las capas se identifican como programados: el fundido del modo espera el ciclo musical y no se presenta su destino como si ya se hubiera completado.
+
+## Funciones todavía no activas — propuesta S5–S7
+
+Pendiente de aprobar junto con `plan-entrega.md`. Una ruta pendiente del mapa debe mostrar una explicación accesible y regreso a Inicio/Sesión; no habrá rutas rotas. Acciones no disponibles se deshabilitan con motivo visible y fecha prevista. Google pendiente conserva el acceso por correo; TOTP pendiente conserva el recorrido local pero bloquea sincronización y lectura de salud en la nube; Groq pendiente conserva plan manual y resumen de indicadores con «Resumen automático pendiente». No se muestran textos pendientes como si fueran resultados generados. Estas funciones deberán estar activas para la entrega completa: una etiqueta de pendiente no satisface el requisito.

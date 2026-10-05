@@ -89,6 +89,19 @@ sistema y la accesibilidad con lector de pantalla requieren revisión manual.
 
 ## Estructura
 
+En `/session`, S4 adapta la música con reglas provisionales relativas a la
+línea base, tres estimaciones consecutivas y rampas. «Activación creciente»
+ejercita el retroceso; «Relajación progresiva», el descenso. A 10×, la señal
+avanza más rápido, pero la permanencia musical sigue siendo de tres minutos
+reales de audio. La confianza se muestra como no calibrada.
+
+`npm run test:e2e` incluye ambos recorridos nativos: cada navegador espera
+tres minutos reales para comprobar la permanencia. La evidencia JSON se
+guarda en `build/verification/s4/`, fuera de Git. No ejecutar dos instancias
+de Playwright con la misma carpeta de salida; usar `--output` y
+`PLAYWRIGHT_HTML_OUTPUT_DIR` distintos para pruebas simultáneas. El plan de
+entrega restante, pendiente de aprobación, está en `docs/plan-entrega.md`.
+
 ```
 src/
   features/        una carpeta por característica (componente, lógica y pruebas juntas)
