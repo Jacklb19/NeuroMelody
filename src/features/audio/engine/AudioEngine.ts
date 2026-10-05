@@ -274,6 +274,11 @@ export class AudioEngine {
     return duration;
   }
 
+  /** Tempo currently rendered by the audio timeline, rather than the ramp target. */
+  get tempoBpm(): number {
+    return getParam(this.#nodes.synthesizer, 'tempo').value;
+  }
+
   /** Sets the volume within −40 to 0 dB and returns the applied value. */
   setVolumeDb(db: number): number {
     const clamped = Math.min(MAX_VOLUME_DB, Math.max(MIN_VOLUME_DB, db));

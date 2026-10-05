@@ -2,14 +2,18 @@ import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationEngine, type AdaptationSnapshot } from './AdaptationEngine';
 
+export interface SessionSnapshot extends AdaptationSnapshot {
+  readonly tempoBpm: number | null;
+}
+
 /** Binds guidance to the existing audio engine; no musical timers or extra worker. */
 export class AdaptationSession {
   #guidance = new AdaptationEngine();
   #audio: AudioEngine | null = null;
-  #snapshot: AdaptationSnapshot = this.#guidance.snapshot;
+  #snapshot: SessionSnapshot = { ...this.#guidance.snapshot, tempoBpm: null };
   readonly #listeners = new Set<() => void>();
 
-  getSnapshot = (): AdaptationSnapshot => this.#snapshot;
+  getSnapshot = (): SessionSnapshot => this.#snapshot;
   subscribe = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);
     return () => { this.#listeners.delete(listener); };
@@ -44,7 +48,7 @@ export class AdaptationSession {
   };
 
   #publish(): void {
-    this.#snapshot = this.#guidance.snapshot;
+    this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: this.#audio?.tempoBpm ?? null };
     for (const listener of this.#listeners) listener();
   }
 }

@@ -15,6 +15,9 @@ interface SignalPanelProps {
   readonly readPalette?: () => ChartPalette;
   /** `null` si el navegador no puede transferir un lienzo a un Worker. */
   readonly transferCanvas?: TransferCanvas | null;
+  readonly onIndices?: (result: IndicesResult) => void;
+  readonly onReset?: () => void;
+  readonly onUnavailable?: () => void;
 }
 
 type ChartState =
@@ -79,6 +82,9 @@ export function SignalPanel({
   createClient,
   readPalette = readChartPalette,
   transferCanvas,
+  onIndices,
+  onReset,
+  onUnavailable,
 }: SignalPanelProps): React.JSX.Element {
   const [chart] = useState<ChartState>(() =>
     evaluateChart(
@@ -144,19 +150,30 @@ export function SignalPanel({
   useEffect(() => {
     const client = clientRef.current;
     if (client === null || source === null) {
+      onUnavailable?.();
       return undefined;
     }
+    onReset?.();
     const unsubscribeIndices = client.subscribe({
       onIndices: (result) => {
         setReading({ source, result });
+        if (source.state === 'connected') onIndices?.(result);
+      },
+      onError: () => onUnavailable?.(),
+    });
+    const unsubscribeSource = source.subscribe({
+      onStateChange: state => {
+        if (state === 'connecting') onReset?.();
+        else if (state !== 'connected') onUnavailable?.();
       },
     });
     const disconnect = client.connectSource(source);
     return () => {
       disconnect();
       unsubscribeIndices();
+      unsubscribeSource();
     };
-  }, [source, threadAvailable, createClient, chart]);
+  }, [source, threadAvailable, createClient, chart, onIndices, onReset, onUnavailable]);
 
   // Solo se muestran resultados de la fuente actual.
   const result = reading !== null && reading.source === source ? reading.result : null;

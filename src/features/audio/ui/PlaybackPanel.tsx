@@ -10,6 +10,7 @@ interface PlaybackPanelProps {
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
+  readonly onEngineChange?: (engine: AudioEngine | null) => void;
 }
 
 const STATE_TEXT: Readonly<Record<AudioState, string>> = {
@@ -50,6 +51,7 @@ export function PlaybackPanel({
   durationMin,
   factory,
   generateSeed = randomSeed,
+  onEngineChange,
 }: PlaybackPanelProps): React.JSX.Element {
   const control = useAudioEngine(factory);
   const { state, stop, engine: getEngine } = control;
@@ -90,12 +92,14 @@ export function PlaybackPanel({
     sessionStartRef.current ??= engine.audioTime;
     setFinished(false);
     scheduleFade(engine);
+    onEngineChange?.(engine);
   };
 
   const stopNow = useCallback((): void => {
     setWarning(null);
+    onEngineChange?.(null);
     void stop();
-  }, [stop]);
+  }, [stop, onEngineChange]);
 
   const continueSession = (): void => {
     const engine = getEngine();
