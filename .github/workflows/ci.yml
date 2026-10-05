@@ -42,3 +42,22 @@ jobs:
 
       - name: Verificar artefacto de construcción
         run: test -f dist/index.html
+
+      - name: Instalar navegadores para E2E
+        run: npx playwright install --with-deps chrome msedge
+
+      - name: Recorridos E2E en Chrome y Edge
+        run: npm run test:e2e
+
+      - name: Continuidad de audio durante 60 segundos
+        run: npm run test:audio
+
+      - name: Conservar informes de navegador y evidencia de audio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-tests
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
