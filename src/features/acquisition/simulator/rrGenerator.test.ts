@@ -30,6 +30,14 @@ function rmssd(rr: readonly number[]): number {
 }
 
 describe('createRrGenerator', () => {
+  it.each([1, 2, 3])('progressive activation is reproducible with seed %i and reaches activation values', (seed) => {
+    const beats = generateUntil('progressive_activation', seed, RELAXATION_DURATION_MS + 120_000);
+    expect(beats).toEqual(generateUntil('progressive_activation', seed, RELAXATION_DURATION_MS + 120_000));
+    expect(meanHr(beats.filter(b => b.endMs <= 60_000).map(b => b.rrMs))).toBeLessThan(66);
+    expect(meanHr(beats.filter(b => b.endMs > RELAXATION_DURATION_MS).map(b => b.rrMs))).toBeGreaterThan(90);
+    expect(SCENARIOS.progressive_activation.paramsAt(-1)).toEqual(SCENARIOS.rest.paramsAt(0));
+    expect(SCENARIOS.progressive_activation.paramsAt(RELAXATION_DURATION_MS)).toEqual(SCENARIOS.activation.paramsAt(0));
+  });
   it('is deterministic for the same seed and scenario', () => {
     expect(generateUntil('rest', 99, 60_000)).toEqual(generateUntil('rest', 99, 60_000));
   });

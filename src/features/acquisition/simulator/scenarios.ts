@@ -16,7 +16,7 @@ export interface PhysiologicalParams {
   readonly noiseMs: number;
 }
 
-export type ScenarioId = 'rest' | 'activation' | 'progressive_relaxation' | 'artifacts';
+export type ScenarioId = 'rest' | 'activation' | 'progressive_relaxation' | 'progressive_activation' | 'artifacts';
 
 /**
  * Simulated reading faults to test the filtering (RF-04): premature beats
@@ -116,6 +116,15 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
       ),
     artifacts: null,
   },
+  progressive_activation: {
+    id: 'progressive_activation',
+    name: 'Activación creciente',
+    paramsAt: (timeMs) => interpolateParameters(
+      REST_PARAMS, ACTIVATION_PARAMS,
+      Math.min(Math.max(timeMs / RELAXATION_DURATION_MS, 0), 1),
+    ),
+    artifacts: null,
+  },
   artifacts: {
     id: 'artifacts',
     // Describes the device, not the body: the interface does not interpret the signal.
@@ -129,5 +138,6 @@ export const SCENARIO_IDS: readonly ScenarioId[] = [
   'rest',
   'activation',
   'progressive_relaxation',
+  'progressive_activation',
   'artifacts',
 ];

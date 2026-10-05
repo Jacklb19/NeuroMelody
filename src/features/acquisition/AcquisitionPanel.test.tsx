@@ -61,7 +61,7 @@ describe('AcquisitionPanel', () => {
     expect(screen.getByTestId('heart-rate')).toHaveTextContent('—');
   });
 
-  it('offers the four scenarios and the four speeds', () => {
+  it('offers the five scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
@@ -71,6 +71,7 @@ describe('AcquisitionPanel', () => {
       'Reposo',
       'Activación',
       'Relajación progresiva',
+      'Activación creciente',
       'Reposo con fallos de lectura',
       '1×',
       '2×',
