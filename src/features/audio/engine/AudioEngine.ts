@@ -79,8 +79,13 @@ function getParam(node: AudioWorkletNode, name: ParamName): AudioParam {
 /** Holds a parameter at its current value and drops what is scheduled from `t`. */
 function hold(param: AudioParam, t: number): number {
   const current = param.value;
-  param.cancelScheduledValues(t);
-  param.setValueAtTime(current, t);
+  if (typeof param.cancelAndHoldAtTime === 'function') {
+    // Preserve the part of an interrupted ramp preceding t on the audio timeline.
+    param.cancelAndHoldAtTime(t);
+  } else {
+    param.cancelScheduledValues(t);
+    param.setValueAtTime(current, t);
+  }
   return current;
 }
 

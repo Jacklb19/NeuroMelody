@@ -73,7 +73,9 @@ export class SynthesisCore {
 
   readonly #layerGain = new Float64Array(3);
   readonly #layerTarget = new Float64Array(3);
+  readonly #layerStep = new Float64Array(3);
   readonly #bankGain = new Float64Array(2);
+  readonly #bankStep = new Float64Array(2);
 
   #dronePhase = 0;
   #fifthPhase = 0;
@@ -179,18 +181,23 @@ export class SynthesisCore {
 
   #updateLayerTargets(layers: number): void {
     const activeLayers = Math.min(3, Math.max(1, Math.round(layers)));
-    this.#layerTarget[LAYER_DRONE] = 1;
-    this.#layerTarget[LAYER_HARMONY] = activeLayers >= 2 ? 1 : 0;
-    this.#layerTarget[LAYER_MELODY] = activeLayers >= 3 ? 1 : 0;
+    for (let c = 0; c < 3; c++) {
+      const target = c < activeLayers ? 1 : 0;
+      if (target !== this.#layerTarget[c]) {
+        this.#layerTarget[c] = target;
+        // A reversal takes a full 30 s even when the previous fade was partial.
+        this.#layerStep[c] = Math.abs(target - (this.#layerGain[c] ?? 0)) * this.#fadeStep;
+      }
+    }
   }
 
   #smoothGains(): void {
     for (let c = 0; c < 3; c++) {
-      this.#layerGain[c] = moveTowards(this.#layerGain[c] ?? 0, this.#layerTarget[c] ?? 0, this.#fadeStep);
+      this.#layerGain[c] = moveTowards(this.#layerGain[c] ?? 0, this.#layerTarget[c] ?? 0, this.#layerStep[c] ?? 0);
     }
     for (let b = 0; b < 2; b++) {
       const target = b === this.#activeBank ? 1 : 0;
-      this.#bankGain[b] = moveTowards(this.#bankGain[b] ?? 0, target, this.#fadeStep);
+      this.#bankGain[b] = moveTowards(this.#bankGain[b] ?? 0, target, this.#bankStep[b] ?? 0);
     }
   }
 
@@ -202,6 +209,10 @@ export class SynthesisCore {
       // The harmonic cycle closes: the crossfade to the new mode starts.
       this.#currentMode = this.#pendingMode;
       this.#activeBank = 1 - this.#activeBank;
+      for (let b = 0; b < 2; b++) {
+        const target = b === this.#activeBank ? 1 : 0;
+        this.#bankStep[b] = Math.abs(target - (this.#bankGain[b] ?? 0)) * this.#fadeStep;
+      }
     }
 
     if (position % BEATS_PER_CHORD === 0 && (this.#layerTarget[LAYER_HARMONY] ?? 0) > 0) {
