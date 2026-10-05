@@ -4,6 +4,8 @@ import { MODE } from './theory';
 
 const FS = 48_000;
 const BLOCK = 128;
+// Offline rendering with V8 coverage is CPU-bound, not a real-time audio benchmark.
+const RENDER_TIMEOUT_MS = 90_000;
 
 interface Params {
   tempo: number;
@@ -11,7 +13,7 @@ interface Params {
   layers: number;
 }
 
-/** Renderiza `segundos` de audio bloque a bloque; `alBloque` puede cambiar los parámetros. */
+/** Renders `seconds` of audio block by block; `onBlock` may change the parameters. */
 function renderAudio(
   core: SynthesisCore,
   seconds: number,
@@ -37,31 +39,31 @@ function rms(samples: Float32Array, from: number, to: number): number {
   return Math.sqrt(sum / (to - from));
 }
 
-describe('NucleoSintesis', () => {
-  it('es determinista para una misma semilla y cambia con otra', () => {
+describe('SynthesisCore', () => {
+  it('is deterministic for the same seed and changes with another', () => {
     const p = { tempo: 66, mode: MODE.lydian, layers: 3 };
     const a = renderAudio(new SynthesisCore(FS, 7), 10, { ...p });
     const b = renderAudio(new SynthesisCore(FS, 7), 10, { ...p });
     const c = renderAudio(new SynthesisCore(FS, 8), 10, { ...p });
     expect(b).toEqual(a);
     expect(c).not.toEqual(a);
-  });
+  }, RENDER_TIMEOUT_MS);
 
-  it('suena desde el primer medio segundo (HU-03)', () => {
+  it('is audible within the first half second (HU-03)', () => {
     const core = new SynthesisCore(FS, 1);
     core.setInitialLayers(2);
     const output = renderAudio(core, 0.5, { tempo: 66, mode: MODE.lydian, layers: 2 });
     expect(rms(output, 0, output.length)).toBeGreaterThan(0.01);
   });
 
-  it('en 60 s con cambios de nivel no produce NaN, desbordes ni saltos bruscos', () => {
+  it('over 60 s with level changes produces no NaN, overflow or abrupt jumps', () => {
     const core = new SynthesisCore(FS, 3);
     core.setInitialLayers(3);
     const output = renderAudio(core, 60, { tempo: 76, mode: MODE.majorPentatonic, layers: 3 }, (t, p) => {
       if (t >= 10) {
         p.mode = MODE.lydian;
         p.layers = 2;
-        p.tempo = Math.max(66, 76 - (t - 10) / 2); // rampa de 20 s de 76 a 66
+        p.tempo = Math.max(66, 76 - (t - 10) / 2); // 20 s ramp from 76 to 66
       }
       if (t >= 40) {
         p.mode = MODE.dronePentatonic;
@@ -82,51 +84,51 @@ describe('NucleoSintesis', () => {
       }
     }
     expect(nonFinite).toBe(0);
-    // Margen amplio bajo 1,0 antes del volumen maestro, el compresor y el recorte.
+    // Wide margin below 1.0 before the master volume, the compressor and the clipper.
     expect(max).toBeLessThan(0.8);
-    // Un chasquido es un salto de muestra a muestra muy superior al de estas frecuencias.
+    // A click is a sample-to-sample jump far larger than these frequencies produce.
     expect(maxJump).toBeLessThan(0.05);
-  }, 30_000);
+  }, RENDER_TIMEOUT_MS);
 
-  it('nunca roba una voz en 3 minutos con las tres capas al tempo más alto', () => {
+  it('never steals a voice in 3 minutes with all three layers at the highest tempo', () => {
     const core = new SynthesisCore(FS, 11);
     core.setInitialLayers(3);
     renderAudio(core, 180, { tempo: 76, mode: MODE.lydian, layers: 3 });
     expect(core.voiceSteals).toBe(0);
-  }, 30_000);
+  }, RENDER_TIMEOUT_MS);
 
-  it('respeta el tempo: pulsos 0 a 60 en 60,5 s a 60 BPM', () => {
+  it('keeps tempo: beats 0 to 60 in 60.5 s at 60 BPM', () => {
     const core = new SynthesisCore(FS, 1);
     renderAudio(core, 60.5, { tempo: 60, mode: MODE.lydian, layers: 1 });
-    // El primer pulso ocurre en la muestra 0 (pulso 0).
+    // The first beat happens at sample 0 (beat 0).
     expect(core.beat).toBe(60);
-  });
+  }, RENDER_TIMEOUT_MS);
 
-  it('aplica el cambio de modo al cerrar el ciclo y hace un fundido cruzado de 30 s', () => {
+  it('applies a mode change when the cycle closes, with a 30 s crossfade', () => {
     const core = new SynthesisCore(FS, 5, MODE.majorPentatonic);
     const p = { tempo: 60, mode: MODE.majorPentatonic as number, layers: 2 };
-    // A 60 BPM un ciclo de 16 pulsos dura 16 s. Se pide lidio en el pulso 5.
+    // At 60 BPM a 16-beat cycle lasts 16 s. Lydian is requested at beat 5.
     renderAudio(core, 5.5, p);
     expect(core.beat % BEATS_PER_CYCLE).toBe(5);
     p.mode = MODE.lydian;
-    renderAudio(core, 10, p); // hasta 15,5 s: el ciclo sigue abierto
+    renderAudio(core, 10, p); // up to 15.5 s: the cycle is still open
     expect(core.currentMode).toBe(MODE.majorPentatonic);
     expect(core.activeBank).toBe(0);
 
-    renderAudio(core, 1, p); // cruza el pulso 16 (16 s)
+    renderAudio(core, 1, p); // crosses beat 16 (16 s)
     expect(core.currentMode).toBe(MODE.lydian);
     expect(core.activeBank).toBe(1);
 
-    renderAudio(core, FADE_DURATION_S / 2 - 0.5, p); // ≈ 15 s de fundido
+    renderAudio(core, FADE_DURATION_S / 2 - 0.5, p); // ≈ 15 s into the fade
     expect(core.bankGain(1)).toBeCloseTo(0.5, 1);
     expect(core.bankGain(0)).toBeCloseTo(0.5, 1);
 
     renderAudio(core, FADE_DURATION_S / 2 + 1, p);
     expect(core.bankGain(1)).toBe(1);
     expect(core.bankGain(0)).toBe(0);
-  });
+  }, RENDER_TIMEOUT_MS);
 
-  it('enciende y apaga capas con un fundido de 30 s', () => {
+  it('turns layers on and off with a 30 s fade', () => {
     const core = new SynthesisCore(FS, 2);
     core.setInitialLayers(3);
     const p = { tempo: 66, mode: MODE.lydian, layers: 1 };
@@ -138,9 +140,9 @@ describe('NucleoSintesis', () => {
     renderAudio(core, FADE_DURATION_S / 2 + 0.1, p);
     expect(core.layerGain(2)).toBe(0);
     expect(core.layerGain(1)).toBe(0);
-  });
+  }, RENDER_TIMEOUT_MS);
 
-  it('acota las capas pedidas entre 1 y 3', () => {
+  it('clamps the requested layers between 1 and 3', () => {
     const core = new SynthesisCore(FS, 2);
     core.setInitialLayers(9);
     expect([core.layerGain(0), core.layerGain(1), core.layerGain(2)]).toEqual([1, 1, 1]);
