@@ -7,7 +7,7 @@ import { useAudioEngine, type AudioState } from './useAudioEngine';
 
 interface PlaybackPanelProps {
   readonly durationMin: number;
-  /** Inyectables para probar sin navegador. */
+  /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
 }
@@ -37,14 +37,14 @@ function isDialogOpen(): boolean {
 }
 
 /**
- * Reproducción de la sesión (RF-11, RF-18, HU-03, HU-06).
+ * Session playback (RF-11, RF-18, HU-03, HU-06).
  *
- * - Detener: botón fijo siempre visible, tecla Esc (si no hay un diálogo
- *   abierto) y Media Session. Silencio en 50 ms.
- * - Volumen de −40 a 0 dB, −12 dB por omisión, con aviso fijo.
- * - Aviso al terminar el plan y cada 60 minutos continuos. El fundido de
- *   20 s que sigue si no hay respuesta en 2 minutos se agenda en el reloj de
- *   audio al iniciar: ocurre aunque la pestaña esté en segundo plano.
+ * - Stop: an always visible fixed button, the Escape key (when no dialog is
+ *   open) and Media Session. Silence within 50 ms.
+ * - Volume from −40 to 0 dB, −12 dB by default, with a fixed notice.
+ * - Warning when the plan ends and every 60 continuous minutes. The 20 s fade
+ *   that follows two minutes without an answer is scheduled on the audio
+ *   clock at start: it happens even when the tab is in the background.
  */
 export function PlaybackPanel({
   durationMin,
@@ -54,7 +54,7 @@ export function PlaybackPanel({
   const control = useAudioEngine(factory);
   const { state, stop, engine: getEngine } = control;
   const [volumeDb, setVolumeDb] = useState(DEFAULT_VOLUME_DB);
-  // Índice del aviso abierto (0 = fin del plan); `null` si no hay aviso.
+  // Index of the open warning (0 = end of plan); `null` when there is none.
   const [warning, setWarning] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
   const sessionStartRef = useRef<number | null>(null);
@@ -113,8 +113,8 @@ export function PlaybackPanel({
     stopNow();
   };
 
-  // Revisa el reloj de audio para mostrar el aviso y para cerrar la sesión si
-  // el fundido terminó. El sonido no depende de este temporizador.
+  // Checks the audio clock to show the warning and to close the session once
+  // the fade has ended. The sound does not depend on this timer.
   useEffect(() => {
     if (state !== 'playing') {
       return undefined;
@@ -139,7 +139,7 @@ export function PlaybackPanel({
     };
   }, [state, getEngine, planDurationS, stopNow]);
 
-  // Tecla Esc: detiene la música, salvo que haya un diálogo abierto.
+  // Escape key: stops the music unless a dialog is open.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' && !isDialogOpen()) {
@@ -152,7 +152,7 @@ export function PlaybackPanel({
     };
   }, [stopNow]);
 
-  // Media Session: controles del sistema operativo y del auricular.
+  // Media Session: operating system and headset controls.
   useEffect(() => {
     if (!('mediaSession' in navigator)) {
       return undefined;
@@ -223,7 +223,7 @@ export function PlaybackPanel({
             setVolumeDb(applied);
           }}
         />
-        {/* Solo visual: el control ya anuncia el valor con aria-valuetext. */}
+        {/* Visual only: the control already announces the value with aria-valuetext. */}
         <span aria-hidden="true" style={{ fontVariantNumeric: 'tabular-nums' }}>
           {volumeDb} dB
         </span>

@@ -7,7 +7,7 @@ import { PlanPage } from '../features/plan/PlanPage';
 import { SessionPage } from '../features/session/SessionPage';
 import { Layout } from './Layout';
 
-/** Rutas del S3 según docs/pantallas.md (react-router en modo declarativo). */
+/** S3 routes from docs/pantallas.md (react-router in declarative mode). */
 export function AppRoutes(): React.JSX.Element {
   return (
     <Routes>

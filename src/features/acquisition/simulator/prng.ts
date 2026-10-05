@@ -1,11 +1,11 @@
-/** Generador de números uniformes en [0, 1). */
+/** Generator of uniform numbers in [0, 1). */
 export type RandomSource = () => number;
 
 /**
- * Generador pseudoaleatorio mulberry32 con semilla de 32 bits.
+ * mulberry32 pseudo-random generator with a 32-bit seed.
  *
- * Se usa en lugar de `Math.random` porque los escenarios del simulador deben
- * ser reproducibles (RF-02): la misma semilla produce siempre la misma serie.
+ * Used instead of `Math.random` because the simulator scenarios must be
+ * reproducible (RF-02): the same seed always yields the same series.
  */
 export function createRandom(seed: number): RandomSource {
   let state = seed | 0;
@@ -18,12 +18,12 @@ export function createRandom(seed: number): RandomSource {
 }
 
 /**
- * Muestra de una normal estándar N(0, 1) por el método de Box-Muller.
- * Consume exactamente dos valores del generador, lo que mantiene la
- * secuencia predecible.
+ * Sample of a standard normal N(0, 1) with the Box-Muller method.
+ * It consumes exactly two values from the generator, which keeps the
+ * sequence predictable.
  */
 export function standardNormal(random: RandomSource): number {
-  // 1 - u evita log(0): u pertenece a [0, 1), así que 1 - u pertenece a (0, 1].
+  // 1 - u avoids log(0): u is in [0, 1), so 1 - u is in (0, 1].
   const u1 = 1 - random();
   const u2 = random();
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);

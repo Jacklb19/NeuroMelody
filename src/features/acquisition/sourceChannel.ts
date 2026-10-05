@@ -5,7 +5,7 @@ import type {
 } from './contract';
 import { validateNotification } from './validateNotification';
 
-/** Error emitido por una fuente de señal hacia sus observadores. */
+/** Error emitted by a signal source to its observers. */
 export class SignalSourceError extends Error {
   constructor(message: string) {
     super(message);
@@ -14,9 +14,9 @@ export class SignalSourceError extends Error {
 }
 
 /**
- * Parte común de toda fuente: observadores, estado de conexión y validación
- * de frontera. Centralizarla garantiza que el simulador y la banda BLE
- * entreguen exactamente las mismas garantías al resto del sistema.
+ * Shared part of every source: observers, connection state and boundary
+ * validation. Centralizing it guarantees that the simulator and the BLE strap
+ * give exactly the same guarantees to the rest of the system.
  */
 export class SourceChannel {
   readonly #observers = new Set<SourceObserver>();
@@ -44,12 +44,12 @@ export class SourceChannel {
     }
   }
 
-  /** Reinicia la referencia de tiempo al iniciar una nueva conexión. */
+  /** Resets the time reference when a new connection starts. */
   resetTime(): void {
     this.#lastTimeMs = 0;
   }
 
-  /** Entrega la notificación si es válida; si no, la descarta y avisa del error. */
+  /** Delivers the notification if valid; otherwise discards it and reports the error. */
   notify(notification: BeatNotification): void {
     const result = validateNotification(notification, this.#lastTimeMs);
     if (!result.valid) {

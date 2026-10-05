@@ -1,21 +1,21 @@
 import { MODE, type Mode } from '../core/theory';
 
 /**
- * Niveles musicales de la guía (docs/diseno-musical.md). Valores iniciales
- * aprobados en el S3; se ajustan con oyentes al cerrar el S4.
+ * Music levels of the guidance (docs/diseno-musical.md). Initial values
+ * approved in S3; they are tuned with listeners when S4 closes.
  */
 export type LevelId = 'high' | 'intermediate' | 'target';
 
 export interface MusicLevel {
   readonly id: LevelId;
-  /** Nombre descriptivo para la interfaz. */
+  /** Descriptive name for the interface. */
   readonly name: string;
   readonly tempo: number;
   readonly mode: Mode;
   readonly layers: number;
-  /** Frecuencia de corte del pasa bajos, en Hz. */
+  /** Low-pass cutoff frequency, in Hz. */
   readonly brightnessHz: number;
-  /** Ganancia de la señal reverberada (0 a 1). */
+  /** Gain of the reverberated signal (0 to 1). */
   readonly reverb: number;
 }
 
@@ -41,7 +41,7 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
   target: {
     id: 'target',
     name: 'Activación baja (meta)',
-    // Centro del rango de 58 a 60 BPM del diseño.
+    // Middle of the 58 to 60 BPM range of the design.
     tempo: 59,
     mode: MODE.dronePentatonic,
     layers: 2,
@@ -52,5 +52,5 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
 
 export const LEVEL_IDS: readonly LevelId[] = ['high', 'intermediate', 'target'];
 
-/** Los primeros 3 minutos de cada sesión suenan en Intermedio (calibración). */
+/** The first 3 minutes of every session play at Intermediate (calibration). */
 export const CALIBRATION_LEVEL: LevelId = 'intermediate';

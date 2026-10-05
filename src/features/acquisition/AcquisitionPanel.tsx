@@ -13,7 +13,7 @@ import {
 } from './simulator/SimulatedSource';
 import { useSignalSource } from './useSignalSource';
 
-/** Semilla fija: la misma sesión simulada se repite al reconectar (RF-02). */
+/** Fixed seed: the same simulated session repeats on reconnect (RF-02). */
 export const SIMULATOR_SEED = 1;
 
 export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalSource;
@@ -45,17 +45,17 @@ function toSpeed(value: string): Speed {
 }
 
 interface AcquisitionPanelProps {
-  /** Fuente actual; la guarda el componente padre para compartirla con el análisis. */
+  /** Current source; the parent keeps it so it can be shared with the analysis. */
   readonly source: SignalSource | null;
   readonly onSourceChange: (source: SignalSource) => void;
-  /** Permite inyectar un reloj falso en las pruebas. */
+  /** Lets tests inject a fake clock. */
   readonly createSource?: CreateSimulatedSource;
 }
 
 /**
- * Panel de la capa de adquisición: elige el escenario y la velocidad del
- * simulador, conecta o desconecta, y muestra siempre el estado de la
- * conexión (HU-01) junto con la última lectura recibida.
+ * Acquisition layer panel: picks the simulator scenario and speed, connects
+ * or disconnects, and always shows the connection state (HU-01) with the
+ * latest reading received.
  */
 export function AcquisitionPanel({
   source,
@@ -67,7 +67,7 @@ export function AcquisitionPanel({
   const reading = useSignalSource(source);
   const titleId = useId();
 
-  // Detiene la fuente al reemplazarla o al desmontar el panel.
+  // Stops the source when it is replaced or the panel unmounts.
   useEffect(
     () => () => {
       void source?.disconnect();

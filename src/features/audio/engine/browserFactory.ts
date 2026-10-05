@@ -1,7 +1,7 @@
 /**
- * Fábrica real del motor de audio. Es el único módulo que importa los
- * worklets: Vite los empaqueta como archivos del mismo origen, cargados por
- * audioWorklet.addModule() bajo la CSP `script-src 'self'`.
+ * Real audio engine factory. It is the only module that imports the
+ * worklets: Vite bundles them as same-origin files, loaded by
+ * audioWorklet.addModule() under the `script-src 'self'` CSP.
  */
 import urlRecortador from '../worklet/clipper.worklet.ts?worker&url';
 import urlSintetizador from '../worklet/synthesizer.worklet.ts?worker&url';
@@ -15,7 +15,7 @@ export const browserFactory: AudioFactory = {
     new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: 'playback' }),
   modules: [urlSintetizador, urlRecortador],
   createWorkletNode: (context, name, options) => new AudioWorkletNode(context, name, options),
-  // SharedArrayBuffer solo existe con aislamiento de origen cruzado (COOP y COEP).
+  // SharedArrayBuffer only exists with cross-origin isolation (COOP and COEP).
   createTelemetryBuffer: () => (globalThis.crossOriginIsolated ? createTelemetryBuffer() : null),
   createAudioElement: () => document.createElement('audio'),
   wait: (ms) =>

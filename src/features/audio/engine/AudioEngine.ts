@@ -11,27 +11,27 @@ import { LEVELS, type LevelId } from './levels';
 import { TIMBRE_RAMP_DURATION_S, dbToGain, tempoRampDurationS, gainToDb } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 
-/** Volumen por omisión y rango del control (RF-18). */
+/** Default volume and control range (RF-18). */
 export const DEFAULT_VOLUME_DB = -12;
 export const MIN_VOLUME_DB = -40;
 export const MAX_VOLUME_DB = 0;
 
-/** Limitador al final de la cadena (antes del recorte de −1 dBFS). */
+/** Limiter at the end of the chain (before the −1 dBFS clipper). */
 export const LIMITER = { thresholdDb: -6, ratio: 20, kneeDb: 0, attackS: 0.003, releaseS: 0.25 } as const;
 
 export const FADE_IN_S = 1.5;
-/** Detener: rampa a cero en 50 ms y pausa del contexto (HU-06: silencio en menos de 200 ms). */
+/** Stop: ramp to zero in 50 ms and suspend the context (HU-06: silence in under 200 ms). */
 export const STOP_RAMP_S = 0.05;
 export const FINAL_FADE_S = 20;
 const RESTORE_AFTER_CANCEL_S = 2;
 
-/** Todo lo que el motor necesita del entorno; inyectable para probarlo sin navegador. */
+/** Everything the engine needs from the environment; injectable to test it without a browser. */
 export interface AudioFactory {
   createAudioContext(): AudioContext;
-  /** URLs de los módulos del AudioWorklet (sintetizador y recortador). */
+  /** URLs of the AudioWorklet modules (synthesizer and clipper). */
   readonly modules: readonly string[];
   createWorkletNode(context: AudioContext, name: string, options: AudioWorkletNodeOptions): AudioWorkletNode;
-  /** `null` sin aislamiento de origen cruzado: no hay telemetría. */
+  /** `null` without cross-origin isolation: no telemetry. */
   createTelemetryBuffer(): SharedArrayBuffer | null;
   createAudioElement(): HTMLAudioElement;
   wait(ms: number): Promise<void>;
@@ -41,8 +41,8 @@ export interface EngineOptions {
   readonly seed: number;
   readonly initialLevel: LevelId;
   /**
-   * Respaldo para Media Session: la salida pasa por un elemento `<audio>`.
-   * Con él, `playbackStats` deja de medir lo que realmente suena.
+   * Media Session fallback: the output goes through an `<audio>` element.
+   * With it, `playbackStats` no longer measures what is actually heard.
    */
   readonly outputThroughAudioElement: boolean;
 }
@@ -51,12 +51,12 @@ export type EngineState = 'ready' | 'playing' | 'stopped' | 'closed';
 
 export interface PeakReading {
   readonly blocks: number;
-  /** Pico de la salida desde la lectura anterior, en dBFS; `null` sin datos. */
+  /** Output peak since the previous reading, in dBFS; `null` without data. */
   readonly peakDbfs: number | null;
 }
 
 export interface EngineStats extends PlaybackStatistics {
-  /** `false` si la salida va por un `<audio>` y la métrica no refleja lo que suena. */
+  /** `false` when the output goes through an `<audio>` and the metric does not reflect what is heard. */
   readonly measuringRealOutput: boolean;
 }
 
@@ -76,7 +76,7 @@ function getParam(node: AudioWorkletNode, name: ParamName): AudioParam {
   return param;
 }
 
-/** Deja un parámetro en su valor actual y descarta lo programado desde `t`. */
+/** Holds a parameter at its current value and drops what is scheduled from `t`. */
 function hold(param: AudioParam, t: number): number {
   const current = param.value;
   param.cancelScheduledValues(t);
@@ -85,12 +85,12 @@ function hold(param: AudioParam, t: number): number {
 }
 
 /**
- * Grafo de audio de la sesión, en el hilo principal. Solo programa: los
- * valores se interpolan en el hilo de audio con la automatización de
- * AudioParam (ADR-07), así que nada sonoro depende de temporizadores.
+ * Session audio graph, on the main thread. It only schedules: values are
+ * interpolated on the audio thread by AudioParam automation (ADR-07), so
+ * nothing audible depends on timers.
  *
- * sintetizador → pasa bajos (brillo) → seco + reverberación → volumen →
- * envolvente de sesión → limitador → recorte (−1 dBFS) → salida
+ * synthesizer → low-pass (brightness) → dry + reverb → volume →
+ * session envelope → limiter → clipper (−1 dBFS) → output
  */
 export class AudioEngine {
   readonly #context: AudioContext;
@@ -117,7 +117,7 @@ export class AudioEngine {
     this.#level = level;
   }
 
-  /** Crea el contexto, carga los módulos del worklet y arma el grafo (en silencio). */
+  /** Creates the context, loads the worklet modules and builds the graph (silent). */
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
     for (const moduleUrl of factory.modules) {
@@ -212,7 +212,7 @@ export class AudioEngine {
     return this.#level;
   }
 
-  /** Tiempo del reloj de audio, en segundos: la referencia de toda la temporización. */
+  /** Audio clock time, in seconds: the reference for all timing. */
   get audioTime(): number {
     return this.#context.currentTime;
   }
@@ -225,7 +225,7 @@ export class AudioEngine {
     return this.#audioElement !== null;
   }
 
-  /** Reanuda el contexto y sube la envolvente de sesión en 1,5 s. */
+  /** Resumes the context and raises the session envelope over 1.5 s. */
   async start(): Promise<void> {
     await this.#context.resume();
     if (this.#audioElement !== null) {
@@ -239,11 +239,11 @@ export class AudioEngine {
   }
 
   /**
-   * Programa la transición gradual hacia un nivel (RF-10): tempo en
-   * máx(20 s, |ΔBPM| × 2 s), brillo y reverberación en 45 s. El modo y las
-   * capas los aplica el sintetizador con sus fundidos de 30 s.
+   * Schedules the gradual transition to a level (RF-10): tempo over
+   * max(20 s, |ΔBPM| × 2 s), brightness and reverb over 45 s. The synthesizer
+   * applies mode and layers with its 30 s fades.
    *
-   * @returns la duración de la rampa de tempo, en segundos.
+   * @returns the tempo ramp duration, in seconds.
    */
   applyLevel(id: LevelId): number {
     const level = LEVELS[id];
@@ -269,15 +269,15 @@ export class AudioEngine {
     return duration;
   }
 
-  /** Fija el volumen dentro de −40 a 0 dB y devuelve el valor aplicado. */
+  /** Sets the volume within −40 to 0 dB and returns the applied value. */
   setVolumeDb(db: number): number {
     const clamped = Math.min(MAX_VOLUME_DB, Math.max(MIN_VOLUME_DB, db));
-    // Constante de tiempo corta: responde de inmediato sin chasquidos.
+    // Short time constant: responds immediately without clicks.
     this.#nodes.volume.gain.setTargetAtTime(dbToGain(clamped), this.#context.currentTime, 0.05);
     return clamped;
   }
 
-  /** Detención inmediata: rampa a cero en 50 ms y pausa del contexto. */
+  /** Immediate stop: ramp to zero in 50 ms and suspend the context. */
   async stop(): Promise<void> {
     if (this.#state !== 'playing') {
       return;
@@ -287,21 +287,21 @@ export class AudioEngine {
     hold(envelope, t);
     envelope.linearRampToValueAtTime(0, t + STOP_RAMP_S);
     this.#state = 'stopped';
-    // La rampa ya silencia en el hilo de audio; la espera solo evita cortarla.
+    // The ramp already silences on the audio thread; the wait only avoids cutting it short.
     await this.#factory.wait(STOP_RAMP_S * 1000 + 10);
     this.#audioElement?.pause();
     await this.#context.suspend();
   }
 
   /**
-   * Programa en el reloj de audio un fundido de 20 s que empieza dentro de
-   * `enSegundos` (fin de sesión sin respuesta). Ocurre aunque la pestaña esté
-   * en segundo plano.
+   * Schedules on the audio clock a 20 s fade starting `inSeconds` from now
+   * (end of session without an answer). It happens even when the tab is in
+   * the background.
    *
-   * @returns el instante (reloj de audio) en que termina el fundido.
+   * @returns the instant (audio clock) at which the fade ends.
    */
   scheduleFinalFade(inSeconds: number): number {
-    // Solo agenda a futuro: no cancela el fundido de entrada si aún está en curso.
+    // Only schedules ahead: it does not cancel the start fade if it is still running.
     const startTime = this.#context.currentTime + Math.max(0, inSeconds);
     const envelope = this.#nodes.envelope.gain;
     envelope.setValueAtTime(1, startTime);
@@ -309,7 +309,7 @@ export class AudioEngine {
     return startTime + FINAL_FADE_S;
   }
 
-  /** Cancela un fundido final programado y vuelve al volumen pleno en 2 s. */
+  /** Cancels a scheduled final fade and returns to full level over 2 s. */
   cancelFinalFade(): void {
     const t = this.#context.currentTime;
     const envelope = this.#nodes.envelope.gain;
@@ -322,7 +322,7 @@ export class AudioEngine {
     return readStats === null ? null : { ...readStats, measuringRealOutput: this.#audioElement === null };
   }
 
-  /** Pico de la salida (tras el recorte) desde la lectura anterior. */
+  /** Output peak (after the clipper) since the previous reading. */
   readPeak(): PeakReading | null {
     if (this.#telemetry === null) {
       return null;

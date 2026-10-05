@@ -1,14 +1,14 @@
 /**
- * Material musical fijo de la sesión (docs/diseno-musical.md): centro tonal
- * en re, bordón una octava abajo y los tres modos de los niveles.
+ * Fixed musical material of the session (docs/diseno-musical.md): tonal
+ * center on D, a drone one octave below and the three level modes.
  */
 
-/** Re3 (≈ 146,8 Hz): centro tonal fijo durante toda la sesión. */
+/** D3 (≈ 146.8 Hz): tonal center fixed for the whole session. */
 export const MIDI_TONIC = 50;
-/** Re2, una octava bajo la tónica. */
+/** D2, one octave below the tonic. */
 export const MIDI_DRONE = MIDI_TONIC - 12;
 
-/** Modos, en el orden en que los recibe el parámetro `modo` del sintetizador. */
+/** Modes, in the order the synthesizer `mode` parameter receives them. */
 export const MODE = {
   majorPentatonic: 0,
   lydian: 1,
@@ -18,9 +18,9 @@ export const MODE = {
 export type Mode = (typeof MODE)[keyof typeof MODE];
 
 /**
- * Semitonos sobre la tónica. La pentatónica mayor de re (re, mi, fa#, la, si)
- * está contenida en el lidio de re, así que los fundidos entre ambos
- * comparten notas.
+ * Semitones above the tonic. D major pentatonic (D, E, F#, A, B) is
+ * contained in D lydian, so fades between the two share notes.
+ *
  */
 export const SCALES: Readonly<Record<Mode, readonly number[]>> = {
   [MODE.majorPentatonic]: [0, 2, 4, 7, 9],
@@ -36,7 +36,7 @@ export function midiFrequency(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-/** Nota MIDI del grado `grado` de la escala (admite grados por encima de la octava). */
+/** MIDI note of scale degree `degree` (degrees above the octave are allowed). */
 export function degreeNote(scale: readonly number[], degree: number, midiBase: number): number {
   const octave = Math.floor(degree / scale.length);
   const index = degree - octave * scale.length;

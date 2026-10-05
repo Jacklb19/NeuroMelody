@@ -13,7 +13,7 @@ import {
 
 const registered = new Map<string, ProcessorClass>();
 
-// Ámbito del AudioWorklet simulado: los módulos lo leen de globalThis al cargarse.
+// Simulated AudioWorklet scope: the modules read it from globalThis when loaded.
 beforeAll(async () => {
   Object.assign(globalThis, {
     sampleRate: 48_000,
@@ -40,7 +40,7 @@ function create(name: string, processorOptions: unknown) {
   return new Processor({ processorOptions });
 }
 
-describe('procesador sintetizador', () => {
+describe('synthesizer processor', () => {
   const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2 };
   const params: BlockParams = {
     tempo: new Float32Array([66]),
@@ -48,7 +48,7 @@ describe('procesador sintetizador', () => {
     layers: new Float32Array([2]),
   };
 
-  it('se registra con sus parámetros de tasa k', () => {
+  it('registers with its k-rate parameters', () => {
     const Processor = registered.get(SYNTHESIZER_NAME) as unknown as {
       parameterDescriptors: typeof SYNTHESIZER_DESCRIPTORS;
     };
@@ -59,7 +59,7 @@ describe('procesador sintetizador', () => {
     ]);
   });
 
-  it('produce sonido y copia el canal izquierdo al derecho', () => {
+  it('produces sound and copies the left channel to the right', () => {
     const processor = create(SYNTHESIZER_NAME, options);
     const output = block(2);
     let energy = 0;
@@ -71,18 +71,18 @@ describe('procesador sintetizador', () => {
     expect(energy).toBeGreaterThan(0);
   });
 
-  it('tolera una salida sin canales', () => {
+  it('tolerates an output without channels', () => {
     expect(create(SYNTHESIZER_NAME, options).process([], [], params)).toBe(true);
   });
 
-  it('rechaza opciones no válidas', () => {
+  it('rejects invalid options', () => {
     expect(() => create(SYNTHESIZER_NAME, { ...options, initialMode: 7 })).toThrow(TypeError);
     expect(() => create(SYNTHESIZER_NAME, undefined)).toThrow(TypeError);
   });
 });
 
-describe('procesador recortador', () => {
-  it('limita cada muestra al techo y publica el pico en la telemetría', () => {
+describe('clipper processor', () => {
+  it('limits every sample to the ceiling and publishes the peak to telemetry', () => {
     const buffer = createTelemetryBuffer();
     const processor = create(CLIPPER_NAME, { telemetry: buffer });
     const input = block(2);
@@ -99,7 +99,7 @@ describe('procesador recortador', () => {
     expect(reading.max).toBeCloseTo(CEILING * Math.tanh(3 / CEILING), 5);
   });
 
-  it('sin entrada conectada entrega silencio', () => {
+  it('outputs silence without a connected input', () => {
     const processor = create(CLIPPER_NAME, { telemetry: null });
     const output = block(1);
     output[0]?.fill(1);
@@ -108,8 +108,8 @@ describe('procesador recortador', () => {
   });
 });
 
-describe('validación de opciones', () => {
-  it('acepta opciones correctas', () => {
+describe('options validation', () => {
+  it('accepts valid options', () => {
     expect(readSynthesizerOptions({ seed: 3, initialMode: 2, initialLayers: 3 })).toEqual({
       seed: 3,
       initialMode: 2,
@@ -126,7 +126,7 @@ describe('validación de opciones', () => {
     expect(() => readSynthesizerOptions(options)).toThrow(TypeError);
   });
 
-  it('rechaza una telemetría que no es memoria compartida', () => {
+  it('rejects telemetry that is not shared memory', () => {
     expect(() => readClipperOptions({ telemetry: new ArrayBuffer(8) })).toThrow(TypeError);
     expect(() => readClipperOptions(null)).toThrow(TypeError);
   });

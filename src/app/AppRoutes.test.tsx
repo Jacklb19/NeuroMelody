@@ -31,8 +31,8 @@ function renderWith(route: string, accepted = false) {
 
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
-describe('rutas', () => {
-  it('el inicio lleva al plan y a la sesión; la navegación no incluye el diagnóstico', () => {
+describe('routes', () => {
+  it('the home page links to the plan and the session; the navigation leaves out diagnostics', () => {
     renderWith('/');
     expect(screen.getByRole('heading', { level: 1, name: 'NeuroMelody' })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: /principal/i });
@@ -42,12 +42,12 @@ describe('rutas', () => {
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
-  it('ofrece un enlace para saltar al contenido', () => {
+  it('offers a skip-to-content link', () => {
     renderWith('/');
     expect(screen.getByRole('link', { name: /saltar al contenido/i })).toHaveAttribute('href', '#contenido');
   });
 
-  it('exige las advertencias antes de la sesión y vuelve a la sesión pedida al aceptarlas (RF-17)', async () => {
+  it('requires the warnings before the session and returns to the requested session once accepted (RF-17)', async () => {
     const user = userEvent.setup();
     const { registry } = renderWith('/session?duration=30');
 
@@ -64,14 +64,14 @@ describe('rutas', () => {
     expect(screen.getByText(/plan: 30 minutos/i)).toBeInTheDocument();
   });
 
-  it('con las advertencias aceptadas entra directo a la sesión con sus paneles', () => {
+  it('with the warnings accepted it goes straight to the session and its panels', () => {
     renderWith('/session', true);
     expect(screen.getByText(/plan: 20 minutos/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
   });
 
-  it('el plan permite elegir la duración con el teclado y la lleva a la sesión', async () => {
+  it('the plan lets the user pick the duration with the keyboard and passes it to the session', async () => {
     const user = userEvent.setup();
     renderWith('/plan', true);
 
@@ -82,24 +82,24 @@ describe('rutas', () => {
     expect(currentPath()).toBe('/session?duration=45');
   });
 
-  it('el diagnóstico sigue accesible por su ruta', () => {
+  it('diagnostics stays reachable through its route', () => {
     renderWith('/diagnostics');
     expect(screen.getByRole('heading', { level: 1, name: /diagnóstico de la plataforma/i })).toBeInTheDocument();
   });
 
-  it('una ruta desconocida vuelve al inicio', () => {
+  it('an unknown route goes back home', () => {
     renderWith('/no-existe');
     expect(currentPath()).toBe('/');
   });
 
-  it('pone un título de documento por pantalla', () => {
+  it('sets a document title per screen', () => {
     renderWith('/plan');
     expect(document.title).toBe('Plan de sesión · NeuroMelody');
   });
 });
 
-describe('advertencias (R-06)', () => {
-  it('muestran el carácter no clínico y complementario del documento', () => {
+describe('warnings (R-06)', () => {
+  it('state the non-clinical, complementary nature from the definition document', () => {
     renderWith('/warnings');
     const text = document.body.textContent;
     expect(text).toMatch(/herramienta de bienestar y acompañamiento/i);
@@ -110,7 +110,7 @@ describe('advertencias (R-06)', () => {
     expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(WARNINGS.length);
   });
 
-  it('no usan lenguaje clínico ni promesas terapéuticas', () => {
+  it('use no clinical language and make no therapeutic promises', () => {
     renderWith('/warnings');
     expect(document.body.textContent).not.toMatch(
       /diagnós|arritmi|anómal|ectópic|prematur|terapia|cura\b|alivia|reduce el dolor/i,
@@ -118,7 +118,7 @@ describe('advertencias (R-06)', () => {
   });
 });
 
-describe('leerDuracion', () => {
+describe('readDuration', () => {
   it.each([
     ['30', 30],
     ['10', 10],
@@ -130,7 +130,7 @@ describe('leerDuracion', () => {
     expect(readDuration(value)).toBe(expected);
   });
 
-  it('usa 20 minutos si no hay valor', () => {
+  it('uses 20 minutes when there is no value', () => {
     expect(readDuration(null)).toBe(20);
   });
 });

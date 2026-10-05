@@ -4,25 +4,25 @@ import { AudioEngine, type AudioFactory, type EngineOptions } from '../engine/Au
 export type AudioState = 'idle' | 'loading' | 'playing' | 'stopped' | 'error';
 
 export interface AudioEngineControl {
-  /** Motor actual; `null` antes del primer inicio. */
+  /** Current engine; `null` before the first start. */
   readonly engine: () => AudioEngine | null;
   readonly state: AudioState;
   readonly error: string | null;
   readonly start: (options: EngineOptions, volumeDb: number) => Promise<AudioEngine | null>;
   readonly stop: () => Promise<void>;
-  /** Cierra el motor para crear uno nuevo en el próximo inicio (por ejemplo, con otra salida). */
+  /** Closes the engine so a new one is created on the next start (for example, with another output). */
   readonly discard: () => Promise<void>;
 }
 
 async function defaultFactory(): Promise<AudioFactory> {
-  // Se carga al primer inicio: separa el código de audio del paquete inicial.
+  // Loaded on first start: keeps the audio code out of the initial bundle.
   const factoryModule = await import('../engine/browserFactory');
   return factoryModule.browserFactory;
 }
 
 /**
- * Ciclo de vida del motor de audio para un componente. El contexto se crea
- * en el primer inicio, que siempre ocurre tras una interacción del usuario.
+ * Audio engine lifecycle for a component. The context is created on the
+ * first start, which always follows a user interaction.
  */
 export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const engineRef = useRef<AudioEngine | null>(null);
@@ -57,7 +57,7 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
     if (engine?.state !== 'playing') {
       return;
     }
-    // La rampa de 50 ms ya quedó programada: la interfaz refleja la detención de inmediato.
+    // The 50 ms ramp is already scheduled: the interface reflects the stop right away.
     const stopping = engine.stop();
     setState('stopped');
     await stopping;

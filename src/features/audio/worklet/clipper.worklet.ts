@@ -1,7 +1,7 @@
 /**
- * Último eslabón de la cadena: recorte suave con techo de −1 dBFS (RF-18).
- * El compresor nativo no garantiza el máximo; este recorte sí. Publica el
- * pico de cada bloque en el búfer circular de telemetría.
+ * Last link of the chain: soft clipping with a −1 dBFS ceiling (RF-18).
+ * The native compressor does not guarantee the maximum; this clipper does.
+ * It publishes each block peak to the telemetry ring buffer.
  */
 import { softClipBlock } from '../core/softClip';
 import { TelemetryWriter } from '../telemetry/telemetryRing';

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { CEILING, softClipBlock, softClip } from './softClip';
 
-describe('recortarSuave', () => {
-  it('el techo corresponde a −1 dBFS', () => {
+describe('softClip', () => {
+  it('the ceiling is −1 dBFS', () => {
     expect(20 * Math.log10(CEILING)).toBeCloseTo(-1, 10);
   });
 
@@ -10,13 +10,13 @@ describe('recortarSuave', () => {
     expect(Math.abs(softClip(x))).toBeLessThanOrEqual(CEILING);
   });
 
-  it('casi no modifica las señales pequeñas', () => {
+  it('barely changes small signals', () => {
     expect(softClip(0)).toBe(0);
     expect(softClip(0.1)).toBeCloseTo(0.1, 2);
     expect(Math.abs(softClip(0.1) - 0.1) / 0.1).toBeLessThan(0.005);
   });
 
-  it('es monótono y simétrico', () => {
+  it('is monotonic and symmetric', () => {
     let previous = softClip(-3);
     for (let x = -3; x <= 3; x += 0.01) {
       const value = softClip(x);
@@ -27,8 +27,8 @@ describe('recortarSuave', () => {
   });
 });
 
-describe('recortarBloque', () => {
-  it('recorta en su sitio y devuelve el pico', () => {
+describe('softClipBlock', () => {
+  it('clips in place and returns the peak', () => {
     const block = new Float32Array([0.1, -5, 0.5, 3]);
     const peak = softClipBlock(block);
     expect(Math.max(...Array.from(block, Math.abs))).toBeLessThanOrEqual(CEILING);

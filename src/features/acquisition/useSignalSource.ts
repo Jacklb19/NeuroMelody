@@ -1,11 +1,11 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import type { ConnectionState, SignalSource, BeatNotification } from '../acquisition/contract';
 
-/** Lo que la interfaz necesita saber de una fuente de señal. */
+/** What the interface needs to know about a signal source. */
 export interface SourceReading {
   readonly state: ConnectionState;
   readonly last: BeatNotification | null;
-  /** Intervalos RR recibidos desde la conexión. */
+  /** RR intervals received since connection. */
   readonly receivedBeats: number;
   readonly error: string | null;
 }
@@ -28,17 +28,17 @@ const STORE_WITHOUT_SOURCE: ReadingStore = {
 };
 
 /**
- * Adapta una fuente al modelo de almacén externo de React: cada evento crea
- * una lectura nueva e inmutable, y `leer` devuelve siempre la misma
- * referencia mientras no haya cambios.
+ * Adapts a source to React's external store model: every event creates a new,
+ * immutable reading, and `read` keeps returning the same reference while
+ * nothing changes.
  */
 function createReadingStore(source: SignalSource): ReadingStore {
   let reading: SourceReading = { ...READING_WITHOUT_SOURCE, state: source.state };
 
   return {
     subscribe: (onStoreChange) => {
-      // La fuente pudo cambiar de estado entre la creación del almacén y la
-      // suscripción; React vuelve a leer tras suscribirse y lo detecta.
+      // The source may have changed state between creating the store and
+      // subscribing; React reads again after subscribing and notices it.
       if (reading.state !== source.state) {
         reading = { ...reading, state: source.state };
       }
@@ -65,7 +65,7 @@ function createReadingStore(source: SignalSource): ReadingStore {
   };
 }
 
-/** Suscribe el componente a una fuente de señal (o a ninguna, con `null`). */
+/** Subscribes the component to a signal source (or to none, with `null`). */
 export function useSignalSource(source: SignalSource | null): SourceReading {
   const store = useMemo(
     () => (source === null ? STORE_WITHOUT_SOURCE : createReadingStore(source)),

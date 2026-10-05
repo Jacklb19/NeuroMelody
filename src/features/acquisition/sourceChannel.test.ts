@@ -6,8 +6,8 @@ function notification(timeMs: number, heartRate = 70): BeatNotification {
   return { timeMs, heartRate, rrIntervalsMs: [857], sensorContact: null };
 }
 
-describe('CanalFuente', () => {
-  it('empieza desconectado y avisa los cambios de estado una sola vez', () => {
+describe('SourceChannel', () => {
+  it('starts disconnected and reports each state change once', () => {
     const channel = new SourceChannel();
     const onStateChange = vi.fn();
     channel.subscribe({ onStateChange });
@@ -20,7 +20,7 @@ describe('CanalFuente', () => {
     expect(onStateChange.mock.calls).toEqual([['connecting'], ['connected']]);
   });
 
-  it('entrega las notificaciones válidas a todos los observadores', () => {
+  it('delivers valid notifications to every observer', () => {
     const channel = new SourceChannel();
     const a = vi.fn();
     const b = vi.fn();
@@ -33,7 +33,7 @@ describe('CanalFuente', () => {
     expect(b).toHaveBeenCalledWith(notification(1000));
   });
 
-  it('descarta una notificación inválida y emite un error', () => {
+  it('discards an invalid notification and emits an error', () => {
     const channel = new SourceChannel();
     const onNotification = vi.fn();
     const onError = vi.fn();
@@ -46,7 +46,7 @@ describe('CanalFuente', () => {
     expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(SignalSourceError);
   });
 
-  it('rechaza tiempos que retroceden hasta que se reinicia el tiempo', () => {
+  it('rejects times that go backwards until time is reset', () => {
     const channel = new SourceChannel();
     const onNotification = vi.fn();
     const onError = vi.fn();
@@ -61,7 +61,7 @@ describe('CanalFuente', () => {
     expect(onNotification).toHaveBeenCalledTimes(2);
   });
 
-  it('deja de avisar a un observador dado de baja', () => {
+  it('stops notifying an unsubscribed observer', () => {
     const channel = new SourceChannel();
     const onNotification = vi.fn();
     const unsubscribe = channel.subscribe({ onNotification });

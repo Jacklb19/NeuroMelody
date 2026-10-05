@@ -8,16 +8,16 @@ import type {
 import { SCENARIOS, type ScenarioId } from './scenarios';
 import { createRrGenerator, type RrGenerator, type Beat } from './rrGenerator';
 
-/** Factores de aceleración del tiempo de señal permitidos (RF-02). */
+/** Allowed signal time speed-up factors (RF-02). */
 export type Speed = 1 | 2 | 5 | 10;
 export const SPEEDS: readonly Speed[] = [1, 2, 5, 10];
 
-/** Fuente de tiempo real en ms; inyectable para pruebas deterministas. */
+/** Real time source in ms; injectable for deterministic tests. */
 export interface Clock {
   nowMs(): number;
 }
 
-/** Ejecuta una tarea periódica y devuelve la función que la cancela. */
+/** Runs a periodic task and returns the function that cancels it. */
 export interface Scheduler {
   repeat(task: () => void, periodMs: number): () => void;
 }
@@ -43,21 +43,21 @@ export interface SimulatedSourceOptions {
   readonly scheduler?: Scheduler;
 }
 
-/** Periodo de las notificaciones en tiempo de señal, como una banda BLE. */
+/** Notification period in signal time, like a BLE strap. */
 export const NOTIFICATION_PERIOD_MS = 1000;
-/** Periodo real con que se revisa si hay notificaciones pendientes. */
+/** Real period at which pending notifications are checked. */
 export const CHECK_PERIOD_MS = 100;
-/** Latidos recientes promediados para reportar la frecuencia cardíaca. */
+/** Recent beats averaged to report the heart rate. */
 const BEATS_FOR_HR = 4;
 
 /**
- * Fuente de señal simulada (RF-02) que cumple el mismo contrato que la banda BLE.
+ * Simulated signal source (RF-02) that fulfils the same contract as the BLE strap.
  *
- * La serie depende solo del escenario, la semilla y el tiempo de señal, nunca
- * de cuándo dispara el temporizador: en cada revisión se emiten todas las
- * notificaciones pendientes hasta el tiempo actual. Así, si el navegador
- * retrasa los temporizadores (pestaña en segundo plano), no se pierden datos
- * y la serie no cambia; solo llegan más tarde.
+ * The series depends only on the scenario, the seed and signal time, never on
+ * when the timer fires: every check emits all notifications pending up to
+ * the current time. So if the browser delays timers (background tab), no
+ * data is lost and the series does not change; it just arrives later.
+ *
  */
 export class SimulatedSource implements SignalSource {
   readonly kind = 'simulator' as const;
@@ -121,8 +121,8 @@ export class SimulatedSource implements SignalSource {
   #emitPending(): void {
     const signalTimeMs =
       (this.#clock.nowMs() - this.#realStartMs) * this.#options.speed;
-    // Se comprueba la conexión en cada vuelta: un observador puede desconectar
-    // la fuente mientras recibe una notificación.
+    // The connection is checked on every pass: an observer may disconnect
+    // the source while it receives a notification.
     while (
       this.#cancelCheck !== null &&
       this.#nextNotificationMs <= signalTimeMs
@@ -147,7 +147,7 @@ export class SimulatedSource implements SignalSource {
     this.#pendingBeat = pending;
 
     if (this.#noContact(timeMs)) {
-      // Como una banda real: sigue notificando, sin RR y con la última FC.
+      // Like a real strap: keeps notifying, with no RR and the last heart rate.
       return {
         timeMs,
         heartRate: this.#heartRate(pending),
@@ -166,13 +166,13 @@ export class SimulatedSource implements SignalSource {
   }
 
   #heartRate(pending: Beat): number {
-    // Antes del primer latido completo se usa el que está en curso.
+    // Before the first complete beat, the one in progress is used.
     const reference = this.#recentRr.length > 0 ? this.#recentRr : [pending.rrMs];
     const meanRr = reference.reduce((sum, rr) => sum + rr, 0) / reference.length;
     return Math.round(60000 / meanRr);
   }
 
-  /** Pérdida de contacto periódica del escenario de artefactos: (k·periodo, k·periodo + duración]. */
+  /** Periodic contact loss of the artifacts scenario: (k·period, k·period + duration]. */
   #noContact(timeMs: number): boolean {
     const artifacts = SCENARIOS[this.#options.scenario].artifacts;
     if (artifacts === null || timeMs < artifacts.contactLossPeriodMs) {

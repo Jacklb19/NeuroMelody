@@ -1,9 +1,9 @@
 /**
- * Acceso tipado al ámbito global del AudioWorklet (`sampleRate`,
- * `registerProcessor`, `AudioWorkletProcessor`), que la biblioteca DOM de
- * TypeScript no declara. Leerlo desde `globalThis` evita declarar globales
- * que contaminarían los tipos del hilo principal, y permite sustituirlo en
- * las pruebas.
+ * Typed access to the AudioWorklet global scope (`sampleRate`,
+ * `registerProcessor`, `AudioWorkletProcessor`), which the TypeScript DOM
+ * library does not declare. Reading it from `globalThis` avoids declaring
+ * globals that would pollute the main thread types, and lets tests replace
+ * it.
  */
 
 export type BlockParams = Record<string, Float32Array>;
@@ -20,11 +20,11 @@ interface WorkletScope {
   registerProcessor(name: string, processorClass: ProcessorClass): void;
 }
 
-// La forma del ámbito la garantiza el navegador al cargar el módulo con
-// audioWorklet.addModule(); aquí solo se le da tipo.
+// The browser guarantees the scope shape when it loads the module with
+// audioWorklet.addModule(); here it only gets a type.
 export const scope = globalThis as unknown as WorkletScope;
 
-/** Valor del parámetro en el bloque (los de tasa k traen un solo valor). */
+/** Parameter value in the block (k-rate parameters carry a single value). */
 export function paramValue(params: BlockParams, name: string, fallback: number): number {
   return params[name]?.[0] ?? fallback;
 }

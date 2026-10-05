@@ -20,7 +20,7 @@ function meanHr(rr: readonly number[]): number {
   return 60000 / (rr.reduce((s, x) => s + x, 0) / rr.length);
 }
 
-// Implementación de referencia mínima para las pruebas; la de producción llega en S2.
+// Minimal reference implementation for the tests; the production one lives in the signal feature.
 function rmssd(rr: readonly number[]): number {
   let sum = 0;
   for (let i = 1; i < rr.length; i++) {
@@ -29,16 +29,16 @@ function rmssd(rr: readonly number[]): number {
   return Math.sqrt(sum / (rr.length - 1));
 }
 
-describe('crearGeneradorRR', () => {
-  it('es determinista para una misma semilla y escenario', () => {
+describe('createRrGenerator', () => {
+  it('is deterministic for the same seed and scenario', () => {
     expect(generateUntil('rest', 99, 60_000)).toEqual(generateUntil('rest', 99, 60_000));
   });
 
-  it('cambia la serie con otra semilla', () => {
+  it('changes the series with another seed', () => {
     expect(generateUntil('rest', 1, 60_000)).not.toEqual(generateUntil('rest', 2, 60_000));
   });
 
-  it('cuantiza cada intervalo a 1/1024 s y acumula el tiempo sin deriva', () => {
+  it('quantizes each interval to 1/1024 s and accumulates time without drift', () => {
     const beats = generateUntil('activation', 5, 60_000);
     let accumulated = 0;
     for (const { rrMs, endMs } of beats) {
@@ -64,40 +64,40 @@ describe('crearGeneradorRR', () => {
     expect(rmssd(rr)).toBeLessThan(20);
   });
 
-  it('mantiene exactamente la serie de reposo con semilla 1 (regresión)', () => {
+  it('keeps the rest series with seed 1 exactly (regression)', () => {
     const generator = createRrGenerator(SCENARIOS.rest, 1);
     expect(Array.from({ length: 6 }, () => generator.next().rrMs)).toEqual([
       949.21875, 1024.4140625, 937.5, 894.53125, 910.15625, 1029.296875,
     ]);
   });
 
-  describe('escenario artefactos', () => {
+  describe('artifacts scenario', () => {
     const HORIZON_MS = 30 * 60 * 1000;
 
     const withArtifacts = generateUntil('artifacts', 1, HORIZON_MS);
     const baseEnds = new Set(generateUntil('rest', 1, HORIZON_MS).map((l) => l.endMs));
-    // Un latido prematuro es el único que termina en un instante que no existe
-    // en la serie base (el compensatorio vuelve a alinearse con ella).
+    // A premature beat is the only one ending at an instant that does not exist
+    // in the base series (the compensatory one lines up with it again).
     const prematureBeats = withArtifacts
       .map((beat, i) => ({ beat, i }))
       .filter(({ beat }) => !baseEnds.has(beat.endMs));
 
-    it('es determinista', () => {
+    it('is deterministic', () => {
       expect(generateUntil('artifacts', 4, 120_000)).toEqual(generateUntil('artifacts', 4, 120_000));
     });
 
-    it('inserta latidos prematuros con una frecuencia cercana al 2 %', () => {
+    it('inserts premature beats at a rate close to 2 %', () => {
       const ratio = prematureBeats.length / withArtifacts.length;
       expect(ratio).toBeGreaterThan(0.01);
       expect(ratio).toBeLessThan(0.03);
     });
 
-    it('cada par prematuro + compensatorio conserva el ritmo de la serie base', () => {
+    it('each premature + compensatory pair keeps the rhythm of the base series', () => {
       expect(prematureBeats.length).toBeGreaterThan(0);
       for (const { beat, i } of prematureBeats) {
         const compensatory = withArtifacts[i + 1];
         expect(compensatory !== undefined && baseEnds.has(compensatory.endMs)).toBe(true);
-        // El prematuro dura ≈ 70 % de un RR normal: ≈ 0,7 / (0,7 + 1,3) del par.
+        // The premature beat lasts ≈ 70 % of a normal RR: ≈ 0.7 / (0.7 + 1.3) of the pair.
         const fraction = beat.rrMs / (beat.rrMs + (compensatory?.rrMs ?? 0));
         expect(fraction).toBeGreaterThan(0.3);
         expect(fraction).toBeLessThan(0.4);
@@ -105,7 +105,7 @@ describe('crearGeneradorRR', () => {
     });
   });
 
-  it('relajación progresiva: pasa de activación a reposo en 10 minutos', () => {
+  it('progressive relaxation: goes from activation to rest in 10 minutes', () => {
     const beats = generateUntil('progressive_relaxation', 1, RELAXATION_DURATION_MS + 120_000);
     const firstMinute = beats.filter((l) => l.endMs <= 60_000).map((l) => l.rrMs);
     const afterTransition = beats

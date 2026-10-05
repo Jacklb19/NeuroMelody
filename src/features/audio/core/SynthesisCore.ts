@@ -10,17 +10,17 @@ import {
   type Mode,
 } from './theory';
 
-/** Pulsos de un ciclo armónico: los cambios de modo esperan a que cierre. */
+/** Beats in a harmonic cycle: mode changes wait for it to close. */
 export const BEATS_PER_CYCLE = 16;
-/** Cada cuántos pulsos cambia el acorde de la capa de armonía. */
+/** How many beats between chord changes in the harmony layer. */
 export const BEATS_PER_CHORD = 4;
-/** Duración de los fundidos de capas y de modo (docs/diseno-musical.md). */
+/** Length of the layer and mode fades (docs/diseno-musical.md). */
 export const FADE_DURATION_S = 30;
-/** Voces reservadas al iniciar; nunca se crean más. */
+/** Voices allocated at start; no more are ever created. */
 export const MAX_VOICES = 32;
 
 const MELODY_NOTE_PROBABILITY = 0.35;
-/** Amplitud por debajo de la cual una voz se libera (≈ −80 dB, inaudible). */
+/** Amplitude below which a voice is released (≈ −80 dB, inaudible). */
 const SILENCE_THRESHOLD = 1e-4;
 
 const LAYER_DRONE = 0;
@@ -42,25 +42,25 @@ const MELODY_ENVELOPE: Envelope = { amplitude: 0.09, attackS: 0.02, decayS: 1.2 
 const DRONE_AMPLITUDE = 0.11;
 
 /**
- * Síntesis generativa por capas (RF-08), sin dependencias del navegador para
- * poder probarla de forma determinista. El procesador del AudioWorklet solo
- * la invoca bloque a bloque.
+ * Layered generative synthesis (RF-08), with no browser dependencies so it
+ * can be tested deterministically. The AudioWorklet processor only calls it
+ * block by block.
  *
- * Reglas de tiempo real: todo el estado se reserva en el constructor y
- * `procesar` no crea objetos ni arreglos. El secuenciador avanza con el reloj
- * de muestras, así que no depende de temporizadores.
+ * Real-time rules: all state is allocated in the constructor and `process`
+ * creates no objects or arrays. The sequencer advances with the sample clock,
+ * so it does not depend on timers.
  *
- * Capas: 0 bordón (re2 y la2 continuos), 1 armonía (acordes cada 4 pulsos),
- * 2 melodía (notas sueltas). El parámetro `capas` (1 a 3) enciende las capas
- * en ese orden, con un fundido de 30 s. Un cambio de `modo` se aplica al cerrar
- * el ciclo armónico, con un fundido cruzado de 30 s entre dos bancos de voces.
+ * Layers: 0 drone (sustained D2 and A2), 1 harmony (chords every 4 beats),
+ * 2 melody (sparse notes). The `layers` parameter (1 to 3) turns layers on in
+ * that order, with a 30 s fade. A `mode` change is applied when the harmonic
+ * cycle closes, with a 30 s crossfade between two voice banks.
  */
 export class SynthesisCore {
   readonly #fs: number;
   readonly #random: RandomSource;
   readonly #fadeStep: number;
 
-  // Voces: un arreglo por campo, reservados una sola vez.
+  // Voices: one array per field, allocated once.
   readonly #phase = new Float64Array(MAX_VOICES);
   readonly #increment = new Float64Array(MAX_VOICES);
   readonly #amplitude = new Float64Array(MAX_VOICES);
@@ -96,7 +96,7 @@ export class SynthesisCore {
     this.#layerTarget[LAYER_DRONE] = 1;
   }
 
-  /** Datos de inspección para pruebas y telemetría; no forman parte del sonido. */
+  /** Inspection data for tests and telemetry; not part of the sound. */
   get beat(): number {
     return this.#beat;
   }
@@ -117,8 +117,8 @@ export class SynthesisCore {
   }
 
   /**
-   * Fija la ganancia de cada capa sin fundido. Solo para el primer bloque de
-   * una sesión: el sonido empieza ya con las capas del nivel inicial.
+   * Sets each layer gain without a fade. Only for the first block of a
+   * session: the sound starts with the initial level layers already on.
    */
   setInitialLayers(layers: number): void {
     this.#updateLayerTargets(layers);
@@ -126,11 +126,11 @@ export class SynthesisCore {
   }
 
   /**
-   * Sintetiza `salida.length` muestras con los parámetros del bloque.
+   * Synthesizes `output.length` samples with the block parameters.
    *
-   * @param tempo Pulsos por minuto.
-   * @param mode 0 pentatónica mayor, 1 lidio, 2 bordón con pentatónica.
-   * @param layers Número de capas activas (1 a 3).
+   * @param tempo Beats per minute.
+   * @param mode 0 major pentatonic, 1 lydian, 2 drone with pentatonic.
+   * @param layers Number of active layers (1 to 3).
    */
   process(output: Float32Array, tempo: number, mode: number, layers: number): void {
     const roundedMode = Math.round(mode);
@@ -152,7 +152,7 @@ export class SynthesisCore {
       }
       this.#smoothGains();
 
-      // Bordón continuo con una respiración lenta de amplitud.
+      // Sustained drone with a slow amplitude breathing.
       this.#dronePhase += droneIncrement;
       this.#fifthPhase += fifthIncrement;
       this.#lifePhase += lifeIncrement;
@@ -171,7 +171,7 @@ export class SynthesisCore {
       output[n] = sample;
     }
 
-    // Evita que las fases crezcan sin límite y pierdan precisión.
+    // Keeps phases from growing unbounded and losing precision.
     this.#dronePhase %= 2 * Math.PI;
     this.#fifthPhase %= 2 * Math.PI;
     this.#lifePhase %= 2 * Math.PI;
@@ -199,7 +199,7 @@ export class SynthesisCore {
     const position = this.#beat % BEATS_PER_CYCLE;
 
     if (position === 0 && this.#pendingMode !== this.#currentMode) {
-      // Cierre del ciclo armónico: empieza el fundido cruzado hacia el nuevo modo.
+      // The harmonic cycle closes: the crossfade to the new mode starts.
       this.#currentMode = this.#pendingMode;
       this.#activeBank = 1 - this.#activeBank;
     }
@@ -221,12 +221,12 @@ export class SynthesisCore {
     const scale = SCALES[this.#currentMode];
     const root = Math.floor(this.#random() * scale.length);
     if (this.#currentMode === MODE.dronePentatonic) {
-      // Díada abierta sobre el bordón: más quieta que un acorde completo.
+      // Open dyad over the drone: calmer than a full chord.
       this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
       this.#triggerVoice(degreeNote(scale, root + 3, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
       return;
     }
-    // Tres llamadas explícitas en lugar de recorrer un arreglo literal: no se reserva memoria.
+    // Three explicit calls instead of looping over an array literal: no allocation.
     this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
     this.#triggerVoice(degreeNote(scale, root + 2, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
     this.#triggerVoice(degreeNote(scale, root + 4, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
@@ -282,7 +282,7 @@ export class SynthesisCore {
     this.#phase[v] = phase > 2 * Math.PI ? phase - 2 * Math.PI : phase;
     const gain =
       (this.#layerGain[this.#layer[v] ?? 0] ?? 0) * (this.#bankGain[this.#bank[v] ?? 0] ?? 0);
-    // Seno con un poco de segundo armónico: timbre suave y cálido.
+    // Sine with a little second harmonic: a soft, warm timbre.
     return gain * amplitude * (Math.sin(phase) + 0.15 * Math.sin(2 * phase));
   }
 }

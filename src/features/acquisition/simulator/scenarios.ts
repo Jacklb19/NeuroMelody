@@ -1,49 +1,49 @@
 /**
- * Escenarios del simulador (RF-02, HU-02). Los valores fueron aprobados en la
- * planificación del sprint 1; el RMSSD esperado es aproximado y sirve de
- * referencia para las pruebas.
+ * Simulator scenarios (RF-02, HU-02). The values were approved when sprint 1
+ * was planned; the expected RMSSD is approximate and serves as a reference
+ * for the tests.
  */
 
-/** Parámetros del modelo de la serie RR en un instante dado. */
+/** Parameters of the RR series model at a given instant. */
 export interface PhysiologicalParams {
-  /** Frecuencia cardíaca media, en latidos por minuto. */
+  /** Mean heart rate, in beats per minute. */
   readonly meanHr: number;
-  /** Amplitud de la oscilación respiratoria (banda HF, 0,25 Hz), en ms. */
+  /** Amplitude of the respiratory oscillation (HF band, 0.25 Hz), in ms. */
   readonly respiratoryAmplitudeMs: number;
-  /** Amplitud de la onda de Mayer (banda LF, 0,1 Hz), en ms. */
+  /** Amplitude of the Mayer wave (LF band, 0.1 Hz), in ms. */
   readonly mayerAmplitudeMs: number;
-  /** Desviación estándar del ruido gaussiano latido a latido, en ms. */
+  /** Standard deviation of the beat-to-beat Gaussian noise, in ms. */
   readonly noiseMs: number;
 }
 
 export type ScenarioId = 'rest' | 'activation' | 'progressive_relaxation' | 'artifacts';
 
 /**
- * Fallos de lectura simulados para probar el filtrado (RF-04): latidos
- * prematuros seguidos de uno compensatorio y pérdidas periódicas de contacto.
+ * Simulated reading faults to test the filtering (RF-04): premature beats
+ * followed by a compensatory one, and periodic contact losses.
  */
 export interface ArtifactConfig {
-  /** Probabilidad de que un latido sea prematuro. */
+  /** Probability that a beat is premature. */
   readonly prematureProbability: number;
-  /** Duración del latido prematuro como fracción del RR normal. */
+  /** Duration of the premature beat as a fraction of the normal RR. */
   readonly prematureFraction: number;
-  /** Cada cuánto tiempo de señal se pierde el contacto del sensor. */
+  /** How often, in signal time, the sensor loses contact. */
   readonly contactLossPeriodMs: number;
-  /** Cuánto dura cada pérdida de contacto. */
+  /** How long each contact loss lasts. */
   readonly contactLossDurationMs: number;
 }
 
 export interface Scenario {
   readonly id: ScenarioId;
-  /** Nombre descriptivo (no clínico) que muestra la interfaz. */
+  /** Descriptive (non-clinical) name shown by the interface. */
   readonly name: string;
-  /** Parámetros vigentes a los `tiempoMs` de señal desde la conexión. */
+  /** Parameters in effect at `timeMs` of signal time since connection. */
   paramsAt(timeMs: number): PhysiologicalParams;
-  /** Fallos de lectura simulados; `null` en los escenarios limpios. */
+  /** Simulated reading faults; `null` in clean scenarios. */
   readonly artifacts: ArtifactConfig | null;
 }
 
-/** RMSSD esperado ≈ 45 ms. */
+/** Expected RMSSD ≈ 45 ms. */
 export const REST_PARAMS: PhysiologicalParams = {
   meanHr: 62,
   respiratoryAmplitudeMs: 40,
@@ -51,7 +51,7 @@ export const REST_PARAMS: PhysiologicalParams = {
   noiseMs: 15,
 };
 
-/** RMSSD esperado ≈ 10 ms. */
+/** Expected RMSSD ≈ 10 ms. */
 export const ACTIVATION_PARAMS: PhysiologicalParams = {
   meanHr: 92,
   respiratoryAmplitudeMs: 8,
@@ -59,7 +59,7 @@ export const ACTIVATION_PARAMS: PhysiologicalParams = {
   noiseMs: 5,
 };
 
-/** Valores aprobados en el sprint 2 (docs/propuestas.md). */
+/** Values approved in sprint 2 (docs/propuestas.md). */
 export const DEFAULT_ARTIFACTS: ArtifactConfig = {
   prematureProbability: 0.02,
   prematureFraction: 0.7,
@@ -67,7 +67,7 @@ export const DEFAULT_ARTIFACTS: ArtifactConfig = {
   contactLossDurationMs: 5000,
 };
 
-/** Duración de la transición del escenario de relajación progresiva. */
+/** Transition length of the progressive relaxation scenario. */
 export const RELAXATION_DURATION_MS = 10 * 60 * 1000;
 
 function interpolate(a: number, b: number, fraction: number): number {
@@ -107,7 +107,7 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
   progressive_relaxation: {
     id: 'progressive_relaxation',
     name: 'Relajación progresiva',
-    // Pasa linealmente de activación a reposo y luego se mantiene en reposo.
+    // Moves linearly from activation to rest and then stays at rest.
     paramsAt: (timeMs) =>
       interpolateParameters(
         ACTIVATION_PARAMS,
@@ -118,7 +118,7 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
   },
   artifacts: {
     id: 'artifacts',
-    // Describe el dispositivo, no el cuerpo: la interfaz no interpreta la señal.
+    // Describes the device, not the body: the interface does not interpret the signal.
     name: 'Reposo con fallos de lectura',
     paramsAt: () => REST_PARAMS,
     artifacts: DEFAULT_ARTIFACTS,

@@ -2,21 +2,21 @@ import { createRandom } from '../../acquisition/simulator/prng';
 
 export interface ImpulseResponseOptions {
   readonly durationS: number;
-  /** Tiempo en que la cola cae 60 dB. */
+  /** Time for the tail to drop by 60 dB. */
   readonly rt60S: number;
   readonly seed: number;
 }
 
 export const DEFAULT_IMPULSE_RESPONSE: ImpulseResponseOptions = { durationS: 3.5, rt60S: 2.8, seed: 20260929 };
 
-/** Ln(1000): una caída de 60 dB en amplitud. */
+/** Ln(1000): a 60 dB drop in amplitude. */
 const DECAY_60_DB = Math.log(1000);
 const FADE_IN_S = 0.005;
 
 /**
- * Respuesta al impulso estéreo generada en código (ruido con caída
- * exponencial), sin archivos externos. Cada canal usa una secuencia distinta
- * para dar amplitud estéreo. Es determinista para una misma semilla.
+ * Stereo impulse response generated in code (noise with an exponential
+ * decay), with no external files. Each channel uses a different sequence
+ * for stereo width. It is deterministic for the same seed.
  */
 export function generateImpulseResponse(
   sampleRate: number,
@@ -34,7 +34,7 @@ export function generateImpulseResponse(
     for (let i = 0; i < length; i++) {
       const t = i / sampleRate;
       const decay = Math.exp((-DECAY_60_DB * t) / options.rt60S);
-      // Entrada suave de 5 ms para que la cola no empiece con un chasquido.
+      // 5 ms soft onset so the tail does not start with a click.
       const input = Math.min(1, i / fadeSamples);
       channel[i] = (random() * 2 - 1) * decay * input;
     }

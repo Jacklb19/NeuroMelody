@@ -1,13 +1,13 @@
 /**
- * Lectura de `AudioContext.playbackStats` (Chrome 146 en adelante): el
- * contador de subdesbordamientos con el que se verifica RNF-01. En los
- * navegadores sin la API devuelve `null` y la interfaz oculta la métrica.
+ * Reads `AudioContext.playbackStats` (Chrome 146 and later): the underrun
+ * counter used to verify RNF-01. In browsers without the API it returns
+ * `null` and the interface hides the metric.
  */
 export interface PlaybackStatistics {
-  /** Veces que el hilo de audio no entregó su bloque a tiempo. */
+  /** Times the audio thread did not deliver its block in time. */
   readonly underruns: number;
   readonly underrunDurationS: number;
-  /** Duración total reproducida según el navegador. */
+  /** Total played duration according to the browser. */
   readonly totalDurationS: number;
 }
 

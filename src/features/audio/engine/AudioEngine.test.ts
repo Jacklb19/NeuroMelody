@@ -24,7 +24,7 @@ async function createEngine(outputThroughAudioElement = false, telemetry: Shared
   return { env, engine, synthesizer, clipper, param, volume, wet, envelope, filter, nodesOfKind };
 }
 
-/** Recorre el grafo desde un nodo siguiendo la primera conexión. */
+/** Walks the graph from a node following its first connection. */
 function chain(from: FakeNode): string[] {
   const kinds = [from.kind];
   let current: FakeNode | undefined = from.connections[0];
@@ -35,13 +35,13 @@ function chain(from: FakeNode): string[] {
   return kinds;
 }
 
-describe('MotorAudio.crear', () => {
-  it('carga los dos módulos del worklet en orden', async () => {
+describe('AudioEngine.create', () => {
+  it('loads both worklet modules in order', async () => {
     const { env } = await createEngine();
     expect(env.context.loadedModules).toEqual(['synthesizer.js', 'clipper.js']);
   });
 
-  it('arma la cadena sintetizador → brillo → volumen → envolvente → limitador → recorte → salida', async () => {
+  it('builds the chain synthesizer → brightness → volume → envelope → limiter → clipper → output', async () => {
     const { synthesizer } = await createEngine();
     expect(chain(synthesizer)).toEqual([
       `worklet:${SYNTHESIZER_NAME}`,
@@ -54,7 +54,7 @@ describe('MotorAudio.crear', () => {
     ]);
   });
 
-  it('manda el brillo también a la reverberación, que vuelve al volumen', async () => {
+  it('also sends the brightness filter to the reverb, which returns to the volume', async () => {
     const { nodesOfKind } = await createEngine();
     const filter = nodesOfKind('filter')[0];
     const convolution = nodesOfKind('convolver')[0];
@@ -62,7 +62,7 @@ describe('MotorAudio.crear', () => {
     expect(chain(convolution as FakeNode).slice(0, 3)).toEqual(['convolver', 'gain', 'gain']);
   });
 
-  it('empieza en el nivel de calibración, con volumen de −12 dB y en silencio', async () => {
+  it('starts at the calibration level, at −12 dB and silent', async () => {
     const { synthesizer, param, volume, envelope, wet, filter } = await createEngine();
     expect(synthesizer.options.processorOptions).toEqual({
       seed: 7,
@@ -78,7 +78,7 @@ describe('MotorAudio.crear', () => {
     expect(envelope?.gain.value).toBe(0);
   });
 
-  it('configura el limitador con umbral −6 dBFS y relación 20:1', async () => {
+  it('sets the limiter to a −6 dBFS threshold and a 20:1 ratio', async () => {
     const { nodesOfKind } = await createEngine();
     const limiter = nodesOfKind('compressor')[0] as unknown as Record<string, FakeParam>;
     expect(limiter.threshold?.value).toBe(LIMITER.thresholdDb);
@@ -86,15 +86,15 @@ describe('MotorAudio.crear', () => {
     expect(limiter.knee?.value).toBe(0);
   });
 
-  it('entrega la telemetría al recortador', async () => {
+  it('hands the telemetry buffer to the clipper', async () => {
     const buffer = createTelemetryBuffer();
     const { clipper } = await createEngine(false, buffer);
     expect(clipper.options.processorOptions).toEqual({ telemetry: buffer });
   });
 });
 
-describe('MotorAudio en uso', () => {
-  it('iniciar reanuda el contexto y sube la envolvente en 1,5 s', async () => {
+describe('AudioEngine in use', () => {
+  it('start resumes the context and raises the envelope over 1.5 s', async () => {
     const { engine, env, envelope } = await createEngine();
     env.context.currentTime = 2;
     await engine.start();
@@ -103,7 +103,7 @@ describe('MotorAudio en uso', () => {
     expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 3.5 });
   });
 
-  it('programa una rampa de tempo de 20 s de Intermedio a Activación alta (ΔBPM = 10)', async () => {
+  it('schedules a 20 s tempo ramp from Intermediate to High activation (ΔBPM = 10)', async () => {
     const { engine, env, param } = await createEngine();
     env.context.currentTime = 10;
     const duration = engine.applyLevel('high');
@@ -117,15 +117,15 @@ describe('MotorAudio en uso', () => {
     expect(engine.level).toBe('high');
   });
 
-  it('alarga la rampa de tempo según |ΔBPM| × 2 s: de 76 a 59 BPM dura 34 s', async () => {
+  it('lengthens the tempo ramp by |ΔBPM| × 2 s: 76 to 59 BPM takes 34 s', async () => {
     const { engine, env, param } = await createEngine();
-    param('tempo').value = 76; // como si la rampa anterior hubiera terminado
+    param('tempo').value = 76; // as if the previous ramp had finished
     env.context.currentTime = 100;
     expect(engine.applyLevel('target')).toBe(34);
     expect(param('tempo').last('linear')).toEqual({ kind: 'linear', value: 59, time: 134 });
   });
 
-  it('interpola brillo y reverberación en 45 s', async () => {
+  it('interpolates brightness and reverb over 45 s', async () => {
     const { engine, env, filter, wet } = await createEngine();
     env.context.currentTime = 5;
     engine.applyLevel('target');
@@ -137,7 +137,7 @@ describe('MotorAudio en uso', () => {
     expect(wet?.gain.last('linear')).toEqual({ kind: 'linear', value: 0.5, time: 50 });
   });
 
-  it('acota el volumen entre −40 y 0 dB', async () => {
+  it('clamps the volume between −40 and 0 dB', async () => {
     const { engine } = await createEngine();
     expect(engine.setVolumeDb(-60)).toBe(-40);
     expect(engine.setVolumeDb(6)).toBe(0);
@@ -145,7 +145,7 @@ describe('MotorAudio en uso', () => {
     expect(engine.volumeDb).toBeCloseTo(-20, 6);
   });
 
-  it('detener baja a cero en 50 ms y después pausa el contexto', async () => {
+  it('stop ramps to zero in 50 ms and then suspends the context', async () => {
     const { engine, env, envelope } = await createEngine();
     await engine.start();
     env.context.currentTime = 30;
@@ -156,13 +156,13 @@ describe('MotorAudio en uso', () => {
     expect(engine.state).toBe('stopped');
   });
 
-  it('detener no hace nada si no está sonando', async () => {
+  it('stop does nothing when not playing', async () => {
     const { engine, env } = await createEngine();
     await engine.stop();
     expect(env.waits).toEqual([]);
   });
 
-  it('programa y cancela el fundido final en el reloj de audio', async () => {
+  it('schedules and cancels the final fade on the audio clock', async () => {
     const { engine, env, envelope } = await createEngine();
     await engine.start();
     if (envelope === undefined) {
@@ -174,7 +174,7 @@ describe('MotorAudio en uso', () => {
     const eventsBefore = envelope.gain.events.length;
     const end = engine.scheduleFinalFade(120);
     expect(end).toBe(600 + 120 + FINAL_FADE_S);
-    // No cancela nada de lo ya programado (el fundido de entrada puede seguir en curso).
+    // Nothing already scheduled is cancelled (the start fade may still be running).
     expect(envelope.gain.events.slice(eventsBefore)).toEqual([
       { kind: 'set', value: 1, time: 720 },
       { kind: 'linear', value: 0, time: 740 },
@@ -186,7 +186,7 @@ describe('MotorAudio en uso', () => {
     expect(envelope.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 652 });
   });
 
-  it('lee playbackStats cuando existe y marca si mide la salida real', async () => {
+  it('reads playbackStats when available and flags whether it measures the real output', async () => {
     const { engine, env } = await createEngine();
     expect(engine.stats()).toBeNull();
     env.context.playbackStats = { underrunEvents: 2, underrunDuration: 0.01, totalDuration: 60 };
@@ -198,7 +198,7 @@ describe('MotorAudio en uso', () => {
     });
   });
 
-  it('lee el pico de salida desde la telemetría, en dBFS', async () => {
+  it('reads the output peak from telemetry, in dBFS', async () => {
     const buffer = createTelemetryBuffer();
     const { engine } = await createEngine(false, buffer);
     const writer = new TelemetryWriter(buffer);
@@ -210,12 +210,12 @@ describe('MotorAudio en uso', () => {
     expect(engine.readPeak()).toEqual({ blocks: 0, peakDbfs: null });
   });
 
-  it('sin telemetría no hay lectura de pico', async () => {
+  it('without telemetry there is no peak reading', async () => {
     const { engine } = await createEngine();
     expect(engine.readPeak()).toBeNull();
   });
 
-  it('cerrar cierra el contexto', async () => {
+  it('close closes the context', async () => {
     const { engine, env } = await createEngine();
     await engine.close();
     expect(env.context.state).toBe('closed');
@@ -223,8 +223,8 @@ describe('MotorAudio en uso', () => {
   });
 });
 
-describe('respaldo de Media Session por un elemento <audio>', () => {
-  it('envía la salida a un flujo que reproduce un <audio> y avisa que la métrica no es la real', async () => {
+describe('Media Session fallback through an <audio> element', () => {
+  it('routes the output to a stream played by an <audio> and flags that the metric is not the real one', async () => {
     const { engine, env, clipper } = await createEngine(true);
     expect(clipper.connections.map((n) => n.kind)).toEqual(['stream']);
     expect(env.element.srcObject).toEqual({ id: 'stream' });

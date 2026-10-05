@@ -1,7 +1,7 @@
 /**
- * Procesador del AudioWorklet que sintetiza la música (RF-08). Adaptador fino
- * sobre NucleoSintesis: lee los AudioParam del bloque y copia el canal a los
- * demás. No reserva memoria en `process()`.
+ * AudioWorklet processor that synthesizes the music (RF-08). A thin adapter
+ * over SynthesisCore: it reads the block AudioParams and copies the channel to
+ * the others. It does not allocate in `process()`.
  */
 import { SynthesisCore } from '../core/SynthesisCore';
 import { scope, paramValue, type BlockParams } from './workletScope';

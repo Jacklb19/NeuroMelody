@@ -2,36 +2,36 @@ import { quantizeRrMs } from '../rrUnits';
 import type { Scenario } from '../../acquisition/simulator/scenarios';
 import { createRandom, standardNormal } from './prng';
 
-/** Frecuencia de la oscilación respiratoria (banda HF). */
+/** Frequency of the respiratory oscillation (HF band). */
 export const RESPIRATORY_FREQUENCY_HZ = 0.25;
-/** Frecuencia de la onda de Mayer (banda LF). */
+/** Frequency of the Mayer wave (LF band). */
 export const MAYER_FREQUENCY_HZ = 0.1;
 
-/** Un latido generado: su intervalo RR y el instante en que termina. */
+/** A generated beat: its RR interval and the instant it ends. */
 export interface Beat {
   readonly rrMs: number;
-  /** Tiempo de señal (ms desde la conexión) en que se completa el latido. */
+  /** Signal time (ms since connection) at which the beat completes. */
   readonly endMs: number;
 }
 
 export interface RrGenerator {
-  /** Genera el siguiente latido de la serie. */
+  /** Generates the next beat of the series. */
   next(): Beat;
 }
 
 /**
- * Crea un generador determinista de latidos para un escenario.
+ * Creates a deterministic beat generator for a scenario.
  *
- * Modelo: RR = 60000 / FC + A_resp·sen(2π·0,25·t) + A_Mayer·sen(2π·0,1·t + φ) + ruido,
- * evaluado al inicio de cada latido y cuantizado a 1/1024 s. Las dos
- * oscilaciones dan contenido en las bandas HF y LF para el análisis espectral.
+ * Model: RR = 60000 / HR + A_resp·sin(2π·0.25·t) + A_Mayer·sin(2π·0.1·t + φ) + noise,
+ * evaluated at the start of each beat and quantized to 1/1024 s. The two
+ * oscillations give content in the HF and LF bands for spectral analysis.
  *
- * Si el escenario tiene artefactos, algunos latidos se sustituyen por un par
- * prematuro + compensatorio que conserva la suma de los dos latidos base.
- * Los artefactos usan un generador aleatorio aparte, así que la serie base es
- * idéntica a la del escenario limpio con la misma semilla.
+ * If the scenario has artifacts, some beats are replaced by a premature +
+ * compensatory pair that keeps the sum of the two base beats. Artifacts use a
+ * separate random generator, so the base series is identical to the clean
+ * scenario with the same seed.
  *
- * La serie depende solo del escenario y de la semilla.
+ * The series depends only on the scenario and the seed.
  */
 export function createRrGenerator(scenario: Scenario, seed: number): RrGenerator {
   const base = createBaseGenerator(scenario, seed);
@@ -40,7 +40,7 @@ export function createRrGenerator(scenario: Scenario, seed: number): RrGenerator
     return base;
   }
 
-  // Semilla derivada para no consumir números de la serie base.
+  // Derived seed so the base series numbers are not consumed.
   const artifactRandom = createRandom(seed ^ 0x5bd1e995);
   let pendingCompensatory: Beat | null = null;
 

@@ -8,7 +8,7 @@ import type { SignalSource } from './contract';
 import { AcquisitionPanel, SIMULATOR_SEED, type CreateSimulatedSource } from './AcquisitionPanel';
 import { SimulatedSource } from './simulator/SimulatedSource';
 
-/** El panel es controlado: este arnés guarda la fuente como lo hace App. */
+/** The panel is controlled: this harness keeps the source the way App does. */
 function StatefulPanel({ createSource }: { readonly createSource: CreateSimulatedSource }) {
   const [source, setSource] = useState<SignalSource | null>(null);
   return <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} />;
@@ -27,8 +27,8 @@ function visibleState(): string {
   return screen.getByRole('status').textContent;
 }
 
-describe('PanelAdquisicion', () => {
-  it('muestra el estado desconectado y los controles con etiqueta', () => {
+describe('AcquisitionPanel', () => {
+  it('shows the disconnected state and labelled controls', () => {
     renderWithFakeTime();
 
     expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByTestId('heart-rate')).toHaveTextContent('—');
   });
 
-  it('ofrece los cuatro escenarios y las cuatro velocidades', () => {
+  it('offers the four scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
@@ -54,7 +54,7 @@ describe('PanelAdquisicion', () => {
     ]);
   });
 
-  it('conecta con el teclado usando el escenario y la velocidad elegidos', async () => {
+  it('connects from the keyboard with the chosen scenario and speed', async () => {
     const user = userEvent.setup();
     const { createSource } = renderWithFakeTime();
 
@@ -73,7 +73,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByRole('button', { name: /desconectar/i })).toBeInTheDocument();
   });
 
-  it('muestra la última lectura mientras llegan notificaciones', async () => {
+  it('shows the latest reading while notifications arrive', async () => {
     const user = userEvent.setup();
     const { env } = renderWithFakeTime();
 
@@ -87,7 +87,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByTestId('signal-time')).toHaveTextContent('00:03');
   });
 
-  it('desconecta, detiene la fuente y vuelve a habilitar los controles', async () => {
+  it('disconnects, stops the source and re-enables the controls', async () => {
     const user = userEvent.setup();
     const { env } = renderWithFakeTime();
 
@@ -99,7 +99,7 @@ describe('PanelAdquisicion', () => {
     expect(screen.getByLabelText(/escenario del simulador/i)).toBeEnabled();
   });
 
-  it('detiene la fuente al desmontar el panel', async () => {
+  it('stops the source when the panel unmounts', async () => {
     const user = userEvent.setup();
     const { env, unmount } = renderWithFakeTime();
 
@@ -109,7 +109,7 @@ describe('PanelAdquisicion', () => {
     expect(env.active).toBe(false);
   });
 
-  it('avisa, sin lenguaje clínico, cuando la fuente descarta una medición', async () => {
+  it('warns, without clinical language, when the source discards a measurement', async () => {
     const user = userEvent.setup();
     const channel = new SourceChannel();
     const source: SignalSource = {

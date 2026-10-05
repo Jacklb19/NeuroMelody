@@ -1,19 +1,19 @@
-/** Techo absoluto de la salida: −1 dBFS. */
+/** Absolute output ceiling: −1 dBFS. */
 export const CEILING_DBFS = -1;
 export const CEILING = 10 ** (CEILING_DBFS / 20);
 
 /**
- * Recorte suave `techo · tanh(x / techo)`. A diferencia del compresor nativo,
- * garantiza que ninguna muestra supere el techo, y al ser continuo no
- * introduce chasquidos. Para señales pequeñas es casi la identidad.
+ * Soft clip `ceiling · tanh(x / ceiling)`. Unlike the native compressor, it
+ * guarantees no sample exceeds the ceiling, and being continuous it adds no
+ * clicks. For small signals it is almost the identity.
  */
 export function softClip(sample: number): number {
   return CEILING * Math.tanh(sample / CEILING);
 }
 
 /**
- * Recorta un bloque en su sitio y devuelve el pico absoluto resultante.
- * No reserva memoria: apto para `process()`.
+ * Clips a block in place and returns the resulting absolute peak.
+ * It does not allocate: safe for `process()`.
  */
 export function softClipBlock(block: Float32Array): number {
   let peak = 0;

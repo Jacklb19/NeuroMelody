@@ -1,15 +1,15 @@
 /**
- * Contrato común de la capa de adquisición (ADR-03).
+ * Shared contract of the acquisition layer (ADR-03).
  *
- * La banda BLE, el simulador y la reproducción de registros implementan
- * `FuenteSenal`; el resto del sistema depende solo de este contrato, de modo
- * que no puede distinguir una fuente de otra (HU-02).
+ * The BLE strap, the simulator and recording playback implement
+ * `SignalSource`; the rest of the system depends only on this contract, so
+ * it cannot tell one source from another (HU-02).
  */
 
-/** Tipos de fuente de señal previstos en el documento de definición. */
+/** Signal source kinds planned in the definition document. */
 export type SourceKind = 'simulator' | 'ble' | 'recording';
 
-/** Estado de la conexión con la fuente; la interfaz lo muestra siempre (HU-01). */
+/** Connection state of the source; the interface always shows it (HU-01). */
 export type ConnectionState =
   | 'disconnected'
   | 'connecting'
@@ -18,39 +18,39 @@ export type ConnectionState =
   | 'error';
 
 /**
- * Una notificación de la fuente, con la misma forma que la característica
- * estándar de ritmo cardíaco de BLE (≈ 1 por segundo).
+ * A source notification, shaped like the standard BLE heart rate
+ * characteristic (≈ 1 per second).
  */
 export interface BeatNotification {
   /**
-   * Tiempo de señal en milisegundos desde la conexión, monótono no
-   * decreciente. No es tiempo de pared: con el simulador acelerado avanza
-   * más rápido, y las ventanas de análisis deben usar este tiempo.
+   * Signal time in milliseconds since connection, monotonically
+   * non-decreasing. It is not wall-clock time: with a sped-up simulator it
+   * advances faster, and analysis windows must use this time.
    */
   readonly timeMs: number;
-  /** Frecuencia cardíaca en latidos por minuto, tal como la reporta la fuente. */
+  /** Heart rate in beats per minute, as reported by the source. */
   readonly heartRate: number;
-  /** Intervalos entre latidos completados desde la notificación anterior, en ms. */
+  /** Beat-to-beat intervals completed since the previous notification, in ms. */
   readonly rrIntervalsMs: readonly number[];
-  /** Contacto del sensor con la piel; `null` si la fuente no lo informa. */
+  /** Sensor contact with the skin; `null` when the source does not report it. */
   readonly sensorContact: boolean | null;
 }
 
-/** Callbacks de quien consume una fuente; todos son opcionales. */
+/** Callbacks of a source consumer; all are optional. */
 export interface SourceObserver {
   readonly onNotification?: (notification: BeatNotification) => void;
   readonly onStateChange?: (state: ConnectionState) => void;
   readonly onError?: (error: Error) => void;
 }
 
-/** Contrato que cumple toda fuente de señal. */
+/** Contract every signal source fulfils. */
 export interface SignalSource {
   readonly kind: SourceKind;
   readonly state: ConnectionState;
-  /** Inicia la adquisición; el tiempo de señal vuelve a empezar en 0. */
+  /** Starts acquisition; signal time starts again at 0. */
   connect(): Promise<void>;
-  /** Detiene la adquisición; tras resolverse no llegan más notificaciones. */
+  /** Stops acquisition; once it resolves no more notifications arrive. */
   disconnect(): Promise<void>;
-  /** Registra un observador y devuelve la función que lo da de baja. */
+  /** Registers an observer and returns the function that unsubscribes it. */
   subscribe(observer: SourceObserver): () => void;
 }

@@ -1,16 +1,16 @@
 import { msFromRrUnits } from '../rrUnits';
 
-/** Contenido útil de una notificación de la característica Heart Rate Measurement. */
+/** Useful content of a Heart Rate Measurement characteristic notification. */
 export interface HeartRateMeasurement {
-  /** Frecuencia cardíaca en latidos por minuto, sin validar el rango. */
+  /** Heart rate in beats per minute; the range is not validated here. */
   readonly heartRate: number;
-  /** Contacto del sensor; `null` si el dispositivo no lo soporta. */
+  /** Sensor contact; `null` when the device does not support it. */
   readonly sensorContact: boolean | null;
-  /** Intervalos RR en milisegundos (resolución de 1/1024 s). */
+  /** RR intervals in milliseconds (1/1024 s resolution). */
   readonly rrIntervalsMs: readonly number[];
 }
 
-/** La notificación no cumple el formato de la especificación. */
+/** The notification does not follow the specification format. */
 export class HeartRateMeasurementError extends Error {
   constructor(message: string) {
     super(message);
@@ -18,7 +18,7 @@ export class HeartRateMeasurementError extends Error {
   }
 }
 
-// Bits del byte de banderas (Heart Rate Service, característica 0x2A37).
+// Bits of the flags byte (Heart Rate Service, characteristic 0x2A37).
 const FLAG_HR_16_BIT = 0x01;
 const FLAG_CONTACT_DETECTED = 0x02;
 const FLAG_CONTACT_SUPPORTED = 0x04;
@@ -26,16 +26,16 @@ const FLAG_ENERGY_PRESENT = 0x08;
 const FLAG_RR_PRESENT = 0x10;
 
 /**
- * Interpreta el valor de la característica Heart Rate Measurement (RF-03).
+ * Parses the value of the Heart Rate Measurement characteristic (RF-03).
  *
- * Formato (little endian): banderas (uint8), FC (uint8 o uint16), energía
- * gastada opcional (uint16, se descarta) y cero o más intervalos RR (uint16
- * en unidades de 1/1024 s).
+ * Format (little endian): flags (uint8), heart rate (uint8 or uint16),
+ * optional energy expended (uint16, discarded) and zero or more RR intervals
+ * (uint16, in units of 1/1024 s).
  *
- * El rango fisiológico no se valida aquí: lo hace la frontera común de la
- * capa de adquisición, igual que para cualquier otra fuente.
+ * The physiological range is not validated here: the shared boundary of the
+ * acquisition layer does it, as for any other source.
  *
- * @throws ErrorMedicionFC si los datos están truncados o mal formados.
+ * @throws HeartRateMeasurementError if the data is truncated or malformed.
  */
 export function parseHeartRateMeasurement(data: DataView): HeartRateMeasurement {
   if (data.byteLength < 1) {

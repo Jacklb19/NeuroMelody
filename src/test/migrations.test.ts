@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-describe('Migraciones de Supabase - Cobertura de RLS', () => {
+describe('Supabase migrations - RLS coverage', () => {
   const migrationsDir = path.resolve(process.cwd(), 'supabase', 'migrations');
 
-  it('debe existir el directorio de migraciones y contener al menos un archivo .sql', () => {
+  it('has a migrations folder with at least one .sql file', () => {
     expect(fs.existsSync(migrationsDir)).toBe(true);
     const files = fs
       .readdirSync(migrationsDir)
@@ -13,7 +13,7 @@ describe('Migraciones de Supabase - Cobertura de RLS', () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
-  it('cada CREATE TABLE debe tener su correspondiente ENABLE ROW LEVEL SECURITY', () => {
+  it('every CREATE TABLE has a matching ENABLE ROW LEVEL SECURITY', () => {
     const files = fs
       .readdirSync(migrationsDir)
       .filter((file) => file.endsWith('.sql'));
@@ -21,13 +21,13 @@ describe('Migraciones de Supabase - Cobertura de RLS', () => {
     const createdTables: string[] = [];
     const rlsEnabledTables: string[] = [];
 
-    // Expresión regular para detectar tablas creadas:
-    // Ej: "create table if not exists public.profiles (" o "create table projects ("
+    // Detects created tables:
+    // e.g. "create table if not exists public.profiles (" or "create table projects ("
     const createTableRegex =
       /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?([a-zA-Z0-9_]+)\s*\(/gi;
 
-    // Expresión regular para detectar habilitación de RLS:
-    // Ej: "alter table public.profiles enable row level security;"
+    // Detects RLS being enabled:
+    // e.g. "alter table public.profiles enable row level security;"
     const enableRlsRegex =
       /alter\s+table\s+(?:public\.)?([a-zA-Z0-9_]+)\s+enable\s+row\s+level\s+security\s*;/gi;
 
@@ -52,10 +52,10 @@ describe('Migraciones de Supabase - Cobertura de RLS', () => {
       }
     }
 
-    // Verificar que se detectaron tablas
+    // Some tables must be detected
     expect(createdTables.length).toBeGreaterThan(0);
 
-    // Verificar que todas y cada una de las tablas creadas tienen RLS habilitada
+    // Every created table must have RLS enabled
     for (const table of createdTables) {
       expect(
         rlsEnabledTables,

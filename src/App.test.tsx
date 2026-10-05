@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import App from './App';
 
 describe('App', () => {
-  it('monta el enrutador y muestra el inicio', () => {
+  it('mounts the router and shows the home page', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: 'NeuroMelody' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: /principal/i })).toBeInTheDocument();

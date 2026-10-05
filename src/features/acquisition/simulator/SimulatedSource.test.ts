@@ -19,14 +19,14 @@ async function createConnectedSource(
   return { env, source, notifications, onError };
 }
 
-describe('FuenteSimulada', () => {
-  it('declara el tipo simulador y empieza desconectada', () => {
+describe('SimulatedSource', () => {
+  it('declares the simulator kind and starts disconnected', () => {
     const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1 });
     expect(source.kind).toBe('simulator');
     expect(source.state).toBe('disconnected');
   });
 
-  it('pasa por conectando y conectada, y vuelve a desconectada', async () => {
+  it('goes through connecting and connected, then back to disconnected', async () => {
     const env = createFakeTimeEnvironment();
     const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1, ...env });
     const onStateChange = vi.fn();
@@ -42,13 +42,13 @@ describe('FuenteSimulada', () => {
     expect(onStateChange.mock.calls).toEqual([['connecting'], ['connected'], ['disconnected']]);
   });
 
-  it('ignora una segunda conexión mientras ya está conectada', async () => {
+  it('ignores a second connect while already connected', async () => {
     const { env, source } = await createConnectedSource();
     await source.connect();
     expect(env.scheduledTasks).toBe(1);
   });
 
-  it('emite una notificación por segundo de señal a velocidad 1×', async () => {
+  it('emits one notification per signal second at 1× speed', async () => {
     const { env, notifications } = await createConnectedSource(1);
     env.advance(10_000);
     expect(notifications.map((n) => n.timeMs)).toEqual([
@@ -56,7 +56,7 @@ describe('FuenteSimulada', () => {
     ]);
   });
 
-  it('acelera el tiempo de señal a velocidad 10×', async () => {
+  it('speeds up signal time at 10× speed', async () => {
     const { env, notifications } = await createConnectedSource(10);
     env.advance(1000);
     expect(notifications).toHaveLength(10);
@@ -75,7 +75,7 @@ describe('FuenteSimulada', () => {
     },
   );
 
-  it('entrega en orden todo lo pendiente tras un temporizador retrasado', async () => {
+  it('delivers everything pending, in order, after a delayed timer', async () => {
     const continuous = await createConnectedSource();
     const delayed = await createConnectedSource();
     continuous.env.advance(30_000);
@@ -84,15 +84,15 @@ describe('FuenteSimulada', () => {
     expect(delayed.notifications).toEqual(continuous.notifications);
   });
 
-  it('emite intervalos cuantizados a 1/1024 s y una FC coherente, sin errores de validación', async () => {
+  it('emits intervals quantized to 1/1024 s and a consistent heart rate, without validation errors', async () => {
     const { env, notifications, onError } = await createConnectedSource(10, 'progressive_relaxation');
-    env.advance(60_000); // 10 minutos de señal
+    env.advance(60_000); // 10 minutes of signal
 
     const allRr = notifications.flatMap((n) => n.rrIntervalsMs);
     for (const rr of allRr) {
       expect(Number.isInteger((rr * RR_UNITS_PER_SECOND) / 1000)).toBe(true);
     }
-    // La suma de los RR entregados no puede superar el tiempo de señal transcurrido.
+    // The sum of delivered RR intervals cannot exceed the elapsed signal time.
     const rrSum = allRr.reduce((s, rr) => s + rr, 0);
     expect(rrSum).toBeLessThanOrEqual(600_000);
     expect(rrSum).toBeGreaterThan(600_000 - 1500);
@@ -106,9 +106,9 @@ describe('FuenteSimulada', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('en el escenario artefactos pierde el contacto 5 s cada 90 s', async () => {
+  it('in the artifacts scenario it loses contact for 5 s every 90 s', async () => {
     const { env, notifications, onError } = await createConnectedSource(10, 'artifacts');
-    env.advance(20_000); // 200 s de señal
+    env.advance(20_000); // 200 s of signal
 
     const noContact = notifications.filter((n) => n.sensorContact === false);
     expect(noContact.map((n) => n.timeMs)).toEqual([
@@ -116,20 +116,20 @@ describe('FuenteSimulada', () => {
     ]);
     expect(noContact.every((n) => n.rrIntervalsMs.length === 0)).toBe(true);
 
-    // Durante la pérdida se mantiene la última FC reportada.
+    // During the loss the last reported heart rate is kept.
     const before = notifications.find((n) => n.timeMs === 90_000);
     expect(noContact[0]?.heartRate).toBe(before?.heartRate);
     expect(notifications.find((n) => n.timeMs === 96_000)?.sensorContact).toBe(true);
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('los escenarios limpios nunca pierden el contacto', async () => {
+  it('clean scenarios never lose contact', async () => {
     const { env, notifications } = await createConnectedSource(10, 'rest');
     env.advance(20_000);
     expect(notifications.every((n) => n.sensorContact === true)).toBe(true);
   });
 
-  it('no emite nada tras desconectar', async () => {
+  it('emits nothing after disconnecting', async () => {
     const { env, source, notifications } = await createConnectedSource();
     env.advance(3000);
     await source.disconnect();
@@ -137,7 +137,7 @@ describe('FuenteSimulada', () => {
     expect(notifications).toHaveLength(3);
   });
 
-  it('deja de emitir si un observador desconecta durante una notificación', async () => {
+  it('stops emitting if an observer disconnects during a notification', async () => {
     const env = createFakeTimeEnvironment();
     const source = new SimulatedSource({ scenario: 'rest', seed: 1, speed: 1, ...env });
     const onNotification = vi.fn(() => {
@@ -151,7 +151,7 @@ describe('FuenteSimulada', () => {
     expect(onNotification).toHaveBeenCalledOnce();
   });
 
-  it('al reconectar reinicia el tiempo de señal y repite la serie', async () => {
+  it('on reconnect it resets signal time and repeats the series', async () => {
     const { env, source, notifications } = await createConnectedSource();
     env.advance(5000);
     const firstConnection = [...notifications];

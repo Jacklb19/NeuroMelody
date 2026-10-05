@@ -1,10 +1,10 @@
 /**
- * Búfer circular sobre memoria compartida para la telemetría del hilo de
- * audio. El hilo de audio escribe el pico de cada bloque sin mensajes ni
- * reservas de memoria; el hilo principal lee cuando quiere.
+ * Ring buffer over shared memory for audio thread telemetry. The audio
+ * thread writes each block peak without messages or allocations; the main
+ * thread reads whenever it wants.
  *
- * Distribución: [0] muestras escritas en total (Int32, con Atomics), y a
- * continuación CAPACIDAD valores Float32.
+ * Layout: [0] total values written (Int32, with Atomics), followed by
+ * CAPACITY Float32 values.
  */
 export const TELEMETRY_CAPACITY = 512;
 const HEADER_BYTES = 8;
@@ -13,7 +13,7 @@ export function createTelemetryBuffer(): SharedArrayBuffer {
   return new SharedArrayBuffer(HEADER_BYTES + TELEMETRY_CAPACITY * Float32Array.BYTES_PER_ELEMENT);
 }
 
-/** Lado del hilo de audio. */
+/** Audio thread side. */
 export class TelemetryWriter {
   readonly #header: Int32Array;
   readonly #data: Float32Array;
@@ -26,19 +26,19 @@ export class TelemetryWriter {
   write(value: number): void {
     const written = Atomics.load(this.#header, 0);
     this.#data[written % TELEMETRY_CAPACITY] = value;
-    // Se publica el índice después del dato para que el lector nunca lea a medias.
+    // The index is published after the value so the reader never reads half-written data.
     Atomics.store(this.#header, 0, (written + 1) | 0);
   }
 }
 
 export interface TelemetryReading {
-  /** Bloques nuevos desde la lectura anterior. */
+  /** New blocks since the previous read. */
   readonly blocks: number;
-  /** Máximo de los valores nuevos; `null` si no hubo bloques. */
+  /** Maximum of the new values; `null` if there were no blocks. */
   readonly max: number | null;
 }
 
-/** Lado del hilo principal. */
+/** Main thread side. */
 export class TelemetryReader {
   readonly #header: Int32Array;
   readonly #data: Float32Array;
@@ -49,7 +49,7 @@ export class TelemetryReader {
     this.#data = new Float32Array(buffer, HEADER_BYTES, TELEMETRY_CAPACITY);
   }
 
-  /** Lee lo escrito desde la última vez; si el escritor dio la vuelta, solo lo más reciente. */
+  /** Reads what was written since last time; if the writer wrapped around, only the most recent. */
   read(): TelemetryReading {
     const written = Atomics.load(this.#header, 0);
     const newCount = written - this.#readCount;

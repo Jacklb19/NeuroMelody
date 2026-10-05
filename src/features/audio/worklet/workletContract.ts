@@ -1,14 +1,14 @@
 /**
- * Contrato compartido entre el hilo principal y los procesadores del
- * AudioWorklet: nombres de registro, parámetros y opciones de creación.
- * No importa nada del ámbito del worklet, para poder usarse en ambos lados.
+ * Contract shared by the main thread and the AudioWorklet processors:
+ * registration names, parameters and creation options. It imports nothing
+ * from the worklet scope, so both sides can use it.
  */
 import { MODE, isMode, type Mode } from '../core/theory';
 
 export const SYNTHESIZER_NAME = 'neuromelody-synthesizer';
 export const CLIPPER_NAME = 'neuromelody-clipper';
 
-/** Descriptor de un AudioParam propio (la biblioteca DOM de TypeScript no lo declara). */
+/** Descriptor of a custom AudioParam (the TypeScript DOM library does not declare it). */
 interface ParameterDescriptor {
   readonly name: string;
   readonly defaultValue: number;
@@ -18,9 +18,9 @@ interface ParameterDescriptor {
 }
 
 /**
- * Parámetros del sintetizador como `AudioParam`: el hilo principal programa
- * rampas y el hilo de audio las interpola sin mensajes (ADR-07). Son de tasa
- * k (un valor por bloque de 128 muestras), suficiente para tempo, modo y capas.
+ * Synthesizer parameters as `AudioParam`: the main thread schedules ramps
+ * and the audio thread interpolates them without messages (ADR-07). They are
+ * k-rate (one value per 128-sample block), enough for tempo, mode and layers.
  */
 export const SYNTHESIZER_DESCRIPTORS = [
   { name: 'tempo', defaultValue: 66, minValue: 40, maxValue: 120, automationRate: 'k-rate' },
@@ -37,7 +37,7 @@ export interface SynthesizerOptions {
 }
 
 export interface ClipperOptions {
-  /** Búfer de telemetría; `null` si no hay aislamiento de origen cruzado. */
+  /** Telemetry buffer; `null` without cross-origin isolation. */
   readonly telemetry: SharedArrayBuffer | null;
 }
 
@@ -47,7 +47,7 @@ function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null;
 }
 
-/** Valida en la frontera las opciones que llegan al procesador. */
+/** Validates at the boundary the options that reach the processor. */
 export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
   if (
     !isRecord(value) ||

@@ -1,6 +1,6 @@
 import type { BeatNotification } from '../acquisition/contract';
 
-/** Límites de frecuencia cardíaca aceptados en la frontera de la capa. */
+/** Heart rate limits accepted at the layer boundary. */
 export const MIN_HR = 20;
 export const MAX_HR = 250;
 
@@ -9,14 +9,14 @@ export type ValidationResult =
   | { readonly valid: false; readonly reason: string };
 
 /**
- * Valida la estructura de una notificación antes de que entre al sistema.
+ * Validates the structure of a notification before it enters the system.
  *
- * Solo rechaza datos imposibles o corruptos. El filtrado de latidos anómalos
- * pero posibles (ectópicos, artefactos) es responsabilidad del hilo de señal
- * (RF-04), no de esta frontera.
+ * It only rejects impossible or corrupt data. Filtering abnormal but
+ * possible beats (ectopic beats, artifacts) is the signal thread's job
+ * (RF-04), not this boundary's.
  *
- * @param notification Notificación recibida de la fuente.
- * @param previousTimeMs Tiempo de la última notificación aceptada.
+ * @param notification Notification received from the source.
+ * @param previousTimeMs Time of the last accepted notification.
  */
 export function validateNotification(
   notification: BeatNotification,

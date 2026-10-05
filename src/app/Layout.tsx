@@ -7,9 +7,9 @@ const LINKS = [
 ] as const;
 
 /**
- * Estructura común: enlace para saltar al contenido, navegación principal y
- * contenido de la ruta. `/diagnostics` queda fuera de la navegación a
- * propósito: es una herramienta técnica (docs/pantallas.md).
+ * Shared structure: skip-to-content link, main navigation and the route
+ * content. `/diagnostics` is deliberately left out of the navigation: it is
+ * a technical tool (docs/pantallas.md).
  */
 export function Layout(): React.JSX.Element {
   return (

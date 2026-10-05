@@ -6,8 +6,8 @@ import {
   createTelemetryBuffer,
 } from './telemetryRing';
 
-describe('anillo de telemetría', () => {
-  it('entrega el máximo y el número de bloques nuevos desde la última lectura', () => {
+describe('telemetry ring', () => {
+  it('returns the maximum and the number of new blocks since the last read', () => {
     const buffer = createTelemetryBuffer();
     const writer = new TelemetryWriter(buffer);
     const reader = new TelemetryReader(buffer);
@@ -22,12 +22,12 @@ describe('anillo de telemetría', () => {
     expect(reader.read()).toEqual({ blocks: 1, max: 0.0625 });
   });
 
-  it('si el escritor da la vuelta, lee solo los valores más recientes', () => {
+  it('if the writer wraps around, only the most recent values are read', () => {
     const buffer = createTelemetryBuffer();
     const writer = new TelemetryWriter(buffer);
     const reader = new TelemetryReader(buffer);
 
-    writer.write(0.9); // quedará sobrescrito
+    writer.write(0.9); // will be overwritten
     for (let i = 0; i < TELEMETRY_CAPACITY; i++) {
       writer.write(0.5);
     }
@@ -36,7 +36,7 @@ describe('anillo de telemetría', () => {
     expect(reading.max).toBe(0.5);
   });
 
-  it('lector y escritor comparten la memoria, sin copias', () => {
+  it('reader and writer share memory, without copies', () => {
     const buffer = createTelemetryBuffer();
     new TelemetryWriter(buffer).write(0.75);
     expect(new TelemetryReader(buffer).read().max).toBe(0.75);
