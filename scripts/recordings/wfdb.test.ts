@@ -4,10 +4,10 @@ import { extractSegment, readBeatSamples } from './wfdb';
 
 describe('WFDB extraction', () => {
   it('decodes normal and other beat markers, skips metadata, and excludes non-beat events', () => {
-    // N at 128, AUX of odd length, SUB, a rhythm note at 138, V at 256.
+    // N at 128, AUX of odd length, SUB, artifact at 138, note at 148, V at 256, FLWAV at 384.
     expect(readBeatSamples(Uint8Array.from([
-      128, 4, 3, 252, 97, 98, 99, 0, 1, 244, 10, 88, 118, 20, 0, 0,
-    ]))).toEqual([128, 256]);
+      128, 4, 3, 252, 97, 98, 99, 0, 1, 244, 10, 64, 10, 88, 108, 20, 128, 124, 0, 0,
+    ]))).toEqual([128, 256, 384]);
   });
   it('decodes signed SKIP intervals in high-word-first byte order', () => {
     expect(readBeatSamples(Uint8Array.from([0, 236, 1, 0, 0, 0, 128, 4, 0, 0])))

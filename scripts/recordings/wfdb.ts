@@ -1,5 +1,5 @@
-/** Beat markers in the standard WFDB annotation table; non-beat events are excluded. */
-const BEAT_CODES = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 25, 30, 34, 35, 38, 41]);
+/** Beat markers from WFDB's isqrs table; artifact markers (16) are not beats. */
+const BEAT_CODES = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 25, 30, 31, 34, 35, 38, 41]);
 
 /** Decodes beat sample positions in the MIT format, preserving beat labels of every kind. */
 export function readBeatSamples(bytes: Uint8Array): number[] {
