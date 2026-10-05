@@ -100,6 +100,14 @@ describe('guidance and hysteresis', () => {
     expect(engine.snapshot.level).toBe('intermediate');
     expect(engine.snapshot.state).toBe('uncertain');
   });
+  it('requires fresh hysteresis on resume even if High was previously accepted', () => {
+    const engine = calibrated();
+    for (let ms = 185_000; ms <= 195_000; ms += 5000) engine.process(reading(ms, 120, 30), 0, false);
+    engine.start(1, 'intermediate');
+    expect(engine.process(reading(200_000, 120, 30), 2, true)).toBeNull();
+    expect(engine.process(reading(205_000, 120, 30), 3, true)).toBeNull();
+    expect(engine.process(reading(210_000, 120, 30), 4, true)).toBe('high');
+  });
 });
 
 describe('closed loop with reproducible signal processing', () => {

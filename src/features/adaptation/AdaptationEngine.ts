@@ -45,6 +45,7 @@ export class AdaptationEngine {
   start(audioTime: number, level: LevelId): void {
     this.#level = level;
     this.#levelStartS = audioTime;
+    this.#accepted = null;
     this.invalidate();
   }
 

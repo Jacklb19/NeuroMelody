@@ -2,6 +2,26 @@ import { expect, it } from 'vitest';
 import { SynthesisCore, FADE_DURATION_S } from './SynthesisCore';
 import { MODE } from './theory';
 
+it('renders one thousand mode transitions without completing any tonal fade before twenty seconds', () => {
+  const fs = 100;
+  const core = new SynthesisCore(fs, 1, MODE.lydian);
+  core.setInitialLayers(2);
+  const sample = new Float32Array(1);
+  const firstTwenty = new Float32Array(20 * fs);
+  const lastTen = new Float32Array(10 * fs + 1);
+  for (let transition = 0; transition < 1000; transition++) {
+    const mode = transition % 2 === 0 ? MODE.dronePentatonic : MODE.lydian;
+    for (let n = 0; n <= 16 * fs && core.currentMode !== mode; n++) core.process(sample, 60, mode, 2);
+    expect(core.currentMode).toBe(mode);
+    core.process(firstTwenty, 60, mode, 2);
+    expect(core.bankGain(core.activeBank)).toBeLessThan(1);
+    expect(core.bankGain(1 - core.activeBank)).toBeGreaterThan(0);
+    core.process(lastTen, 60, mode, 2);
+    expect(core.bankGain(core.activeBank)).toBeCloseTo(1, 8);
+    expect(core.bankGain(1 - core.activeBank)).toBeCloseTo(0, 8);
+  }
+}, 90_000);
+
 it('restarts interrupted mode and layer fades from their current gains for a full thirty seconds', () => {
   // The production sample clock at a low offline rate makes exact gain checkpoints cheap.
   const fs = 1000;
