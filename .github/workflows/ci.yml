@@ -48,9 +48,13 @@ jobs:
 
       - name: Recorridos E2E en Chrome y Edge
         run: npm run test:e2e
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/e2e
 
       - name: Continuidad de audio durante 60 segundos
         run: npm run test:audio
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/audio
 
       - name: Conservar informes de navegador y evidencia de audio
         if: always()

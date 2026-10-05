@@ -50,6 +50,42 @@ La página de diagnóstico inicial muestra si el entorno tiene aislamiento de or
 | `npm run lint` | Análisis estático con ESLint |
 | `npm test` | Pruebas unitarias con Vitest |
 | `npm run test:coverage` | Pruebas con informe y umbral de cobertura (70 %) |
+| `npm run test:e2e` | Recorridos de sesión y funcionamiento sin conexión en Chrome y Edge |
+| `npm run test:audio` | Continuidad real durante 60 segundos en Chrome con `playbackStats` |
+| `npm run recordings:extract` | Regenera los dos extractos nsr2db y verifica sus SHA-256 |
+
+## Verificación del S3
+
+La sesión permite elegir simulador o dos registros públicos de 30 minutos. Los
+datos y su licencia se describen en `public/recordings/CREDITS.md`. La música
+permanece en el nivel inicial; la adaptación automática se incorpora en S4.
+
+El service worker se genera solo en el build de producción y guarda la aplicación,
+los módulos de audio, el Worker de señal y los registros. Para probarlo se usa
+`npm run build` seguido de `npm run preview`; `npm run dev` no registra el worker.
+La actualización espera a que termine el uso de la versión anterior, para no
+reemplazar los recursos de una sesión activa. No se guardan peticiones API ni
+datos personales en esta caché. La persistencia y sincronización de sesiones
+pertenecen a los sprints posteriores.
+
+Las pruebas de navegador usan las instalaciones locales de Chrome y Edge.
+En CI se instalan con `npx playwright install --with-deps chrome msedge`.
+Los informes y las muestras de `playbackStats` quedan en `test-results/` y
+`playwright-report/`, excluidos del repositorio.
+
+Para verificar 30 minutos sin acelerar el reloj de audio, en PowerShell:
+
+```powershell
+$env:AUDIO_LONG = '1'
+npm run test:audio
+Remove-Item Env:AUDIO_LONG
+```
+
+En Bash: `AUDIO_LONG=1 npm run test:audio`. También existe el workflow manual
+"Continuidad de audio (30 minutos)". Una API `playbackStats` ausente produce
+un fallo explícito, no una aprobación. El resultado automatizado valida el
+contexto de audio de ese navegador y equipo; la escucha, los controles del
+sistema y la accesibilidad con lector de pantalla requieren revisión manual.
 
 ## Estructura
 
