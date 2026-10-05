@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { registerServiceWorker } from './app/registerServiceWorker';
 
 const container = document.getElementById('root');
 
@@ -14,3 +15,9 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 );
+
+if (import.meta.env.PROD) {
+  void registerServiceWorker().catch((error: unknown) => {
+    console.error('No se pudo preparar el funcionamiento sin conexión.', error);
+  });
+}
