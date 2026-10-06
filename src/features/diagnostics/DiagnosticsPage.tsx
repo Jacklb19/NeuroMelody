@@ -2,6 +2,7 @@ import { useState, useId } from 'react';
 import { usePageTitle } from '../../app/usePageTitle';
 import { checkCapabilities } from './checkCapabilities';
 import type { EnvironmentCapabilities } from './diagnostics.types';
+import { PageHeading } from '../../shared/PageHeading';
 
 export function DiagnosticsPage(): React.JSX.Element {
   usePageTitle('Diagnóstico de la plataforma');
@@ -44,61 +45,36 @@ export function DiagnosticsPage(): React.JSX.Element {
   ];
 
   return (
-    <>
-      <header style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>
-          Diagnóstico de la plataforma
-        </h1>
-        <p style={{ color: 'var(--color-text-secondary)' }}>
+    <div className="diagnostics-page">
+      <PageHeading eyebrow="Herramienta técnica" title="Diagnóstico de la plataforma">
+        <p>
           Verifica la configuración base del entorno,
           cabeceras de aislamiento y capacidades del navegador.
         </p>
-      </header>
+      </PageHeading>
 
       <section
         aria-labelledby={listId}
-        style={{
-          border: 'var(--border-width) solid var(--color-border)',
-          borderRadius: 'var(--border-radius)',
-          padding: 'var(--space-6)',
-          marginBottom: 'var(--space-8)',
-        }}
+        className="capabilities-section"
       >
-        <h2 id={listId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
+        <h2 id={listId}>
           Capacidades detectadas en tiempo de ejecución
         </h2>
 
-        <ul style={{ listStyle: 'none', display: 'grid', gap: 'var(--space-4)' }}>
+        <ul className="capabilities-list">
           {items.map((item) => (
             <li
               key={item.label}
-              style={{
-                padding: 'var(--space-3)',
-                border: 'var(--border-width) solid var(--color-border-subtle)',
-                borderRadius: 'var(--border-radius)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 'var(--space-4)',
-              }}
             >
               <div>
-                <strong style={{ display: 'block' }}>{item.label}</strong>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+                <strong>{item.label}</strong>
+                <span>
                   {item.description}
                 </span>
               </div>
               <span
                 role="status"
-                style={{
-                  fontWeight: 'var(--font-weight-strong)',
-                  padding: 'var(--space-1) var(--space-2)',
-                  borderRadius: 'var(--border-radius)',
-                  backgroundColor: item.available ? 'var(--color-success-background)' : 'var(--color-error-background)',
-                  color: item.available ? 'var(--color-success-text)' : 'var(--color-error-text)',
-                  fontSize: 'var(--text-sm)',
-                  whiteSpace: 'nowrap',
-                }}
+                className={item.available ? 'capability-status available' : 'capability-status unavailable'}
               >
                 {item.available ? 'Disponible' : 'No disponible'}
               </span>
@@ -107,36 +83,22 @@ export function DiagnosticsPage(): React.JSX.Element {
         </ul>
       </section>
 
-      <section
-        style={{
-          border: 'var(--border-width) solid var(--color-border)',
-          borderRadius: 'var(--border-radius)',
-          padding: 'var(--space-6)',
-        }}
-      >
-        <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
+      <section className="recheck-section">
+        <h2>
           Verificación de Reactividad
         </h2>
-        <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>
+        <p>
           Verificaciones realizadas:{' '}
           <strong data-testid="check-counter">{checkCounter}</strong>
         </p>
         <button
           type="button"
+          className="button button-primary"
           onClick={handleRecheck}
-          style={{
-            padding: 'var(--space-2) var(--space-4)',
-            backgroundColor: 'var(--color-button-background)',
-            color: 'var(--color-button-text)',
-            border: 'none',
-            borderRadius: 'var(--border-radius)',
-            cursor: 'pointer',
-            fontSize: 'var(--text-base)',
-          }}
         >
           Reevaluar capacidades
         </button>
       </section>
-    </>
+    </div>
   );
 }

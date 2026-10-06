@@ -23,16 +23,6 @@ const STATE_TEXT: Readonly<Record<AudioState, string>> = {
 
 const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31);
 
-const buttonStyle: React.CSSProperties = {
-  padding: 'var(--space-2) var(--space-4)',
-  backgroundColor: 'var(--color-button-background)',
-  color: 'var(--color-button-text)',
-  border: 'none',
-  borderRadius: 'var(--border-radius)',
-  fontSize: 'var(--text-base)',
-  cursor: 'pointer',
-};
-
 function isDialogOpen(): boolean {
   return document.querySelector('dialog[open]') !== null;
 }
@@ -190,28 +180,23 @@ export function PlaybackPanel({
   return (
     <section
       aria-labelledby={titleId}
-      style={{
-        border: 'var(--border-width) solid var(--color-border)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--space-6)',
-        marginBottom: 'var(--space-8)',
-      }}
+      className="playback-panel"
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
+      <h2 id={titleId}>
         Música
       </h2>
-      <p style={{ marginBottom: 'var(--space-4)' }}>Usa un volumen moderado en tu dispositivo.</p>
+      <p className="panel-footnote">Usa un volumen moderado en tu dispositivo.</p>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+      <div className="playback-controls">
         <button
           type="button"
-          style={buttonStyle}
+          className="button button-primary play-button"
           disabled={state === 'playing' || state === 'loading'}
           onClick={() => {
             void start();
           }}
         >
-          Iniciar música
+          <span aria-hidden="true" className="play-symbol">▷</span> Iniciar música
         </button>
         <label htmlFor={volumeId}>Volumen</label>
         <input
@@ -228,16 +213,16 @@ export function PlaybackPanel({
           }}
         />
         {/* Visual only: the control already announces the value with aria-valuetext. */}
-        <span aria-hidden="true" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <span aria-hidden="true">
           {volumeDb} dB
         </span>
       </div>
 
-      <p role="status">
+      <p role="status" className="playback-status" data-state={state}>
         Estado de la música: <strong>{stateText}</strong>
       </p>
       {control.error !== null && (
-        <p style={{ marginTop: 'var(--space-2)' }}>
+        <p className="quiet-notice">
           El audio no está disponible en este navegador ({control.error}).
         </p>
       )}
@@ -248,25 +233,19 @@ export function PlaybackPanel({
           role="alertdialog"
           aria-labelledby={warningTitleId}
           aria-describedby={warningTextId}
-          style={{
-            position: 'static',
-            marginTop: 'var(--space-4)',
-            padding: 'var(--space-4)',
-            border: 'var(--border-width) solid var(--color-border)',
-            borderRadius: 'var(--border-radius)',
-          }}
+          className="duration-dialog"
         >
-          <h3 id={warningTitleId} style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)' }}>
+          <h3 id={warningTitleId}>
             {warning === 0 ? 'La sesión planificada terminó' : 'Llevas 60 minutos de escucha continua'}
           </h3>
-          <p id={warningTextId} style={{ marginBottom: 'var(--space-4)' }}>
+          <p id={warningTextId}>
             Si no respondes, la música se apagará en 2 minutos con un fundido suave.
           </p>
-          <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-            <button ref={continueButtonRef} type="button" style={buttonStyle} onClick={continueSession}>
+          <div className="action-row">
+            <button ref={continueButtonRef} type="button" className="button button-primary" onClick={continueSession}>
               Continuar
             </button>
-            <button type="button" style={buttonStyle} onClick={finishSession}>
+            <button type="button" className="button button-secondary" onClick={finishSession}>
               Terminar
             </button>
           </div>
@@ -278,17 +257,9 @@ export function PlaybackPanel({
         onClick={stopNow}
         disabled={state !== 'playing'}
         aria-keyshortcuts="Escape"
-        style={{
-          ...buttonStyle,
-          position: 'fixed',
-          right: 'var(--space-4)',
-          bottom: 'var(--space-4)',
-          zIndex: 10,
-          padding: 'var(--space-3) var(--space-6)',
-          opacity: state === 'playing' ? 1 : 0.6,
-        }}
+        className="button stop-button"
       >
-        Detener
+        <span aria-hidden="true" className="stop-symbol" /> Detener
       </button>
     </section>
   );
