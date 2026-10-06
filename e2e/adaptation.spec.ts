@@ -2,8 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { expect, test, type TestInfo } from '@playwright/test';
 
 interface Ramp { readonly from: number; readonly to: number; readonly start: number; readonly end: number; readonly requestedAt: number }
-interface Signal { readonly timeMs: number; readonly meanHr: number | null; readonly rmssd: number | null; readonly quality: string; readonly receivedAt: number }
-interface EvidenceWindow extends Window { adaptationEvidence: { ramps: Ramp[]; signals: Signal[] } }
+interface Signal { readonly timeMs: number; readonly meanHr: number | null; readonly rmssd: number | null; readonly quality: string; readonly receivedAt: number; readonly audioTimeS: number | null }
+interface EvidenceWindow extends Window { adaptationEvidence: { ramps: Ramp[]; signals: Signal[]; audioStartS: number | null } }
 
 async function attachEvidence(testInfo: TestInfo, name: string, data: unknown): Promise<void> {
   const directory = 'build/verification/s4';
@@ -16,7 +16,19 @@ async function attachEvidence(testInfo: TestInfo, name: string, data: unknown): 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const target = window as unknown as EvidenceWindow;
-    target.adaptationEvidence = { ramps: [], signals: [] };
+    target.adaptationEvidence = { ramps: [], signals: [], audioStartS: null };
+    let readAudioTime: (() => number) | null = null;
+    const NativeAudioContext = AudioContext;
+    window.AudioContext = class extends NativeAudioContext {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        readAudioTime = () => this.currentTime;
+      }
+      override async resume(): Promise<void> {
+        await super.resume();
+        target.adaptationEvidence.audioStartS ??= this.currentTime;
+      }
+    };
     const held = new WeakMap<AudioParam, { value: number; time: number }>();
     // The original methods are invoked below with their native receiver via call().
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -40,7 +52,7 @@ test.beforeEach(async ({ page }) => {
         super(url, options);
         this.addEventListener('message', (event: MessageEvent<{ kind?: string; result?: Signal }>) => {
           if (event.data.kind === 'indices' && event.data.result !== undefined) {
-            target.adaptationEvidence.signals.push({ ...event.data.result, receivedAt: performance.now() });
+            target.adaptationEvidence.signals.push({ ...event.data.result, receivedAt: performance.now(), audioTimeS: readAudioTime?.() ?? null });
           }
         });
       }
@@ -80,7 +92,8 @@ test('rising activation closes the loop with native AudioParam ramps and latency
   expect(high.end - high.start).toBeCloseTo(Math.max(20, Math.abs(76 - high.from) * 2), 5);
   expect(high.requestedAt - acceptedAt).toBeGreaterThanOrEqual(0);
   expect(high.requestedAt - acceptedAt).toBeLessThan(2000);
-  await attachEvidence(testInfo, 'native-adaptation.json', { ...evidence, latencyMs: high.requestedAt - acceptedAt, errors });
+  await attachEvidence(testInfo, 'native-adaptation.json', { ...evidence, sinceAcceptanceMs: high.requestedAt - acceptedAt,
+    sinceEligibilityMs: high.requestedAt - acceptedAt, latencyMs: high.requestedAt - acceptedAt, errors });
   await page.keyboard.press('Escape');
   await expect(page.getByText('Detenida', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
@@ -91,6 +104,7 @@ test('Uncertain advances only after three real minutes on the native audio clock
   await page.getByRole('button', { name: 'Iniciar música' }).click();
   await page.getByRole('button', { name: 'Conectar simulador' }).click();
   await expect(page.getByTestId('activation-state')).toHaveText('Incierta', { timeout: 30_000 });
+  await expect(page.getByTestId('dwell-notice')).toBeVisible();
   await expect(page.getByTestId('music-level')).toHaveText('Intermedio');
   await expect(page.getByTestId('music-level')).toHaveText('Activación baja (meta)', { timeout: 180_000 });
   const evidence = await page.evaluate(() => (window as unknown as EvidenceWindow).adaptationEvidence);
@@ -99,6 +113,15 @@ test('Uncertain advances only after three real minutes on the native audio clock
   if (down === undefined) throw new Error('Missing native dwell evidence');
   expect(down.start).toBeGreaterThanOrEqual(180);
   expect(down.end - down.start).toBeGreaterThanOrEqual(20);
-  await attachEvidence(testInfo, 'native-dwell.json', evidence);
+  const acceptedAtS = evidence.signals.find(s => s.timeMs === 190_000)?.audioTimeS;
+  if (acceptedAtS === undefined || acceptedAtS === null || evidence.audioStartS === null) throw new Error('Missing acceptance clock evidence');
+  const eligibleAtS = evidence.audioStartS + 180;
+  const sinceAcceptanceMs = (down.start - acceptedAtS) * 1000;
+  const sinceEligibilityMs = (down.start - eligibleAtS) * 1000;
+  expect(sinceAcceptanceMs).toBeGreaterThan(2000);
+  expect(sinceEligibilityMs).toBeGreaterThanOrEqual(0);
+  expect(sinceEligibilityMs).toBeLessThan(2000);
+  await expect(page.getByTestId('dwell-notice')).toHaveCount(0);
+  await attachEvidence(testInfo, 'native-dwell.json', { ...evidence, acceptedAtS, eligibleAtS, sinceAcceptanceMs, sinceEligibilityMs });
   await page.getByRole('button', { name: 'Detener', exact: true }).click();
 });

@@ -44,6 +44,29 @@ describe('provisional state estimation', () => {
 });
 
 describe('guidance and hysteresis', () => {
+  it.each(['low', 'uncertain'] as const)('records acceptance and eligibility separately for %s', state => {
+    const engine = calibrated();
+    for (let ms = 185_000; ms <= 195_000; ms += 5000) {
+      engine.process(reading(ms, state === 'low' ? 80 : 100, state === 'low' ? 70 : 50), 20, true);
+    }
+    expect(engine.snapshot.state).toBe(state);
+    expect(engine.snapshot.waitingForDwell).toBe(true);
+    expect(engine.advance(179.9, true)).toBeNull();
+    expect(engine.advance(180.6, true)).toBe('target');
+    expect(engine.snapshot.waitingForDwell).toBe(false);
+    expect(engine.snapshot.lastTransition).toEqual({ direction: 'advance', acceptedAtS: 20, eligibleAtS: 180, scheduledAtS: 180.6 });
+    expect(180.6 - 180).toBeLessThan(2);
+    expect(180.6 - 20).toBeGreaterThan(2);
+  });
+  it('new quality or High prevents a pending advance at the eligibility boundary', () => {
+    const engine = calibrated();
+    engine.process(reading(185_000), 20, true);
+    engine.process(reading(190_000), 21, true);
+    engine.process(reading(195_000, 120, 30), 179, true);
+    expect(engine.advance(180, true)).toBeNull();
+    engine.invalidate();
+    expect(engine.advance(181, true)).toBeNull();
+  });
   it('advances on Uncertain after the dwell, never before, using audio rather than signal time', () => {
     const engine = calibrated();
     engine.process(reading(185_000), 179, true);
@@ -67,6 +90,7 @@ describe('guidance and hysteresis', () => {
     expect(engine.process(reading(195_000, 120, 30), 181, true)).toBeNull();
     expect(engine.process(reading(200_000, 120, 30), 182, true)).toBeNull();
     expect(engine.process(reading(205_000, 120, 30), 183, true)).toBe('intermediate');
+    expect(engine.snapshot.lastTransition).toEqual({ direction: 'retreat', acceptedAtS: 183, eligibleAtS: 183, scheduledAtS: 183 });
     expect(engine.snapshot.state).toBe('high');
     expect(engine.process(reading(210_000), 362, true)).toBeNull();
   });

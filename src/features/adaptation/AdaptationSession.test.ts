@@ -78,3 +78,27 @@ it('uses cancelAndHoldAtTime to preserve the native ramp before an interruption'
   expect(tempo.last('linear')).toEqual({ kind: 'linear', time: 35, value: 76 });
   expect(tempo.last('cancel')).toBeUndefined();
 });
+
+it('checks eligibility on source pulses between five-second index publications', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'intermediate', outputThroughAudioElement: false });
+  await audio.start();
+  const session = new AdaptationSession();
+  session.pulse();
+  session.setAudio(audio);
+  for (let ms = 60_000; ms <= 190_000; ms += 5000) session.receive(reading(ms));
+  expect(session.getSnapshot().waitingForDwell).toBe(true);
+  env.context.currentTime = 179;
+  session.pulse();
+  expect(audio.level).toBe('intermediate');
+  env.context.currentTime = 180.5;
+  session.pulse();
+  expect(audio.level).toBe('target');
+  const timing = session.getSnapshot().lastTransition;
+  expect(timing).toEqual({ direction: 'advance', acceptedAtS: 0, eligibleAtS: 180, scheduledAtS: 180.5 });
+  session.invalidate();
+  session.invalidate();
+  env.context.currentTime = 400;
+  session.pulse();
+  expect(audio.level).toBe('target');
+});

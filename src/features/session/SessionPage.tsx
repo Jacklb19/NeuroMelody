@@ -27,7 +27,7 @@ export function SessionPage(): React.JSX.Element {
       <PlaybackPanel durationMin={durationMin} onEngineChange={adaptation.setAudio} />
       <MusicalStatePanel session={adaptation} />
       <AcquisitionPanel source={source} onSourceChange={setSource} />
-      <SignalPanel source={source} onIndices={adaptation.receive} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} />
+      <SignalPanel source={source} onIndices={adaptation.receive} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={adaptation.pulse} />
     </>
   );
 }

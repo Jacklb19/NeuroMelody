@@ -20,6 +20,7 @@ export function MusicalStatePanel({ session }: { readonly session: AdaptationSes
     }</strong></p>
     <p>Confianza no calibrada · reglas provisionales</p>
     {!state.qualityGood && <p>La adaptación espera datos de buena calidad.</p>}
+    {state.waitingForDwell && <p data-testid="dwell-notice">Se conserva el escalón hasta completar su duración mínima de 3 minutos.</p>}
     <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--space-1) var(--space-4)', marginTop: 'var(--space-4)' }}>
       <dt>Escalón musical</dt><dd data-testid="music-level">{level.name}</dd>
       <dt>Tempo actual</dt><dd>{state.tempoBpm === null ? '—' : `${String(Math.round(state.tempoBpm))} BPM`}</dd>

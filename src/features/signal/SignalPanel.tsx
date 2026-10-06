@@ -4,7 +4,7 @@ import type { CanvasDimensions } from './drawing/drawTachogram';
 import { ChartPaletteError, readChartPalette, type ChartPalette } from './drawing/palette';
 import { SignalThreadClient, createWorkerPort } from './thread/SignalThreadClient';
 import type { SignalQuality, IndicesResult } from './processing/SignalProcessor';
-import { ANALYSIS_WINDOW_MS } from './processing/thresholds';
+import { ANALYSIS_WINDOW_MS, MAX_GAP_MS } from './processing/thresholds';
 
 type TransferCanvas = (canvas: HTMLCanvasElement) => OffscreenCanvas;
 
@@ -18,6 +18,7 @@ interface SignalPanelProps {
   readonly onIndices?: (result: IndicesResult) => void;
   readonly onReset?: () => void;
   readonly onUnavailable?: () => void;
+  readonly onPulse?: () => void;
 }
 
 type ChartState =
@@ -85,6 +86,7 @@ export function SignalPanel({
   onIndices,
   onReset,
   onUnavailable,
+  onPulse,
 }: SignalPanelProps): React.JSX.Element {
   const [chart] = useState<ChartState>(() =>
     evaluateChart(
@@ -161,7 +163,13 @@ export function SignalPanel({
       },
       onError: () => onUnavailable?.(),
     });
+    let lastRrTimeMs = 0;
     const unsubscribeSource = source.subscribe({
+      onNotification: notification => {
+        if (notification.rrIntervalsMs.length > 0) lastRrTimeMs = notification.timeMs;
+        if (notification.sensorContact === false || notification.timeMs - lastRrTimeMs > MAX_GAP_MS) onUnavailable?.();
+        else onPulse?.();
+      },
       onStateChange: state => {
         if (state === 'connecting') onReset?.();
         else if (state !== 'connected') onUnavailable?.();
@@ -173,7 +181,7 @@ export function SignalPanel({
       unsubscribeIndices();
       unsubscribeSource();
     };
-  }, [source, threadAvailable, createClient, chart, onIndices, onReset, onUnavailable]);
+  }, [source, threadAvailable, createClient, chart, onIndices, onReset, onUnavailable, onPulse]);
 
   // Solo se muestran resultados de la fuente actual.
   const result = reading !== null && reading.source === source ? reading.result : null;
