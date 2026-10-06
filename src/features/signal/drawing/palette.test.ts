@@ -99,6 +99,31 @@ describe('tokens de la gráfica en src/index.css', () => {
   });
 
   it.each([
+    ['--color-text', '--color-background'],
+    ['--color-text-secondary', '--color-background'],
+    ['--color-text-muted', '--color-background'],
+    ['--color-text', '--color-surface'],
+    ['--color-text-secondary', '--color-surface'],
+    ['--color-text-muted', '--color-surface'],
+    ['--color-button-text', '--color-button-background'],
+    ['--color-button-text', '--color-button-hover'],
+    ['--color-success-text', '--color-success-background'],
+    ['--color-error-text', '--color-error-background'],
+    ['--color-stop-text', '--color-stop-background'],
+  ])('keeps readable UI text at 4.5:1 contrast: %s on %s', (foreground, background) => {
+    expect(contrast(resolve(foreground), resolve(background))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each([
+    ['--color-border', '--color-paper'],
+    ['--color-focus', '--color-background'],
+    ['--color-focus', '--color-surface'],
+    ['--color-stop-border', '--color-background'],
+  ])('keeps control boundaries and focus at 3:1 contrast: %s on %s', (foreground, background) => {
+    expect(contrast(resolve(foreground), resolve(background))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each([
     ['--color-chart-line', '--color-background'],
     ['--color-chart-line', '--color-chart-low-quality-background'],
     ['--color-chart-discarded', '--color-background'],
