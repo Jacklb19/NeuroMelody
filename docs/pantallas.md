@@ -10,30 +10,35 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 
 | Ruta | Pantalla | Propósito | HU | RF | Sprint | ¿Requiere sesión? | Lleva a |
 |---|---|---|---|---|---|---|---|
-| `/` | Inicio | Punto de entrada: iniciar una sesión de escucha y acceder al plan, al historial y a la cuenta. | — | — | S3 | No | `/advertencias` (si no se aceptaron), `/plan`, `/sesion`, `/historial`, `/cuenta`, `/privacidad` |
-| `/advertencias` | Advertencias de uso | Presentar el carácter no clínico de la aplicación y registrar la aceptación explícita antes de la primera sesión. | — | RF-17 | S3 | No (se guarda en el dispositivo y se sincroniza en `profiles` si hay cuenta) | `/plan`, `/sesion`, `/privacidad` |
-| `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. En S6 se suma la propuesta del modelo de lenguaje. | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | No para el plan manual; sí para pedir la propuesta al modelo | `/sesion`, `/` |
-| `/sesion` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | No | `/resumen/:id` (al terminar), `/` |
-| `/resumen/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | No para los indicadores locales; sí para el texto del modelo y la sincronización | `/historial`, `/` |
-| `/historial` | Historial | Revisar sesiones anteriores y la evolución de los indicadores; borrar sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/resumen/:id`, `/` |
-| `/cuenta` | Cuenta | Entrar, registrarse, recuperar la contraseña, activar el segundo factor, gestionar el consentimiento de sincronización y borrar la cuenta. | — | RF-14 | S6 | Parcial: entrada y registro sin sesión; ajustes con sesión | `/privacidad`, `/historial`, `/` |
-| `/privacidad` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/cuenta`, `/` |
-| `/diagnostico` | Diagnóstico de la plataforma | Verificar el aislamiento de origen cruzado y las capacidades del navegador. Herramienta técnica, no forma parte del recorrido del paciente. | — | — | S0 | No | `/` |
+| `/` | Inicio | Punto de entrada: iniciar una sesión de escucha y acceder al plan, al historial y a la cuenta. | — | — | S3 | No | `/warnings` (si no se aceptaron), `/plan`, `/session`, `/history`, `/account`, `/privacy` |
+| `/warnings` | Advertencias de uso | Presentar el carácter no clínico de la aplicación y registrar la aceptación explícita antes de la primera sesión. | — | RF-17 | S3 | No (se guarda en el dispositivo y se sincroniza en `profiles` si hay cuenta) | `/plan`, `/session`, `/privacy` |
+| `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. En S6 se suma la propuesta del modelo de lenguaje. | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | No para el plan manual; sí para pedir la propuesta al modelo | `/session`, `/` |
+| `/session` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | No | `/summary/:id` (al terminar), `/` |
+| `/summary/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | No para los indicadores locales; sí para el texto del modelo y la sincronización | `/history`, `/` |
+| `/history` | Historial | Revisar sesiones anteriores y la evolución de los indicadores; borrar sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/summary/:id`, `/` |
+| `/account` | Cuenta | Entrar, registrarse, recuperar la contraseña, activar el segundo factor, gestionar el consentimiento de sincronización y borrar la cuenta. | — | RF-14 | S6 | Parcial: entrada y registro sin sesión; ajustes con sesión | `/privacy`, `/history`, `/` |
+| `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
+| `/diagnostics` | Diagnóstico de la plataforma | Verificar el aislamiento de origen cruzado y las capacidades del navegador. Herramienta técnica, no forma parte del recorrido del paciente. | — | — | S0 | No | `/` |
 
 ## Paneles existentes y su ubicación
 
-Hoy la aplicación no tiene enrutador: todo se muestra en una sola página. Al introducir las rutas en el S3 (react-router en modo declarativo, sin cargadores de datos), los paneles se reubican así:
+Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores de datos. Los paneles construidos están en:
 
 | Panel (código) | Sprint en que se creó | Ubicación en el mapa |
 |---|---|---|
-| `PanelAdquisicion` (`src/features/adquisicion/`) | S1 | `/sesion` |
-| `PanelSenal` (`src/features/senal/`) | S2 | `/sesion` |
-| `DiagnosticoPage` (`src/features/diagnostico/`) | S0 | `/diagnostico` |
+| `AcquisitionPanel` (`src/features/acquisition/`) | S1 | `/session` |
+| `SignalPanel` (`src/features/signal/`) | S2 | `/session` |
+| `PlaybackPanel` (`src/features/audio/ui/`) | S3 | `/session` (incluye el aviso de duración) |
+| `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 
-## Paneles previstos dentro de `/sesion`
+## Paneles previstos dentro de `/session`
 
 | Panel | Propósito | RF | Sprint |
 |---|---|---|---|
-| Reproducción | Iniciar, volumen (con aviso de volumen moderado) y detener (botón fijo, tecla Esc y Media Session). | RF-11, RF-18 | S3 |
 | Estado musical | Tempo, modo y capas actuales, y el estado estimado con su confianza en lenguaje descriptivo. | RF-09, RF-12 | S4 |
-| Aviso de duración | Aviso a los 60 minutos y fundido de salida si no hay respuesta. | RF-18 | S3 |
+
+S4 incorpora MusicalStatePanel en `/session`: estado aceptado, confianza no calibrada, espera por calidad, escalón, tempo actual/destino. Durante permanencia muestra «Se conserva el escalón hasta completar su duración mínima de 3 minutos». Modo/capas programados: el fundido espera el ciclo y no se presenta como completado. Estimador de entrega: R-05; no hay ONNX integrado ni entrenamiento iniciado (limitación RF-07, ADR-14).
+
+## Funciones todavía no activas — propuesta S5–S7
+
+Aprobado junto con plan-entrega.md. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Groq pendiente conserva plan manual/resumen de indicadores con «Resumen automático pendiente». Ninguna etiqueta de pendiente satisface un requisito. Todo TOTP se implementa en S6.2; NeuroMelody documenta el patrón de login en docs/autenticacion.md. No se construyen estas pantallas durante S4.

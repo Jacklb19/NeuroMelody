@@ -1,68 +1,68 @@
 /*
- * Design tokens: única fuente de colores, tipografía y espaciados.
- * Los componentes los consumen con var(--...) y no repiten valores literales.
+ * Design tokens: the single source of colors, typography and spacing.
+ * Components use them through var(--...) and never repeat literal values.
  */
 :root {
-  /* Colores */
-  --color-texto: #111827;
-  --color-texto-secundario: #4b5563;
-  --color-texto-tenue: #6b7280;
-  --color-fondo: #ffffff;
-  --color-borde: #d1d5db;
-  --color-borde-suave: #e5e7eb;
-  --color-boton-fondo: #1f2937;
-  --color-boton-texto: #ffffff;
-  --color-foco: #2563eb;
-  --color-exito-fondo: #dcfce7;
-  --color-exito-texto: #166534;
-  --color-error-fondo: #fee2e2;
-  --color-error-texto: #991b1b;
+  /* Colors */
+  --color-text: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-background: #ffffff;
+  --color-border: #d1d5db;
+  --color-border-subtle: #e5e7eb;
+  --color-button-background: #1f2937;
+  --color-button-text: #ffffff;
+  --color-focus: #2563eb;
+  --color-success-background: #dcfce7;
+  --color-success-text: #166534;
+  --color-error-background: #fee2e2;
+  --color-error-text: #991b1b;
 
   /*
-   * Gráfica de la señal. Tonos neutros y ámbar suave, nunca los de error: la
-   * ve alguien que intenta relajarse. Los que marcan información cumplen 3:1
-   * de contraste con el fondo (WCAG 1.4.11), y la forma (rayado, ×) no
-   * depende del color.
+   * Signal chart. Neutral and soft amber tones, never the error ones: it is
+   * seen by someone trying to relax. Those carrying information meet 3:1
+   * contrast against the background (WCAG 1.4.11), and the shape (hatching, ×)
+   * does not rely on color.
    */
-  --color-grafica-linea: var(--color-foco);
-  --color-grafica-rejilla: var(--color-borde-suave);
-  --color-grafica-texto: var(--color-texto-secundario);
-  --color-grafica-descartado: #78716c;
-  --color-grafica-baja-calidad-fondo: #fffbeb;
-  --color-grafica-baja-calidad-rayado: #a16207;
+  --color-chart-line: var(--color-focus);
+  --color-chart-grid: var(--color-border-subtle);
+  --color-chart-text: var(--color-text-secondary);
+  --color-chart-discarded: #78716c;
+  --color-chart-low-quality-background: #fffbeb;
+  --color-chart-low-quality-hatch: #a16207;
 
-  /* Tipografía */
-  --fuente-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --interlineado-base: 1.5;
-  --peso-normal: 400;
-  --peso-destacado: 600;
-  --texto-sm: 0.875rem;
-  --texto-base: 1rem;
-  --texto-lg: 1.125rem;
-  --texto-xl: 1.25rem;
-  --texto-2xl: 1.75rem;
+  /* Typography */
+  --font-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --line-height-base: 1.5;
+  --font-weight-normal: 400;
+  --font-weight-strong: 600;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.75rem;
 
-  /* Espaciado (escala de 0,25 rem) */
-  --espacio-1: 0.25rem;
-  --espacio-2: 0.5rem;
-  --espacio-3: 0.75rem;
-  --espacio-4: 1rem;
-  --espacio-6: 1.5rem;
-  --espacio-8: 2rem;
+  /* Spacing (0.25 rem scale) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
 
-  /* Bordes, foco y maquetación */
-  --borde-grosor: 1px;
-  --radio-borde: 4px;
-  --foco-grosor: 3px;
-  --foco-separacion: 2px;
-  --ancho-maximo-contenido: 960px;
-  --alto-grafica: 14rem;
+  /* Borders, focus and layout */
+  --border-width: 1px;
+  --border-radius: 4px;
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --content-max-width: 960px;
+  --chart-height: 14rem;
 
-  font-family: var(--fuente-base);
-  line-height: var(--interlineado-base);
-  font-weight: var(--peso-normal);
-  color: var(--color-texto);
-  background-color: var(--color-fondo);
+  font-family: var(--font-base);
+  line-height: var(--line-height-base);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text);
+  background-color: var(--color-background);
 }
 
 * {
@@ -79,14 +79,29 @@ body {
 
 #root {
   width: 100%;
-  max-width: var(--ancho-maximo-contenido);
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: var(--espacio-8) var(--espacio-4);
+  padding: var(--space-8) var(--space-4);
 }
 
-/* Enfoque accesible visible */
+/* Link that skips the navigation: hidden until it receives focus (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: calc(-1 * var(--space-8) - var(--space-8));
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-button-background);
+  color: var(--color-button-text);
+  border-radius: var(--border-radius);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+/* Visible, accessible focus */
 a:focus-visible,
 button:focus-visible {
-  outline: var(--foco-grosor) solid var(--color-foco);
-  outline-offset: var(--foco-separacion);
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
 }
