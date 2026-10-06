@@ -8,6 +8,16 @@ function view(...bytes: number[]): DataView {
 }
 
 describe('parseHeartRateMeasurement', () => {
+  it.each([
+    { bytes: [0x16, 0x3c, 0x00, 0x04], heartRate: 60, sensorContact: true, rrIntervalsMs: [1000] },
+    { bytes: [0x16, 0x40, 0xc0, 0x03], heartRate: 64, sensorContact: true, rrIntervalsMs: [937.5] },
+    { bytes: [0x16, 0x60, 0x80, 0x02], heartRate: 96, sensorContact: true, rrIntervalsMs: [625] },
+    { bytes: [0x16, 0x3c, 0x00, 0x04, 0x10, 0x04], heartRate: 60, sensorContact: true, rrIntervalsMs: [1000, 1015.625] },
+    { bytes: [0x14, 0x3c, 0x00, 0x04], heartRate: 60, sensorContact: false, rrIntervalsMs: [1000] },
+    { bytes: [0x10, 0x3c, 0x00, 0x04], heartRate: 60, sensorContact: null, rrIntervalsMs: [1000] },
+  ])('decodes the documented nRF Connect vector $bytes', ({ bytes, ...expected }) => {
+    expect(parseHeartRateMeasurement(view(...bytes))).toEqual(expected);
+  });
   it('reads an 8-bit heart rate without optional fields', () => {
     expect(parseHeartRateMeasurement(view(0x00, 0x48))).toEqual({
       heartRate: 72,
