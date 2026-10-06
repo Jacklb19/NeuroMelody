@@ -2,6 +2,8 @@
 
 Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha del usuario; 3–5 oyentes no bloquean ese cierre. Fecha propuesta de ajuste posterior: 16 de octubre, después del cierre técnico de S5, commit pequeño separado de levels.ts basado en resultados reales.
 
+**S4 cerrado el 5 de octubre de 2026.** El usuario confirmó la escucha completa con «todo pasó»: inicio, timbre, avance con Incierta, retroceso por Alta, relajación progresiva, continuidad al cambiar de pestaña y detención. Esta confirmación manual complementa las 332 pruebas aprobadas, cobertura de líneas 96,01 %, tipos/lint/build correctos y los 8 E2E Chrome/Edge de la revisión RNF-02. No se cambiaron los valores de levels.ts. La evaluación con 3–5 oyentes sigue posterior y separada; BLE físico, accesibilidad completa y despliegue conservan sus comprobaciones pendientes.
+
 ## Principio iso
 
 1. **Acompañar.** Durante los primeros 3 a 5 minutos, la música corresponde al estado estimado de la persona, sin intentar cambiarlo.

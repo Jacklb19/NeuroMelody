@@ -105,7 +105,7 @@ Estado al preparar el plan, con evidencia de S3 y verificación S4; ninguna comp
 | HU-01 | Manual con periférico: emparejar <15 s, estado visible; pruebas GATT/reintentos y recarga; matriz escritorio/Android | Pendiente S5. Parser unitario existente; no hay banda verificada. |
 | HU-02 | ≥3 escenarios reproducibles y velocidades; cadena idéntica detrás de SignalSource para simulador/registro/BLE | Simulador/registro verificados; completar sustitución BLE S5. |
 | HU-03 | Inicio medido <1 s en producción/preview con equipo documentado; 30 min nativos con 0 subdesbordamientos, repetir con lazo final | S3: 30 min reales con 0. Inicio extremo a extremo <1 s no está medido; revalidación S7. |
-| HU-04 | 1.000 transiciones; tempo y modo ≥20 s, reversión sin saltos, E2E y una escucha del usuario | S4: pruebas automáticas; escucha del usuario pendiente. Grupo de oyentes posterior, propuesto 16 oct, no bloquea S4. |
+| HU-04 | 1.000 transiciones; tempo y modo ≥20 s, reversión sin saltos, E2E y una escucha del usuario | S4 cerrado el 5 oct: pruebas automáticas y escucha completa confirmada por el usuario, todo pasó. Grupo de oyentes posterior, propuesto 16 oct. |
 | HU-05 | Índices/estado cada ≤5 s de señal; texto accesible y gráfica; tareas largas y comprobación visual | S2/S4: índices y estado. Rendimiento y percepción manual finales S7. |
 | HU-06 | Botón visible en todos los tamaños, teclado/Esc, muestras silenciadas <200 ms y comprobación manual | S3: rampa de 50 ms, pruebas y E2E. Lector, zoom y dispositivo manual pendientes S7. |
 | HU-07 | Plan visible antes de escuchar, objetivos/duración editables; propuesta válida del modelo y alternativa manual sin red | Plan manual S3 parcial: comprobar objetivos además de duración en S6; Groq pendiente S6. |
@@ -126,9 +126,9 @@ Terminación global: RF restantes y las diez HU verificadas; excepción explíci
 | RF-05 | Índices temporales/ventana verificados en Worker. |
 | RF-06 | Pendiente S5: PSD y LF/HF con referencias. |
 | RF-07 | **Limitado por decisión del usuario:** estimador por reglas S4, alternativa R-05, sin confianza calibrada. No hay entrenamiento, etiquetas ni ONNX; requisito literal del clasificador entrenado no cumplido. ONNX opcional, sin dependencia de una rama. |
-| RF-08 | Síntesis por capas verificada; escucha del usuario pendiente. |
-| RF-09 | Lazo/rampas/estado provisional verificados S4; escucha pendiente. |
-| RF-10 | 1.000 transiciones de tempo y 1.000 fundidos de modo verificados; escucha pendiente. |
+| RF-08 | Síntesis por capas verificada; escucha completa confirmada por el usuario el 5 oct. |
+| RF-09 | Lazo/rampas/estado provisional verificados S4; escucha confirmada el 5 oct. |
+| RF-10 | 1.000 transiciones de tempo y 1.000 fundidos de modo verificados; escucha confirmada el 5 oct. |
 | RF-11 | Reproducción/volumen/stop y Esc verificados; comprobaciones manuales de sistema/AA pendientes. |
 | RF-12 | Señal/índices/estado/confianza descriptiva verificados; PSD llega S5. |
 | RF-13 | Propuesta de plan por modelo pendiente S6.4; plan manual existente. |
@@ -142,7 +142,7 @@ Terminación global: RF restantes y las diez HU verificadas; excepción explíci
 
 | Sprint | Riesgo concreto | Detección y respuesta |
 |---|---|---|
-| S4 | Música desagradable o fuente retrasada | RNF-02 resuelto explícitamente y probado; cierre necesita una escucha del usuario. Grupo de oyentes posterior. |
+| S4 | Música desagradable o fuente retrasada | Cerrado el 5 oct: RNF-02 probado y escucha completa confirmada por el usuario, todo pasó. Grupo de oyentes posterior. |
 | S5 | No hay periférico o espectro sin referencia | Conexión el 13 oct, espectro el 14; correcciones usan reserva 15–16. Sin periférico HU-01 sigue manual pendiente. No se espera entrenamiento. |
 | S6 | Correo/recuperación TOTP/RLS/aal2 o duplicados bloquean sincronización | Recursos 21–22 oct, correo 22, TOTP completo 26, negativas RLS/aal2 28, idempotencia 30. NeuroMelody documenta patrón en autenticacion.md; nube bloqueada sin aal2. |
 | S7 | Rendimiento/audio móvil, AA o actualización PWA falla; despliegue difiere del preview | Ensayo de 30 min y muestra de accesibilidad antes del 10 nov, repetir red/colas el 9. Congelar el 12; fallos graves se corrigen antes de presentar. |

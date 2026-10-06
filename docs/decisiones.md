@@ -63,7 +63,7 @@ Decisiones tomadas durante la construcción que completan o se desvían del docu
 |---|---|
 | Estado | Aprobado y revisado por instrucciones del usuario el 5 de octubre de 2026. |
 | Contexto | El cronograma de la especificación termina el 19 de noviembre, después de la entrega obligatoria del 17. |
-| Decisión | Desarrollo hasta el 12 nov; publicación/revisión 13–17 nov. Lunes a viernes excluyendo festivos Colombia 12 oct, 2 nov y 16 nov. S4: 5 oct aprovechando lo ya desarrollado y pendiente de una escucha del usuario; S5: 6–14 oct, prueba BLE 13 oct; reserva recuperada de ONNX: 15–16 oct; S6: 19 oct–5 nov; S7: 6–12 nov. Fines de semana solo como reserva adicional opcional. |
+| Decisión | Desarrollo hasta el 12 nov; publicación/revisión 13–17 nov. Lunes a viernes excluyendo festivos Colombia 12 oct, 2 nov y 16 nov. S4 cerrado el 5 oct con pruebas y escucha completa confirmada por el usuario; S5: 6–14 oct, prueba BLE 13 oct; reserva recuperada de ONNX: 15–16 oct; S6: 19 oct–5 nov; S7: 6–12 nov. Fines de semana solo como reserva adicional opcional. |
 | Desviación | Sustituye únicamente el calendario de ejecución. No modifica `definicion-proyecto.md`, no elimina RF ni HU y no autoriza operaciones remotas. |
 | Consecuencias | Capacidad: 27 días efectivos; esfuerzo 25 y reserva 2 (15–16 oct). La revisión con ONNX agotaba reserva; se recupera por ADR-14. Del 13–17 nov solo 13 y 17 son laborables. S6.2 estima 7 días: correo, todo TOTP/recuperación/dos dispositivos, JWT/RLS/aal2 y sincronización; NeuroMelody implementa el patrón de login y lo documenta en docs/autenticacion.md en S6.2. S6.3: Google y cierre. Ruta crítica/recursos en plan-entrega.md; no se abre la nube sin aal2. |
 
