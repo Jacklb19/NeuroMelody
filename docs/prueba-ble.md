@@ -44,6 +44,41 @@ Para automatizar envíos, importar una macro XML de operaciones de servidor y ac
 
 Nordic documenta `send-notification`, importación XML y repetición de macro. Si la versión instalada no permite lanzar la macro en esa conexión, usar los envíos manuales de SERVER para verificar bytes; registrar versión y limitación, sin asumir que el bucle se ejecutó. [Nordic: operaciones de servidor y macros](https://github.com/NordicSemiconductor/Android-nRF-Connect/blob/main/documentation/Macros/README.md)
 
+### Macro alternativa con ocho RR variables
+
+Importar esta segunda macro y activar repetición después de suscribirse. Envía FC 60, contacto detectado y RR de **1000, 1015.625, 1000, 984.375, 968.75, 984.375, 1015.625 y 1031.25 ms**. Cada pausa dura 1 s; los ocho RR suman exactamente 8 s. La variación pequeña debe pasar el filtro sin descartes y producir RMSSD distinto de cero. Las unidades, orden little-endian, contacto y aceptación por BeatFilter se verifican leyendo los bytes de esta macro en `documentedMacro.test.ts`.
+
+```xml
+<macro name="NeuroMelody variable RR sample" icon="PLAY">
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163C0004" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163C1004" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163C0004" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163CF003" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163CE003" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163CF003" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163C1004" />
+  <sleep timeout="1000" />
+  <send-notification service-uuid="0000180d-0000-1000-8000-00805f9b34fb"
+    characteristic-uuid="00002a37-0000-1000-8000-00805f9b34fb" value="163C2004" />
+  <sleep timeout="1000" />
+</macro>
+```
+
+Esta macro prueba RR variables válidos y el paso por el filtro; los descartes se comprueban por separado con pérdida de contacto y vectores de artefactos. No pretende inducir Alta/Baja: la verificación automática del lazo S4 sigue usando simulador y registros. La macro y el lazo BLE físico se comprobarán en S5; no se declara ejecución en Android con una prueba del XML.
+
 ## Guardar vectores y repetir la prueba
 
 1. En nRF Connect usar **Show log** y **SAVE** para exportar el registro; exportar también configuración GATT y macro. Registrar versión nRF/Android, navegador y fecha, FC/RR y orden de envíos. No guardar dirección MAC, nombre de persona, identificador de dispositivo ni secretos en el repositorio. Nordic documenta la exportación del registro. [Registro nRF Connect](https://github.com/NordicSemiconductor/Android-nRF-Connect/blob/main/documentation/README.md)
