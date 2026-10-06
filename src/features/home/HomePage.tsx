@@ -1,37 +1,34 @@
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { DEFAULT_DURATION_MIN } from '../plan/plan';
+import { PageHeading } from '../../shared/PageHeading';
 
-const linkStyle: React.CSSProperties = {
-  display: 'inline-block',
-  padding: 'var(--space-2) var(--space-4)',
-  borderRadius: 'var(--border-radius)',
-  border: 'var(--border-width) solid var(--color-border)',
-  color: 'var(--color-text)',
-};
-
-/** Punto de entrada (docs/pantallas.md, `/`). */
+/** Entry point for preparing or starting an existing listening plan. */
 export function HomePage(): React.JSX.Element {
   usePageTitle('Inicio');
   return (
-    <>
-      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>NeuroMelody</h1>
-      <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)' }}>
-        Música generativa que acompaña tus señales fisiológicas. Es una herramienta de bienestar,
-        no un dispositivo médico.
-      </p>
-      <ul style={{ listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+    <div className="home-page">
+      <PageHeading eyebrow="Música adaptativa · a tu ritmo" title="NeuroMelody">
+        <p>
+          Música generativa que acompaña tus señales fisiológicas. Es una herramienta de bienestar,
+          no un dispositivo médico.
+        </p>
+      </PageHeading>
+      <ul className="home-actions">
         <li>
-          <Link to="/plan" style={linkStyle}>
-            Preparar una sesión
+          <Link to="/plan" className="button button-primary">
+            Preparar una sesión <span aria-hidden="true">↗</span>
           </Link>
         </li>
         <li>
-          <Link to="/session" style={linkStyle}>
+          <Link to="/session" className="home-default-link">
             Empezar con el plan por defecto ({DEFAULT_DURATION_MIN} minutos)
           </Link>
         </li>
       </ul>
-    </>
+      <div className="home-details">
+        <span>10–60 minutos</span><span>Música generativa</span><span>Cambios graduales</span>
+      </div>
+    </div>
   );
 }

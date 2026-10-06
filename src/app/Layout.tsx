@@ -17,18 +17,21 @@ export function Layout(): React.JSX.Element {
       <a href="#contenido" className="skip-link">
         Saltar al contenido
       </a>
-      <header style={{ marginBottom: 'var(--space-8)' }}>
+      <header className="app-header">
+        <span className="brand" aria-label="NeuroMelody">
+          <svg className="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path d="M5 20V12M12 25V7M20 22V10M27 18V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          NeuroMelody
+        </span>
         <nav aria-label="Principal">
-          <ul style={{ listStyle: 'none', display: 'flex', gap: 'var(--space-4)' }}>
+          <ul>
             {LINKS.map(({ route, text }) => (
               <li key={route}>
                 <NavLink
                   to={route}
                   end
-                  style={({ isActive }) => ({
-                    color: 'var(--color-text)',
-                    fontWeight: isActive ? 'var(--font-weight-strong)' : 'var(--font-weight-normal)',
-                  })}
+                  className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
                 >
                   {text}
                 </NavLink>
@@ -37,7 +40,7 @@ export function Layout(): React.JSX.Element {
           </ul>
         </nav>
       </header>
-      <main id="contenido" tabIndex={-1}>
+      <main id="contenido" tabIndex={-1} className="app-main">
         <Outlet />
       </main>
     </>

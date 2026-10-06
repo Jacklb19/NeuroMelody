@@ -99,19 +99,14 @@ export function AcquisitionPanel({
   return (
     <section
       aria-labelledby={titleId}
-      style={{
-        border: 'var(--border-width) solid var(--color-border)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--space-6)',
-        marginBottom: 'var(--space-8)',
-      }}
+      className="acquisition-panel"
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
+      <h2 id={titleId}>
         Fuente de señal
       </h2>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+      <div className="source-controls">
+        <label>
           Origen de la señal
           <select value={kind} disabled={active} onChange={event => {
             setKind(event.target.value === 'recording' ? 'recording' : 'simulator');
@@ -120,7 +115,7 @@ export function AcquisitionPanel({
             <option value="recording">Registro de ejemplo</option>
           </select>
         </label>
-        {kind === 'simulator' ? <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+        {kind === 'simulator' ? <label>
           Escenario del simulador
           <select
             value={scenario}
@@ -135,7 +130,7 @@ export function AcquisitionPanel({
               </option>
             ))}
           </select>
-        </label> : <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+        </label> : <label>
           Registro
           <select value={recordId} disabled={active} onChange={event => {
             setRecordId(RECORDING_IDS.find(id => id === event.target.value) ?? 'nsr001');
@@ -146,7 +141,7 @@ export function AcquisitionPanel({
           </select>
         </label>}
 
-        <label style={{ display: 'grid', gap: 'var(--space-1)' }}>
+        <label>
           Velocidad
           <select
             value={speed}
@@ -163,41 +158,32 @@ export function AcquisitionPanel({
           </select>
         </label>
       </div>
-      {kind === 'recording' && <p style={{ marginBottom: 'var(--space-4)' }}>
+      {kind === 'recording' && <p className="recording-note">
         Datos públicos de ejemplo de PhysioNet nsr2db. La reproducción termina al completar el registro.{' '}
         <a href="/recordings/CREDITS.md">Origen y licencia de los datos</a>
       </p>}
 
       <button
         type="button"
+        className="button button-secondary source-button"
         onClick={active ? disconnect : connect}
-        style={{
-          padding: 'var(--space-2) var(--space-4)',
-          backgroundColor: 'var(--color-button-background)',
-          color: 'var(--color-button-text)',
-          border: 'none',
-          borderRadius: 'var(--border-radius)',
-          cursor: 'pointer',
-          fontSize: 'var(--text-base)',
-          marginBottom: 'var(--space-4)',
-        }}
       >
         {active ? 'Desconectar' : kind === 'simulator' ? 'Conectar simulador' : 'Reproducir registro'}
       </button>
 
-      <p role="status" style={{ marginBottom: 'var(--space-4)' }}>
+      <p role="status" className="connection-status" data-state={reading.state}>
         Estado de la conexión: <strong>{STATE_TEXT[reading.state]}</strong>
       </p>
 
       {reading.error !== null && (
-        <p role="alert" style={{ color: 'var(--color-error-text)', marginBottom: 'var(--space-4)' }}>
+        <p role="alert" className="quiet-notice">
           {kind === 'recording'
             ? `No se pudo reproducir el registro (${reading.error}). Intenta conectarlo de nuevo.`
             : `La medición no es fiable y se descartó (${reading.error}). Revisa la colocación del dispositivo.`}
         </p>
       )}
 
-      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 'var(--space-1) var(--space-4)' }}>
+      <dl className="source-metrics">
         <dt>Frecuencia cardíaca</dt>
         <dd data-testid="heart-rate">
           {reading.last === null ? '—' : `${String(reading.last.heartRate)} lpm`}

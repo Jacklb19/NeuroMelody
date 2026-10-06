@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { useWarningsRegistry } from './warningsContext';
 import { WARNINGS, CONFIRMATION_TEXT } from './warningsText';
+import { PageHeading } from '../../shared/PageHeading';
 
 function destinationAfterAccept(state: unknown): string {
   if (typeof state === 'object' && state !== null && 'from' in state && typeof state.from === 'string') {
@@ -15,7 +16,7 @@ export function WarningsPage(): React.JSX.Element {
   usePageTitle('Antes de empezar');
   const registry = useWarningsRegistry();
   const navigate = useNavigate();
-  // El estado de la navegación llega sin tipo: se valida en destinoTrasAceptar.
+  // Navigation state is untyped and validated before choosing the destination.
   const state: unknown = useLocation().state;
   const [confirmed, setConfirmed] = useState(false);
   const checkboxId = useId();
@@ -26,14 +27,14 @@ export function WarningsPage(): React.JSX.Element {
   };
 
   return (
-    <>
-      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-4)' }}>Antes de empezar</h1>
-      <ul style={{ display: 'grid', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', paddingLeft: 'var(--space-6)' }}>
+    <div className="reading-page warnings-page">
+      <PageHeading eyebrow="Una escucha consciente" title="Antes de empezar" />
+      <ul className="warnings-list">
         {WARNINGS.map((text) => (
           <li key={text}>{text}</li>
         ))}
       </ul>
-      <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+      <div className="confirmation-control">
         <input
           id={checkboxId}
           type="checkbox"
@@ -46,21 +47,12 @@ export function WarningsPage(): React.JSX.Element {
       </div>
       <button
         type="button"
+        className="button button-primary"
         onClick={accept}
         disabled={!confirmed}
-        style={{
-          padding: 'var(--space-2) var(--space-4)',
-          backgroundColor: 'var(--color-button-background)',
-          color: 'var(--color-button-text)',
-          border: 'none',
-          borderRadius: 'var(--border-radius)',
-          fontSize: 'var(--text-base)',
-          cursor: confirmed ? 'pointer' : 'not-allowed',
-          opacity: confirmed ? 1 : 0.6,
-        }}
       >
         Aceptar y continuar
       </button>
-    </>
+    </div>
   );
 }

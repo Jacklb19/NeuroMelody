@@ -1,6 +1,6 @@
 # Mapa de pantallas — NeuroMelody
 
-Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el cambio al mapa antes de construirlo. Este documento no define colores ni estilo visual.
+Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el cambio al mapa antes de construirlo. Este documento no define colores ni estilo visual. La presentación de las cinco pantallas existentes se documenta en [diseno-visual.md](diseno-visual.md); el rediseño conserva sus rutas, paneles y comportamiento.
 
 **Usuarios.** El paciente es el usuario principal. El terapeuta o acompañante usa la misma cuenta y el mismo dispositivo que el paciente, sin rol ni permisos propios: su intervención se limita a las pantallas de plan e historial.
 

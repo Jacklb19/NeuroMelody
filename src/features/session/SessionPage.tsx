@@ -8,26 +8,30 @@ import { readDuration } from '../plan/plan';
 import { SignalPanel } from '../signal/SignalPanel';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
+import { PageHeading } from '../../shared/PageHeading';
 
-/** Sesión en curso (docs/pantallas.md, `/session`). */
+/** Listening session at /session, as defined in docs/pantallas.md. */
 export function SessionPage(): React.JSX.Element {
   usePageTitle('Sesión');
   const [params] = useSearchParams();
   const durationMin = readDuration(params.get('duration'));
-  // La fuente se comparte: la adquisición la crea y el análisis la consume.
+  // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
   const [adaptation] = useState(() => new AdaptationSession());
 
   return (
-    <>
-      <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>Sesión</h1>
-      <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)' }}>
-        Plan: {durationMin} minutos.
-      </p>
-      <PlaybackPanel durationMin={durationMin} onEngineChange={adaptation.setAudio} />
-      <MusicalStatePanel session={adaptation} />
-      <AcquisitionPanel source={source} onSourceChange={setSource} />
-      <SignalPanel source={source} onIndices={adaptation.receive} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={adaptation.pulse} />
-    </>
+    <div className="session-page">
+      <PageHeading eyebrow="Tu espacio de escucha" title="Sesión">
+        <p>Plan: {durationMin} minutos.</p>
+      </PageHeading>
+      <div className="listening-layout">
+        <PlaybackPanel durationMin={durationMin} onEngineChange={adaptation.setAudio} />
+        <MusicalStatePanel session={adaptation} />
+      </div>
+      <div className="signal-layout">
+        <AcquisitionPanel source={source} onSourceChange={setSource} />
+        <SignalPanel source={source} onIndices={adaptation.receive} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={adaptation.pulse} />
+      </div>
+    </div>
   );
 }

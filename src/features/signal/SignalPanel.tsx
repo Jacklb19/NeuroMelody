@@ -10,10 +10,10 @@ type TransferCanvas = (canvas: HTMLCanvasElement) => OffscreenCanvas;
 
 interface SignalPanelProps {
   readonly source: SignalSource | null;
-  /** Permite usar un hilo de señal en el mismo proceso en las pruebas. */
+  /** Allows an in-process signal thread in tests. */
   readonly createClient?: () => SignalThreadClient;
   readonly readPalette?: () => ChartPalette;
-  /** `null` si el navegador no puede transferir un lienzo a un Worker. */
+  /** Null when the browser cannot transfer a canvas to a Worker. */
   readonly transferCanvas?: TransferCanvas | null;
   readonly onIndices?: (result: IndicesResult) => void;
   readonly onReset?: () => void;
@@ -50,7 +50,7 @@ function evaluateChart(
   try {
     return { kind: 'ready', palette: readPalette(), transfer };
   } catch (error) {
-    // Solo se oculta la gráfica: los indicadores en texto siguen funcionando.
+    // Hide only the chart; the text indicators continue working.
     if (error instanceof ChartPaletteError) {
       return { kind: 'unavailable', reason: `Faltan estilos de la gráfica (${error.message})` };
     }
@@ -73,10 +73,9 @@ function format(value: number | null, unit: string): string {
 }
 
 /**
- * Señal e indicadores (RF-05, RF-12). La gráfica se dibuja en el Worker de
- * señal sobre un lienzo transferido; la información completa está además en
- * texto (RNF-09): indicadores, ventana analizada y calidad de la señal, que
- * se anuncia a los lectores de pantalla solo cuando cambia.
+ * Signal and indicators (RF-05, RF-12). The signal Worker draws the chart on
+ * a transferred canvas. Text exposes all indicators and the analysis window
+ * (RNF-09); signal quality is announced only when it changes.
  */
 export function SignalPanel({
   source,
@@ -106,8 +105,7 @@ export function SignalPanel({
   const titleId = useId();
   const summaryId = useId();
 
-  // Crea el hilo de señal y, si se puede, le transfiere un lienzo nuevo. El
-  // lienzo se crea aquí porque solo se puede transferir una vez.
+  // Create the canvas here because each canvas can only be transferred once.
   useEffect(() => {
     if (!threadAvailable) {
       return undefined;
@@ -148,7 +146,7 @@ export function SignalPanel({
     };
   }, [threadAvailable, createClient, chart]);
 
-  // Conecta la fuente actual al hilo de señal.
+  // Connect the current source to the signal thread.
   useEffect(() => {
     const client = clientRef.current;
     if (client === null || source === null) {
@@ -183,25 +181,20 @@ export function SignalPanel({
     };
   }, [source, threadAvailable, createClient, chart, onIndices, onReset, onUnavailable, onPulse]);
 
-  // Solo se muestran resultados de la fuente actual.
+  // Display results only from the current source.
   const result = reading !== null && reading.source === source ? reading.result : null;
   const quality = result === null ? null : QUALITY_TEXT[result.quality];
 
   return (
     <section
       aria-labelledby={titleId}
-      style={{
-        border: 'var(--border-width) solid var(--color-border)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--space-6)',
-        marginBottom: 'var(--space-8)',
-      }}
+      className="signal-panel"
     >
-      <h2 id={titleId} style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
+      <h2 id={titleId}>
         Señal e indicadores
       </h2>
 
-      <p role="status" style={{ marginBottom: 'var(--space-4)' }}>
+      <p role="status" className="signal-status">
         Calidad de la señal:{' '}
         <strong>
           {quality === null ? (
@@ -216,12 +209,12 @@ export function SignalPanel({
       </p>
 
       {!threadAvailable && (
-        <p style={{ marginBottom: 'var(--space-4)' }}>
+        <p>
           El análisis de la señal no está disponible en este navegador.
         </p>
       )}
       {threadError !== null && (
-        <p style={{ marginBottom: 'var(--space-4)' }}>
+        <p>
           No se pudo actualizar el análisis de la señal ({threadError}).
         </p>
       )}
@@ -232,10 +225,10 @@ export function SignalPanel({
           role="img"
           aria-label="Tacograma: intervalos entre latidos de los últimos 5 minutos"
           aria-describedby={summaryId}
-          style={{ height: 'var(--chart-height)', marginBottom: 'var(--space-4)' }}
+          className="signal-chart"
         />
       ) : (
-        <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>
+        <p>
           La gráfica no está disponible: {chart.reason}. Los indicadores en texto siguen
           actualizándose.
         </p>
@@ -243,12 +236,7 @@ export function SignalPanel({
 
       <dl
         id={summaryId}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'max-content 1fr',
-          gap: 'var(--space-1) var(--space-4)',
-          fontVariantNumeric: 'tabular-nums',
-        }}
+        className="signal-metrics"
       >
         <dt>Frecuencia cardíaca media</dt>
         <dd data-testid="mean-hr">{format(result?.meanHr ?? null, 'lpm')}</dd>
