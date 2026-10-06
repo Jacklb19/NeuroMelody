@@ -1,6 +1,6 @@
 # Diseño musical — NeuroMelody
 
-Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). Los valores de la tabla son iniciales y se ajustarán con 3 a 5 oyentes al cerrar el S4.
+Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha del usuario; 3–5 oyentes no bloquean ese cierre. Fecha propuesta de ajuste posterior: 16 de octubre, después del cierre técnico de S5, commit pequeño separado de levels.ts basado en resultados reales.
 
 ## Principio iso
 
@@ -23,7 +23,7 @@ El motor nunca salta más de un escalón en una transición, y toda transición 
 5. **Retroceso.** Si la histéresis acepta Alta, se sube un escalón inmediatamente, incluso durante la permanencia o una rampa. Se reprograma desde los valores actuales, sin saltos ni apilar rampas, y se reinicia la permanencia.
 6. **Incierta y calidad.** Incierta nunca provoca retrocesos. La calidad insuficiente bloquea transiciones y rompe candidaturas pendientes. Al vencer la permanencia se decide con datos vigentes, sin cambios obsoletos en cola.
 
-Estas prioridades reemplazan las anteriores por decisión explícita del usuario del 5 de octubre de 2026. El estimador temporal compara FC ±10 % y RMSSD ∓20 % con la línea base; no es una probabilidad calibrada. Histéresis: 3 estimaciones consecutivas también para Incierta. RNF-02 se verifica desde la aceptación de Alta; sigue pendiente aclarar el conflicto entre la latencia de Baja y la permanencia obligatoria del avance.
+Prioridades aprobadas el 5 oct 2026: FC ±10 % y RMSSD ∓20 % respecto a la base, sin probabilidad calibrada, histéresis de 3 también para Incierta. RNF-02: Alta <2 s desde aceptación; avance <2 s desde elegibilidad tras permanencia y calidad/estimaciones vigentes. Pruebas registran ambos intervalos (programación menos aceptación y menos elegibilidad). La interfaz indica que conserva el escalón hasta completar su duración; véase ADR-12. No se modifica la especificación.
 
 ## Niveles musicales (valores iniciales)
 
@@ -53,6 +53,6 @@ Estas prioridades reemplazan las anteriores por decisión explícita del usuario
 - **Brillo y reverberación:** se interpolan en 30 a 60 s.
 - **Todos los parámetros** se aplican como automatización de `AudioParam` en el hilo de audio, nunca con temporizadores del hilo principal.
 
-## Ajuste con oyentes (cierre del S4)
+## Ajuste con oyentes posterior a S4 (propuesto: 16 oct)
 
-Con 3 a 5 oyentes se revisarán el tempo de cada nivel, el número de capas, el brillo y la reverberación, y la duración de los fundidos. Los cambios se anotarán en este documento con la fecha y el motivo.
+Con 3 a 5 oyentes se revisarán tempo, capas, brillo/reverberación y fundidos. Cambios con fecha/motivo en commit separado pequeño cuando el usuario entregue resultados. No se cambian valores por escucha simulada. El trabajo real consume reserva si hace falta; la fecha y el grupo no bloquean S4, cuya única escucha manual de cierre corresponde al usuario.

@@ -1,44 +1,70 @@
-# Propuesta de entrega completa — 5 de octubre de 2026
+# Entrega completa — actualización aprobada el 5 de octubre de 2026
 
-**Pendiente de aprobación del usuario.** Esta conversación implementa solamente S4. Este plan no autoriza otros sprints, nuevas dependencias, push, despliegue ni operaciones en servicios remotos. La especificación no se modifica. Referencias: `definicion-proyecto.md`, `decisiones.md` (incluidos ADR-08, ADR-09 y ADR-10), `pantallas.md` y `PROGRESS.md`.
+El usuario aprobó el plan con ajustes. Solo se implementa S4 en esta conversación. La última decisión retira ONNX del alcance planificado de entrega y establece reglas S4 como alternativa R-05; se declara la limitación de RF-07. El ajuste musical con oyentes el 16 oct sigue como fecha propuesta. No se autorizan dependencias nuevas, push, despliegues ni operaciones remotas. La especificación se conserva. Fuentes: `definicion-proyecto.md`, ADR-08 a ADR-13, `pantallas.md` y `PROGRESS.md`.
 
-## Fecha y viabilidad
+## Fecha, capacidad y viabilidad
 
-Desarrollo completo el **12 de noviembre**. Del **13 al 17 de noviembre**, despliegue, comprobaciones manuales, correcciones y ensayo de entrega. El plazo externo es el **17 de noviembre**; el cronograma original que llegaba al 19 queda sustituido por la propuesta de ADR-13.
+Desarrollo completo el **12 de noviembre**, entrega el **17 de noviembre**. Trabajo planificado solo de lunes a viernes, excluyendo los festivos colombianos indicados por el usuario: **12 oct, 2 nov y 16 nov**. Entre el 5 oct y el 12 nov quedan **27 días efectivos** (29 entre semana menos dos festivos). La reserva final 13–17 nov contiene únicamente **2 días laborables: viernes 13 y martes 17**. Sábado 14, domingo 15 y festivo 16 no cuentan como jornadas planificadas.
 
-Hay 29 días de lunes a viernes entre el 5 de octubre y el 12 de noviembre, sin descontar festivos ni otros compromisos. Se estiman **27 días efectivos** de trabajo dedicado, más **2 días de reserva dentro del desarrollo**. Es viable con dedicación continua y recursos disponibles a tiempo; el margen es pequeño. El mayor riesgo es integrar autenticación, TOTP, RLS y sincronización con credenciales e infraestructura aún ausentes. Si esos recursos llegan tarde o la verificación BLE exige rehacer adquisición, el alcance completo puede no caber. Las reglas de S4 evitan que el entrenamiento bloquee la entrega, pero no sustituyen TOTP ni autorizan acceso inseguro a la nube.
+La revisión de S6.2 pasa de 5 a **7 días efectivos**, con todo TOTP y el patrón de login de NeuroMelody dentro del bloque. Se usan los avances reales de S4 para reducir su estimación dentro del calendario de 3 a **1 jornada total el 5 oct**, con una escucha breve del usuario como puerta manual de cierre. No se exige el grupo de oyentes para empezar S5. Al retirar S5.3 ONNX por decisión del usuario, el esfuerzo suma **25 jornadas**: S4 1 + S5 6 + S6 13 + S7 5. **La reserva laborable de desarrollo queda en 2 días: 15 y 16 oct.** El cálculo anterior con ONNX agotaba la reserva; ya no es el calendario vigente.
 
-Un día efectivo es una jornada de desarrollo y verificación; las fechas son ventanas de calendario, no una promesa de trabajo simultáneo de varios agentes. Cada sprint se ejecuta en su conversación y rama propias, con plan aprobado y commits locales. Se revisan avance y desvíos al final de cada bloque: más de un día de retraso consume reserva; dos días o una dependencia vencida requieren revisar el calendario con el usuario sin recortar funciones.
+La entrega con la limitación RF-07 explícita cabe aritméticamente con 2 días de reserva y sigue siendo ajustada. Si S4 ocupa otra jornada, faltan recursos o las incidencias superan dos jornadas, el objetivo del 12 nov queda amenazado. Los fines de semana son reserva adicional opcional, a decisión del usuario; no se presupuestan como trabajo. Los 2 días laborables finales se mantienen para publicación/revisión, no para desarrollar funciones pendientes. Una escucha demorada bloquea el cierre de S4; consume primero la reserva, sin afirmar que la escucha se haya realizado.
 
-## Calendario propuesto y entregables desplegables
+Cada jornada es trabajo dedicado con verificación; no se presupone ejecución paralela por agentes. Se informa al terminar cada bloque: un retraso consume reserva; **al agotar las dos jornadas afecta la ruta crítica**, y una dependencia vencida exige revisar el calendario sin recortar más funciones ni activar acceso inseguro.
 
-| Sprint / bloque, en orden de riesgo | Fechas de 2026 | Esfuerzo | Requisitos y entregable verificable |
+## Calendario y entregables desplegables
+
+| Sprint / bloque | Fechas de 2026 (solo días hábiles) | Esfuerzo | Requisitos y resultado |
 |---|---|---|---|
-| S4: lazo y evaluación musical | 5–8 oct | 3 días | RF-02, RF-09, RF-10, RF-12; RNF-02, RNF-03, RNF-11. Reglas aprobadas, histéresis, reversión y rampas, panel musical, escenario creciente, pruebas de 1.000 transiciones y E2E. Ajuste con 3–5 oyentes. |
-| S5.1: Web Bluetooth | 9–13 oct | 3 días | RF-01, RF-03; HU-01; RNF-10. Fuente intercambiable, conexión por interacción, parser, desconexión, reintentos a 1/2/4/8 s y «Reconectar banda» tras recargar. Adaptadores GATT simulados y verificación manual en navegador. |
-| S5.2: espectro | 14–16 oct | 3 días | RF-06; RNF-04, RNF-05. Interpolación, ventana, PSD e integración LF/HF en Worker con referencias conocidas; mínimos de señal y mala calidad visibles, sin cifras inventadas. |
-| S5.3: ONNX / alternativa | 17–20 oct | 2 días | RF-07; RNF-08, RNF-11; ADR-09 y R-05. Integración del artefacto si pasa el criterio acordado; de lo contrario mantener las reglas provisionales, documentar RF-07 como alternativa y conservar prevista la integración ONNX. Modelo público versionado con huella y caché, inferencia fuera del hilo principal. |
-| S6.1: sesiones locales, historial y resumen de indicadores | 21–23 oct | 3 días | RF-14, RF-15, RF-16; HU-07, HU-08, HU-10; RNF-07. Registro local de sesión completa, plan editable, resumen local descargable, evolución e historial y borrado. Sincronicidad e identidad de sesión preparadas sin activar acceso remoto. |
-| S6.2: correo, API, seguridad y sincronización | 26–30 oct | 5 días | RF-14; RNF-07, RNF-12; ADR-10. Supabase, correo/contraseña, confirmación/recuperación, consentimiento, JWT, migraciones locales y pruebas de RLS/propiedad/aal2, UUID v7 e idempotencia, lectura/borrado de sesiones y cuenta, dos dispositivos TOTP. Sin sincronización antes de pasar el segundo factor. |
-| S6.3: proveedor Google y completar recorrido TOTP | 2 nov | 1 día | RF-14; ADR-10. Google por redirección, alta/verificación/recuperación del segundo factor en el alcance acordado, integración entre cuentas y sesión local. El mecanismo de aal2 y su negativa de acceso se construyen en S6.2; si la interfaz TOTP sigue pendiente, la nube permanece bloqueada. |
-| S6.4: plan y resumen con Groq | 3–4 nov | 2 días | RF-13, RF-15; HU-07, HU-08; ADR-05 y ADR-08. FastAPI valida salida de esquema cerrado; agregados y consentimiento, etiqueta automática, límites y reintento/caché, plan por defecto y resumen diferido sin red. El modelo nunca entra al lazo. |
-| Reserva de desarrollo | 8 oct y 5 nov | 2 días | Absorber incidencias de hardware, RLS y servicios. No añadir alcance. |
-| S7.1: cierre sin conexión y sincronización | 6–9 nov | 2 días | RF-14; HU-09; RNF-08. App, señal, clasificador o alternativa y audio sin red; cola persistente, reenvío autorizado sin duplicados al volver la red, errores recuperables y actualización segura de PWA. |
-| S7.2: accesibilidad y rendimiento | 10–11 nov | 2 días | RF-11, RF-12, RF-17, RF-18; RNF-01 a RNF-06, RNF-09, RNF-10. Auditoría AA, teclado/lector/zoom/contraste, tareas >50 ms, consumo <35 % de un núcleo medido en equipo documentado; 30 min de audio y BLE en plataformas objetivo. |
-| S7.3: documentación y congelación | 12 nov | 1 día | RF-01 a RF-18 y HU-01 a HU-10. Matriz completa, comandos reproducibles, pruebas de API y cliente, build, E2E Chrome/Edge, manuales, privacidad, operación gratuita y demo. No quedan funciones previstas sin implementar. |
-| Entrega y despliegue | 13–17 nov | Reserva final de 5 días de calendario | Push e integración por el usuario, configuración remota y migraciones solo con aprobación expresa en ese momento; preview/producción, cabeceras, SMTP/OAuth/Groq, pruebas manuales, correcciones y presentación. |
+| S4: RNF-02, lazo y cierre | 5 oct | 1 día, aprovechando implementación existente | RF-02, RF-09, RF-10, RF-12; RNF-02, RNF-03, RNF-11. Histéresis, base, rampas, 1.000 casos, escenario creciente y panel; mediciones desde aceptación/elegibilidad. Pruebas automáticas y una escucha del usuario cierran S4. |
+| S5.1: Web Bluetooth | 6–8 oct; comprobación con usuario 13 oct | 3 días | RF-01, RF-03, HU-01, RNF-10. Fuente GATT intercambiable, reconexión 1/2/4/8 s y «Reconectar banda»; adaptadores y parser probados, manual con banda/nRF Connect. La prueba del 13 está incluida en S5.2 y no suma una jornada. |
+| S5.2: LF/HF en Worker | 9, 13 y 14 oct | 3 días | RF-06; RNF-04, RNF-05, RNF-11. Interpolación, ventana, PSD y bandas con referencias conocidas, mínimos y calidad visibles. Festivo 12 excluido. |
+| Reserva recuperada al retirar S5.3 ONNX | 15–16 oct | **2 días** | Reserva para incidencias/correcciones, no entrenamiento ni integración de modelo. S5 cierra BLE/espectro el 14 oct con R-05. Propuesta: ajuste con 3–5 oyentes el 16 oct, commit pequeño separado; si consume trabajo de esta reserva se registra su consumo real. |
+| S6.1: sesiones locales e historial | 19–21 oct | 3 días | RF-14, RF-15, RF-16; HU-07, HU-08, HU-10; RNF-07. Registro, plan manual editable, resumen de indicadores y descarga, historial/evolución y borrado local. |
+| S6.2: correo, TOTP completo, API y sincronización | 22–23 y 26–30 oct | **7 días** | RF-14; RNF-07, RNF-12; ADR-10. NeuroMelody implementa el patrón compartido de login y lo documenta en `docs/autenticacion.md`: correo/contraseña, confirmación/recuperación; consentimiento; TOTP alta/verificación/recuperación y dos dispositivos; JWT, migraciones/RLS/aal2, UUID v7, idempotencia, propiedad y borrado de sesiones/cuenta. Sincronización solo tras aal2. |
+| S6.3: Google y cierre | 3 nov | 1 día | RF-14; ADR-10. Google/redirecciones y enlace del recorrido con TOTP ya terminado; revisión integrada. Festivo 2 nov excluido. No queda TOTP pendiente para este bloque. |
+| S6.4: Groq | 4–5 nov | 2 días | RF-13, RF-15; HU-07, HU-08; ADR-05 y ADR-08. FastAPI, salida de esquema cerrado, métricas agregadas/consentimiento, etiquetas automáticas, reintento/caché/límites, plan por defecto y resumen diferido. |
+| S7.1: cierre offline | 6 y 9 nov | 2 días | RF-14, HU-09, RNF-08. PWA y sesión completa sin red, modelo o alternativa, cola persistente y reenvío sin duplicados con aal2. |
+| S7.2: AA y rendimiento | 10–11 nov | 2 días | RF-11, RF-12, RF-17, RF-18; RNF-01 a RNF-06, RNF-09, RNF-10. Lector/zoom/teclado/contraste, tareas <50 ms, consumo ≤35 % de un núcleo, 30 min de audio, navegadores objetivo. |
+| S7.3: congelación y documentos | 12 nov | 1 día | RF-01 a RF-18 y HU-01 a HU-10. Matriz verificable, tipos/lint/build, cliente/servidor, E2E Chrome/Edge, manuales, privacidad, operación y demo. |
+| Publicación y entrega | 13 y 17 nov | 2 días efectivos, dentro de 13–17 nov | Configuración/aprobación y push del usuario, preview/producción, cabeceras, SMTP/OAuth/Groq, smoke y correcciones. 14–15 fin de semana y 16 festivo no planificados. |
 
-S5 cierra con una versión utilizable con BLE y simulador, espectro y ONNX aprobado o alternativa visible. S6 cierra con los recorridos locales y de nube completos, TOTP, Google y modelo de lenguaje. S7 cierra con evidencia y operación documentadas. «Desplegable» exige build y pruebas sin fallos; publicar requiere autorización y recursos, y no se da por verificado desde el preview local.
+**S6.2, estimación revisada de 7 días:** 1 día correo/confirmación/recuperación y consentimiento; 2 días TOTP (alta, desafío, recuperación y dos dispositivos); 2 días API/JWT, migraciones/RLS/aal2/propiedad y borrado; 2 días sincronización UUID v7/idempotencia, pruebas de integración y `docs/autenticacion.md`. NeuroMelody desarrolla y documenta el patrón reutilizable, sin dependencia de otro proyecto. Los casos de recuperación respetan la negativa de acceso a salud sin aal2; cualquier ambigüedad del proveedor se resuelve antes de programar, sin inventar bypass/endpoints. Presupone SMTP y Supabase listos; la recuperación y RLS son el mayor riesgo de la estimación y pueden consumir reserva.
 
-**Ruta crítica:** BLE/espectro → sesión local y su esquema → API/JWT/RLS/TOTP → sincronización idempotente → recorrido sin conexión → pruebas completas → aprobación y despliegue. La entrega del ONNX tiene una salida por R-05. SMTP, Supabase y configuración OAuth sí pueden bloquear recorridos obligatorios. El trabajo tardío de menor impacto es terminar Google, el recorrido TOTP y el texto de Groq; permanece planificado. Nunca se sustituye la obligación de aal2 por autenticación de un solo factor para ganar tiempo.
+S5 entrega BLE/espectro con el estimador R-05 visible; S6 entrega recorridos locales/remotos, TOTP/Google y Groq completos; S7 entrega evidencia final. No se declara RF-07 ONNX cumplido. Desplegable exige build/pruebas correctos; publicación exige aprobación y recursos y no se infiere del preview local.
 
-## Contrato pendiente con entrenamiento
+**Ruta crítica:** cierre S4 → BLE/espectro → sesión local/esquema → correo/TOTP/API/RLS/aal2 → sincronización idempotente → offline → validación → publicación. No incluye ONNX ni una rama de entrenamiento. Google y texto Groq se terminan después del recorrido principal; TOTP se adelanta por aal2 y jamás se pospone abriendo salud con un solo factor.
 
-La rama `entrenamiento-clasificador` no aparece en las referencias locales consultadas el 5 de octubre; no se hizo fetch ni se contactó otro agente. El usuario deberá facilitar su ubicación o artefactos. Para el **9 de octubre** se necesita: orden/unidades de rasgos, definición exacta de normalización relativa a la base, manejo de índices ausentes, clases y regla de Incierta, entradas/salidas y versiones de exportación. No inventar LF/HF, tasas de remuestreo o umbral de confianza.
+## Interpretación RNF-02 aprobada
 
-Para el **14 de octubre**: ONNX, licencia/procedencia, huella SHA-256, tamaño, vectores de referencia y salidas esperadas, evaluación por persona sin filtración entre entrenamiento y validación, exactitud y matriz de confusión reproducibles. La exactitud mínima «acordada» no está fijada numéricamente en los documentos consultados; se requiere la decisión del usuario antes de habilitar el modelo. No se propone una cifra sin conocer la validación.
+Se registran siempre ambos intervalos: `programación − aceptación tras histéresis` y `programación − elegibilidad`.
 
-Puerta de integración el **16 de octubre**: artefacto disponible, contrato compatible y criterio aprobado satisfecho. Si falla, S5 cierra con las reglas de S4 como alternativa R-05, rotuladas con confianza no calibrada; no se declara ONNX integrado ni validado. Integrarlo más tarde consume la reserva, con pruebas de regresión; no retrasa sesiones, autenticación o sincronización.
+- Retroceso Alta: elegibilidad = aceptación; sin permanencia; se exige <2 s en ambos intervalos.
+- Avance Baja o Incierta: elegibilidad = el máximo entre final de permanencia (inicio de última transición +180 s) y momento en que ya hay estado aceptado, calidad buena y tres estimaciones recientes sin Alta. Se exige <2 s desde elegibilidad; el intervalo desde aceptación puede superar 2 s por la espera obligatoria y se conserva en la evidencia.
+- La interfaz indica «Se conserva el escalón hasta completar su duración mínima de 3 minutos». Las notificaciones de fuente permiten revisar el reloj de audio entre publicaciones de índices de 5 s; no cuentan como estimaciones ni evitan la histéresis. Las rampas siguen automatizadas en AudioParam, sin temporizadores musicales nuevos.
+- Pérdida de contacto/hueco o un resultado nuevo desfavorable cancela elegibilidad; no se ejecuta una decisión obsoleta. Las pruebas registran ambas mediciones y el retraso de control real; no se afirma latencia acústica ni que el fundido de modo empiece antes del cierre del ciclo.
+
+No se modifica `definicion-proyecto.md`; es una interpretación explícita autorizada y registrada en ADR-12.
+
+## Entrenamiento no iniciado y RF-07 limitado
+
+Comprobaciones del 5 oct, solo lectura: `git branch -a` sin rama de entrenamiento; `git reflog --all -200` contiene 120 entradas, ninguna con «clasificador»; `git log --all --oneline -- scripts/clasificador` vacío; `scripts/clasificador/` no existe; búsqueda recursiva de `.onnx` en la carpeta del proyecto sin resultados. Tampoco se hallaron scripts, etiquetas o datasets de entrenamiento en los archivos propios del repositorio. `git ls-remote` previo tampoco encontró esa rama. No se hizo fetch, recuperación ni integración de artefactos.
+
+Por decisión del usuario se trata el entrenamiento como **inexistente/no iniciado**: no hay conjunto etiquetado de entrenamiento, etiquetas ni ONNX. Los extractos RR nsr2db existentes son fuentes de prueba de señal; no se les asignan etiquetas de activación ni se convierten en verdad de entrenamiento. El clasificador de entrega es el estimador por reglas S4 (R-05), con confianza no calibrada. **RF-07 queda limitado: no se entrega el clasificador entrenado/ONNX descrito en la especificación.** Se declara esa limitación, sin modificar la especificación ni citar una rama pendiente como dependencia.
+
+### Mejora ONNX opcional al final — propuesta relativa, sin ejecución autorizada
+
+Solo si sobra tiempo después de completar la entrega obligatoria y con aprobación específica: el usuario define primero el contrato de etiquetas (nombres, significado, fuente y asignación por persona/ventana). No se elige dataset ni se inicia entrenamiento por iniciativa del agente. La comparación siguiente queda como propuesta para esa mejora, no como puerta del calendario ni como requisito para cerrar S5.
+
+En un conjunto congelado de validación con **personas distintas** de entrenamiento/ajuste, ejecutar ONNX y reglas S4 sobre las mismas ventanas etiquetadas, el mismo filtrado y la misma base de sesión. No ajustar modelo, umbrales ni normalización con ese conjunto. Evaluar las estimaciones antes de la histéresis, para que ambas alternativas tengan la misma unidad de comparación.
+
+- Exactitud global ONNX ≥ exactitud global reglas S4: aciertos / total de ventanas comunes con etiqueta de referencia.
+- Sin empeorar por clase: **recall** ONNX ≥ recall reglas S4 para cada clase de referencia, usando la misma matriz (aciertos de la clase / ventanas realmente de esa clase). Publicar también precisión, soporte, resultados por persona y matrices completas; no ocultar una clase con un promedio.
+- Incierta es abstención si la verdad tiene solo Alta/Baja: cuenta como fallo para esa ventana en ambos sistemas, sin excluir ventanas difíciles. Si el entrenamiento usa una tercera clase real, su definición y fuente deben confirmarse antes de acordar el mapa; no inventar etiquetas Incierta.
+- Reglas de exclusión por datos insuficientes/calidad se fijan para ambos antes de evaluar; informar cuántas ventanas se excluyen. Debe haber soporte de todas las clases acordadas. Sin procedencia de etiquetas o sin soporte, no hay evidencia para habilitar ONNX.
+- Pasar este criterio es una comparación de ingeniería, no validación clínica. Se requiere además equivalencia de vectores del exportador y del navegador, caché offline y regresión en CI. Si falta artefacto/evidencia o empeora cualquier clase, mantener R-05 y continuar el resto del calendario.
+
+No hay fecha de entrega ONNX ni solicitud de etiquetas para el 9/14/16 oct. La aprobación de la entrega no autoriza esta mejora. Si se encuentran artefactos posteriormente, se comunica exactamente qué son y no se integran sin aprobación.
 
 La eventual dependencia `onnxruntime-web` se justifica por la ejecución ONNX en Worker prevista en la arquitectura; se solicitará aprobación de versión/tamaño antes de instalarla. La alternativa sin dependencia es mantener las reglas de S4. Para servidor y autenticación se propondrán las bibliotecas del stack antes de instalarlas; no hay autorización implícita para instalar SDK, CLI, axe-core ni paquetes Python nuevos.
 
@@ -46,7 +72,7 @@ La eventual dependencia `onnxruntime-web` se justifica por la ejecución ONNX en
 
 Primera comprobación el **13 de octubre**, usando banda con RR o un Android con nRF Connect configurado como periférico estándar de ritmo cardíaco. Fecha tope **16 de octubre** para emparejar, recibir RR, desconectar, reconectar y recargar en Chrome/Edge de escritorio y Chrome/Edge Android cuando el dispositivo lo permita. El simulador y nsr2db siguen siendo la evidencia automática hasta entonces. La emulación no prueba la compatibilidad ni precisión de una banda real; registrar esa limitación.
 
-Si aparecen diferencias del parser: guardar vectores de bytes anonimizados, fijar pruebas de regresión, corregir el parser manteniendo el contrato de fuente y repetir adquisición → índices → adaptación. Se reserva hasta un día de S5 o la reserva del 5 de noviembre. Si afecta el contrato o supera ese esfuerzo, se consulta y replantea el calendario; no se improvisan campos ni se declara HU-01 cumplida. Una segunda comprobación antes del **6 de noviembre** detecta regresiones antes del cierre.
+La configuración exacta, UUID, flags, ejemplos de RR y captura de bytes están en `docs/prueba-ble.md`, contrastada con Bluetooth SIG y Nordic. Si el parser difiere, guardar bytes anonimizados, fijar regresión y repetir adquisición → índices → adaptación. Usar la reserva 15–16 oct según consumo real; no modificar contrato ni declarar HU-01 cumplida si falla. Segunda comprobación antes del **6 nov** para regresiones.
 
 ## Funciones pendientes en la interfaz (propuesta)
 
@@ -56,15 +82,15 @@ Hasta estar activas, rutas del mapa con página informativa accesible, motivo y 
 
 | Recurso / decisión | Fecha necesaria | Uso |
 |---|---|---|
-| Aprobar esta propuesta y resolver la latencia de avance frente a la permanencia | Cierre de S4, previsto 8 oct | Fijar calendario, prioridades y criterio RNF-02 sin contradicción. |
-| 3–5 oyentes y resultados de escucha (volumen moderado, inicio, fundidos, timbre, stop) | 8 oct | Cerrar la evaluación musical de S4; ajustar tabla solo con resultados. |
-| Android/nRF Connect o banda BLE con RR, y navegadores disponibles | Preparado 9 oct; prueba 13 oct, tope 16 oct | Verificar HU-01 y compatibilidad/reconexión reales. |
-| Ubicación y contrato de la rama de entrenamiento; umbral de exactitud y entrega ONNX | 9 oct / 14 oct / decisión 16 oct | Evitar integrar un clasificador incompatible o sin evidencia. |
-| Proyecto Supabase Free propio en us-east-1, URL y configuración de acceso | Preparado 20 oct; disponible 23 oct | Migraciones y autenticación/sincronización. Secretos solo en entorno, no en chat ni archivos versionados. |
-| SMTP de Gmail y contraseña de aplicación configurada por el usuario | 23 oct | Confirmación, recuperación y prueba de correos reales. |
-| Configuración Google OAuth y URLs de redirección de preview/producción | 29 oct | Completar Google entre 30 oct y 2 nov. |
-| Clave propia Groq y confirmación de retención cero en Data Controls | 30 oct | Plan/resumen desde servidor el 3–4 nov; no exponer clave al cliente. |
-| Teléfono con autenticador y disponibilidad para dos dispositivos TOTP | 26 oct | Alta/verificación/aal2, acceso denegado y prueba de sincronización. |
+| Una escucha del usuario: inicio, volumen moderado, fundidos y stop | Cierre S4, previsto 5 oct | Única puerta manual de S4. RNF-02 y calendario ya aprobados. |
+| 3–5 oyentes y resultados para levels.ts | Propuesto 16 oct, después del cierre técnico S5 | Ajuste posterior en commit pequeño separado; no bloquea S4, se registra consumo de reserva. |
+| Android/nRF Connect o banda BLE con RR, navegadores | Preparado 8 oct; prueba 13 oct, tope 16 oct | HU-01/reconexión. Configuración exacta en prueba-ble.md. |
+| Contrato de etiquetas ONNX | Sin fecha obligatoria | Solo si se aprueba mejora opcional al final y sobra tiempo. No es dependencia de entrega. |
+| Proyecto Supabase Free propio us-east-1, URL/configuración | Preparado 19 oct; disponible 21 oct | S6.2 empieza 22 oct. Secretos solo en entorno, nunca chat/repo. |
+| SMTP Gmail con contraseña de aplicación configurada | 21 oct | Correo real/confirmación/recuperación desde 22 oct. |
+| Google OAuth y redirecciones preview/producción | 30 oct | Google/cierre el 3 nov; el 2 nov es festivo. |
+| Clave propia Groq y retención cero confirmada | 3 nov | Plan/resumen 4–5 nov, clave solo servidor. |
+| Autenticador y disponibilidad de dos dispositivos TOTP | 22 oct | Flujo completo dentro de S6.2, recuperación/aal2/acceso denegado. |
 | Equipo de gama media identificado; lector de pantalla y zoom; navegadores Android | 6 nov | Consumo, rendimiento, AA y RNF-10 en S7. |
 | Aprobación expresa de operaciones remotas, Vercel/GitHub conectados y variables configuradas | Preparado 6 nov; ejecución 13 nov | Publicación por push del usuario, migraciones autorizadas, comprobaciones reales antes del 17. |
 
@@ -79,24 +105,47 @@ Estado al preparar el plan, con evidencia de S3 y verificación S4; ninguna comp
 | HU-01 | Manual con periférico: emparejar <15 s, estado visible; pruebas GATT/reintentos y recarga; matriz escritorio/Android | Pendiente S5. Parser unitario existente; no hay banda verificada. |
 | HU-02 | ≥3 escenarios reproducibles y velocidades; cadena idéntica detrás de SignalSource para simulador/registro/BLE | Simulador/registro verificados; completar sustitución BLE S5. |
 | HU-03 | Inicio medido <1 s en producción/preview con equipo documentado; 30 min nativos con 0 subdesbordamientos, repetir con lazo final | S3: 30 min reales con 0. Inicio extremo a extremo <1 s no está medido; revalidación S7. |
-| HU-04 | 1.000 transiciones; tempo y modo ≥20 s, reversión sin saltos, E2E y escucha 3–5 oyentes | S4: pruebas automáticas; evaluación auditiva pendiente. |
+| HU-04 | 1.000 transiciones; tempo y modo ≥20 s, reversión sin saltos, E2E y una escucha del usuario | S4: pruebas automáticas; escucha del usuario pendiente. Grupo de oyentes posterior, propuesto 16 oct, no bloquea S4. |
 | HU-05 | Índices/estado cada ≤5 s de señal; texto accesible y gráfica; tareas largas y comprobación visual | S2/S4: índices y estado. Rendimiento y percepción manual finales S7. |
 | HU-06 | Botón visible en todos los tamaños, teclado/Esc, muestras silenciadas <200 ms y comprobación manual | S3: rampa de 50 ms, pruebas y E2E. Lector, zoom y dispositivo manual pendientes S7. |
 | HU-07 | Plan visible antes de escuchar, objetivos/duración editables; propuesta válida del modelo y alternativa manual sin red | Plan manual S3 parcial: comprobar objetivos además de duración en S6; Groq pendiente S6. |
 | HU-08 | Resumen local con indicadores, descarga, texto llano marcado automáticamente; error/red no rompen el recorrido | Pendiente S6; completar Groq y diferido S7. |
-| HU-09 | PWA sin red durante sesión completa, fuente/modelo/audio; volver la red con sincronización sin duplicados y aal2 | S3: shell, registro y audio offline. Persistencia/cola/clasificador pendientes S5–S7. |
+| HU-09 | PWA sin red durante sesión completa, fuente/estimador R-05/audio; volver la red con sincronización sin duplicados y aal2 | S3/S4: shell, registro, reglas y audio offline. Persistencia/cola pendientes S6–S7. ONNX no es dependencia de entrega. |
 | HU-10 | Historial local/nube con evolución; propiedad/aal2, borrado efectivo e historial sin cuenta | Pendiente S6 y E2E S7. |
 
-Terminación global: todos RF-01 a RF-18 abordados (incluidos los de prioridad Media), las diez historias verificadas o con limitación externa explícita que el usuario debe resolver; tipos/lint/build y pruebas cliente/servidor sin fallos, cobertura ≥70 % requerida, E2E Chrome/Edge, 30 min de audio, auditoría AA y mediciones RNF-04/RNF-05, privacidad y eliminación, costo cero, secretos fuera del cliente, cabeceras y recorridos comprobados en despliegue real. Un fallo obligatorio impide declarar la app completa.
+Terminación global: RF restantes y las diez HU verificadas; excepción explícita RF-07 por decisión del usuario, entrega con reglas R-05 y sin clasificador entrenado. Ninguna otra función se elimina. Tipos/lint/build, cliente/servidor, cobertura ≥70 %, E2E Chrome/Edge, 30 min audio, AA, RNF-04/RNF-05, privacidad/borrado, costo cero, secretos fuera del cliente y recorridos comprobados en remoto. Un fallo obligatorio o comprobación manual ausente impide declarar terminado ese criterio.
+
+## Matriz de requisitos de entrega (estado 5 oct)
+
+| RF | Estado verificable y cierre previsto |
+|---|---|
+| RF-01 | Pendiente S5: BLE, emparejamiento/reconexión y comprobación 13 oct. |
+| RF-02 | Simulador verificado: cinco escenarios, semillas y velocidades. |
+| RF-03 | Parser verificado; recepción GATT real pendiente S5. |
+| RF-04 | Filtro/calidad verificados con vectores y artefactos. |
+| RF-05 | Índices temporales/ventana verificados en Worker. |
+| RF-06 | Pendiente S5: PSD y LF/HF con referencias. |
+| RF-07 | **Limitado por decisión del usuario:** estimador por reglas S4, alternativa R-05, sin confianza calibrada. No hay entrenamiento, etiquetas ni ONNX; requisito literal del clasificador entrenado no cumplido. ONNX opcional, sin dependencia de una rama. |
+| RF-08 | Síntesis por capas verificada; escucha del usuario pendiente. |
+| RF-09 | Lazo/rampas/estado provisional verificados S4; escucha pendiente. |
+| RF-10 | 1.000 transiciones de tempo y 1.000 fundidos de modo verificados; escucha pendiente. |
+| RF-11 | Reproducción/volumen/stop y Esc verificados; comprobaciones manuales de sistema/AA pendientes. |
+| RF-12 | Señal/índices/estado/confianza descriptiva verificados; PSD llega S5. |
+| RF-13 | Propuesta de plan por modelo pendiente S6.4; plan manual existente. |
+| RF-14 | Sesiones locales, nube, consentimiento, RLS/aal2 y sincronización pendientes S6/S7; migración inicial solo comprobada estáticamente. |
+| RF-15 | Resumen de indicadores/descarga S6.1; texto Groq S6.4. |
+| RF-16 | Historial/evolución/borrado pendientes S6.1/S6.2. |
+| RF-17 | Advertencias y aceptación previa verificadas. |
+| RF-18 | Límite digital/volumen y advertencia de duración verificados; nivel acústico/dispositivo requieren revisión manual. |
 
 ## Riesgos y alertas tempranas
 
 | Sprint | Riesgo concreto | Detección y respuesta |
 |---|---|---|
-| S4 | Música desagradable; criterios de latencia y permanencia en conflicto | Escucha antes del 8 oct; decisión explícita sobre RNF-02. No cerrar la evaluación sin oyentes. |
-| S5 | No hay periférico; espectro sin referencia; ONNX incompatible o sin umbral | Conexión el 13 oct, vectores espectrales antes del 16, puerta ONNX el 16. Si no hay modelo, R-05; si no hay periférico, HU-01 queda pendiente manual. |
-| S6 | SMTP/OAuth/aal2 o RLS bloquean sincronización; conflictos/duplicados offline | Correo real el 23–26 oct, pruebas de negativa RLS/aal2 el 27, reenvío idempotente antes del 30. Recursos atrasados >1 día consumen reserva; nube sigue bloqueada sin aal2. |
+| S4 | Música desagradable o fuente retrasada | RNF-02 resuelto explícitamente y probado; cierre necesita una escucha del usuario. Grupo de oyentes posterior. |
+| S5 | No hay periférico o espectro sin referencia | Conexión el 13 oct, espectro el 14; correcciones usan reserva 15–16. Sin periférico HU-01 sigue manual pendiente. No se espera entrenamiento. |
+| S6 | Correo/recuperación TOTP/RLS/aal2 o duplicados bloquean sincronización | Recursos 21–22 oct, correo 22, TOTP completo 26, negativas RLS/aal2 28, idempotencia 30. NeuroMelody documenta patrón en autenticacion.md; nube bloqueada sin aal2. |
 | S7 | Rendimiento/audio móvil, AA o actualización PWA falla; despliegue difiere del preview | Ensayo de 30 min y muestra de accesibilidad antes del 10 nov, repetir red/colas el 9. Congelar el 12; fallos graves se corrigen antes de presentar. |
-| Entrega | Variables, cabeceras o proveedor gratuito no funcionan en remoto | Recursos listos 6 nov; smoke de preview 13 nov y producción antes del 16. Sin aprobación o credenciales no se afirma despliegue exitoso. |
+| Entrega | Variables/cabeceras/proveedor no funcionan en remoto | Recursos listos 6 nov; preview/producción 13 nov y revisión final 17 nov. El 16 es festivo. Sin autorización/credenciales no se afirma publicación exitosa. |
 
 No se reduce el alcance por iniciativa del agente. Si se agota la reserva, el usuario decide la reorganización y se informa el incumplimiento previsto antes del plazo.
