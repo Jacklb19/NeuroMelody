@@ -1,9 +1,9 @@
 import type { BeatNotification } from '../../acquisition/contract';
 import { isAcceptanceLow } from './signalQuality';
-import { BeatFilter } from '../../signal/processing/BeatFilter';
+import { BeatFilter } from './BeatFilter';
 import { computeTimeDomainIndices } from './timeDomainIndices';
 import { computeFrequencyIndices } from './frequencyDomain';
-import type { ClassifiedBeat, LowQualitySegment } from './types';
+import type { ClassifiedBeat, LowQualitySegment, SignalQuality } from './types';
 import {
   MAX_GAP_MS,
   MIN_NN_FOR_INDICES_MS,
@@ -12,23 +12,20 @@ import {
 } from './thresholds';
 import { SlidingWindow } from './SlidingWindow';
 
-/** Signal state shown to the user (always in descriptive language). */
-export type SignalQuality = 'collecting' | 'good' | 'low';
-
-/** Result published every 5 s of signal (RF-05). */
+/** Result published every {@link COMPUTE_PERIOD_MS} of signal (RF-05). */
 export interface IndicesResult {
   readonly timeMs: number;
-  /** The indices are `null` until the window holds 60 s of valid NN. */
+  /** The indices are `null` until the window holds {@link MIN_NN_FOR_INDICES_MS} of valid NN. */
   readonly meanHr: number | null;
   readonly rmssd: number | null;
   readonly sdnn: number | null;
   readonly nnDurationMs: number;
-  /** Portion of the 5 min window already covered by the signal. */
+  /** Portion of the {@link ANALYSIS_WINDOW_MS} window already covered by the signal. */
   readonly coverageMs: number;
   readonly acceptedBeats: number;
   readonly discardedBeats: number;
   readonly quality: SignalQuality;
-  /** Frequency-domain indices (RF-06); `null` until 2 min of continuous signal. */
+  /** Frequency-domain indices (RF-06); `null` until `MIN_SPECTRUM_MS` of continuous signal. */
   readonly lfPower: number | null;
   readonly hfPower: number | null;
   readonly lfHfRatio: number | null;
@@ -46,10 +43,10 @@ export interface WindowSnapshot {
  * be tested deterministically.
  *
  * For each notification: classifies the RR (RF-04), marks gaps, contact
- * losses and stretches with low acceptance, and maintains the 5 min window.
- * Every time the signal time crosses a multiple of 5 s it publishes the
- * indices (RF-05). The cadence depends on signal time rather than timers, so
- * it is the same at any speed.
+ * losses and stretches with low acceptance, and maintains the analysis window.
+ * Every time the signal time crosses a multiple of {@link COMPUTE_PERIOD_MS}
+ * it publishes the indices (RF-05). The cadence depends on signal time
+ * rather than timers, so it is the same at any speed.
  */
 export class SignalProcessor {
   readonly #onIndices: (result: IndicesResult) => void;

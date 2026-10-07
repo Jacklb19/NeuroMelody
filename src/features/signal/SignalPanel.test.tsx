@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { es } from '../../i18n/es';
 import { FakeDrawingContext } from '../../test/fakeDrawingContext';
 import { createFakeTimeEnvironment } from '../../test/fakeTimeEnvironment';
 import { createInProcessPort } from '../../test/inProcessThreadPort';
@@ -7,7 +8,11 @@ import type { ScenarioId } from '../acquisition/simulator/scenarios';
 import { SimulatedSource } from '../acquisition/simulator/SimulatedSource';
 import { ChartPaletteError, type ChartPalette } from './drawing/palette';
 import { SignalThreadClient } from './thread/SignalThreadClient';
+import { ANALYSIS_WINDOW_MS, MIN_SPECTRUM_MS } from './processing/thresholds';
+import { MS_PER_MINUTE } from '../../shared/time';
 import { SignalPanel } from './SignalPanel';
+
+const { signal: copy, common } = es;
 
 const PALETTE: ChartPalette = {
   line: 'rgb(1, 1, 1)',
@@ -56,16 +61,21 @@ function visibleQuality(): string {
   return screen.getByRole('status').textContent;
 }
 
+/** A whole figure followed by its unit, as the panel writes it. */
+function figureWith(unit: string): RegExp {
+  return new RegExp(`^${common.withUnit(String.raw`\d+`, unit)}$`);
+}
+
 describe('SignalPanel', () => {
   it('without a Worker or a transferable canvas, warns and keeps the indicators as text', () => {
     render(<SignalPanel source={null} />);
 
-    expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
-    expect(screen.getByText(/el análisis de la señal no está disponible/i)).toBeInTheDocument();
-    expect(screen.getByText(/la gráfica no está disponible/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: copy.title })).toBeInTheDocument();
+    expect(screen.getByText(copy.threadUnavailable)).toBeInTheDocument();
+    expect(screen.getByText(copy.chart.unavailable(copy.chart.noOffscreenCanvas))).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(visibleQuality()).toMatch(/esperando datos de la señal/i);
-    expect(screen.getByTestId('rmssd')).toHaveTextContent('—');
+    expect(visibleQuality()).toBe(`${copy.qualityLabel} ${copy.waitingForData}`);
+    expect(screen.getByTestId('rmssd')).toHaveTextContent(common.noValue);
   });
 
   it('shows the collecting-data status and then the indices as text', async () => {
@@ -73,15 +83,18 @@ describe('SignalPanel', () => {
     await scene.connect();
 
     scene.advanceSignalSeconds(30);
-    expect(visibleQuality()).toMatch(/reuniendo datos/i);
-    expect(screen.getByTestId('mean-hr')).toHaveTextContent('—');
-    expect(screen.getByTestId('analysis-window')).toHaveTextContent('0:30 de 5:00');
+    expect(visibleQuality()).toContain(copy.quality.collecting);
+    expect(screen.getByTestId('mean-hr')).toHaveTextContent(common.noValue);
+    expect(screen.getByTestId('analysis-window')).toHaveTextContent(copy.windowCoverage('0:30', '5:00'));
+    expect(screen.getByTestId('lf-hf-ratio')).toHaveTextContent(
+      copy.spectrumCollecting(common.withUnit(String(MIN_SPECTRUM_MS / MS_PER_MINUTE), common.units.minutes)),
+    );
 
     scene.advanceSignalSeconds(40);
-    expect(visibleQuality()).toMatch(/buena/i);
-    expect(screen.getByTestId('mean-hr')).toHaveTextContent(/^\d+ lpm$/);
-    expect(screen.getByTestId('rmssd')).toHaveTextContent(/^\d+ ms$/);
-    expect(screen.getByTestId('sdnn')).toHaveTextContent(/^\d+ ms$/);
+    expect(visibleQuality()).toContain(copy.quality.good);
+    expect(screen.getByTestId('mean-hr')).toHaveTextContent(figureWith(common.units.beatsPerMinute));
+    expect(screen.getByTestId('rmssd')).toHaveTextContent(figureWith(common.units.milliseconds));
+    expect(screen.getByTestId('sdnn')).toHaveTextContent(figureWith(common.units.milliseconds));
     expect(Number(screen.getByTestId('accepted-beats').textContent)).toBeGreaterThan(60);
     expect(screen.getByTestId('discarded-beats')).toHaveTextContent('0');
   });
@@ -91,7 +104,7 @@ describe('SignalPanel', () => {
     await scene.connect();
     scene.advanceSignalSeconds(10);
 
-    const chart = screen.getByRole('img', { name: /tacograma/i });
+    const chart = screen.getByRole('img', { name: copy.chart.accessibleName(ANALYSIS_WINDOW_MS / MS_PER_MINUTE) });
     const summary = document.getElementById(chart.getAttribute('aria-describedby') ?? '');
     expect(summary?.tagName).toBe('DL');
     expect(chart.querySelector('canvas')?.getAttribute('aria-hidden')).toBe('true');
@@ -100,38 +113,48 @@ describe('SignalPanel', () => {
 
   it('hides only the chart when a palette variable is missing', async () => {
     const scene = createScene('rest', () => {
-      throw new ChartPaletteError('Falta la variable CSS --color-chart-line.');
+      throw new ChartPaletteError('missing_variable', '--color-chart-line');
     });
     await scene.connect();
     scene.advanceSignalSeconds(70);
 
+    const reason = copy.chart.stylesMissing(copy.chart.paletteErrors.missing_variable('--color-chart-line'));
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByText(/--color-chart-line/)).toBeInTheDocument();
-    expect(screen.getByTestId('rmssd')).toHaveTextContent(/^\d+ ms$/);
+    expect(screen.getByText(copy.chart.unavailable(reason))).toBeInTheDocument();
+    expect(screen.getByTestId('rmssd')).toHaveTextContent(figureWith(common.units.milliseconds));
   });
 
   it('reports low quality as text and uses non-clinical vocabulary', async () => {
     const scene = createScene('artifacts');
     await scene.connect();
     scene.advanceSignalSeconds(95); // contact loss between 90 and 95 s
-    expect(visibleQuality()).toMatch(/baja: revisa la colocación del dispositivo/i);
+    expect(visibleQuality()).toContain(copy.quality.low);
 
     scene.advanceSignalSeconds(205);
-    expect(visibleQuality()).toMatch(/buena/i);
+    expect(visibleQuality()).toContain(copy.quality.good);
     expect(Number(screen.getByTestId('discarded-beats').textContent)).toBeGreaterThan(0);
-    expect(screen.getByText(/descartados por calidad de señal/i)).toBeInTheDocument();
+    expect(screen.getByText(copy.metrics.discardedBeats)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/anómal|prematur|ectópic|arritmi/i);
+  });
+
+  it('shows why the analysis stopped updating', () => {
+    const scene = createScene();
+    act(() => {
+      scene.port.receiveFromThread({ kind: 'error', code: 'no_2d_context' });
+    });
+
+    expect(screen.getByText(copy.threadFailed(copy.errors.no_2d_context))).toBeInTheDocument();
   });
 
   it('does not show results from a previous source', async () => {
     const scene = createScene();
     await scene.connect();
     scene.advanceSignalSeconds(70);
-    expect(screen.getByTestId('rmssd')).toHaveTextContent(/ms/);
+    expect(screen.getByTestId('rmssd')).toHaveTextContent(figureWith(common.units.milliseconds));
 
     scene.view.rerender(<SignalPanel source={null} createClient={() => new SignalThreadClient(createInProcessPort())} />);
-    expect(visibleQuality()).toMatch(/esperando datos/i);
-    expect(screen.getByTestId('rmssd')).toHaveTextContent('—');
+    expect(visibleQuality()).toContain(copy.waitingForData);
+    expect(screen.getByTestId('rmssd')).toHaveTextContent(common.noValue);
   });
 
   it('terminates the signal thread and removes the canvas on unmount', async () => {

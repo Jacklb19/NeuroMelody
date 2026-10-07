@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
 import type { BeatNotification } from '../../acquisition/contract';
 import type { ScenarioId } from '../../acquisition/simulator/scenarios';
-import { SimulatedSource, type Speed } from '../../acquisition/simulator/SimulatedSource';
+import { SimulatedSource } from '../../acquisition/simulator/SimulatedSource';
+import type { Speed } from '../../acquisition/speedCatalog';
 import { SignalProcessor, type IndicesResult } from './SignalProcessor';
 
 function notification(

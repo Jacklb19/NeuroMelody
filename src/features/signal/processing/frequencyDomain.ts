@@ -1,13 +1,12 @@
 import type { ClassifiedBeat } from './types';
-import { MIN_ACCEPTANCE } from './thresholds';
-
-/** Uniform resampling rate of the NN series, in Hz (Task Force, 1996). */
-export const RESAMPLE_HZ = 4;
-/** Frequency bands in Hz, upper bound exclusive. */
-export const LF_BAND_HZ = [0.04, 0.15] as const;
-export const HF_BAND_HZ = [0.15, 0.4] as const;
-/** Minimum continuous signal for a stable LF estimate (ADR-15 in docs/decisiones.md). */
-export const MIN_SPECTRUM_MS = 120_000;
+import {
+  HF_BAND_HZ,
+  LF_BAND_HZ,
+  MIN_SPECTRUM_ACCEPTANCE,
+  MIN_SPECTRUM_MS,
+  RESAMPLE_HZ,
+} from './thresholds';
+import { MS_PER_SECOND } from '../../../shared/time';
 
 /** Frequency-domain indices (RF-06). Powers in ms². */
 export interface FrequencyIndices {
@@ -21,15 +20,16 @@ export interface FrequencyIndices {
  * Computes LF and HF power over the most recent continuous stretch of beats.
  *
  * Pipeline: beat times from the cumulative RR sum, natural cubic spline of
- * the accepted NN values resampled at 4 Hz, linear detrending, Hann window,
- * FFT and integration of the one-sided PSD per band.
+ * the accepted NN values resampled at {@link RESAMPLE_HZ}, linear
+ * detrending, Hann window, FFT and integration of the one-sided PSD per band.
  *
  * Discarded beats keep their duration on the time axis (an ectopic pair does
  * not shift later beats) and their value is interpolated. A gap or contact
  * loss ends the stretch: the time between beats is unknown there, so
  * splicing both sides would invent oscillations.
  *
- * @returns `null` until the stretch covers 2 minutes with enough accepted beats.
+ * @returns `null` until the stretch covers {@link MIN_SPECTRUM_MS} with at least
+ *   {@link MIN_SPECTRUM_ACCEPTANCE} of its beats accepted.
  */
 export function computeFrequencyIndices(
   beats: readonly ClassifiedBeat[],
@@ -39,7 +39,7 @@ export function computeFrequencyIndices(
   const values: number[] = [];
   let elapsedS = 0;
   for (const beat of run) {
-    elapsedS += beat.rrMs / 1000;
+    elapsedS += beat.rrMs / MS_PER_SECOND;
     if (beat.accepted) {
       times.push(elapsedS);
       values.push(beat.rrMs);
@@ -50,8 +50,8 @@ export function computeFrequencyIndices(
   if (
     first === undefined ||
     last === undefined ||
-    (last - first) * 1000 < MIN_SPECTRUM_MS ||
-    times.length < MIN_ACCEPTANCE * run.length
+    (last - first) * MS_PER_SECOND < MIN_SPECTRUM_MS ||
+    times.length < MIN_SPECTRUM_ACCEPTANCE * run.length
   ) {
     return null;
   }

@@ -1,10 +1,26 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import type { Formatters } from '../../i18n/formatters';
+import { useFormatters, useMessages, type Messages } from '../../i18n/messages';
 import type { SignalSource } from '../acquisition/contract';
+import { chartLabelsFrom, type ChartLabels } from './drawing/chartLabels';
 import type { CanvasDimensions } from './drawing/drawTachogram';
-import { ChartPaletteError, readChartPalette, type ChartPalette } from './drawing/palette';
+import {
+  ChartPaletteError,
+  readChartPalette,
+  type ChartPalette,
+  type ChartPaletteErrorCode,
+} from './drawing/palette';
+import { formatSignalTime } from './formatSignalTime';
+import { LF_HF_RATIO_DECIMALS, QUALITY_ICONS } from './presentation';
+import type { IndicesResult } from './processing/SignalProcessor';
+import { ANALYSIS_WINDOW_MS, MAX_GAP_MS, MIN_SPECTRUM_MS } from './processing/thresholds';
+import { MS_PER_MINUTE } from '../../shared/time';
 import { SignalThreadClient, createWorkerPort } from './thread/SignalThreadClient';
-import type { SignalQuality, IndicesResult } from './processing/SignalProcessor';
-import { ANALYSIS_WINDOW_MS, MAX_GAP_MS } from './processing/thresholds';
+import {
+  WORKER_CRASHED,
+  type SignalThreadErrorCode,
+  type SignalThreadFailure,
+} from './thread/protocol';
 
 type TransferCanvas = (canvas: HTMLCanvasElement) => OffscreenCanvas;
 
@@ -21,15 +37,20 @@ interface SignalPanelProps {
   readonly onPulse?: () => void;
 }
 
-type ChartState =
-  | { readonly kind: 'ready'; readonly palette: ChartPalette; readonly transfer: TransferCanvas }
-  | { readonly kind: 'unavailable'; readonly reason: string };
+/** Why the chart cannot be shown; worded from the dictionary when rendering. */
+type ChartUnavailableReason =
+  | { readonly kind: 'no_offscreen_canvas' }
+  | { readonly kind: 'palette'; readonly error: ChartPaletteError };
 
-const QUALITY_TEXT: Readonly<Record<SignalQuality, { icon: string; text: string }>> = {
-  collecting: { icon: '…', text: 'Reuniendo datos…' },
-  good: { icon: '✓', text: 'Buena' },
-  low: { icon: '△', text: 'Baja: revisa la colocación del dispositivo.' },
-};
+/** Like the palette, the canvas labels are prepared once, when the canvas is created. */
+type ChartState =
+  | {
+      readonly kind: 'ready';
+      readonly palette: ChartPalette;
+      readonly labels: ChartLabels;
+      readonly transfer: TransferCanvas;
+    }
+  | { readonly kind: 'unavailable'; readonly reason: ChartUnavailableReason };
 
 const createDefaultClient = (): SignalThreadClient => new SignalThreadClient(createWorkerPort());
 
@@ -43,19 +64,39 @@ function browserTransfer(): TransferCanvas | null {
 function evaluateChart(
   transfer: TransferCanvas | null,
   readPalette: () => ChartPalette,
+  labels: ChartLabels,
 ): ChartState {
   if (transfer === null) {
-    return { kind: 'unavailable', reason: 'Este navegador no puede dibujar la gráfica en segundo plano.' };
+    return { kind: 'unavailable', reason: { kind: 'no_offscreen_canvas' } };
   }
   try {
-    return { kind: 'ready', palette: readPalette(), transfer };
+    return { kind: 'ready', palette: readPalette(), labels, transfer };
   } catch (error) {
     // Hide only the chart; the text indicators continue working.
     if (error instanceof ChartPaletteError) {
-      return { kind: 'unavailable', reason: `Faltan estilos de la gráfica (${error.message})` };
+      return { kind: 'unavailable', reason: { kind: 'palette', error } };
     }
     throw error;
   }
+}
+
+function describeChartUnavailable(reason: ChartUnavailableReason, t: Messages['signal']): string {
+  if (reason.kind === 'no_offscreen_canvas') {
+    return t.chart.noOffscreenCanvas;
+  }
+  // Typed against the codes so a new palette error cannot lack its message.
+  const paletteErrors: Readonly<Record<ChartPaletteErrorCode, (detail: string) => string>> =
+    t.chart.paletteErrors;
+  return t.chart.stylesMissing(paletteErrors[reason.error.code](reason.error.detail));
+}
+
+function describeThreadFailure(failure: SignalThreadFailure, t: Messages['signal']): string {
+  // Only the browser knows why its Worker crashed, so its words are shown as given.
+  if (failure.code === WORKER_CRASHED) {
+    return failure.detail;
+  }
+  const errors: Readonly<Record<SignalThreadErrorCode, string>> = t.errors;
+  return errors[failure.code];
 }
 
 function measure(container: HTMLElement): CanvasDimensions {
@@ -63,21 +104,21 @@ function measure(container: HTMLElement): CanvasDimensions {
   return { widthCss: width, heightCss: height, scale: window.devicePixelRatio || 1 };
 }
 
-function formatMinutes(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  return `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, '0')}`;
+/** Whole figure with its unit, or the placeholder while it cannot be computed. */
+function formatWithUnit(value: number | null, unit: string, common: Messages['common']): string {
+  return value === null ? common.noValue : common.withUnit(String(Math.round(value)), unit);
 }
 
-function format(value: number | null, unit: string): string {
-  return value === null ? '—' : `${String(Math.round(value))} ${unit}`;
-}
-
-const RATIO_FORMAT = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** The spectrum needs 2 continuous minutes, so its absence is explained. */
-function formatRatio(result: IndicesResult | null): string {
-  if (result?.lfHfRatio == null) return result?.lfPower == null ? 'Reuniendo 2 min continuos' : '—';
-  return RATIO_FORMAT.format(result.lfHfRatio);
+/** The spectrum needs {@link MIN_SPECTRUM_MS} of continuous signal, so its absence is explained. */
+function formatRatio(result: IndicesResult | null, t: Messages, format: Formatters): string {
+  if (result?.lfHfRatio == null) {
+    return result?.lfPower == null
+      ? t.signal.spectrumCollecting(
+          t.common.withUnit(String(MIN_SPECTRUM_MS / MS_PER_MINUTE), t.common.units.minutes),
+        )
+      : t.common.noValue;
+  }
+  return format.decimal(result.lfHfRatio, LF_HF_RATIO_DECIMALS);
 }
 
 /**
@@ -95,10 +136,13 @@ export function SignalPanel({
   onUnavailable,
   onPulse,
 }: SignalPanelProps): React.JSX.Element {
+  const t = useMessages();
+  const format = useFormatters();
   const [chart] = useState<ChartState>(() =>
     evaluateChart(
       transferCanvas === undefined ? browserTransfer() : transferCanvas,
       readPalette,
+      chartLabelsFrom(t.common),
     ),
   );
   const [threadAvailable] = useState(
@@ -107,7 +151,7 @@ export function SignalPanel({
   const [reading, setReading] = useState<{ source: SignalSource; result: IndicesResult } | null>(
     null,
   );
-  const [threadError, setThreadError] = useState<string | null>(null);
+  const [threadError, setThreadError] = useState<SignalThreadFailure | null>(null);
   const clientRef = useRef<SignalThreadClient | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
@@ -131,7 +175,7 @@ export function SignalPanel({
       canvas.style.height = '100%';
       canvas.style.display = 'block';
       container.append(canvas);
-      client.attachCanvas(chart.transfer(canvas), chart.palette, measure(container));
+      client.attachCanvas(chart.transfer(canvas), chart.palette, chart.labels, measure(container));
 
       const observer =
         typeof ResizeObserver === 'undefined'
@@ -191,7 +235,9 @@ export function SignalPanel({
 
   // Display results only from the current source.
   const result = reading !== null && reading.source === source ? reading.result : null;
-  const quality = result === null ? null : QUALITY_TEXT[result.quality];
+  const quality = result === null ? null : result.quality;
+  const { metrics } = t.signal;
+  const { units } = t.common;
 
   return (
     <section
@@ -199,18 +245,18 @@ export function SignalPanel({
       className="signal-panel"
     >
       <h2 id={titleId}>
-        Señal e indicadores
+        {t.signal.title}
       </h2>
 
       <p role="status" className="signal-status">
-        Calidad de la señal:{' '}
+        {t.signal.qualityLabel}{' '}
         <strong>
           {quality === null ? (
-            'Esperando datos de la señal'
+            t.signal.waitingForData
           ) : (
             <>
-              <span aria-hidden="true">{quality.icon} </span>
-              {quality.text}
+              <span aria-hidden="true">{QUALITY_ICONS[quality]} </span>
+              {t.signal.quality[quality]}
             </>
           )}
         </strong>
@@ -218,12 +264,12 @@ export function SignalPanel({
 
       {!threadAvailable && (
         <p>
-          El análisis de la señal no está disponible en este navegador.
+          {t.signal.threadUnavailable}
         </p>
       )}
       {threadError !== null && (
         <p>
-          No se pudo actualizar el análisis de la señal ({threadError}).
+          {t.signal.threadFailed(describeThreadFailure(threadError, t.signal))}
         </p>
       )}
 
@@ -231,14 +277,13 @@ export function SignalPanel({
         <div
           ref={containerRef}
           role="img"
-          aria-label="Tacograma: intervalos entre latidos de los últimos 5 minutos"
+          aria-label={t.signal.chart.accessibleName(ANALYSIS_WINDOW_MS / MS_PER_MINUTE)}
           aria-describedby={summaryId}
           className="signal-chart"
         />
       ) : (
         <p>
-          La gráfica no está disponible: {chart.reason}. Los indicadores en texto siguen
-          actualizándose.
+          {t.signal.chart.unavailable(describeChartUnavailable(chart.reason, t.signal))}
         </p>
       )}
 
@@ -246,25 +291,25 @@ export function SignalPanel({
         id={summaryId}
         className="signal-metrics"
       >
-        <dt>Frecuencia cardíaca media</dt>
-        <dd data-testid="mean-hr">{format(result?.meanHr ?? null, 'lpm')}</dd>
-        <dt>Variabilidad entre latidos (RMSSD)</dt>
-        <dd data-testid="rmssd">{format(result?.rmssd ?? null, 'ms')}</dd>
-        <dt>Variabilidad global (SDNN)</dt>
-        <dd data-testid="sdnn">{format(result?.sdnn ?? null, 'ms')}</dd>
-        <dt>Oscilación lenta (potencia LF)</dt>
-        <dd data-testid="lf-power">{format(result?.lfPower ?? null, 'ms²')}</dd>
-        <dt>Oscilación rápida (potencia HF)</dt>
-        <dd data-testid="hf-power">{format(result?.hfPower ?? null, 'ms²')}</dd>
-        <dt>Razón LF/HF</dt>
-        <dd data-testid="lf-hf-ratio">{formatRatio(result)}</dd>
-        <dt>Ventana analizada</dt>
+        <dt>{metrics.meanHr}</dt>
+        <dd data-testid="mean-hr">{formatWithUnit(result?.meanHr ?? null, units.beatsPerMinute, t.common)}</dd>
+        <dt>{metrics.rmssd}</dt>
+        <dd data-testid="rmssd">{formatWithUnit(result?.rmssd ?? null, units.milliseconds, t.common)}</dd>
+        <dt>{metrics.sdnn}</dt>
+        <dd data-testid="sdnn">{formatWithUnit(result?.sdnn ?? null, units.milliseconds, t.common)}</dd>
+        <dt>{metrics.lfPower}</dt>
+        <dd data-testid="lf-power">{formatWithUnit(result?.lfPower ?? null, units.squaredMilliseconds, t.common)}</dd>
+        <dt>{metrics.hfPower}</dt>
+        <dd data-testid="hf-power">{formatWithUnit(result?.hfPower ?? null, units.squaredMilliseconds, t.common)}</dd>
+        <dt>{metrics.lfHfRatio}</dt>
+        <dd data-testid="lf-hf-ratio">{formatRatio(result, t, format)}</dd>
+        <dt>{metrics.analysisWindow}</dt>
         <dd data-testid="analysis-window">
-          {formatMinutes(result?.coverageMs ?? 0)} de {formatMinutes(ANALYSIS_WINDOW_MS)}
+          {t.signal.windowCoverage(formatSignalTime(result?.coverageMs ?? 0), formatSignalTime(ANALYSIS_WINDOW_MS))}
         </dd>
-        <dt>Latidos aceptados</dt>
+        <dt>{metrics.acceptedBeats}</dt>
         <dd data-testid="accepted-beats">{result?.acceptedBeats ?? 0}</dd>
-        <dt>Descartados por calidad de señal</dt>
+        <dt>{metrics.discardedBeats}</dt>
         <dd data-testid="discarded-beats">{result?.discardedBeats ?? 0}</dd>
       </dl>
     </section>

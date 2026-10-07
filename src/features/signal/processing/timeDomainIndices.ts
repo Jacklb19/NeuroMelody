@@ -1,8 +1,9 @@
 import type { ClassifiedBeat } from './types';
+import { MS_PER_MINUTE } from '../../../shared/time';
 
 /** Time-domain variability indices (RF-05). */
 export interface TimeDomainIndices {
-  /** Mean heart rate (60000 / mean NN), in bpm; `null` without NN. */
+  /** Mean heart rate (one minute / mean NN), in bpm; `null` without NN. */
   readonly meanHr: number | null;
   /** Root mean square of successive differences, in ms; `null` without pairs. */
   readonly rmssd: number | null;
@@ -44,7 +45,7 @@ export function computeTimeDomainIndices(
   const meanNn = nn.length > 0 ? nnDurationMs / nn.length : null;
 
   return {
-    meanHr: meanNn === null ? null : 60000 / meanNn,
+    meanHr: meanNn === null ? null : MS_PER_MINUTE / meanNn,
     rmssd: pairs > 0 ? Math.sqrt(sumSquaredDiffs / pairs) : null,
     sdnn: meanNn === null || nn.length < 2 ? null : sampleStdDev(nn, meanNn),
     validNn: nn.length,

@@ -2,8 +2,8 @@ import type { ClassifiedBeat, LowQualitySegment } from './types';
 import { MIN_ACCEPTANCE, QUALITY_WINDOW_MS } from './thresholds';
 
 /**
- * Proportion of accepted beats among those ending in the last 30 s of
- * signal; `null` if no beat ended in that interval.
+ * Proportion of accepted beats among those ending in the last
+ * {@link QUALITY_WINDOW_MS} of signal; `null` if no beat ended in that interval.
  */
 export function recentAcceptance(
   beats: readonly ClassifiedBeat[],
@@ -23,7 +23,7 @@ export function recentAcceptance(
   return total === 0 ? null : acceptedCount / total;
 }
 
-/** `true` if the recent proportion of accepted beats is below 80 %. */
+/** `true` if the recent proportion of accepted beats is below {@link MIN_ACCEPTANCE}. */
 export function isAcceptanceLow(
   beats: readonly ClassifiedBeat[],
   currentTimeMs: number,

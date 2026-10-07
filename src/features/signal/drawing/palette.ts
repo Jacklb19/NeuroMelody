@@ -29,11 +29,26 @@ export const PALETTE_VARIABLES: Readonly<Record<PaletteColor, string>> = {
 export const FAMILY_VARIABLE = '--font-base';
 export const SIZE_VARIABLE = '--text-sm';
 
-/** A palette variable is missing: the chart cannot be drawn faithfully. */
+/** Why the palette could not be read; the panel words it from the dictionary (ADR-25). */
+export const CHART_PALETTE_ERROR_CODES = ['missing_variable', 'invalid_font_size'] as const;
+export type ChartPaletteErrorCode = (typeof CHART_PALETTE_ERROR_CODES)[number];
+
+const DEVELOPER_MESSAGES: Readonly<Record<ChartPaletteErrorCode, (detail: string) => string>> = {
+  missing_variable: (detail) => `Missing CSS variable ${detail}.`,
+  invalid_font_size: (detail) => `Invalid font size: ${detail}.`,
+};
+
+/** A palette variable is missing or unreadable: the chart cannot be drawn faithfully. */
 export class ChartPaletteError extends Error {
-  constructor(message: string) {
-    super(message);
+  readonly code: ChartPaletteErrorCode;
+  /** The CSS variable that is missing, or the font size that could not be parsed. */
+  readonly detail: string;
+
+  constructor(code: ChartPaletteErrorCode, detail: string) {
+    super(DEVELOPER_MESSAGES[code](detail));
     this.name = 'ChartPaletteError';
+    this.code = code;
+    this.detail = detail;
   }
 }
 
@@ -43,7 +58,7 @@ export type ComputedStyles = Pick<CSSStyleDeclaration, 'getPropertyValue'>;
 function readVariable(styles: ComputedStyles, name: string): string {
   const value = styles.getPropertyValue(name).trim();
   if (value === '') {
-    throw new ChartPaletteError(`Falta la variable CSS ${name}.`);
+    throw new ChartPaletteError('missing_variable', name);
   }
   return value;
 }
@@ -60,7 +75,7 @@ function sizeInPx(value: string, styles: ComputedStyles): number {
       return parsed * rootPx;
     }
   }
-  throw new ChartPaletteError(`Tamaño de fuente no válido: ${value}.`);
+  throw new ChartPaletteError('invalid_font_size', value);
 }
 
 /**

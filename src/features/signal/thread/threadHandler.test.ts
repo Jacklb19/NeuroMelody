@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { es } from '../../../i18n/es';
 import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
-import type { ChartPalette } from '../../signal/drawing/palette';
+import { chartLabelsFrom } from '../drawing/chartLabels';
+import type { ChartPalette } from '../drawing/palette';
 import { createSignalThreadHandler } from './threadHandler';
 import type { ThreadCanvas, MessageFromThread } from './protocol';
 
@@ -13,6 +15,7 @@ const PALETTE: ChartPalette = {
   lowQualityHatch: 'rgb(6, 6, 6)',
   font: '14px sans-serif',
 };
+const LABELS = chartLabelsFrom(es.common);
 
 function createScene(context: FakeDrawingContext | null = new FakeDrawingContext()) {
   const received: MessageFromThread[] = [];
@@ -33,6 +36,7 @@ describe('createSignalThreadHandler', () => {
       kind: 'init-canvas',
       canvas,
       palette: PALETTE,
+      labels: LABELS,
       dimensions: { widthCss: 500, heightCss: 200, scale: 1.5 },
     });
     expect(canvas.width).toBe(750);
@@ -42,7 +46,7 @@ describe('createSignalThreadHandler', () => {
 
   it('redraws on every notification and on resize', () => {
     const { handle, canvas, context } = createScene();
-    handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 500, heightCss: 200, scale: 1 } });
+    handle({ kind: 'init-canvas', canvas, palette: PALETTE, labels: LABELS, dimensions: { widthCss: 500, heightCss: 200, scale: 1 } });
     handle(notification(1000));
     handle(notification(2000));
     handle({ kind: 'resize', dimensions: { widthCss: 400, heightCss: 200, scale: 2 } });
@@ -63,8 +67,8 @@ describe('createSignalThreadHandler', () => {
 
   it('reports when the canvas provides no 2D context', () => {
     const { handle, canvas, received } = createScene(null);
-    handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 1, heightCss: 1, scale: 1 } });
-    expect(received).toEqual([{ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' }]);
+    handle({ kind: 'init-canvas', canvas, palette: PALETTE, labels: LABELS, dimensions: { widthCss: 1, heightCss: 1, scale: 1 } });
+    expect(received).toEqual([{ kind: 'error', code: 'no_2d_context' }]);
   });
 
   it('rejects a canvas with an incomplete palette', () => {
@@ -73,9 +77,10 @@ describe('createSignalThreadHandler', () => {
       kind: 'init-canvas',
       canvas,
       palette: { ...PALETTE, discarded: '' },
+      labels: LABELS,
       dimensions: { widthCss: 1, heightCss: 1, scale: 1 },
     });
-    expect(received[0]?.kind).toBe('error');
+    expect(received).toEqual([{ kind: 'error', code: 'unrecognized_message' }]);
     expect(context?.operations).toEqual([]);
   });
 });

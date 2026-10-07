@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { es } from '../../../i18n/es';
 import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
 import type { WindowSnapshot } from '../processing/SignalProcessor';
 import type { ClassifiedBeat } from '../processing/types';
+import { chartLabelsFrom } from './chartLabels';
 import { drawTachogram, type CanvasDimensions } from './drawTachogram';
 import type { ChartPalette } from './palette';
 
@@ -18,6 +20,8 @@ const PALETTE: ChartPalette = {
   font: '14px sans-serif',
 };
 const DIMENSIONS: CanvasDimensions = { widthCss: 600, heightCss: 224, scale: 2 };
+const LABELS = chartLabelsFrom(es.common);
+const { withUnit, units } = es.common;
 
 function beat(endMs: number, rrMs: number, extra: Partial<ClassifiedBeat> = {}): ClassifiedBeat {
   return { endMs, rrMs, accepted: true, discardReason: null, contiguousWithPrevious: true, ...extra };
@@ -40,7 +44,7 @@ const SNAPSHOT: WindowSnapshot = {
 
 function draw(snapshot: WindowSnapshot = SNAPSHOT): FakeDrawingContext {
   const ctx = new FakeDrawingContext();
-  drawTachogram(ctx, snapshot, PALETTE, DIMENSIONS);
+  drawTachogram(ctx, snapshot, PALETTE, LABELS, DIMENSIONS);
   return ctx;
 }
 
@@ -94,7 +98,7 @@ describe('drawTachogram', () => {
     const texts = draw()
       .operations.filter((o) => o.operation === 'fillText')
       .map((o) => o.args[0]);
-    expect(texts).toContain('1000 ms');
+    expect(texts).toContain(withUnit('1000', units.milliseconds));
     expect(texts).toContain('0:00');
     expect(texts).toContain('5:00');
   });
@@ -112,7 +116,7 @@ describe('drawTachogram', () => {
     const texts = draw({ timeMs: 350_000, beats: [], segments: [] })
       .operations.filter((o) => o.operation === 'fillText')
       .map((o) => o.args[0])
-      .filter((t) => typeof t === 'string' && !t.endsWith('ms'));
+      .filter((t) => typeof t === 'string' && !t.endsWith(units.milliseconds));
     expect(texts).toEqual(['1:00', '2:00', '3:00', '4:00', '5:00']);
   });
 
