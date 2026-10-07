@@ -85,6 +85,7 @@
   --stage-text-max-width: 30ch;
   --stage-detail-max-width: 48ch;
   --progress-duration: 1s;
+  --waveform-height: 6rem;
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
@@ -244,6 +245,10 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .capability-status { flex-shrink: 0; font-size: var(--text-sm); font-weight: var(--font-weight-strong); padding: var(--space-2) var(--space-3); border-radius: var(--border-radius); }
 .capability-status.available { background: var(--color-success-background); color: var(--color-success-text); }
 .capability-status.unavailable { background: var(--color-error-background); color: var(--color-error-text); }
+.camera-pulse { margin-top: var(--space-10); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); display: grid; gap: var(--space-5); justify-items: start; }
+.camera-pulse > * { max-width: 100%; }
+.camera-pulse .source-metrics { width: 100%; }
+.camera-waveform { width: 100%; height: var(--waveform-height); background: var(--color-surface); border-radius: var(--border-radius); }
 .recheck-section { margin-top: var(--space-8); padding-top: var(--space-6); border-top: var(--border-width) solid var(--color-border-subtle); }
 .recheck-section p { margin-bottom: var(--space-5); color: var(--color-text-secondary); }
 .text-button { background: none; border: 0; padding: var(--space-2) 0; min-height: var(--control-height); color: var(--color-button-background); font-weight: var(--font-weight-strong); text-decoration: underline; text-underline-offset: var(--space-1); cursor: pointer; }
