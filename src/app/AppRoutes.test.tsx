@@ -130,7 +130,7 @@ describe('readDuration', () => {
     ['25', 20],
     ['abc', 20],
     ['', 20],
-  ])('interpreta %j como %i minutos', (value, expected) => {
+  ])('reads %j as %i minutes', (value, expected) => {
     expect(readDuration(value)).toBe(expected);
   });
 
