@@ -10,12 +10,12 @@ function acceptedCount(rr: readonly number[]): ClassifiedBeat[] {
   });
 }
 
-describe('calcularIndicesTemporales', () => {
-  it('coincide con los valores calculados a mano para una serie corta', () => {
+describe('computeTimeDomainIndices', () => {
+  it('matches hand-computed values for a short series', () => {
     // NN = [800, 810, 790, 820]
-    // Diferencias: 10, −20, 30 → RMSSD = √((100 + 400 + 900) / 3) = √466,67 = 21,602 ms
-    // Media 805; desviaciones −5, 5, −15, 15 → SDNN = √(500 / 3) = 12,910 ms
-    // FC media = 60000 / 805 = 74,534 lpm
+    // Differences: 10, −20, 30 → RMSSD = √((100 + 400 + 900) / 3) = √466.67 = 21.602 ms
+    // Mean 805; deviations −5, 5, −15, 15 → SDNN = √(500 / 3) = 12.910 ms
+    // Mean HR = 60000 / 805 = 74.534 bpm
     const indices = computeTimeDomainIndices(acceptedCount([800, 810, 790, 820]));
     expect(indices.rmssd).toBeCloseTo(21.602, 3);
     expect(indices.sdnn).toBeCloseTo(12.91, 3);
@@ -24,14 +24,14 @@ describe('calcularIndicesTemporales', () => {
     expect(indices.nnDurationMs).toBe(3220);
   });
 
-  it('da RMSSD y SDNN de cero para una serie constante', () => {
+  it('gives zero RMSSD and SDNN for a constant series', () => {
     const indices = computeTimeDomainIndices(acceptedCount([1000, 1000, 1000]));
     expect(indices.rmssd).toBe(0);
     expect(indices.sdnn).toBe(0);
     expect(indices.meanHr).toBe(60);
   });
 
-  it('devuelve nulos cuando no hay datos suficientes', () => {
+  it('returns nulls when there is not enough data', () => {
     expect(computeTimeDomainIndices([])).toEqual({
       meanHr: null,
       rmssd: null,
@@ -45,10 +45,10 @@ describe('calcularIndicesTemporales', () => {
     expect(one.sdnn).toBeNull();
   });
 
-  it('excluye los descartados y no forma pares a través de ellos', () => {
-    // 800, 810, [500 descartado], 790, 820
-    // Pares válidos: (800, 810) y (790, 820) → diferencias 10 y 30
-    // RMSSD = √((100 + 900) / 2) = √500 = 22,361 ms
+  it('excludes discarded beats and forms no pairs across them', () => {
+    // 800, 810, [500 discarded], 790, 820
+    // Valid pairs: (800, 810) and (790, 820) → differences 10 and 30
+    // RMSSD = √((100 + 900) / 2) = √500 = 22.361 ms
     const series = acceptedCount([800, 810, 500, 790, 820]).map((beat, i) =>
       i === 2 ? { ...beat, accepted: false, discardReason: 'deviation' as const } : beat,
     );
@@ -58,8 +58,8 @@ describe('calcularIndicesTemporales', () => {
     expect(indices.sdnn).toBeCloseTo(12.91, 3);
   });
 
-  it('no forma par entre los latidos a ambos lados de una pérdida de contacto', () => {
-    // 800, 810 | hueco | 900, 910 → pares (800, 810) y (900, 910); el salto 810 → 900 no cuenta
+  it('forms no pair between beats on either side of a contact loss', () => {
+    // 800, 810 | gap | 900, 910 → pairs (800, 810) and (900, 910); the 810 → 900 jump does not count
     const series = acceptedCount([800, 810, 900, 910]).map((beat, i) =>
       i === 2 ? { ...beat, contiguousWithPrevious: false } : beat,
     );

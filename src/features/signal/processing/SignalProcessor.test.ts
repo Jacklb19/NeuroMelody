@@ -19,7 +19,7 @@ function createProcessor() {
   return { processor, results };
 }
 
-/** Alimenta el procesador con el simulador (reloj falso) durante `segundosSenal`. */
+/** Feeds the processor from the simulator (fake clock) for `signalSeconds`. */
 async function simulate(
   scenario: ScenarioId,
   signalSeconds: number,
@@ -50,25 +50,25 @@ function unfilteredRmssd(notifications: readonly BeatNotification[], fromMs: num
   return Math.sqrt(sum / (rr.length - 1));
 }
 
-describe('ProcesadorSenal', () => {
-  it('ubica los latidos de una notificación hacia atrás desde su instante', () => {
+describe('SignalProcessor', () => {
+  it('places the beats of a notification backwards from its instant', () => {
     const { processor } = createProcessor();
     processor.process(notification(2000, [500, 400]));
-    expect(processor.snapshot.beats.map((l) => l.endMs)).toEqual([1600, 2000]);
+    expect(processor.snapshot.beats.map((beat) => beat.endMs)).toEqual([1600, 2000]);
   });
 
-  it('publica índices cada 5 s de tiempo de señal', async () => {
+  it('publishes indices every five seconds of signal time', async () => {
     const { results } = await simulate('rest', 30);
     expect(results.map((r) => r.timeMs)).toEqual([5000, 10000, 15000, 20000, 25000, 30000]);
   });
 
-  it('publica los mismos resultados a 1× y a 10×', async () => {
+  it('publishes the same results at 1× and at 10×', async () => {
     const slow = await simulate('progressive_relaxation', 120, 1);
     const fast = await simulate('progressive_relaxation', 120, 10);
     expect(fast.results).toEqual(slow.results);
   });
 
-  it('muestra "reuniendo" sin índices hasta tener 60 s de NN válidos', async () => {
+  it('reports "collecting" without indices until it has 60 s of valid NN', async () => {
     const { results } = await simulate('rest', 70);
     const at55 = results.find((r) => r.timeMs === 55_000);
     const at70 = results.find((r) => r.timeMs === 70_000);
@@ -80,7 +80,7 @@ describe('ProcesadorSenal', () => {
     expect(at70?.coverageMs).toBe(70_000);
   });
 
-  it('en reposo limpio no descarta latidos ni marca tramos de baja calidad', async () => {
+  it('discards no beats and marks no low-quality segments at clean rest', async () => {
     const { processor, results } = await simulate('rest', 300);
     const last = results.at(-1);
     expect(last?.discardedBeats).toBe(0);
@@ -88,8 +88,8 @@ describe('ProcesadorSenal', () => {
     expect(last?.coverageMs).toBe(300_000);
   });
 
-  describe('verificación de RF-04 con el escenario artefactos', () => {
-    it('el RMSSD filtrado queda a ±10 % del de reposo con la misma semilla y el crudo es claramente mayor', async () => {
+  describe('RF-04 verification with the artifacts scenario', () => {
+    it('keeps the filtered RMSSD within ±10 % of rest with the same seed while the raw one is clearly higher', async () => {
       const reference = await simulate('rest', 300);
       const withArtifacts = await simulate('artifacts', 300);
       const referenceRmssd = reference.results.at(-1)?.rmssd ?? Number.NaN;
@@ -101,18 +101,18 @@ describe('ProcesadorSenal', () => {
       expect(withArtifacts.results.at(-1)?.discardedBeats).toBeGreaterThan(0);
     });
 
-    it('marca como baja calidad cada pérdida de contacto', async () => {
+    it('marks every contact loss as low quality', async () => {
       const { processor, results } = await simulate('artifacts', 200);
       const segments = processor.snapshot.segments;
 
-      expect(segments.some((t) => t.startMs <= 91_000 && t.endMs >= 95_000)).toBe(true);
-      expect(segments.some((t) => t.startMs <= 181_000 && t.endMs >= 185_000)).toBe(true);
+      expect(segments.some((segment) => segment.startMs <= 91_000 && segment.endMs >= 95_000)).toBe(true);
+      expect(segments.some((segment) => segment.startMs <= 181_000 && segment.endMs >= 185_000)).toBe(true);
       expect(results.find((r) => r.timeMs === 95_000)?.quality).toBe('low');
       expect(results.find((r) => r.timeMs === 110_000)?.quality).toBe('good');
     });
   });
 
-  it('no considera consecutivos los latidos a ambos lados de una pérdida de contacto', () => {
+  it('does not treat beats on either side of a contact loss as consecutive', () => {
     const { processor } = createProcessor();
     processor.process(notification(1000, [1000]));
     processor.process(notification(2000, [1000]));
@@ -121,11 +121,11 @@ describe('ProcesadorSenal', () => {
     processor.process(notification(5000, [1000]));
 
     const beats = processor.snapshot.beats;
-    expect(beats.map((l) => l.contiguousWithPrevious)).toEqual([true, true, false, true]);
+    expect(beats.map((beat) => beat.contiguousWithPrevious)).toEqual([true, true, false, true]);
     expect(processor.snapshot.segments).toEqual([{ startMs: 2000, endMs: 3000 }]);
   });
 
-  it('descarta los RR que llegan sin contacto del sensor', () => {
+  it('discards RR that arrive without sensor contact', () => {
     const { processor } = createProcessor();
     processor.process(notification(1000, [1000], false));
     expect(processor.snapshot.beats[0]).toMatchObject({
@@ -134,7 +134,7 @@ describe('ProcesadorSenal', () => {
     });
   });
 
-  it('marca un hueco de más de 3 s sin RR y rompe la continuidad', () => {
+  it('marks a gap of more than 3 s without RR and breaks continuity', () => {
     const { processor } = createProcessor();
     processor.process(notification(1000, [1000]));
     for (let t = 2000; t <= 5000; t += 1000) {
@@ -146,9 +146,9 @@ describe('ProcesadorSenal', () => {
     expect(processor.snapshot.beats.at(-1)?.contiguousWithPrevious).toBe(false);
   });
 
-  it('marca baja calidad si se acepta menos del 80 % de los latidos recientes', () => {
+  it('marks low quality when less than 80 % of recent beats are accepted', () => {
     const { processor, results } = createProcessor();
-    // Referencia de 5 latidos en 1000 ms y luego 3 descartes de 5: 7 de 10 aceptados (70 %).
+    // Reference of 5 beats at 1000 ms, then 3 discards out of 5: 7 of 10 accepted (70 %).
     const series = [1000, 1000, 1000, 1000, 1000, 1500, 1000, 1500, 1000, 1500];
     series.forEach((rr, i) => {
       processor.process(notification((i + 1) * 1000, [rr]));
@@ -156,7 +156,7 @@ describe('ProcesadorSenal', () => {
     expect(results.at(-1)?.quality).toBe('low');
   });
 
-  it('reiniciar vacía la ventana y vuelve a publicar desde 5 s', () => {
+  it('reset empties the window and publishes again from 5 s', () => {
     const { processor, results } = createProcessor();
     for (let t = 1000; t <= 10_000; t += 1000) {
       processor.process(notification(t, [1000]));

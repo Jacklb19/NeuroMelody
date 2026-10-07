@@ -1,28 +1,26 @@
-# NeuroMelody
+# NeuroMelody · Frontend
 
-Aplicación web progresiva que genera música de forma continua en el navegador y modula sus parámetros (tempo, tonalidad, densidad, brillo y reverberación) en tiempo real a partir de la frecuencia cardíaca y la variabilidad entre latidos, captadas con una banda Bluetooth de bajo consumo o con un simulador.
+Aplicación web progresiva que genera música de forma continua en el navegador y modula sus parámetros (tempo, tonalidad, densidad, brillo y reverberación) en tiempo real a partir de la frecuencia cardíaca y la variabilidad entre latidos, captadas con una banda Bluetooth de bajo consumo, un simulador o registros de ejemplo.
 
-> **Aviso.** NeuroMelody es una herramienta de bienestar y acompañamiento. **No es un dispositivo médico** ni está certificada como tal: no mide el dolor, no diagnostica, no interpreta clínicamente la señal y no sustituye ni modifica ningún tratamiento prescrito. Su uso es complementario al seguimiento de un profesional de la salud.
+> **Aviso.** NeuroMelody es una herramienta de bienestar y acompañamiento. **No es un dispositivo médico**: no mide el dolor, no diagnostica, no interpreta clínicamente la señal y no sustituye ni modifica ningún tratamiento prescrito. Su uso es complementario al seguimiento de un profesional de la salud.
 
-Proyecto de la asignatura Programación Orientada a la Web.
+Proyecto de la asignatura Programación Orientada a la Web. La API vive en un repositorio aparte: [NeuroM_Back](https://github.com/Jacklb19/NeuroM_Back).
 
 ## Arquitectura en breve
 
-El lazo de control se cierra íntegramente en el dispositivo; la nube solo aporta identidad, persistencia y apoyo:
+El lazo de control se cierra íntegramente en el dispositivo; la API solo aporta identidad, persistencia y el modelo de lenguaje.
 
 | Etapa | Contexto de ejecución | Tecnología |
 |---|---|---|
-| Adquisición | Hilo principal, tras una interfaz común de fuente de señal | Web Bluetooth o simulador |
-| Análisis y clasificación | Web Worker | Índices de variabilidad, ONNX Runtime Web |
+| Adquisición | Hilo principal, tras una interfaz común de fuente de señal | Web Bluetooth, simulador o registros |
+| Análisis | Web Worker | Filtrado, índices temporales y espectro LF/HF |
 | Decisión | Motor de adaptación con histéresis y rampas | TypeScript |
 | Síntesis | Hilo de audio de tiempo real | AudioWorklet, Web Audio API |
 | Interfaz | Hilo principal | React 19, TypeScript, Vite |
-| API | Funciones de Vercel | FastAPI (Python) |
-| Identidad y datos | Supabase | Auth, PostgreSQL con RLS, Storage |
+| API | Repositorio y proyecto de Vercel aparte | FastAPI (Python) |
+| Identidad y datos | Supabase | Auth, PostgreSQL con RLS |
 
-El modelo de lenguaje nunca participa en el lazo de control: solo propone el plan inicial y redacta el resumen final, marcado siempre como texto generado automáticamente.
-
-La memoria compartida entre hilos exige aislamiento de origen cruzado, por eso las cabeceras COOP y COEP (junto con la CSP y HSTS) se declaran en `vercel.json` y también en el servidor de desarrollo de Vite.
+El modelo de lenguaje nunca participa en el lazo de control: solo propone el plan inicial y redacta el resumen final, marcado siempre como texto generado automáticamente. Las decisiones técnicas están en [`docs/decisiones.md`](docs/decisiones.md) y la especificación completa en [`docs/definicion-proyecto.md`](docs/definicion-proyecto.md).
 
 ## Requisitos
 
@@ -37,7 +35,7 @@ cp .env.example .env.local   # completar los valores locales
 npm run dev
 ```
 
-La página de diagnóstico inicial muestra si el entorno tiene aislamiento de origen cruzado, Web Workers, WebAssembly y `SharedArrayBuffer`.
+La página `/diagnostics` muestra si el entorno tiene aislamiento de origen cruzado y las capacidades necesarias.
 
 ## Scripts
 
@@ -46,80 +44,45 @@ La página de diagnóstico inicial muestra si el entorno tiene aislamiento de or
 | `npm run dev` | Servidor de desarrollo con las cabeceras de aislamiento |
 | `npm run build` | Verificación de tipos y construcción de producción en `dist/` |
 | `npm run preview` | Sirve la construcción de producción |
-| `npm run typecheck` | Verificación de tipos de TypeScript |
+| `npm run typecheck` | Verificación de tipos |
 | `npm run lint` | Análisis estático con ESLint |
 | `npm test` | Pruebas unitarias con Vitest |
-| `npm run test:coverage` | Pruebas con informe y umbral de cobertura (70 %) |
-| `npm run test:e2e` | Recorridos de sesión y funcionamiento sin conexión en Chrome y Edge |
-| `npm run test:audio` | Continuidad real durante 60 segundos en Chrome con `playbackStats` |
-| `npm run recordings:extract` | Regenera los dos extractos nsr2db y verifica sus SHA-256 |
+| `npm run test:coverage` | Pruebas con umbral de cobertura (70 %) |
+| `npm run test:e2e` | Recorridos de navegador en Chrome y Edge |
+| `npm run test:audio` | Continuidad de audio durante 60 s en Chrome (`playbackStats`) |
+| `npm run recordings:extract` | Regenera los extractos nsr2db y verifica sus SHA-256 |
 
-## Verificación del S3
+Para comprobar 30 minutos de audio sin cortes: `AUDIO_LONG=1 npm run test:audio` (en PowerShell, `$env:AUDIO_LONG='1'` antes del comando). También existe el workflow manual «Continuidad de audio (30 minutos)».
 
-La sesión permite elegir simulador o dos registros públicos de 30 minutos. Los
-datos y su licencia se describen en `public/recordings/CREDITS.md`. La música
-permanece en el nivel inicial; la adaptación automática se incorpora en S4.
+## Sin conexión
 
-El service worker se genera solo en el build de producción y guarda la aplicación,
-los módulos de audio, el Worker de señal y los registros. Para probarlo se usa
-`npm run build` seguido de `npm run preview`; `npm run dev` no registra el worker.
-La actualización espera a que termine el uso de la versión anterior, para no
-reemplazar los recursos de una sesión activa. No se guardan peticiones API ni
-datos personales en esta caché. La persistencia y sincronización de sesiones
-pertenecen a los sprints posteriores.
-
-Las pruebas de navegador usan las instalaciones locales de Chrome y Edge.
-En CI se instalan con `npx playwright install --with-deps chrome msedge`.
-Los informes y las muestras de `playbackStats` quedan en `test-results/` y
-`playwright-report/`, excluidos del repositorio.
-
-Para verificar 30 minutos sin acelerar el reloj de audio, en PowerShell:
-
-```powershell
-$env:AUDIO_LONG = '1'
-npm run test:audio
-Remove-Item Env:AUDIO_LONG
-```
-
-En Bash: `AUDIO_LONG=1 npm run test:audio`. También existe el workflow manual
-"Continuidad de audio (30 minutos)". Una API `playbackStats` ausente produce
-un fallo explícito, no una aprobación. El resultado automatizado valida el
-contexto de audio de ese navegador y equipo; la escucha, los controles del
-sistema y la accesibilidad con lector de pantalla requieren revisión manual.
+El service worker se genera solo en el build de producción: `npm run build` y luego `npm run preview` (`npm run dev` no lo registra). Guarda la aplicación, los módulos de audio, el Worker de señal y los registros de ejemplo, nunca peticiones a la API ni datos personales.
 
 ## Estructura
-
-En `/session`, S4 adapta la música con reglas provisionales relativas a la
-línea base, tres estimaciones consecutivas y rampas. «Activación creciente»
-ejercita el retroceso; «Relajación progresiva», el descenso. A 10×, la señal
-avanza más rápido, pero la permanencia musical sigue siendo de tres minutos
-reales de audio. La confianza se muestra como no calibrada.
-
-`npm run test:e2e` incluye ambos recorridos nativos: cada navegador espera
-tres minutos reales para comprobar la permanencia. La evidencia JSON se
-guarda en `build/verification/s4/`, fuera de Git. No ejecutar dos instancias
-de Playwright con la misma carpeta de salida; usar `--output` y
-`PLAYWRIGHT_HTML_OUTPUT_DIR` distintos para pruebas simultáneas. El plan de
-entrega restante, pendiente de aprobación, está en `docs/plan-entrega.md`.
 
 ```
 src/
   features/        una carpeta por característica (componente, lógica y pruebas juntas)
-  shared/          utilidades compartidas entre características
-  test/            configuración de pruebas y auditorías transversales
-supabase/
-  migrations/      esquema de la base de datos como migraciones SQL
+  shared/          utilidades compartidas
+  test/            configuración y dobles de prueba
+e2e/               pruebas de navegador con Playwright
+public/recordings/ extractos nsr2db (créditos en CREDITS.md)
+docs/              especificación, decisiones, plan y guías
 vercel.json        reescrituras y cabeceras de seguridad y aislamiento
 ```
 
 ## Base de datos
 
-El esquema vive en `supabase/migrations/`: `profiles`, `plans`, `sessions`, `session_metrics` y `model_versions`. Todas las tablas tienen seguridad a nivel de fila (RLS), y una prueba automatizada comprueba que cada `CREATE TABLE` tenga su `ENABLE ROW LEVEL SECURITY`. Solo se guardan indicadores agregados; la señal fisiológica cruda nunca sale del dispositivo.
+El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](https://github.com/Jacklb19/NeuroM_Back)), con seguridad a nivel de fila (RLS) en todas las tablas. Solo se guardan indicadores agregados; la señal cruda nunca sale del dispositivo.
 
 ## Configuración y secretos
 
-Las variables se documentan en `.env.example`, solo con sus nombres. Las que llevan el prefijo `VITE_` se incrustan en el cliente; la clave de servicio de Supabase y la del modelo de lenguaje existen solo en el servidor (variables de entorno de Vercel) y nunca se versionan.
+Las variables se documentan en `.env.example`, solo con sus nombres. Las que llevan el prefijo `VITE_` se incrustan en el cliente; ningún secreto lleva ese prefijo. Las claves de servicio viven solo en el backend.
 
-## Despliegue
+## Ramas y despliegue
 
-Vercel (plan Hobby) y Supabase (plan Free), sin costo. Cada push a GitHub genera un despliegue de vista previa, y cada integración en `main` se publica en producción.
+- `main`: versión estable; Vercel la publica en producción.
+- `dev`: integración diaria.
+- `feat/…`, `fix/…`, `docs/…`, `chore/…`: ramas cortas desde `dev`, que vuelven por pull request.
+
+Vercel (plan Hobby) y Supabase (plan Free), sin costo.

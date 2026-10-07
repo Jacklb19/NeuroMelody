@@ -1,27 +1,27 @@
 /**
- * Umbrales del procesamiento de señal. Son valores provisionales aprobados en
- * el sprint 2 y documentados en docs/propuestas.md.
+ * Signal processing thresholds: provisional values approved in sprint 2 and
+ * recorded in ADR-15 (docs/decisiones.md).
  */
 
-/** Rango plausible de un intervalo RR (30–200 lpm). */
+/** Plausible range of an RR interval (30–200 bpm). */
 export const MIN_RR_MS = 300;
 export const MAX_RR_MS = 2000;
 
-/** Desviación relativa máxima respecto de la mediana de referencia (regla del 20 %). */
+/** Maximum relative deviation from the reference median (20 % rule). */
 export const MAX_DEVIATION = 0.2;
-/** Latidos aceptados que forman la mediana de referencia. */
+/** Accepted beats that make up the reference median. */
 export const REFERENCE_BEATS = 5;
-/** Descartes por desviación seguidos tras los que se reinicia la referencia. */
+/** Consecutive deviation discards after which the reference is reset. */
 export const DISCARDS_TO_RESET = 5;
 
-/** Tiempo sin intervalos RR a partir del cual hay un hueco en la señal. */
+/** Time without RR intervals beyond which there is a gap in the signal. */
 export const MAX_GAP_MS = 3000;
-/** Ventana y proporción mínima de latidos aceptados para considerar buena la señal. */
+/** Window and minimum proportion of accepted beats for the signal to count as good. */
 export const QUALITY_WINDOW_MS = 30_000;
 export const MIN_ACCEPTANCE = 0.8;
 
-/** Ventana deslizante del análisis y periodo de recálculo (documento, sección del lazo). */
+/** Analysis sliding window and recompute period (specification, control loop section). */
 export const ANALYSIS_WINDOW_MS = 5 * 60 * 1000;
 export const COMPUTE_PERIOD_MS = 5000;
-/** Señal NN válida mínima en la ventana para publicar índices. */
+/** Minimum valid NN signal in the window to publish indices. */
 export const MIN_NN_FOR_INDICES_MS = 60_000;

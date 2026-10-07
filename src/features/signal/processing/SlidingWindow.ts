@@ -3,9 +3,9 @@ import type { ClassifiedBeat, LowQualitySegment } from './types';
 import { ANALYSIS_WINDOW_MS } from './thresholds';
 
 /**
- * Últimos 5 minutos de tiempo de señal: latidos clasificados y tramos de baja
- * calidad. Se mide en tiempo de señal, no de pared, para que el análisis sea
- * igual a cualquier velocidad del simulador.
+ * Last 5 minutes of signal time: classified beats and low-quality segments.
+ * Measured in signal time, not wall-clock time, so the analysis is the same
+ * at any simulator speed.
  */
 export class SlidingWindow {
   #beats: ClassifiedBeat[] = [];
@@ -27,7 +27,7 @@ export class SlidingWindow {
     this.#segments = addSegment(this.#segments, segment);
   }
 
-  /** Descarta lo que quedó fuera de la ventana que termina en `tiempoActualMs`. */
+  /** Drops whatever fell outside the window ending at `currentTimeMs`. */
   prune(currentTimeMs: number): void {
     const limitMs = currentTimeMs - ANALYSIS_WINDOW_MS;
     const first = this.#beats.findIndex((beat) => beat.endMs > limitMs);

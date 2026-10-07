@@ -3,14 +3,14 @@ import type { DrawingContext, CanvasDimensions } from '../../signal/drawing/draw
 import { PALETTE_VARIABLES, type ChartPalette } from '../../signal/drawing/palette';
 import type { SignalQuality, IndicesResult } from '../processing/SignalProcessor';
 
-/** Lo que el hilo de señal necesita del lienzo transferido (un OffscreenCanvas). */
+/** What the signal thread needs from the transferred canvas (an OffscreenCanvas). */
 export interface ThreadCanvas {
   width: number;
   height: number;
   getContext(kind: '2d'): DrawingContext | null;
 }
 
-/** Mensajes del hilo principal al hilo de señal. */
+/** Messages from the main thread to the signal thread. */
 export type MessageToThread =
   | { readonly kind: 'notification'; readonly notification: BeatNotification }
   | { readonly kind: 'reset' }
@@ -22,7 +22,7 @@ export type MessageToThread =
     }
   | { readonly kind: 'resize'; readonly dimensions: CanvasDimensions };
 
-/** Mensajes del hilo de señal al hilo principal. */
+/** Messages from the signal thread to the main thread. */
 export type MessageFromThread =
   | { readonly kind: 'indices'; readonly result: IndicesResult }
   | { readonly kind: 'error'; readonly message: string };
@@ -105,7 +105,7 @@ function isResult(value: unknown): value is IndicesResult {
   );
 }
 
-/** Valida en la frontera un mensaje recibido por el hilo de señal. */
+/** Validates, at the boundary, a message received by the signal thread. */
 export function isMessageToThread(value: unknown): value is MessageToThread {
   if (!isRecord(value)) {
     return false;
@@ -124,7 +124,7 @@ export function isMessageToThread(value: unknown): value is MessageToThread {
   }
 }
 
-/** Valida en la frontera un mensaje recibido por el hilo principal. */
+/** Validates, at the boundary, a message received by the main thread. */
 export function isMessageFromThread(value: unknown): value is MessageFromThread {
   if (!isRecord(value)) {
     return false;

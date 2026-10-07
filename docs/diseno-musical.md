@@ -1,6 +1,6 @@
 # Diseño musical — NeuroMelody
 
-Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha del usuario; 3–5 oyentes no bloquean ese cierre. Fecha propuesta de ajuste posterior: 16 de octubre, después del cierre técnico de S5, commit pequeño separado de levels.ts basado en resultados reales.
+Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha del usuario; 3–5 oyentes no bloquean ese cierre. El ajuste posterior con oyentes va en un commit pequeño separado de levels.ts, basado en resultados reales.
 
 **S4 cerrado el 5 de octubre de 2026.** El usuario confirmó la escucha completa con «todo pasó»: inicio, timbre, avance con Incierta, retroceso por Alta, relajación progresiva, continuidad al cambiar de pestaña y detención. Esta confirmación manual complementa las 332 pruebas aprobadas, cobertura de líneas 96,01 %, tipos/lint/build correctos y los 8 E2E Chrome/Edge de la revisión RNF-02. No se cambiaron los valores de levels.ts. La evaluación con 3–5 oyentes sigue posterior y separada; BLE físico, accesibilidad completa y despliegue conservan sus comprobaciones pendientes.
 
@@ -55,6 +55,6 @@ Prioridades aprobadas el 5 oct 2026: FC ±10 % y RMSSD ∓20 % respecto a la bas
 - **Brillo y reverberación:** se interpolan en 30 a 60 s.
 - **Todos los parámetros** se aplican como automatización de `AudioParam` en el hilo de audio, nunca con temporizadores del hilo principal.
 
-## Ajuste con oyentes posterior a S4 (propuesto: 16 oct)
+## Ajuste con oyentes posterior a S4 (propuesto)
 
-Con 3 a 5 oyentes se revisarán tempo, capas, brillo/reverberación y fundidos. Cambios con fecha/motivo en commit separado pequeño cuando el usuario entregue resultados. No se cambian valores por escucha simulada. El trabajo real consume reserva si hace falta; la fecha y el grupo no bloquean S4, cuya única escucha manual de cierre corresponde al usuario.
+Con 3 a 5 oyentes se revisarán tempo, capas, brillo/reverberación y fundidos. Cambios con fecha/motivo en commit separado pequeño cuando el usuario entregue resultados. No se cambian valores por escucha simulada. El grupo no bloquea S4, cuya única escucha manual de cierre corresponde al usuario.

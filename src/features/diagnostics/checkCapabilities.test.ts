@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { checkCapabilities } from './checkCapabilities';
 
-describe('verificarCapacidades', () => {
+describe('checkCapabilities', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('debe retornar un objeto con todas las propiedades requeridas', () => {
+  it('returns an object with every required property', () => {
     const result = checkCapabilities();
 
     expect(result).toHaveProperty('crossOriginIsolated');
@@ -15,7 +15,7 @@ describe('verificarCapacidades', () => {
     expect(result).toHaveProperty('supportsSharedArrayBuffer');
   });
 
-  it('debe reflejar crossOriginIsolated cuando está activo en window', () => {
+  it('reflects crossOriginIsolated when it is enabled on window', () => {
     const originalValue = window.crossOriginIsolated;
     Object.defineProperty(window, 'crossOriginIsolated', {
       value: true,

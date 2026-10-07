@@ -1,6 +1,6 @@
 /**
- * Punto de entrada del Worker de señal: solo conecta los mensajes con el
- * manejador. Todo el cálculo vive en módulos puros que se prueban sin Worker.
+ * Signal Worker entry point: it only wires the messages to the handler. All
+ * computation lives in pure modules that are tested without a Worker.
  */
 import { createSignalThreadHandler } from '../../signal/thread/threadHandler';
 

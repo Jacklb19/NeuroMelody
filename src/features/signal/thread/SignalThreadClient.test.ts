@@ -17,18 +17,18 @@ function createScene() {
   return { env, source, port, client, results, onError };
 }
 
-describe('ClienteHiloSenal', () => {
-  it('reenvía las notificaciones al hilo de señal y reparte los índices', async () => {
+describe('SignalThreadClient', () => {
+  it('forwards notifications to the signal thread and distributes the indices', async () => {
     const { env, source, port, client, results } = createScene();
     client.connectSource(source);
     await source.connect();
-    env.advance(1000); // 10 s de señal
+    env.advance(1000); // 10 s of signal
 
     expect(port.sent.filter((m) => m.kind === 'notification')).toHaveLength(10);
     expect(results.map((r) => r.timeMs)).toEqual([5000, 10000]);
   });
 
-  it('reinicia el hilo de señal al conectar la fuente y en cada nueva conexión', async () => {
+  it('resets the signal thread when the source is attached and on every new connection', async () => {
     const { env, source, port, client, results } = createScene();
     client.connectSource(source);
     await source.connect();
@@ -40,11 +40,11 @@ describe('ClienteHiloSenal', () => {
     env.advance(500);
 
     expect(port.sent.filter((m) => m.kind === 'reset')).toHaveLength(3);
-    // Tras reiniciar, la cadencia vuelve a empezar en 5 s.
+    // After a reset, the cadence starts again at 5 s.
     expect(results.map((r) => r.timeMs)).toEqual([5000]);
   });
 
-  it('deja de reenviar al desconectar la fuente del cliente', async () => {
+  it('stops forwarding once the source is detached from the client', async () => {
     const { env, source, port, client } = createScene();
     const disconnectSource = client.connectSource(source);
     await source.connect();
@@ -55,38 +55,38 @@ describe('ClienteHiloSenal', () => {
     expect(port.sent.filter((m) => m.kind === 'notification')).toHaveLength(3);
   });
 
-  it('avisa de los errores del hilo y de las respuestas no reconocidas', () => {
+  it('reports thread errors and unrecognized responses', () => {
     const { port, onError, results } = createScene();
-    port.receiveFromThread({ kind: 'error', message: 'falló el cálculo' });
+    port.receiveFromThread({ kind: 'error', message: 'computation failed' });
     port.receiveFromThread({ kind: 'indices', result: { quality: 'good' } });
 
     expect(onError.mock.calls).toEqual([
-      ['falló el cálculo'],
+      ['computation failed'],
       ['Respuesta no reconocida del hilo de señal.'],
     ]);
     expect(results).toEqual([]);
   });
 
-  it('el hilo de señal responde con un error ante un mensaje inválido', () => {
+  it('gets an error from the signal thread for an invalid message', () => {
     const { port, onError } = createScene();
-    // Se salta el tipado a propósito para simular un mensaje corrupto.
-    port.send(JSON.parse('{"tipo":"borrar"}') as never);
+    // Bypasses typing on purpose to simulate a corrupt message.
+    port.send(JSON.parse('{"type":"delete"}') as never);
     expect(onError).toHaveBeenCalledWith('Mensaje no reconocido por el hilo de señal.');
   });
 
-  it('terminar cierra el puerto y olvida a los observadores', () => {
+  it('terminate closes the port and forgets the observers', () => {
     const { port, client, onError } = createScene();
     client.terminate();
-    port.receiveFromThread({ kind: 'error', message: 'tarde' });
+    port.receiveFromThread({ kind: 'error', message: 'late' });
 
     expect(port.terminated).toBe(true);
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('transfiere el lienzo con la paleta y reenvía los cambios de tamaño', () => {
+  it('transfers the canvas with the palette and forwards size changes', () => {
     const { port, client, onError } = createScene();
     const context = new FakeDrawingContext();
-    // jsdom no tiene OffscreenCanvas: basta un objeto con la misma forma.
+    // jsdom has no OffscreenCanvas: an object with the same shape is enough.
     const canvas = { width: 0, height: 0, getContext: () => context } as unknown as OffscreenCanvas;
     const palette = {
       line: 'a',
@@ -107,7 +107,7 @@ describe('ClienteHiloSenal', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('da de baja a un observador', () => {
+  it('unsubscribes an observer', () => {
     const { port, client } = createScene();
     const onError = vi.fn();
     const unsubscribe = client.subscribe({ onError });

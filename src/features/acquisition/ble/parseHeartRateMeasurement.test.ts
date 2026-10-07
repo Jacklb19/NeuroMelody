@@ -36,7 +36,7 @@ describe('parseHeartRateMeasurement', () => {
     [0x02, null], // "detected" without "supported" is meaningless
     [0x04, false],
     [0x06, true],
-  ])('interpreta el contacto del sensor con banderas 0x%s', (flags, expected) => {
+  ])('interprets sensor contact with flags 0x%s', (flags, expected) => {
     expect(parseHeartRateMeasurement(view(flags, 0x48)).sensorContact).toBe(expected);
   });
 
@@ -74,12 +74,12 @@ describe('parseHeartRateMeasurement', () => {
   });
 
   it.each([
-    ['vacía', []],
-    ['sin FC de 8 bits', [0x00]],
-    ['con FC de 16 bits incompleta', [0x01, 0x48]],
-    ['con energía incompleta', [0x08, 0x48, 0x10]],
-    ['con RR truncado', [0x10, 0x48, 0x00]],
-  ])('rechaza una medición %s', (_case, bytes) => {
+    ['empty', []],
+    ['no 8-bit heart rate', [0x00]],
+    ['incomplete 16-bit heart rate', [0x01, 0x48]],
+    ['incomplete energy expended', [0x08, 0x48, 0x10]],
+    ['truncated RR', [0x10, 0x48, 0x00]],
+  ])('rejects a malformed measurement (%s)', (_case, bytes) => {
     expect(() => parseHeartRateMeasurement(view(...bytes))).toThrow(HeartRateMeasurementError);
   });
 });

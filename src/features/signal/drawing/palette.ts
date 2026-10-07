@@ -1,7 +1,7 @@
 /**
- * Colores y tipografía de la gráfica. Salen de las variables CSS de
- * src/index.css, leídas en el hilo principal y enviadas al Worker, que no
- * tiene acceso al DOM: así el Worker no contiene ningún color escrito a mano.
+ * Chart colors and typography. They come from the CSS variables in
+ * src/index.css, read on the main thread and sent to the Worker, which has no
+ * DOM access: this way the Worker contains no hand-written color.
  */
 export interface ChartPalette {
   readonly line: string;
@@ -10,13 +10,13 @@ export interface ChartPalette {
   readonly discarded: string;
   readonly lowQualityBackground: string;
   readonly lowQualityHatch: string;
-  /** Fuente completa para el canvas, por ejemplo `14px system-ui, sans-serif`. */
+  /** Full canvas font, for example `14px system-ui, sans-serif`. */
   readonly font: string;
 }
 
 type PaletteColor = Exclude<keyof ChartPalette, 'font'>;
 
-/** Variable CSS de la que sale cada color de la paleta. */
+/** CSS variable each palette color comes from. */
 export const PALETTE_VARIABLES: Readonly<Record<PaletteColor, string>> = {
   line: '--color-chart-line',
   grid: '--color-chart-grid',
@@ -29,15 +29,15 @@ export const PALETTE_VARIABLES: Readonly<Record<PaletteColor, string>> = {
 export const FAMILY_VARIABLE = '--font-base';
 export const SIZE_VARIABLE = '--text-sm';
 
-/** Falta una variable de la paleta: la gráfica no se puede dibujar con fidelidad. */
+/** A palette variable is missing: the chart cannot be drawn faithfully. */
 export class ChartPaletteError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ErrorPaletaGrafica';
+    this.name = 'ChartPaletteError';
   }
 }
 
-/** Lo único que se necesita de los estilos calculados; facilita las pruebas. */
+/** The only part of the computed styles that is needed; makes testing easier. */
 export type ComputedStyles = Pick<CSSStyleDeclaration, 'getPropertyValue'>;
 
 function readVariable(styles: ComputedStyles, name: string): string {
@@ -48,7 +48,7 @@ function readVariable(styles: ComputedStyles, name: string): string {
   return value;
 }
 
-/** Convierte un tamaño en px o rem a px; en el Worker no hay elemento raíz para resolver rem. */
+/** Converts a px or rem size to px; the Worker has no root element to resolve rem. */
 function sizeInPx(value: string, styles: ComputedStyles): number {
   const parsed = Number.parseFloat(value);
   if (value.endsWith('px') && Number.isFinite(parsed)) {
@@ -64,9 +64,9 @@ function sizeInPx(value: string, styles: ComputedStyles): number {
 }
 
 /**
- * Lee la paleta de la gráfica desde las variables CSS del documento.
+ * Reads the chart palette from the document's CSS variables.
  *
- * @throws ErrorPaletaGrafica si falta alguna variable o no se puede interpretar.
+ * @throws ChartPaletteError if any variable is missing or cannot be parsed.
  */
 export function readChartPalette(
   styles: ComputedStyles = getComputedStyle(document.documentElement),

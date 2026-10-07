@@ -1,10 +1,10 @@
 import type { EnvironmentCapabilities } from '../diagnostics/diagnostics.types';
 
 /**
- * Evalúa las capacidades del navegador necesarias para la ejecución
- * de hilos de trabajo, aislamiento de memoria y WebAssembly.
+ * Checks the browser capabilities required to run worker threads,
+ * memory isolation and WebAssembly.
  *
- * @returns Objeto con el estado de cada capacidad en el entorno actual.
+ * @returns Object with the status of each capability in the current environment.
  */
 export function checkCapabilities(): EnvironmentCapabilities {
   const hasWindow = typeof window !== 'undefined';

@@ -6,7 +6,7 @@ export const RESAMPLE_HZ = 4;
 /** Frequency bands in Hz, upper bound exclusive. */
 export const LF_BAND_HZ = [0.04, 0.15] as const;
 export const HF_BAND_HZ = [0.15, 0.4] as const;
-/** Minimum continuous signal for a stable LF estimate (docs/propuestas.md). */
+/** Minimum continuous signal for a stable LF estimate (ADR-15 in docs/decisiones.md). */
 export const MIN_SPECTRUM_MS = 120_000;
 
 /** Frequency-domain indices (RF-06). Powers in ms². */

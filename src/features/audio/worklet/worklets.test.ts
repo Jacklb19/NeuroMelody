@@ -35,7 +35,7 @@ function block(channels: number): Float32Array[] {
 function create(name: string, processorOptions: unknown) {
   const Processor = registered.get(name);
   if (Processor === undefined) {
-    throw new Error(`No se registró ${name}`);
+    throw new Error(`${name} was not registered`);
   }
   return new Processor({ processorOptions });
 }
@@ -122,7 +122,7 @@ describe('options validation', () => {
     { seed: 1.5, initialMode: 1, initialLayers: 2 },
     { seed: 1, initialMode: 1, initialLayers: 0 },
     { seed: '1', initialMode: 1, initialLayers: 2 },
-  ])('rechaza el sintetizador con %o', (options) => {
+  ])('rejects synthesizer options %o', (options) => {
     expect(() => readSynthesizerOptions(options)).toThrow(TypeError);
   });
 

@@ -18,26 +18,26 @@ const result = {
   lfHfRatio: null,
 };
 
-describe('esMensajeHaciaHilo', () => {
-  it('acepta los mensajes válidos', () => {
+describe('isMessageToThread', () => {
+  it('accepts valid messages', () => {
     expect(isMessageToThread({ kind: 'notification', notification })).toBe(true);
     expect(isMessageToThread({ kind: 'reset' })).toBe(true);
   });
 
   it.each([
-    ['nulo', null],
-    ['texto', 'reset'],
-    ['tipo desconocido', { kind: 'borrar' }],
-    ['notificación sin datos', { kind: 'notification' }],
-    ['RR no numérico', { kind: 'notification', notification: { ...notification, rrIntervalsMs: ['1000'] } }],
-    ['tiempo no finito', { kind: 'notification', notification: { ...notification, timeMs: Number.NaN } }],
-    ['contacto inválido', { kind: 'notification', notification: { ...notification, sensorContact: 'sí' } }],
-  ])('rechaza %s', (_case, message) => {
+    ['null', null],
+    ['a string', 'reset'],
+    ['an unknown kind', { kind: 'delete' }],
+    ['a notification without data', { kind: 'notification' }],
+    ['a non-numeric RR', { kind: 'notification', notification: { ...notification, rrIntervalsMs: ['1000'] } }],
+    ['a non-finite time', { kind: 'notification', notification: { ...notification, timeMs: Number.NaN } }],
+    ['an invalid contact', { kind: 'notification', notification: { ...notification, sensorContact: 'yes' } }],
+  ])('rejects %s', (_case, message) => {
     expect(isMessageToThread(message)).toBe(false);
   });
 });
 
-describe('esMensajeHaciaHilo con lienzo', () => {
+describe('isMessageToThread with a canvas', () => {
   const palette = {
     line: 'a',
     grid: 'b',
@@ -50,27 +50,27 @@ describe('esMensajeHaciaHilo con lienzo', () => {
   const canvas = { width: 1, height: 1, getContext: () => null };
   const dimensions = { widthCss: 600, heightCss: 224, scale: 2 };
 
-  it('acepta iniciar-lienzo y redimensionar válidos', () => {
+  it('accepts valid init-canvas and resize messages', () => {
     expect(isMessageToThread({ kind: 'init-canvas', canvas, palette, dimensions })).toBe(true);
     expect(isMessageToThread({ kind: 'resize', dimensions })).toBe(true);
   });
 
   it.each([
-    ['lienzo sin getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, dimensions }],
-    ['paleta con un color vacío', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, dimensions }],
-    ['paleta sin fuente', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, dimensions }],
-    ['escala cero', { kind: 'resize', dimensions: { ...dimensions, scale: 0 } }],
-    ['ancho negativo', { kind: 'resize', dimensions: { ...dimensions, widthCss: -1 } }],
-  ])('rechaza %s', (_case, message) => {
+    ['a canvas without getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, dimensions }],
+    ['a palette with an empty color', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, dimensions }],
+    ['a palette without a font', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, dimensions }],
+    ['a zero scale', { kind: 'resize', dimensions: { ...dimensions, scale: 0 } }],
+    ['a negative width', { kind: 'resize', dimensions: { ...dimensions, widthCss: -1 } }],
+  ])('rejects %s', (_case, message) => {
     expect(isMessageToThread(message)).toBe(false);
   });
 });
 
-describe('esMensajeDesdeHilo', () => {
-  it('acepta índices y errores válidos', () => {
+describe('isMessageFromThread', () => {
+  it('accepts valid indices and errors', () => {
     expect(isMessageFromThread({ kind: 'indices', result })).toBe(true);
     expect(isMessageFromThread({ kind: 'indices', result: { ...result, rmssd: 45.2, quality: 'good' } })).toBe(true);
-    expect(isMessageFromThread({ kind: 'error', message: 'falló' })).toBe(true);
+    expect(isMessageFromThread({ kind: 'error', message: 'failed' })).toBe(true);
   });
 
   it('rejects spectral indices that are missing or not finite', () => {
@@ -81,11 +81,11 @@ describe('esMensajeDesdeHilo', () => {
   });
 
   it.each([
-    ['sin tipo', {}],
-    ['calidad desconocida', { kind: 'indices', result: { ...result, quality: 'alarma' } }],
-    ['índice no numérico', { kind: 'indices', result: { ...result, sdnn: '12' } }],
-    ['error sin mensaje', { kind: 'error' }],
-  ])('rechaza %s', (_case, message) => {
+    ['a message without kind', {}],
+    ['an unknown quality', { kind: 'indices', result: { ...result, quality: 'alarm' } }],
+    ['a non-numeric index', { kind: 'indices', result: { ...result, sdnn: '12' } }],
+    ['an error without message', { kind: 'error' }],
+  ])('rejects %s', (_case, message) => {
     expect(isMessageFromThread(message)).toBe(false);
   });
 });

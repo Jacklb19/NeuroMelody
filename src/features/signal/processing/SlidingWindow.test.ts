@@ -6,8 +6,8 @@ function beat(endMs: number): ClassifiedBeat {
   return { endMs, rrMs: 1000, accepted: true, discardReason: null, contiguousWithPrevious: true };
 }
 
-describe('VentanaDeslizante', () => {
-  it('conserva solo los latidos de los últimos 5 minutos de señal', () => {
+describe('SlidingWindow', () => {
+  it('keeps only the beats from the last 5 minutes of signal', () => {
     const slidingWindow = new SlidingWindow();
     for (let end = 1000; end <= 400_000; end += 1000) {
       slidingWindow.addBeat(beat(end));
@@ -19,7 +19,7 @@ describe('VentanaDeslizante', () => {
     expect(slidingWindow.beats).toHaveLength(300);
   });
 
-  it('descarta los tramos que terminaron fuera de la ventana y fusiona los contiguos', () => {
+  it('drops segments that ended outside the window and merges contiguous ones', () => {
     const slidingWindow = new SlidingWindow();
     slidingWindow.addSegment({ startMs: 10_000, endMs: 20_000 });
     slidingWindow.addSegment({ startMs: 150_000, endMs: 155_000 });
@@ -29,7 +29,7 @@ describe('VentanaDeslizante', () => {
     expect(slidingWindow.segments).toEqual([{ startMs: 150_000, endMs: 160_000 }]);
   });
 
-  it('queda vacía si todo quedó fuera, y al vaciarla', () => {
+  it('is empty when everything fell outside, and after clearing', () => {
     const slidingWindow = new SlidingWindow();
     slidingWindow.addBeat(beat(1000));
     slidingWindow.prune(1_000_000);

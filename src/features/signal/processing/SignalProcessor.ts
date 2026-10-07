@@ -12,18 +12,18 @@ import {
 } from './thresholds';
 import { SlidingWindow } from './SlidingWindow';
 
-/** Estado de la señal que ve el usuario (siempre en lenguaje descriptivo). */
+/** Signal state shown to the user (always in descriptive language). */
 export type SignalQuality = 'collecting' | 'good' | 'low';
 
-/** Resultado publicado cada 5 s de señal (RF-05). */
+/** Result published every 5 s of signal (RF-05). */
 export interface IndicesResult {
   readonly timeMs: number;
-  /** Los índices son `null` mientras no haya 60 s de NN válidos en la ventana. */
+  /** The indices are `null` until the window holds 60 s of valid NN. */
   readonly meanHr: number | null;
   readonly rmssd: number | null;
   readonly sdnn: number | null;
   readonly nnDurationMs: number;
-  /** Parte de la ventana de 5 min ya cubierta por la señal. */
+  /** Portion of the 5 min window already covered by the signal. */
   readonly coverageMs: number;
   readonly acceptedBeats: number;
   readonly discardedBeats: number;
@@ -34,7 +34,7 @@ export interface IndicesResult {
   readonly lfHfRatio: number | null;
 }
 
-/** Contenido de la ventana, para dibujarlo. */
+/** Window contents, for drawing. */
 export interface WindowSnapshot {
   readonly timeMs: number;
   readonly beats: readonly ClassifiedBeat[];
@@ -42,14 +42,14 @@ export interface WindowSnapshot {
 }
 
 /**
- * Procesamiento completo del hilo de señal, sin dependencias del Worker para
- * poder probarlo de forma determinista.
+ * Full processing of the signal thread, with no Worker dependencies so it can
+ * be tested deterministically.
  *
- * Por cada notificación: clasifica los RR (RF-04), marca huecos, pérdidas de
- * contacto y tramos con poca aceptación, y mantiene la ventana de 5 min.
- * Cada vez que el tiempo de señal cruza un múltiplo de 5 s publica los
- * índices (RF-05). La cadencia depende del tiempo de señal y no de
- * temporizadores, así que es la misma a cualquier velocidad.
+ * For each notification: classifies the RR (RF-04), marks gaps, contact
+ * losses and stretches with low acceptance, and maintains the 5 min window.
+ * Every time the signal time crosses a multiple of 5 s it publishes the
+ * indices (RF-05). The cadence depends on signal time rather than timers, so
+ * it is the same at any speed.
  */
 export class SignalProcessor {
   readonly #onIndices: (result: IndicesResult) => void;
@@ -58,7 +58,7 @@ export class SignalProcessor {
   #lastTimeMs = 0;
   #lastRrMs = 0;
   #nextComputeMs = COMPUTE_PERIOD_MS;
-  /** Hubo un hueco o pérdida de contacto desde el último latido. */
+  /** There was a gap or contact loss since the last beat. */
   #continuityBroken = false;
   #lowNow = false;
 
@@ -115,7 +115,7 @@ export class SignalProcessor {
     }
   }
 
-  /** Vuelve al estado inicial; se usa al iniciar una nueva conexión. */
+  /** Returns to the initial state; used when a new connection starts. */
   reset(): void {
     this.#filter.reset();
     this.#slidingWindow.clear();
@@ -127,9 +127,9 @@ export class SignalProcessor {
   }
 
   /**
-   * La notificación no dice cuándo terminó cada latido, solo que terminaron
-   * antes de ella: se asume que el último termina en el instante de la
-   * notificación y los anteriores se ubican hacia atrás (error < 1 s).
+   * The notification does not say when each beat ended, only that they ended
+   * before it: the last one is assumed to end at the notification instant and
+   * the earlier ones are placed backwards from there (error < 1 s).
    */
   #addBeats(
     notification: BeatNotification,

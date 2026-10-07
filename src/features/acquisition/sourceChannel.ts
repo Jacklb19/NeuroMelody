@@ -9,7 +9,7 @@ import { validateNotification } from './validateNotification';
 export class SignalSourceError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ErrorFuenteSenal';
+    this.name = 'SignalSourceError';
   }
 }
 

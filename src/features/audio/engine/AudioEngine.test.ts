@@ -15,7 +15,7 @@ async function createEngine(outputThroughAudioElement = false, telemetry: Shared
   });
   const [synthesizer, clipper] = env.worklets;
   if (synthesizer === undefined || clipper === undefined) {
-    throw new Error('No se crearon los worklets');
+    throw new Error('Worklets were not created');
   }
   const nodesOfKind = (kind: string) => env.context.nodes.filter((n) => n.kind === kind);
   const param = (name: string) => synthesizer.parameters.get(name) as FakeParam;
@@ -166,7 +166,7 @@ describe('AudioEngine in use', () => {
     const { engine, env, envelope } = await createEngine();
     await engine.start();
     if (envelope === undefined) {
-      throw new Error('Falta la envolvente');
+      throw new Error('Missing envelope');
     }
     envelope.gain.value = 1;
     env.context.currentTime = 600;

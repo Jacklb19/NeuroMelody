@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import { DiagnosticsPage } from './DiagnosticsPage';
 
-describe('DiagnosticoPage', () => {
-  it('renderiza el título principal y la lista de capacidades', () => {
+describe('DiagnosticsPage', () => {
+  it('renders the main heading and the capability list', () => {
     render(<DiagnosticsPage />);
 
     expect(
@@ -21,7 +21,7 @@ describe('DiagnosticoPage', () => {
     expect(screen.getByText(/soporte de webassembly/i)).toBeInTheDocument();
   });
 
-  it('permite reevaluar las capacidades e incrementa el contador interactivo', async () => {
+  it('re-checks the capabilities and increments the interactive counter', async () => {
     const user = userEvent.setup();
     render(<DiagnosticsPage />);
 

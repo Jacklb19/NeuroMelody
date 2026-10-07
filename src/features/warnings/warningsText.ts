@@ -1,7 +1,7 @@
 /**
- * Advertencias de uso (RF-17). El texto sigue la sección "Advertencias de uso
- * incorporadas al producto" del documento de definición, en lenguaje
- * descriptivo y sin afirmaciones clínicas (R-06).
+ * Usage warnings (RF-17). The text follows the "Advertencias de uso
+ * incorporadas al producto" section of the definition document, in
+ * descriptive language and without clinical claims (R-06).
  */
 export const WARNINGS: readonly string[] = [
   'NeuroMelody es una herramienta de bienestar y acompañamiento. No es un dispositivo médico ni está certificada como tal.',
