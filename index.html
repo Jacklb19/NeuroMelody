@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2563eb" />
+    <!--
+      Static shell, served before the app runs, so it cannot read the app's modules.
+      Its values mirror their sources: lang = DEFAULT_LOCALE (src/i18n/locale.ts),
+      title = APP_NAME (src/config/app.ts), theme-color = the
+      --color-button-background token (src/index.css). The description is the
+      only copy outside the dictionaries, because search engines and link previews
+      read it here. src/app/staticShell.test.ts fails if any of them drifts;
+      public/manifest.webmanifest follows the same rule.
+    -->
+    <meta name="theme-color" content="#304f40" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <meta name="description" content="NeuroMelody: música generativa adaptada en tiempo real a señales fisiológicas. Herramienta de bienestar, no es un dispositivo médico." />
