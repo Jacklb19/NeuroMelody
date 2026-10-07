@@ -1,5 +1,5 @@
 /**
- * Representa el conjunto de capacidades web verificadas en tiempo de ejecución.
+ * Set of web capabilities checked at runtime.
  */
 export interface EnvironmentCapabilities {
   readonly crossOriginIsolated: boolean;

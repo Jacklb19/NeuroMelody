@@ -6,7 +6,7 @@ describe('softClip', () => {
     expect(20 * Math.log10(CEILING)).toBeCloseTo(-1, 10);
   });
 
-  it.each([1, 2, 10, 1e6, -1, -10, -1e6])('nunca supera el techo con la entrada %s', (x) => {
+  it.each([1, 2, 10, 1e6, -1, -10, -1e6])('never exceeds the ceiling with input %s', (x) => {
     expect(Math.abs(softClip(x))).toBeLessThanOrEqual(CEILING);
   });
 

@@ -1,33 +1,33 @@
 /**
- * Tipos compartidos del procesamiento de señal (hilo de señal).
- * Los términos técnicos (ectópico, anómalo) solo se usan en el código; la
- * interfaz habla siempre de "descartado por calidad de señal".
+ * Shared types for signal processing (signal thread).
+ * Technical terms (ectopic, anomalous) are only used in code; the UI always
+ * speaks of "discarded due to signal quality".
  */
 
-/** Motivo por el que un intervalo RR no entra en el análisis. */
+/** Reason an RR interval is excluded from the analysis. */
 export type DiscardReason =
-  /** Fuera del rango plausible de 300–2000 ms. */
+  /** Outside the plausible range of 300–2000 ms. */
   | 'out_of_range'
-  /** Se aparta más de un 20 % de la mediana de referencia (latido ectópico o artefacto). */
+  /** Deviates more than 20 % from the reference median (ectopic beat or artifact). */
   | 'deviation'
-  /** Llegó con el sensor sin contacto con la piel. */
+  /** Arrived while the sensor had no skin contact. */
   | 'no_contact';
 
-/** Un intervalo RR ya clasificado por el filtro. */
+/** An RR interval already classified by the filter. */
 export interface ClassifiedBeat {
-  /** Tiempo de señal (ms desde la conexión) en que termina el latido. */
+  /** Signal time (ms since connection) at which the beat ends. */
   readonly endMs: number;
   readonly rrMs: number;
   readonly accepted: boolean;
   readonly discardReason: DiscardReason | null;
   /**
-   * `false` si entre este latido y el anterior hubo un hueco o una pérdida
-   * de contacto: el par no cuenta como consecutivo para el RMSSD.
+   * `false` if there was a gap or contact loss between this beat and the
+   * previous one: the pair does not count as consecutive for RMSSD.
    */
   readonly contiguousWithPrevious: boolean;
 }
 
-/** Intervalo de tiempo de señal marcado como de baja calidad. */
+/** Signal time interval flagged as low quality. */
 export interface LowQualitySegment {
   readonly startMs: number;
   readonly endMs: number;

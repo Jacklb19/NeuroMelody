@@ -15,12 +15,12 @@ interface Chart {
 }
 
 /**
- * Lógica del hilo de señal separada del Worker: recibe cada mensaje ya
- * deserializado y responde por `enviar`. El Worker solo la conecta a
- * `onmessage`, y las pruebas la usan directamente en el mismo proceso.
+ * Signal-thread logic kept apart from the Worker: it receives each message
+ * already deserialized and replies through `send`. The Worker only wires it
+ * to `onmessage`, and the tests use it directly in the same process.
  *
- * Si hay un lienzo transferido, redibuja el tacograma tras cada cambio; sin
- * lienzo, el análisis funciona igual.
+ * If a canvas has been transferred, it redraws the tachogram after every
+ * change; without a canvas, the analysis works the same.
  */
 export function createSignalThreadHandler(
   send: (message: MessageFromThread) => void,
@@ -36,9 +36,9 @@ export function createSignalThreadHandler(
     }
   };
 
-  const resizeCanvas = (g: Chart): void => {
-    g.canvas.width = Math.round(g.dimensions.widthCss * g.dimensions.scale);
-    g.canvas.height = Math.round(g.dimensions.heightCss * g.dimensions.scale);
+  const resizeCanvas = (target: Chart): void => {
+    target.canvas.width = Math.round(target.dimensions.widthCss * target.dimensions.scale);
+    target.canvas.height = Math.round(target.dimensions.heightCss * target.dimensions.scale);
   };
 
   return (data) => {

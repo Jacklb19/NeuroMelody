@@ -3,12 +3,12 @@ import type { DrawingContext } from '../features/signal/drawing/drawTachogram';
 export interface DrawingOperation {
   readonly operation: string;
   readonly args: readonly unknown[];
-  /** Estilo vigente cuando se ejecutó la operación. */
+  /** Style in effect when the operation ran. */
   readonly fillStyle: unknown;
   readonly strokeStyle: unknown;
 }
 
-/** Contexto 2D que registra cada operación con el estilo vigente; jsdom no tiene canvas. */
+/** 2D context that records each operation with the style in effect; jsdom has no canvas. */
 export class FakeDrawingContext implements DrawingContext {
   fillStyle: string | CanvasGradient | CanvasPattern = '';
   strokeStyle: string | CanvasGradient | CanvasPattern = '';

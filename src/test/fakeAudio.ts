@@ -7,9 +7,9 @@ export interface ParamEvent {
 }
 
 /**
- * AudioParam falso: registra lo programado y mantiene `value` como el último
- * valor fijado (suficiente para verificar qué se programa; la interpolación
- * real ocurre en el navegador).
+ * Fake AudioParam: records what gets scheduled and keeps `value` as the last
+ * value set (enough to check what is scheduled; the actual interpolation
+ * happens in the browser).
  */
 export class FakeParam {
   value: number;
@@ -40,7 +40,7 @@ export class FakeParam {
     this.events.push({ kind: 'cancel', value: Number.NaN, time });
     return this;
   }
-  /** Último evento de un tipo. */
+  /** Last event of the given kind. */
   last(kind: ParamEvent['kind']): ParamEvent | undefined {
     return this.events.filter((e) => e.kind === kind).at(-1);
   }
@@ -173,7 +173,7 @@ export interface FakeAudioEnvironment {
   readonly factory: AudioFactory;
 }
 
-/** Fábrica de audio en memoria: las clases falsas se entregan con el tipo real a propósito. */
+/** In-memory audio factory: the fake classes are deliberately handed out as the real types. */
 export function createFakeAudioEnvironment(telemetry: SharedArrayBuffer | null = null): FakeAudioEnvironment {
   const context = new FakeAudioContext();
   const worklets: FakeWorkletNode[] = [];

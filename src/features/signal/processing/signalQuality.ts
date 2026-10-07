@@ -2,8 +2,8 @@ import type { ClassifiedBeat, LowQualitySegment } from './types';
 import { MIN_ACCEPTANCE, QUALITY_WINDOW_MS } from './thresholds';
 
 /**
- * Proporción de latidos aceptados entre los que terminan en los últimos
- * 30 s de señal; `null` si en ese intervalo no terminó ningún latido.
+ * Proportion of accepted beats among those ending in the last 30 s of
+ * signal; `null` if no beat ended in that interval.
  */
 export function recentAcceptance(
   beats: readonly ClassifiedBeat[],
@@ -23,7 +23,7 @@ export function recentAcceptance(
   return total === 0 ? null : acceptedCount / total;
 }
 
-/** `true` si la proporción reciente de latidos aceptados es menor del 80 %. */
+/** `true` if the recent proportion of accepted beats is below 80 %. */
 export function isAcceptanceLow(
   beats: readonly ClassifiedBeat[],
   currentTimeMs: number,
@@ -33,8 +33,8 @@ export function isAcceptanceLow(
 }
 
 /**
- * Añade un tramo de baja calidad a una lista ordenada, fusionándolo con el
- * último si se solapan o se tocan, para no dibujar franjas fragmentadas.
+ * Appends a low-quality segment to a sorted list, merging it with the last
+ * one if they overlap or touch, so the chart does not draw fragmented bands.
  */
 export function addSegment(
   segments: readonly LowQualitySegment[],

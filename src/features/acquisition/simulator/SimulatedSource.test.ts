@@ -64,7 +64,7 @@ describe('SimulatedSource', () => {
   });
 
   it.each<Speed>([2, 5, 10])(
-    'produce la misma serie a 1× y a %i× (reproducible)',
+    'produces the same series at 1× and at %i× (reproducible)',
     async (speed) => {
       const slow = await createConnectedSource(1, 'progressive_relaxation', 7);
       const fast = await createConnectedSource(speed, 'progressive_relaxation', 7);

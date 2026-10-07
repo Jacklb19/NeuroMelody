@@ -56,7 +56,7 @@ describe('createRrGenerator', () => {
     }
   });
 
-  it.each([1, 2, 3])('reposo (semilla %i): FC ≈ 62 lpm y RMSSD ≈ 45 ms', (seed) => {
+  it.each([1, 2, 3])('rest (seed %i): HR ≈ 62 bpm and RMSSD ≈ 45 ms', (seed) => {
     const rr = generateUntil('rest', seed, FIVE_MINUTES_MS).map((l) => l.rrMs);
     expect(meanHr(rr)).toBeGreaterThan(60);
     expect(meanHr(rr)).toBeLessThan(64);
@@ -64,7 +64,7 @@ describe('createRrGenerator', () => {
     expect(rmssd(rr)).toBeLessThan(60);
   });
 
-  it.each([1, 2, 3])('activación (semilla %i): FC ≈ 92 lpm y RMSSD ≈ 10 ms', (seed) => {
+  it.each([1, 2, 3])('activation (seed %i): HR ≈ 92 bpm and RMSSD ≈ 10 ms', (seed) => {
     const rr = generateUntil('activation', seed, FIVE_MINUTES_MS).map((l) => l.rrMs);
     expect(meanHr(rr)).toBeGreaterThan(90);
     expect(meanHr(rr)).toBeLessThan(94);

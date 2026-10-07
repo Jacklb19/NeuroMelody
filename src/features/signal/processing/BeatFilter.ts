@@ -22,16 +22,16 @@ function median(values: readonly number[]): number {
 }
 
 /**
- * Filtro de latidos (RF-04): separa los intervalos NN de los latidos
- * ectópicos y los artefactos.
+ * Beat filter (RF-04): separates NN intervals from ectopic beats and
+ * artifacts.
  *
- * 1. Descarta los RR fuera del rango plausible, sin tocar el estado.
- * 2. Mientras no haya 5 latidos aceptados, acepta todo lo que esté en rango.
- * 3. Después, descarta los RR que se aparten más de un 20 % de la mediana de
- *    los últimos 5 aceptados.
- * 4. Si se descartan 5 latidos seguidos por desviación, la referencia pasa a
- *    ser esos 5 latidos: así un cambio real y sostenido de la frecuencia no
- *    se descarta para siempre.
+ * 1. Discards RR outside the plausible range, without touching the state.
+ * 2. Until 5 beats have been accepted, accepts everything within range.
+ * 3. After that, discards RR that deviate more than 20 % from the median of
+ *    the last 5 accepted beats.
+ * 4. If 5 beats in a row are discarded for deviation, those 5 beats become
+ *    the reference: this way a real, sustained change in heart rate is not
+ *    discarded forever.
  */
 export class BeatFilter {
   #reference: number[] = [];
@@ -61,7 +61,7 @@ export class BeatFilter {
     return ACCEPTED;
   }
 
-  /** Olvida la referencia; se usa al iniciar una nueva conexión. */
+  /** Forgets the reference; used when a new connection starts. */
   reset(): void {
     this.#reference = [];
     this.#consecutiveDiscards = [];

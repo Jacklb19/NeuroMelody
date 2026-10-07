@@ -26,7 +26,7 @@ function createScene(scenario: ScenarioId = 'rest', readPalette: () => ChartPale
   const client = new SignalThreadClient(port);
   const createClient = () => client;
   const context = new FakeDrawingContext();
-  // jsdom no tiene OffscreenCanvas: basta un objeto con la misma forma.
+  // jsdom has no OffscreenCanvas: an object with the same shape is enough.
   const transferCanvas = () =>
     ({ width: 0, height: 0, getContext: () => context }) as unknown as OffscreenCanvas;
   const props = { createClient, readPalette, transferCanvas };
@@ -56,8 +56,8 @@ function visibleQuality(): string {
   return screen.getByRole('status').textContent;
 }
 
-describe('PanelSenal', () => {
-  it('sin Worker ni lienzo transferible avisa y mantiene los indicadores en texto', () => {
+describe('SignalPanel', () => {
+  it('without a Worker or a transferable canvas, warns and keeps the indicators as text', () => {
     render(<SignalPanel source={null} />);
 
     expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('PanelSenal', () => {
     expect(screen.getByTestId('rmssd')).toHaveTextContent('—');
   });
 
-  it('muestra "reuniendo datos" y luego los índices en texto', async () => {
+  it('shows the collecting-data status and then the indices as text', async () => {
     const scene = createScene();
     await scene.connect();
 
@@ -86,7 +86,7 @@ describe('PanelSenal', () => {
     expect(screen.getByTestId('discarded-beats')).toHaveTextContent('0');
   });
 
-  it('la gráfica tiene nombre accesible, apunta al resumen en texto y se dibuja con la paleta', async () => {
+  it('gives the chart an accessible name, links it to the text summary and draws it with the palette', async () => {
     const scene = createScene();
     await scene.connect();
     scene.advanceSignalSeconds(10);
@@ -98,7 +98,7 @@ describe('PanelSenal', () => {
     expect(scene.context.count('stroke', (o) => o.strokeStyle === PALETTE.line)).toBeGreaterThan(0);
   });
 
-  it('con una variable de la paleta ausente oculta solo la gráfica', async () => {
+  it('hides only the chart when a palette variable is missing', async () => {
     const scene = createScene('rest', () => {
       throw new ChartPaletteError('Falta la variable CSS --color-chart-line.');
     });
@@ -110,10 +110,10 @@ describe('PanelSenal', () => {
     expect(screen.getByTestId('rmssd')).toHaveTextContent(/^\d+ ms$/);
   });
 
-  it('avisa la baja calidad en texto y usa un vocabulario no clínico', async () => {
+  it('reports low quality as text and uses non-clinical vocabulary', async () => {
     const scene = createScene('artifacts');
     await scene.connect();
-    scene.advanceSignalSeconds(95); // pérdida de contacto entre 90 y 95 s
+    scene.advanceSignalSeconds(95); // contact loss between 90 and 95 s
     expect(visibleQuality()).toMatch(/baja: revisa la colocación del dispositivo/i);
 
     scene.advanceSignalSeconds(205);
@@ -123,7 +123,7 @@ describe('PanelSenal', () => {
     expect(document.body.textContent).not.toMatch(/anómal|prematur|ectópic|arritmi/i);
   });
 
-  it('no muestra resultados de una fuente anterior', async () => {
+  it('does not show results from a previous source', async () => {
     const scene = createScene();
     await scene.connect();
     scene.advanceSignalSeconds(70);
@@ -134,7 +134,7 @@ describe('PanelSenal', () => {
     expect(screen.getByTestId('rmssd')).toHaveTextContent('—');
   });
 
-  it('al desmontarse termina el hilo de señal y retira el lienzo', async () => {
+  it('terminates the signal thread and removes the canvas on unmount', async () => {
     const scene = createScene();
     await scene.connect();
     const container = screen.getByRole('img');
