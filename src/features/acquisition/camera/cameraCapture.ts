@@ -37,6 +37,26 @@ export interface CameraCapture {
   stop(): void;
 }
 
+/**
+ * Opens the camera and calls `onFrame` with every frame until the capture is
+ * stopped. `onFailure` reports a camera lost after it opened (another app
+ * took it, permission revoked): without it the frames would just stop.
+ */
+export type StartCameraCapture = (
+  onFrame: (sample: FrameSample) => void,
+  onFailure?: (error: CameraUnavailableError) => void,
+) => Promise<CameraCapture>;
+
+/**
+ * Whether the browser exposes the camera API. It is missing in old browsers
+ * and outside secure contexts (plain HTTP on a local network address).
+ */
+export function cameraApiAvailable(): boolean {
+  return typeof navigator !== 'undefined'
+    && 'mediaDevices' in navigator
+    && typeof navigator.mediaDevices.getUserMedia === 'function';
+}
+
 /** `torch` is a camera capability not yet in TypeScript's DOM library. */
 type TorchCapabilities = MediaTrackCapabilities & { readonly torch?: boolean };
 type TorchConstraints = MediaTrackConstraintSet & { readonly torch?: boolean };
@@ -69,8 +89,11 @@ function failureOf(cause: unknown): CameraFailure {
  * red and green of every frame. Frame times come from the camera when the
  * browser exposes them, which keeps beat timing independent of rendering.
  */
-export async function startCameraCapture(onFrame: (sample: FrameSample) => void): Promise<CameraCapture> {
-  if (typeof navigator === 'undefined' || !('mediaDevices' in navigator)) {
+export async function startCameraCapture(
+  onFrame: (sample: FrameSample) => void,
+  onFailure?: (error: CameraUnavailableError) => void,
+): Promise<CameraCapture> {
+  if (!cameraApiAvailable()) {
     throw new CameraUnavailableError('unsupported');
   }
   let stream: MediaStream;
@@ -111,6 +134,19 @@ export async function startCameraCapture(onFrame: (sample: FrameSample) => void)
 
   let active = true;
   let handle = 0;
+  const cancelFrames = (): void => {
+    active = false;
+    if (frameCallbacks) video.cancelVideoFrameCallback(handle);
+    else cancelAnimationFrame(handle);
+  };
+  // `ended` fires only when the system ends the track; our own stop() does not fire it.
+  const onTrackEnded = (): void => {
+    if (!active) return;
+    cancelFrames();
+    stopTracks();
+    onFailure?.(new CameraUnavailableError('unreadable'));
+  };
+  track?.addEventListener('ended', onTrackEnded);
   const sample = (timeMs: number): void => {
     context.drawImage(video, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT);
     const { data } = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT);
@@ -139,9 +175,8 @@ export async function startCameraCapture(onFrame: (sample: FrameSample) => void)
   return {
     torchOn,
     stop: () => {
-      active = false;
-      if (frameCallbacks) video.cancelVideoFrameCallback(handle);
-      else cancelAnimationFrame(handle);
+      track?.removeEventListener('ended', onTrackEnded);
+      cancelFrames();
       stopTracks();
       video.srcObject = null;
     },
