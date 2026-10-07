@@ -1,6 +1,7 @@
 import type { Messages } from '../../i18n/messages';
 import { BleConnectionError, type BleFailure } from './ble/BleSource';
 import { HeartRateMeasurementError, type MeasurementErrorCode } from './ble/parseHeartRateMeasurement';
+import { CameraUnavailableError, type CameraFailure } from './camera/cameraCapture';
 import { MAX_HR, MIN_HR } from './config';
 import { RecordingError, type RecordingErrorCode } from './recording/recording';
 import { SignalSourceError } from './sourceChannel';
@@ -32,6 +33,10 @@ export function describeSourceError(error: Error, t: AcquisitionMessages): strin
   }
   if (error instanceof RecordingError) {
     const texts: Readonly<Record<RecordingErrorCode, string>> = t.recordingErrors;
+    return texts[error.code];
+  }
+  if (error instanceof CameraUnavailableError) {
+    const texts: Readonly<Record<CameraFailure, string>> = t.camera.errors;
     return texts[error.code];
   }
   // Errors raised by the platform (a failed download, for example) carry no code: their message is all there is.
