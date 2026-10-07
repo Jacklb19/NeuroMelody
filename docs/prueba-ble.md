@@ -1,4 +1,4 @@
-# Prueba BLE con nRF Connect — 13 de octubre de 2026
+# Prueba BLE con nRF Connect
 
 Guía preparada en S4 para la comprobación manual de S5 (RF-01/RF-03, HU-01, RNF-10). No se implementó una fuente BLE en S4 ni se verificó un teléfono. El periférico será un Android; el navegador central debe estar en **otro equipo o teléfono**. Activar Bluetooth y permisos de dispositivos cercanos que solicite Android. El teléfono debe admitir publicidad BLE como periférico; si no, usar otro Android o la banda.
 
@@ -86,4 +86,4 @@ Esta macro prueba RR variables válidos y el paso por el filtro; los descartes s
 3. Convertir solo bytes sintéticos o anonimizados autorizados en casos de prueba junto a `src/features/acquisition/ble/parseHeartRateMeasurement.test.ts`: hex, resultado esperado (FC/contacto/RR) o error. Si un valor llega truncado, conservarlo tal como llegó y exigir `HeartRateMeasurementError`; no repararlo antes de probar.
 4. La regresión debe pasar parser → contrato de fuente → índices → adaptación; probar desconectar/publicidad OFF, reintentos y publicidad ON, detener y recargar con «Reconectar banda». Repetir en Chrome/Edge del equipo y navegadores Android disponibles. La emulación no acredita compatibilidad con una banda real.
 
-Guardar informes completos fuera de Git; añadir solo fixtures pequeños revisados como commit separado cuando exista evidencia de S5. El 13 oct se verifica conexión <15 s, RR, estado visible y reconexión. Fecha tope de correcciones de parser: 16 oct, usando la reserva del 15–16 si hace falta y documentando el nuevo caso; no integrar artefactos ni modificar el contrato sin aprobación cuando cambie el alcance.
+Guardar informes completos fuera de Git; añadir solo fixtures pequeños revisados como commit separado cuando exista evidencia de S5. La prueba verifica conexión <15 s, RR, estado visible y reconexión. Si el parser necesita correcciones, se documenta el nuevo caso; no integrar artefactos ni modificar el contrato sin aprobación cuando cambie el alcance.

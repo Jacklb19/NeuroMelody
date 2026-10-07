@@ -57,15 +57,13 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Completa los umbrales de R-05 y reemplaza las prioridades de `diseno-musical.md`. |
 | Consecuencias | La interfaz muestra «Confianza no calibrada · reglas provisionales». Escenario `progressive_activation` del simulador para probar el retroceso. Ajuste de `levels.ts` con 3–5 oyentes propuesto aparte. |
 
-## ADR-13. Calendario de entrega hasta el 17 de noviembre
+## ADR-13. Calendario de entrega (retirado)
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 5 oct 2026. |
-| Contexto | El cronograma de la especificación termina después de la entrega obligatoria del 17 nov. |
-| Decisión | Desarrollo hasta el 12 nov; publicación y revisión el 13 y el 17 nov. Lunes a viernes, excluyendo los festivos 12 oct, 2 nov y 16 nov. Detalle en `plan-entrega.md`. |
-| Desviación | Sustituye solo el calendario de ejecución; no elimina RF ni HU. |
-| Consecuencias | 27 días efectivos, 25 de esfuerzo y 2 de reserva (15–16 oct). Ningún dato de salud se abre en la nube sin `aal2`. |
+| Estado | Aprobado el 5 oct 2026; **retirado el 7 oct 2026** por decisión del usuario. |
+| Decisión | No hay calendario con fechas. El trabajo se ordena por prioridad en `plan-entrega.md` y avanza bloque a bloque. |
+| Consecuencias | Las tareas no tienen fecha límite propia; el orden sigue la ruta crítica. Ningún dato de salud se abre en la nube sin `aal2`. |
 
 ## ADR-14. Entrega con reglas (R-05); entrenamiento no iniciado
 
