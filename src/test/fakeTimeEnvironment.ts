@@ -1,8 +1,5 @@
-import type {
-  Scheduler,
-  Clock,
-} from '../features/acquisition/simulator/SimulatedSource';
-import { CHECK_PERIOD_MS } from '../features/acquisition/simulator/SimulatedSource';
+import type { Clock, Scheduler } from '../features/acquisition/timing';
+import { CHECK_PERIOD_MS } from '../features/acquisition/config';
 
 export interface FakeTimeEnvironment {
   readonly clock: Clock;

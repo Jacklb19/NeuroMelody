@@ -15,7 +15,8 @@ export function renderWithStore(
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path={pattern} element={element} />
-          <Route path="*" element={<p>Otra página</p>} />
+          {/* Any other path lands here, so a wrong link cannot render the screen under test. */}
+          <Route path="*" element={<p>Other page</p>} />
         </Routes>
       </MemoryRouter>
     </SessionStoreContext>,
