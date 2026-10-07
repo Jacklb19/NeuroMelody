@@ -5,9 +5,11 @@ import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { HomePage } from '../features/home/HomePage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { SessionPage } from '../features/session/SessionPage';
+import { SessionSummaryPage } from '../features/summary/SessionSummaryPage';
+import { HistoryPage } from '../features/history/HistoryPage';
 import { Layout } from './Layout';
 
-/** S3 routes from docs/pantallas.md (react-router in declarative mode). */
+/** Routes from docs/pantallas.md (react-router in declarative mode). */
 export function AppRoutes(): React.JSX.Element {
   return (
     <Routes>
@@ -23,6 +25,8 @@ export function AppRoutes(): React.JSX.Element {
             </RequireWarnings>
           }
         />
+        <Route path="summary/:id" element={<SessionSummaryPage />} />
+        <Route path="history" element={<HistoryPage />} />
         <Route path="diagnostics" element={<DiagnosticsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
