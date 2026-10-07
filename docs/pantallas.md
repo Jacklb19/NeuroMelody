@@ -35,6 +35,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `SessionSummaryPage` (`src/features/summary/`) | S6.1 | `/summary/:id` |
 | `HistoryPage` (`src/features/history/`) | S6.1 | `/history` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
+| `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
 
 ## Organización de `/session` (ADR-24)
 
