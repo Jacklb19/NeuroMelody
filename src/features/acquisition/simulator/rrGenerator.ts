@@ -1,4 +1,6 @@
+import { rrMsFromBpm } from '../heartRate';
 import { quantizeRrMs } from '../rrUnits';
+import { MS_PER_SECOND } from '../../../shared/time';
 import type { Scenario } from '../../acquisition/simulator/scenarios';
 import { createRandom, standardNormal } from './prng';
 
@@ -6,6 +8,11 @@ import { createRandom, standardNormal } from './prng';
 export const RESPIRATORY_FREQUENCY_HZ = 0.25;
 /** Frequency of the Mayer wave (LF band). */
 export const MAYER_FREQUENCY_HZ = 0.1;
+/**
+ * Mixed into the seed of the artifact generator so it draws a different
+ * sequence from the base series without consuming its numbers.
+ */
+export const ARTIFACT_SEED_SALT = 0x5bd1e995;
 
 /** A generated beat: its RR interval and the instant it ends. */
 export interface Beat {
@@ -41,7 +48,7 @@ export function createRrGenerator(scenario: Scenario, seed: number): RrGenerator
   }
 
   // Derived seed so the base series numbers are not consumed.
-  const artifactRandom = createRandom(seed ^ 0x5bd1e995);
+  const artifactRandom = createRandom(seed ^ ARTIFACT_SEED_SALT);
   let pendingCompensatory: Beat | null = null;
 
   return {
@@ -75,9 +82,9 @@ function createBaseGenerator(scenario: Scenario, seed: number): RrGenerator {
   return {
     next(): Beat {
       const p = scenario.paramsAt(startMs);
-      const t = startMs / 1000;
+      const t = startMs / MS_PER_SECOND;
       const rawRr =
-        60000 / p.meanHr +
+        rrMsFromBpm(p.meanHr) +
         p.respiratoryAmplitudeMs * Math.sin(2 * Math.PI * RESPIRATORY_FREQUENCY_HZ * t) +
         p.mayerAmplitudeMs * Math.sin(2 * Math.PI * MAYER_FREQUENCY_HZ * t + mayerPhase) +
         p.noiseMs * standardNormal(random);

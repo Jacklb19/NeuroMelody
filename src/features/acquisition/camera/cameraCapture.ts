@@ -1,14 +1,33 @@
+import {
+  CAMERA_FACING_MODE,
+  CAMERA_FRAME_RATE,
+  CAPTURE_HEIGHT,
+  CAPTURE_WIDTH,
+  SAMPLE_HEIGHT,
+  SAMPLE_WIDTH,
+} from './config';
 import type { FrameSample } from './pulseDetector';
 
-/** Frames are reduced to this size: only the average colour matters. */
-const SAMPLE_WIDTH = 40;
-const SAMPLE_HEIGHT = 30;
+/** Why the camera could not be used; the interface turns each code into text. */
+export const CAMERA_FAILURES = [
+  'unsupported',
+  'permission_denied',
+  'not_found',
+  'busy',
+  'open_failed',
+  'unreadable',
+] as const;
+
+export type CameraFailure = (typeof CAMERA_FAILURES)[number];
 
 /** The camera could not be opened or read. */
 export class CameraUnavailableError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
+  readonly code: CameraFailure;
+
+  constructor(code: CameraFailure, options?: ErrorOptions) {
+    super(`Camera unavailable: ${code}`, options);
     this.name = 'CameraUnavailableError';
+    this.code = code;
   }
 }
 
@@ -22,6 +41,9 @@ export interface CameraCapture {
 type TorchCapabilities = MediaTrackCapabilities & { readonly torch?: boolean };
 type TorchConstraints = MediaTrackConstraintSet & { readonly torch?: boolean };
 
+/** Bytes per pixel of canvas image data (red, green, blue, alpha). */
+const RGBA_CHANNELS = 4;
+
 async function turnOnTorch(track: MediaStreamTrack): Promise<boolean> {
   const capabilities = track.getCapabilities() as TorchCapabilities;
   if (capabilities.torch !== true) return false;
@@ -34,11 +56,12 @@ async function turnOnTorch(track: MediaStreamTrack): Promise<boolean> {
   }
 }
 
-function describeFailure(cause: unknown): string {
-  if (cause instanceof DOMException && cause.name === 'NotAllowedError') return 'No diste permiso para usar la cámara.';
-  if (cause instanceof DOMException && cause.name === 'NotFoundError') return 'No se encontró ninguna cámara.';
-  if (cause instanceof DOMException && cause.name === 'NotReadableError') return 'Otra aplicación está usando la cámara.';
-  return 'No se pudo abrir la cámara.';
+/** Classifies a failed `getUserMedia`; the browser reports its reasons as DOMException names. */
+function failureOf(cause: unknown): CameraFailure {
+  if (cause instanceof DOMException && cause.name === 'NotAllowedError') return 'permission_denied';
+  if (cause instanceof DOMException && cause.name === 'NotFoundError') return 'not_found';
+  if (cause instanceof DOMException && cause.name === 'NotReadableError') return 'busy';
+  return 'open_failed';
 }
 
 /**
@@ -48,16 +71,21 @@ function describeFailure(cause: unknown): string {
  */
 export async function startCameraCapture(onFrame: (sample: FrameSample) => void): Promise<CameraCapture> {
   if (typeof navigator === 'undefined' || !('mediaDevices' in navigator)) {
-    throw new CameraUnavailableError('Este navegador no permite usar la cámara. Usa Chrome en Android.');
+    throw new CameraUnavailableError('unsupported');
   }
   let stream: MediaStream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 30 } },
+      video: {
+        facingMode: { ideal: CAMERA_FACING_MODE },
+        width: { ideal: CAPTURE_WIDTH },
+        height: { ideal: CAPTURE_HEIGHT },
+        frameRate: { ideal: CAMERA_FRAME_RATE },
+      },
     });
   } catch (cause) {
-    throw new CameraUnavailableError(describeFailure(cause), { cause });
+    throw new CameraUnavailableError(failureOf(cause), { cause });
   }
   const stopTracks = (): void => { stream.getTracks().forEach((track) => { track.stop(); }); };
 
@@ -78,7 +106,7 @@ export async function startCameraCapture(onFrame: (sample: FrameSample) => void)
     await video.play();
   } catch (cause) {
     stopTracks();
-    throw new CameraUnavailableError('No se pudo leer la imagen de la cámara.', { cause });
+    throw new CameraUnavailableError('unreadable', { cause });
   }
 
   let active = true;
@@ -88,11 +116,11 @@ export async function startCameraCapture(onFrame: (sample: FrameSample) => void)
     const { data } = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT);
     let red = 0;
     let green = 0;
-    for (let i = 0; i < data.length; i += 4) {
+    for (let i = 0; i < data.length; i += RGBA_CHANNELS) {
       red += data[i] ?? 0;
       green += data[i + 1] ?? 0;
     }
-    const pixels = data.length / 4;
+    const pixels = data.length / RGBA_CHANNELS;
     onFrame({ timeMs, red: red / pixels, green: green / pixels });
   };
   const schedule = (): void => {

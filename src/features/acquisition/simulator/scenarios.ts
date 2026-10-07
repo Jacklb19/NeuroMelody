@@ -1,8 +1,10 @@
 /**
  * Simulator scenarios (RF-02, HU-02). The values were approved when sprint 1
  * was planned; the expected RMSSD is approximate and serves as a reference
- * for the tests.
+ * for the tests. Their display names live in the dictionary, keyed by id.
  */
+
+import { MS_PER_MINUTE } from '../../../shared/time';
 
 /** Parameters of the RR series model at a given instant. */
 export interface PhysiologicalParams {
@@ -16,7 +18,19 @@ export interface PhysiologicalParams {
   readonly noiseMs: number;
 }
 
-export type ScenarioId = 'rest' | 'activation' | 'progressive_relaxation' | 'progressive_activation' | 'artifacts';
+/** Scenarios in the order the selector offers them; the single source of truth for `ScenarioId`. */
+export const SCENARIO_IDS = [
+  'rest',
+  'activation',
+  'progressive_relaxation',
+  'progressive_activation',
+  'artifacts',
+] as const;
+
+export type ScenarioId = (typeof SCENARIO_IDS)[number];
+
+/** Scenario selected when the panel opens: a steady resting signal. */
+export const DEFAULT_SCENARIO_ID: ScenarioId = 'rest';
 
 /**
  * Simulated reading faults to test the filtering (RF-04): premature beats
@@ -35,8 +49,6 @@ export interface ArtifactConfig {
 
 export interface Scenario {
   readonly id: ScenarioId;
-  /** Descriptive (non-clinical) name shown by the interface. */
-  readonly name: string;
   /** Parameters in effect at `timeMs` of signal time since connection. */
   paramsAt(timeMs: number): PhysiologicalParams;
   /** Simulated reading faults; `null` in clean scenarios. */
@@ -67,8 +79,13 @@ export const DEFAULT_ARTIFACTS: ArtifactConfig = {
   contactLossDurationMs: 5000,
 };
 
-/** Transition length of the progressive relaxation scenario. */
-export const RELAXATION_DURATION_MS = 10 * 60 * 1000;
+/** Transition length of the progressive scenarios, from one state to the other. */
+export const PROGRESSIVE_TRANSITION_MS = 10 * MS_PER_MINUTE;
+
+/** Share of the progressive transition completed at `timeMs`, clamped to [0, 1]. */
+function transitionProgress(timeMs: number): number {
+  return Math.min(Math.max(timeMs / PROGRESSIVE_TRANSITION_MS, 0), 1);
+}
 
 function interpolate(a: number, b: number, fraction: number): number {
   return a + (b - a) * fraction;
@@ -94,50 +111,30 @@ function interpolateParameters(
 export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
   rest: {
     id: 'rest',
-    name: 'Reposo',
     paramsAt: () => REST_PARAMS,
     artifacts: null,
   },
   activation: {
     id: 'activation',
-    name: 'Activación',
     paramsAt: () => ACTIVATION_PARAMS,
     artifacts: null,
   },
   progressive_relaxation: {
     id: 'progressive_relaxation',
-    name: 'Relajación progresiva',
     // Moves linearly from activation to rest and then stays at rest.
     paramsAt: (timeMs) =>
-      interpolateParameters(
-        ACTIVATION_PARAMS,
-        REST_PARAMS,
-        Math.min(Math.max(timeMs / RELAXATION_DURATION_MS, 0), 1),
-      ),
+      interpolateParameters(ACTIVATION_PARAMS, REST_PARAMS, transitionProgress(timeMs)),
     artifacts: null,
   },
   progressive_activation: {
     id: 'progressive_activation',
-    name: 'Activación creciente',
-    paramsAt: (timeMs) => interpolateParameters(
-      REST_PARAMS, ACTIVATION_PARAMS,
-      Math.min(Math.max(timeMs / RELAXATION_DURATION_MS, 0), 1),
-    ),
+    paramsAt: (timeMs) =>
+      interpolateParameters(REST_PARAMS, ACTIVATION_PARAMS, transitionProgress(timeMs)),
     artifacts: null,
   },
   artifacts: {
     id: 'artifacts',
-    // Describes the device, not the body: the interface does not interpret the signal.
-    name: 'Reposo con fallos de lectura',
     paramsAt: () => REST_PARAMS,
     artifacts: DEFAULT_ARTIFACTS,
   },
 };
-
-export const SCENARIO_IDS: readonly ScenarioId[] = [
-  'rest',
-  'activation',
-  'progressive_relaxation',
-  'progressive_activation',
-  'artifacts',
-];

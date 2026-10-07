@@ -1,6 +1,7 @@
 import type { ConnectionState, SignalSource, SourceObserver } from '../contract';
-import { SignalSourceError, SourceChannel } from '../sourceChannel';
-import { browserClock, type Clock } from '../simulator/SimulatedSource';
+import { RECONNECT_DELAYS_MS } from '../config';
+import { SourceChannel } from '../sourceChannel';
+import { browserClock, type Clock } from '../timing';
 import { HeartRateMeasurementError, parseHeartRateMeasurement } from './parseHeartRateMeasurement';
 import {
   HEART_RATE_MEASUREMENT,
@@ -10,8 +11,28 @@ import {
   type HeartRateCharacteristic,
 } from './webBluetooth';
 
-/** Waits before automatic reconnection attempts, in ms (ADR-17 in docs/decisiones.md). */
-export const RECONNECT_DELAYS_MS: readonly number[] = [1000, 2000, 4000, 8000];
+/** Why the strap could not be used; the interface turns each code into text. */
+export const BLE_FAILURES = [
+  'no_remembered_device',
+  'no_gatt',
+  'link_lost',
+  'permission_denied',
+  'device_unavailable',
+  'connect_failed',
+] as const;
+
+export type BleFailure = (typeof BLE_FAILURES)[number];
+
+/** The strap could not be connected or the link was lost for good. */
+export class BleConnectionError extends Error {
+  readonly code: BleFailure;
+
+  constructor(code: BleFailure, options?: ErrorOptions) {
+    super(`Bluetooth strap unavailable: ${code}`, options);
+    this.name = 'BleConnectionError';
+    this.code = code;
+  }
+}
 
 /** Runs a task once after a delay and returns the function that cancels it. */
 export interface Delay {
@@ -102,7 +123,7 @@ export class BleSource implements SignalSource {
         return;
       }
       this.#channel.changeState('error');
-      this.#channel.emitError(new SignalSourceError(describeFailure(cause)));
+      this.#channel.emitError(toConnectionError(cause));
     }
   }
 
@@ -125,14 +146,14 @@ export class BleSource implements SignalSource {
     const devices = bluetooth.getDevices === undefined ? [] : await bluetooth.getDevices();
     const device = devices[0];
     if (device === undefined) {
-      throw new SignalSourceError('No hay una banda recordada en este navegador. Usa «Conectar banda».');
+      throw new BleConnectionError('no_remembered_device');
     }
     return device;
   }
 
   async #subscribeMeasurements(device: BleDevice, generation: number): Promise<void> {
     if (device.gatt === undefined) {
-      throw new SignalSourceError('El dispositivo no ofrece conexión GATT.');
+      throw new BleConnectionError('no_gatt');
     }
     const server = await device.gatt.connect();
     const service = await server.getPrimaryService(HEART_RATE_SERVICE);
@@ -168,7 +189,7 @@ export class BleSource implements SignalSource {
     if (waitMs === undefined) {
       this.#release();
       this.#channel.changeState('error');
-      this.#channel.emitError(new SignalSourceError('Se perdió la conexión con la banda y no se pudo recuperar.'));
+      this.#channel.emitError(new BleConnectionError('link_lost'));
       return;
     }
     const generation = this.#generation;
@@ -207,13 +228,14 @@ export class BleSource implements SignalSource {
   }
 }
 
-function describeFailure(cause: unknown): string {
-  if (cause instanceof SignalSourceError) return cause.message;
+/** Classifies a failed connection; the browser reports its reasons as DOMException names. */
+function toConnectionError(cause: unknown): BleConnectionError {
+  if (cause instanceof BleConnectionError) return cause;
   if (cause instanceof DOMException && (cause.name === 'SecurityError' || cause.name === 'NotAllowedError')) {
-    return 'El navegador no permitió usar Bluetooth.';
+    return new BleConnectionError('permission_denied', { cause });
   }
   if (cause instanceof DOMException && cause.name === 'NotFoundError') {
-    return 'La banda no está disponible. Comprueba que esté encendida y cerca.';
+    return new BleConnectionError('device_unavailable', { cause });
   }
-  return 'No se pudo conectar con la banda.';
+  return new BleConnectionError('connect_failed', { cause });
 }

@@ -1,12 +1,29 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { startCameraCapture, type CameraCapture } from '../acquisition/camera/cameraCapture';
+import { useMessages } from '../../i18n/messages';
+import { errorMessage } from '../../shared/errorMessage';
+import { MS_PER_SECOND } from '../../shared/time';
+import {
+  CameraUnavailableError,
+  startCameraCapture,
+  type CameraCapture,
+  type CameraFailure,
+} from '../acquisition/camera/cameraCapture';
+import {
+  FRAME_RATE_WINDOW_MS,
+  MIN_PULSE_INTERVALS,
+  PULSE_INTERVALS,
+  RECENT_INTERVALS,
+  WAVEFORM_HEIGHT,
+  WAVEFORM_LINE_WIDTH,
+  WAVEFORM_MARGIN,
+  WAVEFORM_MIN_AMPLITUDE,
+  WAVEFORM_WIDTH,
+} from '../acquisition/camera/config';
 import { PulseDetector, type FrameSample } from '../acquisition/camera/pulseDetector';
+import { bpmFromRrMs } from '../acquisition/heartRate';
+import { PALETTE_VARIABLES } from '../signal/drawing/palette';
 
 export type StartCapture = (onFrame: (sample: FrameSample) => void) => Promise<CameraCapture>;
-
-/** Intervals shown in the list and used for the pulse estimate. */
-const RECENT_INTERVALS = 8;
-const PULSE_INTERVALS = 5;
 
 interface Reading {
   readonly fingerDetected: boolean;
@@ -30,17 +47,23 @@ function drawWaveform(canvas: HTMLCanvasElement | null, detector: PulseDetector,
   const first = points[0];
   const last = points.at(-1);
   if (first === undefined || last === undefined || last.timeMs === first.timeMs) return;
-  const amplitude = Math.max(...points.map((point) => Math.abs(point.value)), 1);
+  const amplitude = Math.max(...points.map((point) => Math.abs(point.value)), WAVEFORM_MIN_AMPLITUDE);
   context.strokeStyle = color;
-  context.lineWidth = 2;
+  context.lineWidth = WAVEFORM_LINE_WIDTH;
   context.beginPath();
   points.forEach((point, i) => {
     const x = ((point.timeMs - first.timeMs) / (last.timeMs - first.timeMs)) * canvas.width;
-    const y = canvas.height / 2 - (point.value / amplitude) * (canvas.height / 2 - 4);
+    const y = canvas.height / 2 - (point.value / amplitude) * (canvas.height / 2 - WAVEFORM_MARGIN);
     if (i === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
   });
   context.stroke();
+}
+
+/** Text for a failed start: camera failures by code, anything else by its own message. */
+function describeCameraError(cause: unknown, texts: Readonly<Record<CameraFailure, string>>): string {
+  if (cause instanceof CameraUnavailableError) return texts[cause.code];
+  return errorMessage(cause, texts.open_failed);
 }
 
 /**
@@ -49,6 +72,8 @@ function drawWaveform(canvas: HTMLCanvasElement | null, detector: PulseDetector,
  * phone before the camera becomes a signal source.
  */
 export function CameraPulsePanel({ start = startCameraCapture }: { readonly start?: StartCapture }): React.JSX.Element {
+  const t = useMessages();
+  const text = t.acquisition.camera;
   const [status, setStatus] = useState<'idle' | 'starting' | 'running'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
@@ -68,7 +93,7 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
 
   const begin = (): void => {
     const detector = new PulseDetector();
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--color-chart-line').trim();
+    const color = getComputedStyle(document.documentElement).getPropertyValue(PALETTE_VARIABLES.line).trim();
     let intervals: number[] = [];
     let finger = false;
     let frames = 0;
@@ -80,7 +105,7 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
       frames++;
       secondStartMs ??= sample.timeMs;
       const elapsedMs = sample.timeMs - secondStartMs;
-      const fpsUpdate = elapsedMs >= 1000 ? Math.round((frames * 1000) / elapsedMs) : null;
+      const fpsUpdate = elapsedMs >= FRAME_RATE_WINDOW_MS ? Math.round((frames * MS_PER_SECOND) / elapsedMs) : null;
       if (fpsUpdate !== null) { frames = 0; secondStartMs = sample.timeMs; }
       if (beats.length === 0 && detector.fingerDetected === finger && fpsUpdate === null) return;
       if (!detector.fingerDetected) intervals = [];
@@ -104,25 +129,25 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
       },
       (cause: unknown) => {
         setStatus('idle');
-        setError(cause instanceof Error ? cause.message : 'No se pudo abrir la cámara.');
+        setError(describeCameraError(cause, text.errors));
       },
     );
   };
 
   const recent = reading.intervals.slice(-PULSE_INTERVALS);
-  const pulse = recent.length >= 3 ? Math.round(60000 / median(recent)) : null;
+  // The median resists the occasional missed or doubled peak of the camera signal.
+  const pulse = recent.length >= MIN_PULSE_INTERVALS ? Math.round(bpmFromRrMs(median(recent))) : null;
   const statusText = status !== 'running'
-    ? 'La cámara está apagada.'
+    ? text.statuses.off
     : !reading.fingerDetected
-      ? 'Cubre la cámara trasera con la yema del dedo.'
-      : pulse === null ? 'Dedo detectado: reuniendo latidos…' : 'Pulso detectado.';
+      ? text.statuses.noFinger
+      : pulse === null ? text.statuses.gathering : text.statuses.detected;
 
   return (
     <section aria-labelledby={titleId} className="camera-pulse">
-      <h2 id={titleId}>Pulso con la cámara (prototipo)</h2>
+      <h2 id={titleId}>{text.title}</h2>
       <p className="secondary-text">
-        Cubre la cámara trasera con la yema del dedo, sin apretar, y mantén la mano quieta. Si tu celular lo permite,
-        la linterna se enciende sola. Funciona mejor en Chrome para Android.
+        {text.instructions}
       </p>
       <button
         type="button"
@@ -130,24 +155,31 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
         disabled={status === 'starting'}
         onClick={status === 'running' ? stop : begin}
       >
-        {status === 'running' ? 'Apagar la cámara' : status === 'starting' ? 'Abriendo la cámara…' : 'Probar con la cámara'}
+        {status === 'running' ? text.stop : status === 'starting' ? text.starting : text.start}
       </button>
       {error !== null && <p className="quiet-notice" role="alert">{error}</p>}
-      <p role="status" className="connection-status">Estado: <strong>{statusText}</strong></p>
-      <canvas ref={canvasRef} className="camera-waveform" width={600} height={120} aria-hidden="true" />
+      <p role="status" className="connection-status">{text.statusLabel} <strong>{statusText}</strong></p>
+      <canvas ref={canvasRef} className="camera-waveform" width={WAVEFORM_WIDTH} height={WAVEFORM_HEIGHT} aria-hidden="true" />
       <dl className="source-metrics">
-        <dt>Pulso estimado</dt>
-        <dd data-testid="camera-pulse">{pulse === null ? '—' : `${String(pulse)} lpm`}</dd>
-        <dt>Últimos intervalos</dt>
-        <dd>{reading.intervals.length === 0 ? '—' : reading.intervals.map((rr) => `${String(Math.round(rr))} ms`).join(' · ')}</dd>
-        <dt>Imágenes por segundo</dt>
-        <dd>{reading.framesPerSecond ?? '—'}</dd>
-        <dt>Linterna</dt>
-        <dd>{status !== 'running' ? '—' : torchOn ? 'Encendida' : 'No disponible: usa buena luz'}</dd>
+        <dt>{text.metrics.pulse}</dt>
+        <dd data-testid="camera-pulse">
+          {pulse === null ? t.common.noValue : t.common.withUnit(String(pulse), t.common.units.beatsPerMinute)}
+        </dd>
+        <dt>{text.metrics.intervals}</dt>
+        <dd>
+          {reading.intervals.length === 0
+            ? t.common.noValue
+            : reading.intervals
+              .map((rr) => t.common.withUnit(String(Math.round(rr)), t.common.units.milliseconds))
+              .join(text.intervalSeparator)}
+        </dd>
+        <dt>{text.metrics.framesPerSecond}</dt>
+        <dd>{reading.framesPerSecond ?? t.common.noValue}</dd>
+        <dt>{text.metrics.torch}</dt>
+        <dd>{status !== 'running' ? t.common.noValue : torchOn ? text.torch.on : text.torch.unavailable}</dd>
       </dl>
       <p className="panel-footnote">
-        Prueba para decidir si la cámara sirve como fuente de señal. Es menos precisa que una banda de pecho y no es
-        una medida clínica. La imagen se procesa en el dispositivo y no se guarda.
+        {text.footnote}
       </p>
     </section>
   );

@@ -1,27 +1,20 @@
+import { MAX_RR_MS, MIN_RR_MS } from '../../signal/processing/thresholds';
+import {
+  AMPLITUDE_WINDOW_MS,
+  BASELINE_WINDOW_MS,
+  MIN_FINGER_RED,
+  MIN_RED_TO_GREEN,
+  PEAK_HALF_WIDTH,
+  PEAK_THRESHOLD,
+  SMOOTHING_FRAMES,
+} from './config';
+
 /** Mean colour of one camera frame over the covered lens, 0–255 per channel. */
 export interface FrameSample {
   readonly timeMs: number;
   readonly red: number;
   readonly green: number;
 }
-
-/**
- * A fingertip lit by the torch fills the image with bright red and little
- * green. Provisional values for the prototype (proposal P-01).
- */
-export const MIN_FINGER_RED = 100;
-export const MIN_RED_TO_GREEN = 2;
-
-/** Window of the moving mean removed from the signal: slower changes are not pulse. */
-export const BASELINE_WINDOW_MS = 1500;
-/** Frames averaged to smooth sensor noise (about 100 ms at 30 fps). */
-export const SMOOTHING_FRAMES = 3;
-/** A peak must reach this share of the recent amplitude to count as a beat. */
-export const PEAK_THRESHOLD = 0.4;
-export const AMPLITUDE_WINDOW_MS = 2000;
-/** Physiological range of a beat interval, as in the beat filter (300–2000 ms). */
-export const MIN_RR_MS = 300;
-export const MAX_RR_MS = 2000;
 
 interface Point {
   readonly timeMs: number;
@@ -36,9 +29,6 @@ function trim(points: Point[], nowMs: number, windowMs: number): void {
 function meanOf(points: readonly Point[]): number {
   return points.reduce((sum, point) => sum + point.value, 0) / points.length;
 }
-
-/** Points on each side of a candidate peak used to confirm and refine it. */
-const PEAK_HALF_WIDTH = 2;
 
 /**
  * Vertex time of the least-squares parabola through `points`, measured from
@@ -71,7 +61,7 @@ function parabolaVertex(points: readonly Point[], originMs: number): number | nu
  * Each beat pushes more blood into the fingertip, which absorbs light, so
  * the image darkens: the pulse is a dip in the red channel. The detector
  * removes the slow baseline, inverts and smooths the signal, and takes local
- * maxima above a share of the recent amplitude, at least 300 ms apart.
+ * maxima above a share of the recent amplitude, at least MIN_RR_MS apart.
  * Frames arrive every ~33 ms, so each peak is refined with a least-squares
  * parabola over its neighbours and their real timestamps; without that, RR
  * would be quantised to the frame and shaken by frame-time jitter.

@@ -1,12 +1,14 @@
 import type { BeatNotification } from '../acquisition/contract';
+import { MAX_HR, MIN_HR } from './config';
 
-/** Heart rate limits accepted at the layer boundary. */
-export const MIN_HR = 20;
-export const MAX_HR = 250;
+/** Why the boundary rejected a notification; the interface turns each code into text. */
+export const NOTIFICATION_ISSUES = ['invalid_time', 'time_regressed', 'heart_rate_out_of_range', 'invalid_rr'] as const;
+
+export type NotificationIssue = (typeof NOTIFICATION_ISSUES)[number];
 
 export type ValidationResult =
   | { readonly valid: true }
-  | { readonly valid: false; readonly reason: string };
+  | { readonly valid: false; readonly code: NotificationIssue };
 
 /**
  * Validates the structure of a notification before it enters the system.
@@ -25,23 +27,20 @@ export function validateNotification(
   const { timeMs, heartRate, rrIntervalsMs } = notification;
 
   if (!Number.isFinite(timeMs) || timeMs < 0) {
-    return { valid: false, reason: 'Tiempo de señal no válido.' };
+    return { valid: false, code: 'invalid_time' };
   }
   if (timeMs < previousTimeMs) {
-    return { valid: false, reason: 'El tiempo de señal retrocedió.' };
+    return { valid: false, code: 'time_regressed' };
   }
   if (
     !Number.isFinite(heartRate) ||
     heartRate < MIN_HR ||
     heartRate > MAX_HR
   ) {
-    return {
-      valid: false,
-      reason: `Frecuencia cardíaca fuera del rango ${String(MIN_HR)}–${String(MAX_HR)} lpm.`,
-    };
+    return { valid: false, code: 'heart_rate_out_of_range' };
   }
   if (rrIntervalsMs.some((rr) => !Number.isFinite(rr) || rr <= 0)) {
-    return { valid: false, reason: 'Intervalo entre latidos no válido.' };
+    return { valid: false, code: 'invalid_rr' };
   }
   return { valid: true };
 }

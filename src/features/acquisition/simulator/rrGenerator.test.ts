@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RR_UNITS_PER_SECOND } from '../rrUnits';
-import { SCENARIOS, RELAXATION_DURATION_MS, type ScenarioId } from '../../acquisition/simulator/scenarios';
+import { SCENARIOS, PROGRESSIVE_TRANSITION_MS, type ScenarioId } from '../../acquisition/simulator/scenarios';
 import { createRrGenerator, type Beat } from './rrGenerator';
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
@@ -31,12 +31,12 @@ function rmssd(rr: readonly number[]): number {
 
 describe('createRrGenerator', () => {
   it.each([1, 2, 3])('progressive activation is reproducible with seed %i and reaches activation values', (seed) => {
-    const beats = generateUntil('progressive_activation', seed, RELAXATION_DURATION_MS + 120_000);
-    expect(beats).toEqual(generateUntil('progressive_activation', seed, RELAXATION_DURATION_MS + 120_000));
+    const beats = generateUntil('progressive_activation', seed, PROGRESSIVE_TRANSITION_MS + 120_000);
+    expect(beats).toEqual(generateUntil('progressive_activation', seed, PROGRESSIVE_TRANSITION_MS + 120_000));
     expect(meanHr(beats.filter(b => b.endMs <= 60_000).map(b => b.rrMs))).toBeLessThan(66);
-    expect(meanHr(beats.filter(b => b.endMs > RELAXATION_DURATION_MS).map(b => b.rrMs))).toBeGreaterThan(90);
+    expect(meanHr(beats.filter(b => b.endMs > PROGRESSIVE_TRANSITION_MS).map(b => b.rrMs))).toBeGreaterThan(90);
     expect(SCENARIOS.progressive_activation.paramsAt(-1)).toEqual(SCENARIOS.rest.paramsAt(0));
-    expect(SCENARIOS.progressive_activation.paramsAt(RELAXATION_DURATION_MS)).toEqual(SCENARIOS.activation.paramsAt(0));
+    expect(SCENARIOS.progressive_activation.paramsAt(PROGRESSIVE_TRANSITION_MS)).toEqual(SCENARIOS.activation.paramsAt(0));
   });
   it('is deterministic for the same seed and scenario', () => {
     expect(generateUntil('rest', 99, 60_000)).toEqual(generateUntil('rest', 99, 60_000));
@@ -114,10 +114,10 @@ describe('createRrGenerator', () => {
   });
 
   it('progressive relaxation: goes from activation to rest in 10 minutes', () => {
-    const beats = generateUntil('progressive_relaxation', 1, RELAXATION_DURATION_MS + 120_000);
+    const beats = generateUntil('progressive_relaxation', 1, PROGRESSIVE_TRANSITION_MS + 120_000);
     const firstMinute = beats.filter((l) => l.endMs <= 60_000).map((l) => l.rrMs);
     const afterTransition = beats
-      .filter((l) => l.endMs > RELAXATION_DURATION_MS)
+      .filter((l) => l.endMs > PROGRESSIVE_TRANSITION_MS)
       .map((l) => l.rrMs);
 
     expect(meanHr(firstMinute)).toBeGreaterThan(85);

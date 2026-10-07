@@ -44,6 +44,7 @@ describe('SourceChannel', () => {
     expect(onNotification).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledOnce();
     expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(SignalSourceError);
+    expect(onError.mock.calls[0]?.[0]).toHaveProperty('code', 'heart_rate_out_of_range');
   });
 
   it('rejects times that go backwards until time is reset', () => {
