@@ -87,3 +87,20 @@ Esta macro prueba RR variables válidos y el paso por el filtro; los descartes s
 4. La regresión debe pasar parser → contrato de fuente → índices → adaptación; probar desconectar/publicidad OFF, reintentos y publicidad ON, detener y recargar con «Reconectar banda». Repetir en Chrome/Edge del equipo y navegadores Android disponibles. La emulación no acredita compatibilidad con una banda real.
 
 Guardar informes completos fuera de Git; añadir solo fixtures pequeños revisados como commit separado cuando exista evidencia de S5. La prueba verifica conexión <15 s, RR, estado visible y reconexión. Si el parser necesita correcciones, se documenta el nuevo caso; no integrar artefactos ni modificar el contrato sin aprobación cuando cambie el alcance.
+
+## Resultado de la prueba
+
+Ejecutada por el usuario el 7 oct 2026. Central: Windows 11 con Chrome 154.0.8037.98. Periférico: Xiaomi 11 Lite con nRF Connect, configurado como en este documento (servicio `180D`, característica `2A37` con Notify y anuncio conectable con `0x180D`).
+
+| Comprobación | Resultado |
+|---|---|
+| El selector de Chrome muestra el periférico y empareja | ✅ |
+| «Conectada» en menos de 15 s | ✅ |
+| Recepción de notificaciones con la macro de RR variables | ✅ 126 latidos, 0 descartados |
+| Índices con los valores que predicen los bytes | ✅ FC 60 lpm, RMSSD 21 ms (esperado ≈ 20,7), SDNN 19 ms (esperado ≈ 19,1) |
+| LF/HF tras 2 min continuos | ✅ LF 254 ms², HF 90 ms², razón 2,80 (la macro se repite cada 8 s, 0,125 Hz, dentro de LF) |
+| Reconexión tras desconectar desde el periférico con el anuncio activo | ✅ Vuelve a «Conectada» al instante |
+| Reconexión tras apagar el Bluetooth del celular | ❌ Termina en «Error de conexión». Al apagar el Bluetooth, Android destruye el servidor GATT y el anuncio; reactivarlos lleva más que los 15 s de reintentos (1, 2, 4 y 8 s), y la dirección aleatoria puede cambiar. Una banda real no pasa por eso, pero la ventana de reintentos es corta. |
+| «Reconectar banda» tras recargar | No aparece: Chrome estable no expone `getDevices()` sin el ajuste experimental. Comportamiento esperado. |
+
+Limitaciones: la emulación no prueba la precisión ni la compatibilidad de una banda real, ni navegadores Android como central.
