@@ -1,6 +1,6 @@
 /**
- * Umbrales del procesamiento de señal. Son valores provisionales aprobados en
- * el sprint 2 y documentados en docs/propuestas.md.
+ * Signal processing thresholds: provisional values approved in sprint 2 and
+ * recorded in ADR-15 (docs/decisiones.md).
  */
 
 /** Rango plausible de un intervalo RR (30–200 lpm). */

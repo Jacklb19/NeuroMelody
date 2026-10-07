@@ -59,7 +59,7 @@ export const ACTIVATION_PARAMS: PhysiologicalParams = {
   noiseMs: 5,
 };
 
-/** Values approved in sprint 2 (docs/propuestas.md). */
+/** Values approved in sprint 2 (ADR-15 in docs/decisiones.md). */
 export const DEFAULT_ARTIFACTS: ArtifactConfig = {
   prematureProbability: 0.02,
   prematureFraction: 0.7,
