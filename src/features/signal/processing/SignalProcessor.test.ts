@@ -170,4 +170,14 @@ describe('ProcesadorSenal', () => {
     }
     expect(results.map((r) => r.timeMs)).toEqual([5000]);
   });
+
+  it('publishes LF/HF after two minutes and separates rest from activation', async () => {
+    const early = await simulate('rest', 110);
+    expect(early.results.at(-1)?.lfHfRatio).toBeNull();
+
+    const rest = (await simulate('rest', 300)).results.at(-1);
+    const activation = (await simulate('activation', 300)).results.at(-1);
+    expect(rest?.lfHfRatio).toBeLessThan(1);
+    expect(activation?.lfHfRatio).toBeGreaterThan(1);
+  });
 });

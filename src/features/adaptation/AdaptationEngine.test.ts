@@ -6,7 +6,7 @@ import { SCENARIOS } from '../acquisition/simulator/scenarios';
 
 function reading(timeMs: number, meanHr = 100, rmssd = 50, quality: IndicesResult['quality'] = 'good'): IndicesResult {
   return { timeMs, meanHr, rmssd, quality, sdnn: 50, nnDurationMs: timeMs,
-    coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0 };
+    coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null };
 }
 function calibrated(): AdaptationEngine {
   const engine = new AdaptationEngine();

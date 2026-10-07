@@ -2,6 +2,7 @@ import type { BeatNotification } from '../../acquisition/contract';
 import { isAcceptanceLow } from './signalQuality';
 import { BeatFilter } from '../../signal/processing/BeatFilter';
 import { computeTimeDomainIndices } from './timeDomainIndices';
+import { computeFrequencyIndices } from './frequencyDomain';
 import type { ClassifiedBeat, LowQualitySegment } from './types';
 import {
   MAX_GAP_MS,
@@ -27,6 +28,10 @@ export interface IndicesResult {
   readonly acceptedBeats: number;
   readonly discardedBeats: number;
   readonly quality: SignalQuality;
+  /** Frequency-domain indices (RF-06); `null` until 2 min of continuous signal. */
+  readonly lfPower: number | null;
+  readonly hfPower: number | null;
+  readonly lfHfRatio: number | null;
 }
 
 /** Contenido de la ventana, para dibujarlo. */
@@ -147,6 +152,7 @@ export class SignalProcessor {
   #compute(timeMs: number): IndicesResult {
     const beats = this.#slidingWindow.beats;
     const indices = computeTimeDomainIndices(beats);
+    const spectrum = computeFrequencyIndices(beats);
     const enough = indices.nnDurationMs >= MIN_NN_FOR_INDICES_MS;
     let quality: SignalQuality = enough ? 'good' : 'collecting';
     if (this.#lowNow) {
@@ -162,6 +168,9 @@ export class SignalProcessor {
       acceptedBeats: indices.validNn,
       discardedBeats: beats.length - indices.validNn,
       quality,
+      lfPower: spectrum?.lfPower ?? null,
+      hfPower: spectrum?.hfPower ?? null,
+      lfHfRatio: spectrum?.lfHfRatio ?? null,
     };
   }
 }

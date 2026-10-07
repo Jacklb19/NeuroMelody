@@ -72,6 +72,14 @@ function format(value: number | null, unit: string): string {
   return value === null ? '—' : `${String(Math.round(value))} ${unit}`;
 }
 
+const RATIO_FORMAT = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** The spectrum needs 2 continuous minutes, so its absence is explained. */
+function formatRatio(result: IndicesResult | null): string {
+  if (result?.lfHfRatio == null) return result?.lfPower == null ? 'Reuniendo 2 min continuos' : '—';
+  return RATIO_FORMAT.format(result.lfHfRatio);
+}
+
 /**
  * Signal and indicators (RF-05, RF-12). The signal Worker draws the chart on
  * a transferred canvas. Text exposes all indicators and the analysis window
@@ -244,6 +252,12 @@ export function SignalPanel({
         <dd data-testid="rmssd">{format(result?.rmssd ?? null, 'ms')}</dd>
         <dt>Variabilidad global (SDNN)</dt>
         <dd data-testid="sdnn">{format(result?.sdnn ?? null, 'ms')}</dd>
+        <dt>Oscilación lenta (potencia LF)</dt>
+        <dd data-testid="lf-power">{format(result?.lfPower ?? null, 'ms²')}</dd>
+        <dt>Oscilación rápida (potencia HF)</dt>
+        <dd data-testid="hf-power">{format(result?.hfPower ?? null, 'ms²')}</dd>
+        <dt>Razón LF/HF</dt>
+        <dd data-testid="lf-hf-ratio">{formatRatio(result)}</dd>
         <dt>Ventana analizada</dt>
         <dd data-testid="analysis-window">
           {formatMinutes(result?.coverageMs ?? 0)} de {formatMinutes(ANALYSIS_WINDOW_MS)}

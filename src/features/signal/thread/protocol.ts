@@ -98,7 +98,10 @@ function isResult(value: unknown): value is IndicesResult {
     isNumber(value.coverageMs) &&
     isNumber(value.acceptedBeats) &&
     isNumber(value.discardedBeats) &&
-    QUALITIES.some((quality) => quality === value.quality)
+    QUALITIES.some((quality) => quality === value.quality) &&
+    isNumberOrNull(value.lfPower) &&
+    isNumberOrNull(value.hfPower) &&
+    isNumberOrNull(value.lfHfRatio)
   );
 }
 

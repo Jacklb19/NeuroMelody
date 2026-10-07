@@ -8,7 +8,7 @@ import type { IndicesResult } from '../signal/processing/SignalProcessor';
 
 function reading(timeMs: number, high = false): IndicesResult {
   return { timeMs, meanHr: high ? 120 : 100, rmssd: high ? 30 : 50, sdnn: 50,
-    nnDurationMs: timeMs, coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0, quality: 'good' };
+    nnDurationMs: timeMs, coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null, quality: 'good' };
 }
 
 it('performs one thousand interrupted transitions with real delta ramps and no latency after accepted High', async () => {

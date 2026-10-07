@@ -15,7 +15,7 @@ it('explains dwell while playing and removes the notice when the step becomes el
   act(() => {
     for (let ms = 60_000; ms <= 190_000; ms += 5000) session.receive({ timeMs: ms,
       meanHr: 100, rmssd: 50, sdnn: 50, quality: 'good', nnDurationMs: ms,
-      coverageMs: ms, acceptedBeats: 100, discardedBeats: 0 });
+      coverageMs: ms, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null });
   });
   expect(screen.getByTestId('dwell-notice')).toHaveTextContent('Se conserva el escalón hasta completar su duración mínima de 3 minutos.');
   act(() => { env.context.currentTime = 180.5; session.pulse(); });
@@ -31,7 +31,7 @@ it('announces accepted states descriptively and exposes scheduled musical parame
   act(() => {
     for (let ms = 60_000; ms <= 190_000; ms += 5000) session.receive({ timeMs: ms,
       meanHr: 100, rmssd: 50, sdnn: 50, quality: 'good', nnDurationMs: ms,
-      coverageMs: ms, acceptedBeats: 100, discardedBeats: 0 });
+      coverageMs: ms, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null });
   });
   expect(screen.getByRole('status')).toHaveTextContent('Incierta');
   expect(screen.getByTestId('music-level')).toHaveTextContent('Intermedio');
