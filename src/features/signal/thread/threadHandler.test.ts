@@ -26,8 +26,8 @@ const notification = (timeMs: number) => ({
   notification: { timeMs, heartRate: 60, rrIntervalsMs: [1000], sensorContact: true },
 });
 
-describe('crearManejadorHiloSenal', () => {
-  it('ajusta el lienzo a la densidad de pantalla y dibuja al iniciarlo', () => {
+describe('createSignalThreadHandler', () => {
+  it('fits the canvas to the screen density and draws when it is initialized', () => {
     const { handle, canvas, context } = createScene();
     handle({
       kind: 'init-canvas',
@@ -40,7 +40,7 @@ describe('crearManejadorHiloSenal', () => {
     expect(context?.count('clearRect')).toBe(1);
   });
 
-  it('redibuja con cada notificación y al redimensionar', () => {
+  it('redraws on every notification and on resize', () => {
     const { handle, canvas, context } = createScene();
     handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 500, heightCss: 200, scale: 1 } });
     handle(notification(1000));
@@ -51,7 +51,7 @@ describe('crearManejadorHiloSenal', () => {
     expect(canvas.width).toBe(800);
   });
 
-  it('procesa las notificaciones aunque no haya lienzo', () => {
+  it('processes notifications even without a canvas', () => {
     const { handle, received } = createScene();
     handle({ kind: 'resize', dimensions: { widthCss: 400, heightCss: 200, scale: 1 } });
     for (let t = 1000; t <= 5000; t += 1000) {
@@ -61,13 +61,13 @@ describe('crearManejadorHiloSenal', () => {
     expect(received[0]?.kind).toBe('indices');
   });
 
-  it('avisa si el lienzo no da un contexto 2D', () => {
+  it('reports when the canvas provides no 2D context', () => {
     const { handle, canvas, received } = createScene(null);
     handle({ kind: 'init-canvas', canvas, palette: PALETTE, dimensions: { widthCss: 1, heightCss: 1, scale: 1 } });
     expect(received).toEqual([{ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' }]);
   });
 
-  it('rechaza un lienzo con una paleta incompleta', () => {
+  it('rejects a canvas with an incomplete palette', () => {
     const { handle, canvas, received, context } = createScene();
     handle({
       kind: 'init-canvas',

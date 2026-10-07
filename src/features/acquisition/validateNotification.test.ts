@@ -26,7 +26,7 @@ describe('validateNotification', () => {
   });
 
   it.each([19, 251, Number.NaN, Number.POSITIVE_INFINITY])(
-    'rechaza la frecuencia cardíaca %s',
+    'rejects the heart rate %s',
     (heartRate) => {
       expect(
         validateNotification({ ...base, heartRate }, 0).valid,
@@ -34,7 +34,7 @@ describe('validateNotification', () => {
     },
   );
 
-  it.each([0, -5, Number.NaN])('rechaza el intervalo RR %s', (rr) => {
+  it.each([0, -5, Number.NaN])('rejects the RR interval %s', (rr) => {
     expect(
       validateNotification({ ...base, rrIntervalsMs: [800, rr] }, 0).valid,
     ).toBe(false);

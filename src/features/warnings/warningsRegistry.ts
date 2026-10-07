@@ -1,10 +1,10 @@
 /**
- * Aceptación de las advertencias de uso (RF-17). Se guarda en el dispositivo
- * con localStorage; en el S6 se sincroniza con `profiles.warnings_accepted_at`.
+ * Acceptance of the usage warnings (RF-17). It is stored on the device with
+ * localStorage; in S6 it is synced with `profiles.warnings_accepted_at`.
  *
- * Si el almacenamiento falla (por ejemplo, en navegación privada), la
- * lectura se trata como "no aceptadas" y las advertencias se vuelven a
- * pedir; la aceptación vale solo para la visita en curso.
+ * If storage fails (for example, in private browsing), the read is treated
+ * as "not accepted" and the warnings are requested again; the acceptance
+ * only holds for the current visit.
  */
 export const WARNINGS_STORAGE_KEY = 'neuromelody.warnings-accepted';
 
@@ -29,7 +29,7 @@ export class WarningsRegistry {
     }
   }
 
-  /** @returns `true` si la aceptación quedó guardada en el dispositivo. */
+  /** @returns `true` if the acceptance was stored on the device. */
   accept(date: Date): boolean {
     this.#acceptedThisVisit = true;
     try {
@@ -44,7 +44,7 @@ export class WarningsRegistry {
   }
 }
 
-/** Almacén del navegador; el propio acceso a `localStorage` puede lanzar un error. */
+/** Browser storage; merely accessing `localStorage` can throw. */
 export function browserStorage(): KeyValueStorage | null {
   try {
     return window.localStorage;

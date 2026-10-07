@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router';
 import { useWarningsRegistry } from './warningsContext';
 
-/** Exige la aceptación de las advertencias antes de mostrar su contenido (RF-17). */
+/** Requires the warnings to be accepted before rendering its content (RF-17). */
 export function RequireWarnings({ children }: { readonly children: React.ReactNode }): React.JSX.Element {
   const registry = useWarningsRegistry();
   const { pathname, search } = useLocation();

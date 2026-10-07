@@ -14,7 +14,7 @@ export interface HeartRateMeasurement {
 export class HeartRateMeasurementError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ErrorMedicionFC';
+    this.name = 'HeartRateMeasurementError';
   }
 }
 

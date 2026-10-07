@@ -4,14 +4,14 @@ import type { ChartPalette } from '../../signal/drawing/palette';
 import type { IndicesResult } from '../processing/SignalProcessor';
 import { isMessageFromThread, type MessageToThread } from './protocol';
 
-/** Canal con el hilo de señal; inyectable para probar sin un Worker real. */
+/** Channel to the signal thread; injectable so it can be tested without a real Worker. */
 export interface ThreadPort {
   send(message: MessageToThread, transferables?: Transferable[]): void;
   onReceive(receiver: (data: unknown) => void): void;
   terminate(): void;
 }
 
-/** Puerto sobre el Worker real, empaquetado por Vite como archivo del mismo origen. */
+/** Port over the real Worker, bundled by Vite as a same-origin file. */
 export function createWorkerPort(): ThreadPort {
   const worker = new Worker(new URL('./signal.worker.ts', import.meta.url), {
     type: 'module',
@@ -43,8 +43,8 @@ export interface SignalThreadObserver {
 }
 
 /**
- * Lado del hilo principal: reenvía las notificaciones de la fuente al hilo
- * de señal y reparte sus resultados. No hace ningún cálculo (RNF-04).
+ * Main-thread side: forwards the source notifications to the signal thread
+ * and distributes its results. It performs no computation (RNF-04).
  */
 export class SignalThreadClient {
   readonly #port: ThreadPort;
@@ -57,7 +57,7 @@ export class SignalThreadClient {
     });
   }
 
-  /** Conecta una fuente: el hilo de señal se reinicia con cada nueva conexión. */
+  /** Attaches a source: the signal thread is reset on every new connection. */
   connectSource(source: SignalSource): () => void {
     this.#port.send({ kind: 'reset' });
     return source.subscribe({
@@ -65,7 +65,7 @@ export class SignalThreadClient {
         this.#port.send({ kind: 'notification', notification });
       },
       onStateChange: (state) => {
-        // conectar() reinicia el tiempo de señal en 0.
+        // connect() restarts signal time at 0.
         if (state === 'connecting') {
           this.#port.send({ kind: 'reset' });
         }
@@ -74,8 +74,8 @@ export class SignalThreadClient {
   }
 
   /**
-   * Transfiere el lienzo al hilo de señal, que dibuja en él a partir de ese
-   * momento. La paleta se lee en el hilo principal, donde están las variables CSS.
+   * Transfers the canvas to the signal thread, which draws on it from then
+   * on. The palette is read on the main thread, where the CSS variables live.
    */
   attachCanvas(
     canvas: OffscreenCanvas,

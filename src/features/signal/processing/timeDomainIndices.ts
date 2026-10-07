@@ -1,25 +1,25 @@
 import type { ClassifiedBeat } from './types';
 
-/** Índices de variabilidad en el dominio temporal (RF-05). */
+/** Time-domain variability indices (RF-05). */
 export interface TimeDomainIndices {
-  /** Frecuencia cardíaca media (60000 / NN medio), en lpm; `null` sin NN. */
+  /** Mean heart rate (60000 / mean NN), in bpm; `null` without NN. */
   readonly meanHr: number | null;
-  /** Raíz cuadrática media de las diferencias sucesivas, en ms; `null` sin pares. */
+  /** Root mean square of successive differences, in ms; `null` without pairs. */
   readonly rmssd: number | null;
-  /** Desviación estándar de los NN (con n − 1), en ms; `null` con menos de 2 NN. */
+  /** Standard deviation of the NN (with n − 1), in ms; `null` with fewer than 2 NN. */
   readonly sdnn: number | null;
-  /** Número de intervalos NN (aceptados) usados. */
+  /** Number of NN (accepted) intervals used. */
   readonly validNn: number;
-  /** Suma de los NN aceptados, en ms: cuánta señal válida respalda los índices. */
+  /** Sum of the accepted NN, in ms: how much valid signal backs the indices. */
   readonly nnDurationMs: number;
 }
 
 /**
- * Calcula FC media, RMSSD y SDNN sobre los latidos aceptados.
+ * Computes mean HR, RMSSD and SDNN over the accepted beats.
  *
- * El RMSSD solo usa pares de latidos adyacentes en la serie, ambos aceptados
- * y sin hueco entre ellos: una diferencia que atraviesa un descarte o una
- * pérdida de contacto no es una diferencia latido a latido.
+ * RMSSD only uses pairs of beats adjacent in the series, both accepted and
+ * with no gap between them: a difference spanning a discard or a contact loss
+ * is not a beat-to-beat difference.
  */
 export function computeTimeDomainIndices(
   beats: readonly ClassifiedBeat[],

@@ -5,13 +5,13 @@ import type { MessageToThread } from '../features/signal/thread/protocol';
 export interface InProcessPort extends ThreadPort {
   readonly sent: MessageToThread[];
   readonly terminated: boolean;
-  /** Simula un mensaje arbitrario que llega desde el hilo de señal. */
+  /** Simulates an arbitrary message arriving from the signal thread. */
   receiveFromThread(data: unknown): void;
 }
 
 /**
- * Puerto que ejecuta el manejador del hilo de señal en el mismo proceso y de
- * forma síncrona: jsdom no tiene Workers.
+ * Port that runs the signal thread handler in the same process and
+ * synchronously: jsdom has no Workers.
  */
 export function createInProcessPort(): InProcessPort {
   let receiver: (data: unknown) => void = () => undefined;

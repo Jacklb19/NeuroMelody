@@ -7,7 +7,7 @@ import type { ClassifiedBeat } from '../processing/types';
 import { drawTachogram, type CanvasDimensions } from './drawTachogram';
 import type { ChartPalette } from './palette';
 
-// Valores arbitrarios y distinguibles: la prueba comprueba que se usan tal cual.
+// Arbitrary, distinguishable values: the test checks that they are used as-is.
 const PALETTE: ChartPalette = {
   line: 'rgb(1, 1, 1)',
   grid: 'rgb(2, 2, 2)',
@@ -44,14 +44,14 @@ function draw(snapshot: WindowSnapshot = SNAPSHOT): FakeDrawingContext {
   return ctx;
 }
 
-describe('dibujarTacograma', () => {
-  it('limpia el lienzo completo y dibuja en píxeles CSS escalados', () => {
+describe('drawTachogram', () => {
+  it('clears the whole canvas and draws in scaled CSS pixels', () => {
     const ctx = draw();
     expect(ctx.operations[1]).toMatchObject({ operation: 'clearRect', args: [0, 0, 1200, 448] });
     expect(ctx.operations[2]).toMatchObject({ operation: 'setTransform', args: [2, 0, 0, 2, 0, 0] });
   });
 
-  it('usa solo colores de la paleta recibida', () => {
+  it('uses only colors from the given palette', () => {
     const ctx = draw();
     const colors = new Set(Object.values(PALETTE));
     for (const o of ctx.operations) {
@@ -64,19 +64,19 @@ describe('dibujarTacograma', () => {
     }
   });
 
-  it('marca cada latido descartado con una ×', () => {
+  it('marks each discarded beat with an ×', () => {
     const ctx = draw();
     expect(ctx.count('stroke', (o) => o.strokeStyle === PALETTE.discarded)).toBe(2);
   });
 
-  it('dibuja los tramos de baja calidad con fondo y rayado', () => {
+  it('draws low-quality segments with a background and hatching', () => {
     const ctx = draw();
     expect(ctx.count('fillRect', (o) => o.fillStyle === PALETTE.lowQualityBackground)).toBe(1);
     expect(ctx.count('stroke', (o) => o.strokeStyle === PALETTE.lowQualityHatch)).toBe(1);
     expect(ctx.count('clip')).toBe(1);
   });
 
-  it('corta la línea en los descartes y en los huecos', () => {
+  it('breaks the line at discarded beats and at gaps', () => {
     const ctx = draw();
     const lineStart = ctx.operations.findIndex(
       (o) => o.operation === 'beginPath' && o.strokeStyle === PALETTE.line,
@@ -85,12 +85,12 @@ describe('dibujarTacograma', () => {
       (o, i) => i > lineStart && o.operation === 'stroke' && o.strokeStyle === PALETTE.line,
     );
     const strokes = ctx.operations.slice(lineStart, lineEnd);
-    // Tres tramos: [1000, 2000], [5000, 6000] y [9000, 10000].
+    // Three runs: [1000, 2000], [5000, 6000] and [9000, 10000].
     expect(strokes.filter((o) => o.operation === 'moveTo')).toHaveLength(3);
     expect(strokes.filter((o) => o.operation === 'lineTo')).toHaveLength(3);
   });
 
-  it('rotula los ejes con milisegundos y minutos de señal', () => {
+  it('labels the axes with milliseconds and signal minutes', () => {
     const texts = draw()
       .operations.filter((o) => o.operation === 'fillText')
       .map((o) => o.args[0]);
@@ -99,7 +99,7 @@ describe('dibujarTacograma', () => {
     expect(texts).toContain('5:00');
   });
 
-  it('desplaza el eje de tiempo cuando la ventana ya está llena', () => {
+  it('shifts the time axis once the window is full', () => {
     const texts = draw({ timeMs: 420_000, beats: [], segments: [] })
       .operations.filter((o) => o.operation === 'fillText')
       .map((o) => o.args[0]);
@@ -108,7 +108,7 @@ describe('dibujarTacograma', () => {
     expect(texts).not.toContain('0:00');
   });
 
-  it('pone las marcas de tiempo en minutos enteros aunque la ventana empiece a mitad de minuto', () => {
+  it('places time ticks on whole minutes even when the window starts mid-minute', () => {
     const texts = draw({ timeMs: 350_000, beats: [], segments: [] })
       .operations.filter((o) => o.operation === 'fillText')
       .map((o) => o.args[0])
@@ -116,15 +116,15 @@ describe('dibujarTacograma', () => {
     expect(texts).toEqual(['1:00', '2:00', '3:00', '4:00', '5:00']);
   });
 
-  it('dibuja ejes sin fallar cuando no hay datos', () => {
+  it('draws the axes without failing when there is no data', () => {
     const ctx = draw({ timeMs: 0, beats: [], segments: [] });
     expect(ctx.count('fillText')).toBeGreaterThan(0);
     expect(ctx.count('stroke', (o) => o.strokeStyle === PALETTE.discarded)).toBe(0);
   });
 });
 
-describe('módulos del hilo de señal', () => {
-  it('no contienen colores hexadecimales escritos a mano', () => {
+describe('signal modules', () => {
+  it('contain no hand-written hexadecimal colors', () => {
     const root = path.resolve(process.cwd(), 'src', 'features', 'signal');
     const files = fs
       .readdirSync(root, { recursive: true, encoding: 'utf-8' })

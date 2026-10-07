@@ -7,15 +7,15 @@ import { CHECK_PERIOD_MS } from '../features/acquisition/simulator/SimulatedSour
 export interface FakeTimeEnvironment {
   readonly clock: Clock;
   readonly scheduler: Scheduler;
-  /** Avanza el tiempo real de golpe y dispara una sola revisión. */
+  /** Advances wall-clock time in one jump and fires a single check. */
   jump(ms: number): void;
-  /** Avanza el tiempo real revisión a revisión, como el temporizador real. */
+  /** Advances wall-clock time check by check, like the real timer. */
   advance(ms: number): void;
   readonly active: boolean;
   readonly scheduledTasks: number;
 }
 
-/** Reloj y programador falsos: el tiempo solo avanza cuando la prueba lo pide. */
+/** Fake clock and scheduler: time only advances when the test asks for it. */
 export function createFakeTimeEnvironment(): FakeTimeEnvironment {
   let now = 5000;
   let task: (() => void) | null = null;

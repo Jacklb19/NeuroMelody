@@ -21,8 +21,8 @@ const failingStorage: KeyValueStorage = {
   },
 };
 
-describe('RegistroAdvertencias', () => {
-  it('guarda la fecha de aceptación y la recuerda en la siguiente visita', () => {
+describe('WarningsRegistry', () => {
+  it('stores the acceptance date and remembers it on the next visit', () => {
     const storage = inMemoryStorage();
     const registry = new WarningsRegistry(storage);
     expect(registry.isAccepted()).toBe(false);
@@ -32,7 +32,7 @@ describe('RegistroAdvertencias', () => {
     expect(new WarningsRegistry(storage).isAccepted()).toBe(true);
   });
 
-  it('si el almacenamiento falla, acepta solo para la visita actual y vuelve a pedirlas después', () => {
+  it('if storage fails, accepts only for the current visit and asks again afterwards', () => {
     const registry = new WarningsRegistry(failingStorage);
     expect(registry.isAccepted()).toBe(false);
     expect(registry.accept(new Date())).toBe(false);
@@ -41,7 +41,7 @@ describe('RegistroAdvertencias', () => {
     expect(new WarningsRegistry(failingStorage).isAccepted()).toBe(false);
   });
 
-  it('funciona sin almacenamiento disponible', () => {
+  it('works without any storage available', () => {
     const registry = new WarningsRegistry(null);
     expect(registry.isAccepted()).toBe(false);
     expect(registry.accept(new Date())).toBe(false);

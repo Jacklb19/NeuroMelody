@@ -26,8 +26,8 @@ const COMPLETE_STYLES: Record<string, string> = {
   'font-size': '16px',
 };
 
-describe('leerPaletaGrafica', () => {
-  it('lee los colores de las variables CSS y convierte el tamaño de rem a px', () => {
+describe('readChartPalette', () => {
+  it('reads the colors from the CSS variables and converts the size from rem to px', () => {
     expect(readChartPalette(styles(COMPLETE_STYLES))).toEqual({
       line: '#2563eb',
       grid: '#e5e7eb',
@@ -39,13 +39,13 @@ describe('leerPaletaGrafica', () => {
     });
   });
 
-  it('acepta un tamaño en px', () => {
+  it('accepts a size in px', () => {
     const palette = readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': '13px' }));
     expect(palette.font).toBe('13px system-ui, sans-serif');
   });
 
   it.each(Object.values(PALETTE_VARIABLES).concat([FAMILY_VARIABLE, SIZE_VARIABLE]))(
-    'lanza un error explícito si falta %s',
+    'throws an explicit error when %s is missing',
     (variable) => {
       const incomplete = { ...COMPLETE_STYLES, [variable]: '' };
       expect(() => readChartPalette(styles(incomplete))).toThrow(ChartPaletteError);
@@ -53,14 +53,14 @@ describe('leerPaletaGrafica', () => {
     },
   );
 
-  it('lanza un error si el tamaño no se puede interpretar', () => {
-    expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': 'mediano' }))).toThrow(
+  it('throws an error when the size cannot be parsed', () => {
+    expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': 'not-a-size' }))).toThrow(
       ChartPaletteError,
     );
   });
 });
 
-describe('tokens de la gráfica en src/index.css', () => {
+describe('chart tokens in src/index.css', () => {
   const css = fs.readFileSync(path.resolve(process.cwd(), 'src', 'index.css'), 'utf-8');
   const tokens = new Map(
     [...css.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1] ?? '', (m[2] ?? '').trim()]),
@@ -85,13 +85,13 @@ describe('tokens de la gráfica en src/index.css', () => {
     return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
   }
 
-  it('define todas las variables que lee la paleta', () => {
+  it('defines every variable the palette reads', () => {
     for (const variable of [...Object.values(PALETTE_VARIABLES), FAMILY_VARIABLE, SIZE_VARIABLE]) {
       expect(resolve(variable), variable).not.toBe('');
     }
   });
 
-  it('no reutiliza los colores de error en la gráfica', () => {
+  it('does not reuse the error colors in the chart', () => {
     const errors = new Set([resolve('--color-error-text'), resolve('--color-error-background')]);
     for (const variable of Object.values(PALETTE_VARIABLES)) {
       expect(errors.has(resolve(variable)), variable).toBe(false);
@@ -131,7 +131,7 @@ describe('tokens de la gráfica en src/index.css', () => {
     ['--color-chart-low-quality-hatch', '--color-background'],
     ['--color-chart-low-quality-hatch', '--color-chart-low-quality-background'],
     ['--color-chart-text', '--color-background'],
-  ])('%s tiene al menos 3:1 de contraste sobre %s', (foreground, background) => {
+  ])('%s has at least 3:1 contrast on %s', (foreground, background) => {
     expect(contrast(resolve(foreground), resolve(background))).toBeGreaterThanOrEqual(3);
   });
 });
