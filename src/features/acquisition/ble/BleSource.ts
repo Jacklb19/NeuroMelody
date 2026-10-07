@@ -10,7 +10,7 @@ import {
   type HeartRateCharacteristic,
 } from './webBluetooth';
 
-/** Waits before automatic reconnection attempts, in ms (docs/propuestas.md). */
+/** Waits before automatic reconnection attempts, in ms (ADR-17 in docs/decisiones.md). */
 export const RECONNECT_DELAYS_MS: readonly number[] = [1000, 2000, 4000, 8000];
 
 /** Runs a task once after a delay and returns the function that cancels it. */
