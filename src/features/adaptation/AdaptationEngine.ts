@@ -1,7 +1,8 @@
 import type { LevelId } from '../audio/engine/levels';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
+import type { ActivationState } from './activationStates';
 
-export type ActivationState = 'high' | 'low' | 'uncertain';
+export type { ActivationState } from './activationStates';
 export const CALIBRATION_MS = 180_000;
 export const MIN_BASELINE_READINGS = 12;
 export const MIN_LEVEL_DURATION_S = 180;

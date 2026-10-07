@@ -1,5 +1,5 @@
-import type { SourceKind } from '../acquisition/contract';
-import type { ActivationState } from '../adaptation/AdaptationEngine';
+import { SOURCE_KIND_IDS, type SourceKind } from '../acquisition/sourceCatalog';
+import { ACTIVATION_STATE_IDS, type ActivationState } from '../adaptation/activationStates';
 import { isUuid } from './uuidv7';
 
 /**
@@ -36,8 +36,6 @@ export interface SessionRecord {
 export const MIN_RATING = 0;
 export const MAX_RATING = 10;
 
-const STATES: readonly ActivationState[] = ['high', 'low', 'uncertain'];
-const SOURCE_KINDS: readonly SourceKind[] = ['simulator', 'ble', 'recording'];
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -58,7 +56,7 @@ function isSample(value: unknown): value is SessionSample {
     && isNonNegativeOrNull(value.rmssd)
     && isNonNegativeOrNull(value.sdnn)
     && isNonNegativeOrNull(value.lfHfRatio)
-    && (value.estimatedState === null || STATES.some((state) => state === value.estimatedState))
+    && (value.estimatedState === null || ACTIVATION_STATE_IDS.some((state) => state === value.estimatedState))
     && typeof value.goodQuality === 'boolean';
 }
 
@@ -74,7 +72,7 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && Date.parse(value.endedAt) >= Date.parse(value.startedAt)
     && Number.isInteger(value.plannedMinutes) && (value.plannedMinutes as number) > 0
     && isFiniteNumber(value.listenedSeconds) && value.listenedSeconds >= 0
-    && (value.sourceKind === null || SOURCE_KINDS.some((kind) => kind === value.sourceKind))
+    && (value.sourceKind === null || SOURCE_KIND_IDS.some((kind) => kind === value.sourceKind))
     && isRating(value.ratingBefore)
     && isRating(value.ratingAfter)
     && Array.isArray(value.samples) && value.samples.every(isSample);
