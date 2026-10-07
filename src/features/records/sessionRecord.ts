@@ -3,8 +3,9 @@ import { ACTIVATION_STATE_IDS, type ActivationState } from '../adaptation/activa
 import { isUuid } from './uuidv7';
 
 /**
- * One sample of a session every 5 s, shaped like a `session_metrics` row so
- * that the local history can be synchronised later without reshaping (S6.2).
+ * One sample of a session per published index set (every `COMPUTE_PERIOD_S`
+ * of signal), shaped like a `session_metrics` row so that the local history
+ * can be synchronised later without reshaping (S6.2).
  */
 export interface SessionSample {
   /** Seconds of signal since the session started; unique within a session. */
@@ -27,15 +28,15 @@ export interface SessionRecord {
   /** Listening time measured on the audio clock. */
   readonly listenedSeconds: number;
   readonly sourceKind: SourceKind | null;
-  /** Self-rating 0–10 before and after listening; `null` when skipped. */
+  /** Self-rating from `MIN_RATING` to `MAX_RATING` before and after listening; `null` when skipped. */
   readonly ratingBefore: number | null;
   readonly ratingAfter: number | null;
   readonly samples: readonly SessionSample[];
 }
 
+/** Bounds of the optional self-rating scale (ADR-23); every check and text about the range reads them. */
 export const MIN_RATING = 0;
 export const MAX_RATING = 10;
-
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -44,7 +45,7 @@ const isFiniteNumber = (value: unknown): value is number => typeof value === 'nu
 const isNonNegativeOrNull = (value: unknown): boolean => value === null || (isFiniteNumber(value) && value >= 0);
 const isInstant = (value: unknown): value is string => typeof value === 'string' && !Number.isNaN(Date.parse(value));
 
-/** Accepts only whole ratings from 0 to 10, or `null` when the person skipped the question. */
+/** Accepts only whole ratings within the scale, or `null` when the person skipped the question. */
 export function isRating(value: unknown): value is number | null {
   return value === null || (Number.isInteger(value) && (value as number) >= MIN_RATING && (value as number) <= MAX_RATING);
 }

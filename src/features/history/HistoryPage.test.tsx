@@ -1,10 +1,14 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { ROUTES } from '../../config/routes';
+import { es } from '../../i18n/es';
 import { MemorySessionStore } from '../records/sessionStore';
 import { renderWithStore } from '../../test/renderWithStore';
 import { sample, sessionRecord } from '../../test/sessionRecords';
 import { HistoryPage } from './HistoryPage';
+
+const { history } = es;
 
 const FIRST = sessionRecord({
   id: '017f22e2-79b0-7000-8000-000000000001',
@@ -28,30 +32,31 @@ async function storeWith(...records: Parameters<MemorySessionStore['save']>[0][]
 
 describe('HistoryPage', () => {
   it('invites to a first session when nothing is saved', async () => {
-    renderWithStore('/history', '/history', <HistoryPage />);
-    expect(await screen.findByText(/aún no hay sesiones guardadas/i)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Preparar una sesión' })).toHaveAttribute('href', '/plan');
+    renderWithStore(ROUTES.history, ROUTES.history, <HistoryPage />);
+    expect(await screen.findByText(history.empty)).toBeVisible();
+    expect(screen.getByRole('link', { name: history.planSession })).toHaveAttribute('href', ROUTES.plan);
   });
 
   it('lists sessions newest first with their indicators', async () => {
-    renderWithStore('/history', '/history', <HistoryPage />, await storeWith(FIRST, SECOND));
+    renderWithStore(ROUTES.history, ROUTES.history, <HistoryPage />, await storeWith(FIRST, SECOND));
     const items = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(within(items[1] as HTMLElement).getByText('4 → 7')).toBeVisible();
-    expect(within(items[1] as HTMLElement).getByText('20 → 30 ms')).toBeVisible();
-    expect(within(items[0] as HTMLElement).getByText('Sin responder')).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Evolución entre sesiones' })).toBeVisible();
+    expect(within(items[1] as HTMLElement).getByText(es.records.change('4', '7'))).toBeVisible();
+    expect(within(items[1] as HTMLElement).getByText(es.common.withUnit(es.records.change('20', '30'), es.common.units.milliseconds)))
+      .toBeVisible();
+    expect(within(items[0] as HTMLElement).getByText(es.records.noAnswer)).toBeVisible();
+    expect(screen.getByRole('heading', { name: history.evolution.title })).toBeVisible();
   });
 
   it('deletes a session only after confirming', async () => {
     const user = userEvent.setup();
     const store = await storeWith(FIRST, SECOND);
-    renderWithStore('/history', '/history', <HistoryPage />, store);
+    renderWithStore(ROUTES.history, ROUTES.history, <HistoryPage />, store);
     const [newest] = await screen.findAllByRole('listitem');
 
-    await user.click(within(newest as HTMLElement).getByRole('button', { name: 'Borrar' }));
+    await user.click(within(newest as HTMLElement).getByRole('button', { name: history.item.delete }));
     expect(await store.list()).toHaveLength(2);
-    await user.click(within(newest as HTMLElement).getByRole('button', { name: 'Sí, borrar esta sesión' }));
+    await user.click(within(newest as HTMLElement).getByRole('button', { name: history.item.confirmDelete }));
 
     expect(await screen.findAllByRole('listitem')).toHaveLength(1);
     expect((await store.list()).map((record) => record.id)).toEqual([FIRST.id]);
@@ -59,9 +64,9 @@ describe('HistoryPage', () => {
 
   it('clears the whole history after confirming', async () => {
     const user = userEvent.setup();
-    renderWithStore('/history', '/history', <HistoryPage />, await storeWith(FIRST, SECOND));
-    await user.click(await screen.findByRole('button', { name: 'Borrar todo el historial' }));
-    await user.click(screen.getByRole('button', { name: 'Sí, borrar todas las sesiones' }));
-    expect(await screen.findByText(/aún no hay sesiones guardadas/i)).toBeVisible();
+    renderWithStore(ROUTES.history, ROUTES.history, <HistoryPage />, await storeWith(FIRST, SECOND));
+    await user.click(await screen.findByRole('button', { name: history.clearAll }));
+    await user.click(screen.getByRole('button', { name: history.confirmClearAll }));
+    expect(await screen.findByText(history.empty)).toBeVisible();
   });
 });

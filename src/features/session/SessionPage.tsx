@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
+import { QUERY_PARAMS } from '../../config/routes';
+import { useMessages } from '../../i18n/messages';
 import type { SignalSource } from '../acquisition/contract';
 import { AcquisitionPanel } from '../acquisition/AcquisitionPanel';
 import { useSignalSource } from '../acquisition/useSignalSource';
@@ -11,20 +13,15 @@ import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
+import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
-import type { SessionRecord } from '../records/sessionRecord';
 import { useSessionStore } from '../records/sessionStoreContext';
+import { storeErrorMessage } from '../records/storeErrorMessage';
 import { PageHeading } from '../../shared/PageHeading';
+import { SECONDS_PER_MINUTE } from '../../shared/time';
 import { SessionStage } from './SessionStage';
 import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
-
-/** Sessions shorter than this, with no indices at all, are not worth keeping. */
-const MIN_KEPT_SECONDS = 60;
-
-function worthKeeping(record: SessionRecord): boolean {
-  return record.samples.length > 0 || record.listenedSeconds >= MIN_KEPT_SECONDS;
-}
 
 /**
  * Listening session at /session (docs/pantallas.md). The simple view comes
@@ -33,9 +30,10 @@ function worthKeeping(record: SessionRecord): boolean {
  * Every session that plays music is recorded on the device (RF-14).
  */
 export function SessionPage(): React.JSX.Element {
-  usePageTitle('Sesión');
+  const t = useMessages();
+  usePageTitle(t.session.title);
   const [params] = useSearchParams();
-  const durationMin = readDuration(params.get('duration'));
+  const durationMin = readDuration(params.get(QUERY_PARAMS.duration));
   const store = useSessionStore();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
@@ -45,7 +43,8 @@ export function SessionPage(): React.JSX.Element {
   const [playing, setPlaying] = useState(false);
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  // The cause is kept as is and translated when shown.
+  const [saveFailure, setSaveFailure] = useState<{ readonly cause: unknown } | null>(null);
   const connection = useSignalSource(source).state;
 
   // Refs let the handlers below stay stable: SignalPanel restarts its Worker
@@ -61,7 +60,7 @@ export function SessionPage(): React.JSX.Element {
     store.save(record).then(
       () => { setSavedId(record.id); },
       (error: unknown) => {
-        setSaveError(error instanceof Error ? error.message : 'Error desconocido.');
+        setSaveFailure({ cause: error });
       },
     );
   }, [recorder, store]);
@@ -81,7 +80,7 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
       });
       setSavedId(null);
-      setSaveError(null);
+      setSaveFailure(null);
     }
   }, [adaptation, recorder, durationMin, finishRecording]);
 
@@ -111,8 +110,8 @@ export function SessionPage(): React.JSX.Element {
 
   return (
     <div className="session-page">
-      <PageHeading eyebrow="Tu espacio de escucha" title="Sesión">
-        <p>Plan: {durationMin} minutos.</p>
+      <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
+        <p>{t.session.plan(durationMin)}</p>
       </PageHeading>
 
       <div className="listening-stage">
@@ -123,19 +122,19 @@ export function SessionPage(): React.JSX.Element {
             ratingBefore={ratingBefore}
             onRatingBeforeChange={handleRatingBefore}
             savedId={savedId}
-            saveError={saveError}
+            saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>
         <PlaybackPanel durationMin={durationMin} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
-        <SessionProgress elapsedS={elapsedS} plannedS={durationMin * 60} />
+        <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
 
       <AcquisitionPanel source={source} onSourceChange={handleSourceChange} />
 
       <details className="technical-details">
         <summary>
-          <span className="summary-title">Detalles técnicos</span>
-          <span className="summary-hint">Gráfica de la señal, índices y parámetros musicales</span>
+          <span className="summary-title">{t.session.technicalDetails.title}</span>
+          <span className="summary-hint">{t.session.technicalDetails.hint}</span>
         </summary>
         <div className="technical-layout">
           <SignalPanel source={source} onIndices={handleIndices} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={adaptation.pulse} />

@@ -1,11 +1,10 @@
-import type { SourceKind } from '../acquisition/contract';
-import type { ActivationState } from '../adaptation/AdaptationEngine';
+import type { SourceKind } from '../acquisition/sourceCatalog';
+import type { ActivationState } from '../adaptation/activationStates';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
-import { COMPUTE_PERIOD_MS } from '../signal/processing/thresholds';
+import { COMPUTE_PERIOD_S } from '../signal/processing/thresholds';
+import { MS_PER_SECOND } from '../../shared/time';
 import type { SessionRecord, SessionSample } from './sessionRecord';
 import { uuidv7 } from './uuidv7';
-
-const PERIOD_S = COMPUTE_PERIOD_MS / 1000;
 
 export interface SessionStart {
   readonly plannedMinutes: number;
@@ -57,10 +56,10 @@ export class SessionRecorder {
   add(result: IndicesResult, estimatedState: ActivationState | null): void {
     const session = this.#session;
     if (session === null) return;
-    const signalS = Math.round(result.timeMs / 1000);
+    const signalS = Math.round(result.timeMs / MS_PER_SECOND);
     if (session.offsetS === null || signalS - session.offsetS <= session.lastSecond) {
       // First sample, or the source clock restarted: continue one period later.
-      session.offsetS = signalS - (session.samples.length === 0 ? PERIOD_S : session.lastSecond + PERIOD_S);
+      session.offsetS = signalS - (session.samples.length === 0 ? COMPUTE_PERIOD_S : session.lastSecond + COMPUTE_PERIOD_S);
     }
     const second = signalS - session.offsetS;
     session.lastSecond = second;

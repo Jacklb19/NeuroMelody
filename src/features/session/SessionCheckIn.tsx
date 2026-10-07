@@ -1,5 +1,8 @@
 import { Link } from 'react-router';
+import { summaryPath } from '../../config/routes';
+import { useMessages } from '../../i18n/messages';
 import { SelfRatingField } from '../records/SelfRatingField';
+import { MAX_RATING } from '../records/sessionRecord';
 
 interface SessionCheckInProps {
   readonly playing: boolean;
@@ -7,6 +10,7 @@ interface SessionCheckInProps {
   readonly onRatingBeforeChange: (rating: number | null) => void;
   /** Id of the session just saved on the device, if any. */
   readonly savedId: string | null;
+  /** Why the session could not be saved, already in the interface language. */
   readonly saveError: string | null;
 }
 
@@ -21,29 +25,30 @@ export function SessionCheckIn({
   savedId,
   saveError,
 }: SessionCheckInProps): React.JSX.Element | null {
+  const { checkIn } = useMessages().session;
   if (saveError !== null) {
     return (
       <p className="quiet-notice" role="alert">
-        No se pudo guardar la sesión en este dispositivo ({saveError}).
+        {checkIn.saveFailed(saveError)}
       </p>
     );
   }
   if (savedId !== null && !playing) {
     return (
       <div className="session-saved" role="status">
-        <p><strong>Sesión guardada en este dispositivo.</strong> Puedes revisarla y descargarla cuando quieras.</p>
-        <Link to={`/summary/${savedId}`} className="button button-primary">Ver resumen de la sesión</Link>
+        <p><strong>{checkIn.saved}</strong> {checkIn.savedDetail}</p>
+        <Link to={summaryPath(savedId)} className="button button-primary">{checkIn.viewSummary}</Link>
       </div>
     );
   }
   if (playing) {
     return ratingBefore === null ? null : (
-      <p className="check-in-note">Al empezar te sentías en {ratingBefore} de 10.</p>
+      <p className="check-in-note">{checkIn.ratingBefore(ratingBefore, MAX_RATING)}</p>
     );
   }
   return (
     <div className="check-in">
-      <SelfRatingField legend="¿Cómo te sientes antes de empezar?" value={ratingBefore} onChange={onRatingBeforeChange} />
+      <SelfRatingField legend={checkIn.ratingBeforeLegend} value={ratingBefore} onChange={onRatingBeforeChange} />
     </div>
   );
 }
