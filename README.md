@@ -67,14 +67,13 @@ src/
   test/            configuración y dobles de prueba
 e2e/               pruebas de navegador con Playwright
 public/recordings/ extractos nsr2db (créditos en CREDITS.md)
-supabase/migrations/ esquema de la base de datos
 docs/              especificación, decisiones, plan y guías
 vercel.json        reescrituras y cabeceras de seguridad y aislamiento
 ```
 
 ## Base de datos
 
-El esquema vive en `supabase/migrations/`: `profiles`, `plans`, `sessions`, `session_metrics` y `model_versions`. Todas las tablas tienen seguridad a nivel de fila (RLS), y una prueba automatizada lo comprueba. Solo se guardan indicadores agregados; la señal cruda nunca sale del dispositivo.
+El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](https://github.com/Jacklb19/NeuroM_Back)), con seguridad a nivel de fila (RLS) en todas las tablas. Solo se guardan indicadores agregados; la señal cruda nunca sale del dispositivo.
 
 ## Configuración y secretos
 

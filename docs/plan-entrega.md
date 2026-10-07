@@ -8,9 +8,12 @@ Calendario aprobado (ADR-13), actualizado el 6 oct 2026 con el backend en reposi
 |---|---|---|---|---|
 | S0–S4 | 26 sep – 5 oct | front | Plantilla, adquisición, hilo de señal, síntesis, lazo de adaptación | Cerrados |
 | S5.1 Bluetooth | 6–8 oct | front | RF-01, RF-03, HU-01, RNF-10 | Código hecho el 6 oct; prueba manual el 13 oct |
-| S5.2 LF/HF | 9, 13–14 oct | front | RF-06, RF-12 | Código hecho el 6 oct |
-| Reserva | 15–16 oct | — | Incidencias de S5 y ajuste con 3–5 oyentes (propuesto) | — |
-| S6.1 Sesiones locales | 19–21 oct | front | RF-14 (local), RF-15, RF-16; HU-07, HU-08, HU-10 | Pendiente |
+| S5.2 LF/HF | adelantado al 6 oct | front | RF-06, RF-12 | Código hecho el 6 oct |
+| Limpieza y separación de repos | 6 oct | ambos | ADR-19 a ADR-22 | Hecho |
+| Cámara del celular (prototipo) | 9 oct | front | Propuesta P-01: onda y pulso en `/diagnostics`, probado en el celular del usuario | Pendiente |
+| Cámara (integración) o vista sencilla | 14 oct | front | P-01 si el prototipo funciona; ADR-24 en `/session` | Pendiente |
+| Reserva | 15–16 oct | — | Incidencias de S5, lo que quede del 14 oct y ajuste con 3–5 oyentes (propuesto) | — |
+| S6.1 Sesiones locales | 19–21 oct | front + back | RF-14 (local), RF-15, RF-16; HU-07, HU-08, HU-10; autovaloración (ADR-23) | Pendiente |
 | S6.2 Cuenta, API y sincronización | 22–23, 26–30 oct | back + front | RF-14; ADR-10, ADR-18, ADR-19. Correo, TOTP completo, JWT, migraciones RLS/aal2, sesiones idempotentes, borrado y `docs/autenticacion.md` | Pendiente |
 | S6.3 Google y cierre | 3 nov | back + front | Google por redirección y revisión integrada | Pendiente |
 | S6.4 Modelo de lenguaje | 4–5 nov | back + front | RF-13, RF-15; ADR-08. Plan propuesto y resumen con esquema cerrado | Pendiente |

@@ -131,6 +131,41 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | En ambos repositorios: `main` es la versión estable y entregable; `dev`, la integración diaria. El trabajo se hace en ramas cortas `feat/…`, `fix/…`, `docs/…` o `chore/…` que salen de `dev` y vuelven por pull request. Una entrega es un pull request de `dev` a `main`. |
 | Consecuencias | El CI se ejecuta en los pull request hacia `dev` y hacia `main`. Vercel publica en producción desde `main` y genera vistas previas para las demás ramas. |
 
+## ADR-21. CSP sin `'wasm-unsafe-eval'`
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 6 oct 2026. |
+| Contexto | La directiva solo hacía falta para ONNX Runtime Web, retirado por ADR-14. La aplicación no compila ningún módulo WebAssembly; `/diagnostics` solo comprueba que la API exista. |
+| Decisión | `script-src 'self'` sin `'wasm-unsafe-eval'` en `vercel.json` (y por tanto en la vista previa local, que reutiliza esas cabeceras). |
+| Consecuencias | CSP más estricta. Si se retoma ONNX, la directiva vuelve con su justificación. |
+
+## ADR-22. Migraciones de la base de datos en el repositorio del backend
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 6 oct 2026. |
+| Contexto | Con ADR-19 la API es la dueña de la persistencia. |
+| Decisión | `supabase/migrations/` y la prueba que exige RLS en todas las tablas pasan a `NeuroM_Back` (pytest). El frontend ya no contiene el esquema. |
+| Consecuencias | Las migraciones nuevas de S6 (`aal2`, consentimiento, UUID del cliente, ADR-23) se escriben en el backend. El historial anterior del esquema queda en el repositorio del frontend. |
+
+## ADR-23. Autovaloración antes y después de la sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 6 oct 2026; se implementa en S6.1 junto con el registro de sesiones. |
+| Decisión | Pregunta opcional «¿Cómo te sientes? 0–10» al empezar y al terminar cada sesión. El historial y el resumen la muestran junto a la evolución de la señal. |
+| Desviación | Amplía RF-14 a RF-16 con dos campos que la especificación no define. |
+| Consecuencias | Conecta el proyecto con el dolor sin medirlo: quien informa es la persona. La interfaz no la presenta como medida clínica ni la compara con un umbral. Requiere dos columnas nuevas en `sessions`, validadas en 0–10. |
+
+## ADR-24. Vista sencilla de la sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 6 oct 2026. |
+| Decisión | `/session` muestra por defecto lo que necesita alguien que escucha: estado en palabras, progreso, volumen y Detener. Las métricas (RMSSD, SDNN, LF/HF) y la gráfica pasan a un panel plegable «Ver detalles técnicos», accesible con teclado. |
+| Consecuencias | RF-12 se mantiene: todo sigue visible al desplegar el panel. Se refleja en `docs/pantallas.md` antes de construirse. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
