@@ -28,7 +28,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 |---|---|---|
 | `SessionStage` y `SessionProgress` (`src/features/session/`) | Vista sencilla (ADR-24) | `/session`, escenario de escucha |
 | `PlaybackPanel` (`src/features/audio/ui/`) | S3 | `/session`, escenario de escucha (incluye el aviso de duración) |
-| `AcquisitionPanel` (`src/features/acquisition/`) | S1 | `/session`, banda de la fuente de señal |
+| `AcquisitionPanel` (`src/features/acquisition/`) | S1 | `/session`, banda de la fuente de señal (incluye la fuente experimental por cámara, P-01) |
 | `SignalPanel` (`src/features/signal/`) | S2 | `/session`, detalles técnicos |
 | `MusicalStatePanel` (`src/features/adaptation/`) | S4 | `/session`, detalles técnicos |
 | `SessionCheckIn` (`src/features/session/`) | S6.1 | `/session`, escenario de escucha: valoración antes de empezar y enlace al resumen al detener |
@@ -45,7 +45,7 @@ De arriba abajo:
    - `SessionStage`: el momento en palabras sencillas, el estado estimado con «Confianza no calibrada · reglas provisionales» y los avisos de calidad y de permanencia («Se conserva el escalón hasta completar su duración mínima de 3 minutos»).
    - `PlaybackPanel`: iniciar, volumen y estado de la música.
    - `SessionProgress`: el progreso de la sesión como un pentagrama que se entinta, con el tiempo en texto.
-2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar la fuente, con su estado y la última lectura.
+2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar la fuente (simulador, registro de ejemplo, banda Bluetooth o cámara del celular, esta última marcada como experimental, P-01), con su estado y la última lectura.
 3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
