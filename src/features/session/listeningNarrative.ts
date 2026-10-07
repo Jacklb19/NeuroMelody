@@ -11,6 +11,7 @@ export interface NarrativeInput {
   readonly connection: ConnectionState;
   readonly state: ActivationState | null;
   readonly qualityGood: boolean;
+  readonly musicPlaying: boolean;
 }
 
 /**
@@ -19,9 +20,10 @@ export interface NarrativeInput {
  * The wording is descriptive, never clinical: it compares the body with its
  * own starting point and says what the music does, without naming pain,
  * stress or any diagnosis. The connection comes first because nothing else
- * is meaningful without a signal.
+ * is meaningful without a signal. Stopping the music pauses the adaptation,
+ * which must not read as a problem with the sensor.
  */
-export function describeListening({ connection, state, qualityGood }: NarrativeInput): ListeningNarrative {
+export function describeListening({ connection, state, qualityGood, musicPlaying }: NarrativeInput): ListeningNarrative {
   if (connection === 'reconnecting') {
     return {
       title: 'Recuperando la conexión',
@@ -38,6 +40,12 @@ export function describeListening({ connection, state, qualityGood }: NarrativeI
     return {
       title: 'Tomando tu referencia',
       detail: 'Durante los primeros minutos la música se mantiene estable mientras aprende tu ritmo de partida.',
+    };
+  }
+  if (!musicPlaying) {
+    return {
+      title: 'La música está detenida',
+      detail: 'La señal sigue llegando. Cuando inicies la música, volverá a acompañar tu ritmo.',
     };
   }
   if (!qualityGood) {

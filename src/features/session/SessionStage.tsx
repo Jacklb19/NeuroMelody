@@ -8,6 +8,7 @@ const STATE_TEXT = { high: 'Alta', low: 'Baja', uncertain: 'Incierta' } as const
 interface SessionStageProps {
   readonly session: AdaptationSession;
   readonly connection: ConnectionState;
+  readonly playing: boolean;
 }
 
 /**
@@ -15,13 +16,14 @@ interface SessionStageProps {
  * estimated state with its uncalibrated confidence, and the notices that
  * explain why the music holds still. Technical figures live elsewhere.
  */
-export function SessionStage({ session, connection }: SessionStageProps): React.JSX.Element {
+export function SessionStage({ session, connection, playing }: SessionStageProps): React.JSX.Element {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const titleId = useId();
   const narrative = describeListening({
     connection,
     state: snapshot.state,
     qualityGood: snapshot.qualityGood,
+    musicPlaying: playing,
   });
   const connected = connection === 'connected';
 
@@ -41,7 +43,7 @@ export function SessionStage({ session, connection }: SessionStageProps): React.
         <p className="confidence-note">Confianza no calibrada · reglas provisionales</p>
       </div>
 
-      {connected && !snapshot.qualityGood && (
+      {connected && playing && !snapshot.qualityGood && (
         <p className="quiet-notice">La adaptación espera datos de buena calidad.</p>
       )}
       {snapshot.waitingForDwell && (
