@@ -18,6 +18,17 @@ const PALETTE: ChartPalette = {
   lowQualityBackground: 'rgb(5, 5, 5)',
   lowQualityHatch: 'rgb(6, 6, 6)',
   font: '14px sans-serif',
+  marginLeft: 50,
+  marginRight: 20,
+  marginTop: 10,
+  marginBottom: 30,
+  labelOffset: 5,
+  hatchSpacing: 7,
+  markerHalfSize: 3,
+  lineWidthGrid: 0.5,
+  lineWidthHatch: 0.75,
+  lineWidthSeries: 2.5,
+  lineWidthDiscarded: 1.25,
 };
 const DIMENSIONS: CanvasDimensions = { widthCss: 600, heightCss: 224, scale: 2 };
 const LABELS = chartLabelsFrom(es.common);
@@ -42,10 +53,27 @@ const SNAPSHOT: WindowSnapshot = {
   segments: [{ startMs: 6000, endMs: 9000 }],
 };
 
-function draw(snapshot: WindowSnapshot = SNAPSHOT): FakeDrawingContext {
-  const ctx = new FakeDrawingContext();
+/** Also records the line width of each stroke, which the shared fake does not. */
+class WidthRecordingContext extends FakeDrawingContext {
+  readonly strokeWidths = new Map<unknown, Set<number>>();
+
+  override stroke(): void {
+    const widths = this.strokeWidths.get(this.strokeStyle) ?? new Set<number>();
+    this.strokeWidths.set(this.strokeStyle, widths.add(this.lineWidth));
+    super.stroke();
+  }
+}
+
+function draw(snapshot: WindowSnapshot = SNAPSHOT): WidthRecordingContext {
+  const ctx = new WidthRecordingContext();
   drawTachogram(ctx, snapshot, PALETTE, LABELS, DIMENSIONS);
   return ctx;
+}
+
+function points(ctx: FakeDrawingContext, operation: 'moveTo' | 'lineTo', strokeStyle: string): number[][] {
+  return ctx.operations
+    .filter((o) => o.operation === operation && o.strokeStyle === strokeStyle)
+    .map((o) => o.args.map(Number));
 }
 
 describe('drawTachogram', () => {
@@ -57,7 +85,7 @@ describe('drawTachogram', () => {
 
   it('uses only colors from the given palette', () => {
     const ctx = draw();
-    const colors = new Set(Object.values(PALETTE));
+    const colors = new Set(Object.values(PALETTE).filter((value) => typeof value === 'string'));
     for (const o of ctx.operations) {
       if (o.operation === 'stroke') {
         expect(colors.has(String(o.strokeStyle))).toBe(true);
@@ -66,6 +94,56 @@ describe('drawTachogram', () => {
         expect(colors.has(String(o.fillStyle))).toBe(true);
       }
     }
+  });
+
+  it('places the plot and the axis labels inside the palette margins', () => {
+    const ctx = draw();
+    const plotBottom = DIMENSIONS.heightCss - PALETTE.marginBottom;
+    const gridStarts = points(ctx, 'moveTo', PALETTE.grid);
+    const gridEnds = points(ctx, 'lineTo', PALETTE.grid);
+    expect(new Set(gridStarts.map(([x]) => x))).toEqual(new Set([PALETTE.marginLeft]));
+    expect(new Set(gridEnds.map(([x]) => x))).toEqual(new Set([DIMENSIONS.widthCss - PALETTE.marginRight]));
+    expect(Math.min(...gridStarts.map(([, y = 0]) => y))).toBe(PALETTE.marginTop);
+    expect(Math.max(...gridStarts.map(([, y = 0]) => y))).toBe(plotBottom);
+
+    const labels = ctx.operations.filter((o) => o.operation === 'fillText');
+    const isRrLabel = (text: unknown): boolean => String(text).endsWith(units.milliseconds);
+    for (const { args: [text, x, y] } of labels) {
+      if (isRrLabel(text)) {
+        expect(x).toBe(PALETTE.marginLeft - PALETTE.labelOffset);
+      } else {
+        expect(y).toBe(plotBottom + PALETTE.labelOffset);
+      }
+    }
+  });
+
+  it('strokes each element with its palette line width', () => {
+    const ctx = draw();
+    expect(ctx.strokeWidths).toEqual(
+      new Map([
+        [PALETTE.grid, new Set([PALETTE.lineWidthGrid])],
+        [PALETTE.lowQualityHatch, new Set([PALETTE.lineWidthHatch])],
+        [PALETTE.line, new Set([PALETTE.lineWidthSeries])],
+        [PALETTE.discarded, new Set([PALETTE.lineWidthDiscarded])],
+      ]),
+    );
+  });
+
+  it('sizes the × and the hatching from the palette', () => {
+    const ctx = draw();
+    const crossStarts = points(ctx, 'moveTo', PALETTE.discarded);
+    const crossEnds = points(ctx, 'lineTo', PALETTE.discarded);
+    // Two strokes per × and two discarded beats.
+    expect(crossStarts).toHaveLength(4);
+    crossStarts.forEach(([x = 0], i) => {
+      expect((crossEnds[i]?.[0] ?? 0) - x).toBe(2 * PALETTE.markerHalfSize);
+    });
+
+    const hatchStarts = points(ctx, 'moveTo', PALETTE.lowQualityHatch).map(([x = 0]) => x);
+    expect(hatchStarts.length).toBeGreaterThan(1);
+    hatchStarts.slice(1).forEach((x, i) => {
+      expect(x - (hatchStarts[i] ?? 0)).toBeCloseTo(PALETTE.hatchSpacing);
+    });
   });
 
   it('marks each discarded beat with an ×', () => {

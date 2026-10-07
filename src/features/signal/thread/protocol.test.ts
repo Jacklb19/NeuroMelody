@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { es } from '../../../i18n/es';
+import { TEST_CHART_PALETTE } from '../../../test/chartPalette';
 import { chartLabelsFrom } from '../drawing/chartLabels';
 import { SIGNAL_THREAD_ERROR_CODES, isMessageFromThread, isMessageToThread } from './protocol';
 
@@ -40,15 +41,7 @@ describe('isMessageToThread', () => {
 });
 
 describe('isMessageToThread with a canvas', () => {
-  const palette = {
-    line: 'a',
-    grid: 'b',
-    text: 'c',
-    discarded: 'd',
-    lowQualityBackground: 'e',
-    lowQualityHatch: 'f',
-    font: '14px sans-serif',
-  };
+  const palette = TEST_CHART_PALETTE;
   const labels = chartLabelsFrom(es.common);
   const canvas = { width: 1, height: 1, getContext: () => null };
   const dimensions = { widthCss: 600, heightCss: 224, scale: 2 };
@@ -62,6 +55,10 @@ describe('isMessageToThread with a canvas', () => {
     ['a canvas without getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, labels, dimensions }],
     ['a palette with an empty color', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, labels, dimensions }],
     ['a palette without a font', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, labels, dimensions }],
+    ['a palette without a length', { kind: 'init-canvas', canvas, palette: { ...palette, marginLeft: undefined }, labels, dimensions }],
+    ['a palette with a length as text', { kind: 'init-canvas', canvas, palette: { ...palette, labelOffset: '6px' }, labels, dimensions }],
+    ['a palette with a zero hatch spacing', { kind: 'init-canvas', canvas, palette: { ...palette, hatchSpacing: 0 }, labels, dimensions }],
+    ['a palette with an infinite line width', { kind: 'init-canvas', canvas, palette: { ...palette, lineWidthSeries: Number.POSITIVE_INFINITY }, labels, dimensions }],
     ['no labels', { kind: 'init-canvas', canvas, palette, dimensions }],
     ['a tick label without a place for the value', { kind: 'init-canvas', canvas, palette, labels: { rrTick: 'ms' }, dimensions }],
     ['a zero scale', { kind: 'resize', dimensions: { ...dimensions, scale: 0 } }],
