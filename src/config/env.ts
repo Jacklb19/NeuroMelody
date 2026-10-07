@@ -53,3 +53,6 @@ export function readPublicEnv(source: Readonly<Record<string, unknown>>): Public
 }
 
 export const env: PublicEnv = readPublicEnv(import.meta.env);
+
+/** Production build: only then the offline worker is registered. */
+export const IS_PRODUCTION_BUILD: boolean = import.meta.env.PROD;

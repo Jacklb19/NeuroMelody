@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
+import { SERVICE_WORKER_FILE } from '../../src/config/pwa.ts';
 import { serviceWorkerSource } from './serviceWorker.ts';
 
 /** Adds a versioned precache of the actual build, including lazy audio modules and workers. */
@@ -13,7 +14,7 @@ export function buildPwa(): Plugin {
     configResolved(config) { outputDirectory = path.resolve(config.root, config.build.outDir); },
     async closeBundle() {
       const entries = await readdir(outputDirectory, { recursive: true, withFileTypes: true });
-      const assets = entries.filter(entry => entry.isFile() && entry.name !== 'sw.js')
+      const assets = entries.filter(entry => entry.isFile() && entry.name !== SERVICE_WORKER_FILE)
         .map(entry => path.relative(outputDirectory, path.join(entry.parentPath, entry.name)).replaceAll('\\', '/'))
         .sort();
       const hash = createHash('sha256');
@@ -21,7 +22,7 @@ export function buildPwa(): Plugin {
         hash.update(file);
         hash.update(await readFile(path.join(outputDirectory, file)));
       }
-      await writeFile(path.join(outputDirectory, 'sw.js'),
+      await writeFile(path.join(outputDirectory, SERVICE_WORKER_FILE),
         serviceWorkerSource(assets.map(file => '/' + file), hash.digest('hex').slice(0, 16)));
     },
   };
