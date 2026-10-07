@@ -26,18 +26,25 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 
 | Panel (código) | Sprint en que se creó | Ubicación en el mapa |
 |---|---|---|
-| `AcquisitionPanel` (`src/features/acquisition/`) | S1 | `/session` |
-| `SignalPanel` (`src/features/signal/`) | S2 | `/session` |
-| `PlaybackPanel` (`src/features/audio/ui/`) | S3 | `/session` (incluye el aviso de duración) |
+| `SessionStage` y `SessionProgress` (`src/features/session/`) | Vista sencilla (ADR-24) | `/session`, escenario de escucha |
+| `PlaybackPanel` (`src/features/audio/ui/`) | S3 | `/session`, escenario de escucha (incluye el aviso de duración) |
+| `AcquisitionPanel` (`src/features/acquisition/`) | S1 | `/session`, banda de la fuente de señal |
+| `SignalPanel` (`src/features/signal/`) | S2 | `/session`, detalles técnicos |
+| `MusicalStatePanel` (`src/features/adaptation/`) | S4 | `/session`, detalles técnicos |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 
-## Paneles previstos dentro de `/session`
+## Organización de `/session` (ADR-24)
 
-| Panel | Propósito | RF | Sprint |
-|---|---|---|---|
-| Estado musical | Tempo, modo y capas actuales, y el estado estimado con su confianza en lenguaje descriptivo. | RF-09, RF-12 | S4 |
+De arriba abajo:
 
-S4 incorpora MusicalStatePanel en `/session`: estado aceptado, confianza no calibrada, espera por calidad, escalón, tempo actual/destino. Durante permanencia muestra «Se conserva el escalón hasta completar su duración mínima de 3 minutos». Modo/capas programados: el fundido espera el ciclo y no se presenta como completado. Estimador de entrega: R-05; no hay ONNX integrado ni entrenamiento iniciado (limitación RF-07, ADR-14).
+1. **Escenario de escucha** (superficie única):
+   - `SessionStage`: el momento en palabras sencillas, el estado estimado con «Confianza no calibrada · reglas provisionales» y los avisos de calidad y de permanencia («Se conserva el escalón hasta completar su duración mínima de 3 minutos»).
+   - `PlaybackPanel`: iniciar, volumen y estado de la música.
+   - `SessionProgress`: el progreso de la sesión como un pentagrama que se entinta, con el tiempo en texto.
+2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar la fuente, con su estado y la última lectura.
+3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
+
+El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página. Estimador de entrega: reglas R-05, sin ONNX (limitación RF-07, ADR-14).
 
 ## Funciones todavía no activas — propuesta S5–S7
 
