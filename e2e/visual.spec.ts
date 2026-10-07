@@ -36,6 +36,7 @@ for (const width of [360, 768, 1280]) {
     await page.getByRole('button', { name: 'Conectar simulador' }).click();
     await page.getByRole('button', { name: 'Iniciar música' }).click();
     await expect(stop).toBeEnabled();
+    await page.getByText('Detalles técnicos', { exact: true }).click();
     await expect(page.getByTestId('rmssd')).not.toHaveText('—', { timeout: 15_000 });
     await page.getByTestId('discarded-beats').scrollIntoViewIfNeeded();
     await expect(stop).toBeInViewport();
