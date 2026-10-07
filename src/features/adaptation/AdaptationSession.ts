@@ -1,7 +1,7 @@
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationEngine, type AdaptationSnapshot, type TransitionTiming } from './AdaptationEngine';
-import type { LevelId } from '../audio/engine/levels';
+import { CALIBRATION_LEVEL, type LevelId } from '../audio/engine/levels';
 
 export interface SessionSnapshot extends AdaptationSnapshot {
   readonly tempoBpm: number | null;
@@ -32,8 +32,8 @@ export class AdaptationSession {
     this.#guidance = new AdaptationEngine();
     this.#lastTiming = null;
     if (this.#audio !== null) {
-      if (this.#audio.level !== 'intermediate') this.#audio.applyLevel('intermediate');
-      this.#guidance.start(this.#audio.audioTime, 'intermediate');
+      if (this.#audio.level !== CALIBRATION_LEVEL) this.#audio.applyLevel(CALIBRATION_LEVEL);
+      this.#guidance.start(this.#audio.audioTime, CALIBRATION_LEVEL);
     }
     this.#publish();
   };

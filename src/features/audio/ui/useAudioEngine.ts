@@ -1,17 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioEngine, type AudioFactory, type EngineOptions } from '../engine/AudioEngine';
+import { AudioEngineError } from '../engine/AudioEngineError';
 
 export type AudioState = 'idle' | 'loading' | 'playing' | 'stopped' | 'error';
+
+/**
+ * Why the last start failed. The engine's own failures carry a code the
+ * interface translates; anything else (usually the browser refusing Web
+ * Audio) only has the text the browser gave.
+ */
+export type AudioStartFailure =
+  | { readonly kind: 'engine'; readonly error: AudioEngineError }
+  | { readonly kind: 'browser'; readonly detail: string };
 
 export interface AudioEngineControl {
   /** Current engine; `null` before the first start. */
   readonly engine: () => AudioEngine | null;
   readonly state: AudioState;
-  readonly error: string | null;
+  readonly error: AudioStartFailure | null;
   readonly start: (options: EngineOptions, volumeDb: number) => Promise<AudioEngine | null>;
   readonly stop: () => Promise<void>;
   /** Closes the engine so a new one is created on the next start (for example, with another output). */
   readonly discard: () => Promise<void>;
+}
+
+function toStartFailure(cause: unknown): AudioStartFailure {
+  if (cause instanceof AudioEngineError) {
+    return { kind: 'engine', error: cause };
+  }
+  return { kind: 'browser', detail: cause instanceof Error ? cause.message : String(cause) };
 }
 
 async function defaultFactory(): Promise<AudioFactory> {
@@ -27,7 +44,7 @@ async function defaultFactory(): Promise<AudioFactory> {
 export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const engineRef = useRef<AudioEngine | null>(null);
   const [state, setState] = useState<AudioState>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AudioStartFailure | null>(null);
 
   const start = useCallback(
     async (options: EngineOptions, volumeDb: number): Promise<AudioEngine | null> => {
@@ -45,7 +62,7 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
         return engine;
       } catch (cause) {
         setState('error');
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(toStartFailure(cause));
         return null;
       }
     },

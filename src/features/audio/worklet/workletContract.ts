@@ -3,10 +3,16 @@
  * registration names, parameters and creation options. It imports nothing
  * from the worklet scope, so both sides can use it.
  */
+import { LAYER_COUNT, MIN_LAYERS } from '../core/SynthesisCore';
 import { MODE, isMode, type Mode } from '../core/theory';
+import { CALIBRATION_LEVEL, LEVELS } from '../engine/levels';
 
 export const SYNTHESIZER_NAME = 'neuromelody-synthesizer';
 export const CLIPPER_NAME = 'neuromelody-clipper';
+
+/** Tempo range the synthesizer accepts, in BPM; it contains every level tempo. */
+export const MIN_TEMPO_BPM = 40;
+export const MAX_TEMPO_BPM = 120;
 
 /** Descriptor of a custom AudioParam (the TypeScript DOM library does not declare it). */
 interface ParameterDescriptor {
@@ -17,18 +23,50 @@ interface ParameterDescriptor {
   readonly automationRate: AutomationRate;
 }
 
+// Parameters start at the calibration level, where every session begins (ADR-12).
+const CALIBRATION = LEVELS[CALIBRATION_LEVEL];
+const MODE_VALUES: readonly Mode[] = Object.values(MODE);
+
 /**
  * Synthesizer parameters as `AudioParam`: the main thread schedules ramps
  * and the audio thread interpolates them without messages (ADR-07). They are
  * k-rate (one value per 128-sample block), enough for tempo, mode and layers.
  */
 export const SYNTHESIZER_DESCRIPTORS = [
-  { name: 'tempo', defaultValue: 66, minValue: 40, maxValue: 120, automationRate: 'k-rate' },
-  { name: 'mode', defaultValue: MODE.lydian, minValue: 0, maxValue: 2, automationRate: 'k-rate' },
-  { name: 'layers', defaultValue: 2, minValue: 1, maxValue: 3, automationRate: 'k-rate' },
+  {
+    name: 'tempo',
+    defaultValue: CALIBRATION.tempo,
+    minValue: MIN_TEMPO_BPM,
+    maxValue: MAX_TEMPO_BPM,
+    automationRate: 'k-rate',
+  },
+  {
+    name: 'mode',
+    defaultValue: CALIBRATION.mode,
+    minValue: Math.min(...MODE_VALUES),
+    maxValue: Math.max(...MODE_VALUES),
+    automationRate: 'k-rate',
+  },
+  {
+    name: 'layers',
+    defaultValue: CALIBRATION.layers,
+    minValue: MIN_LAYERS,
+    maxValue: LAYER_COUNT,
+    automationRate: 'k-rate',
+  },
 ] as const satisfies readonly ParameterDescriptor[];
 
 export type ParamName = (typeof SYNTHESIZER_DESCRIPTORS)[number]['name'];
+
+/**
+ * Default value of each parameter, read by the processor when a block carries
+ * none. Written out key by key so the compiler checks every parameter name.
+ */
+export const SYNTHESIZER_DEFAULTS: Readonly<Record<ParamName, number>> = {
+  tempo: CALIBRATION.tempo,
+  mode: CALIBRATION.mode,
+  layers: CALIBRATION.layers,
+};
 
 export interface SynthesizerOptions {
   readonly seed: number;
@@ -56,10 +94,10 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     typeof value.initialMode !== 'number' ||
     !isMode(value.initialMode) ||
     typeof value.initialLayers !== 'number' ||
-    value.initialLayers < 1 ||
-    value.initialLayers > 3
+    value.initialLayers < MIN_LAYERS ||
+    value.initialLayers > LAYER_COUNT
   ) {
-    throw new TypeError('Opciones del sintetizador no válidas.');
+    throw new TypeError('Invalid synthesizer options.');
   }
   return {
     seed: value.seed,
@@ -70,11 +108,11 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
 
 export function readClipperOptions(value: unknown): ClipperOptions {
   if (!isRecord(value)) {
-    throw new TypeError('Opciones del recortador no válidas.');
+    throw new TypeError('Invalid clipper options.');
   }
   const { telemetry } = value;
   if (telemetry !== null && !(telemetry instanceof SharedArrayBuffer)) {
-    throw new TypeError('La telemetría debe ser un SharedArrayBuffer o null.');
+    throw new TypeError('Telemetry must be a SharedArrayBuffer or null.');
   }
   return { telemetry };
 }

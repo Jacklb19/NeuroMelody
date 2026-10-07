@@ -11,7 +11,8 @@ export const DEFAULT_IMPULSE_RESPONSE: ImpulseResponseOptions = { durationS: 3.5
 
 /** Ln(1000): a 60 dB drop in amplitude. */
 const DECAY_60_DB = Math.log(1000);
-const FADE_IN_S = 0.005;
+/** Length of the soft onset of the response. */
+const IR_ONSET_S = 0.005;
 
 /**
  * Stereo impulse response generated in code (noise with an exponential
@@ -23,7 +24,7 @@ export function generateImpulseResponse(
   options: ImpulseResponseOptions = DEFAULT_IMPULSE_RESPONSE,
 ): [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] {
   const length = Math.round(options.durationS * sampleRate);
-  const fadeSamples = Math.max(1, Math.round(FADE_IN_S * sampleRate));
+  const fadeSamples = Math.max(1, Math.round(IR_ONSET_S * sampleRate));
   const channels: [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] = [
     new Float32Array(length),
     new Float32Array(length),

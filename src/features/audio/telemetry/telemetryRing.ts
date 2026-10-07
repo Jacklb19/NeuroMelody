@@ -8,6 +8,8 @@
  */
 export const TELEMETRY_CAPACITY = 512;
 const HEADER_BYTES = 8;
+/** The header seen as Int32 slots; only slot 0 (the write count) is used. */
+const HEADER_SLOTS = HEADER_BYTES / Int32Array.BYTES_PER_ELEMENT;
 
 export function createTelemetryBuffer(): SharedArrayBuffer {
   return new SharedArrayBuffer(HEADER_BYTES + TELEMETRY_CAPACITY * Float32Array.BYTES_PER_ELEMENT);
@@ -19,7 +21,7 @@ export class TelemetryWriter {
   readonly #data: Float32Array;
 
   constructor(buffer: SharedArrayBuffer) {
-    this.#header = new Int32Array(buffer, 0, 2);
+    this.#header = new Int32Array(buffer, 0, HEADER_SLOTS);
     this.#data = new Float32Array(buffer, HEADER_BYTES, TELEMETRY_CAPACITY);
   }
 
@@ -45,7 +47,7 @@ export class TelemetryReader {
   #readCount = 0;
 
   constructor(buffer: SharedArrayBuffer) {
-    this.#header = new Int32Array(buffer, 0, 2);
+    this.#header = new Int32Array(buffer, 0, HEADER_SLOTS);
     this.#data = new Float32Array(buffer, HEADER_BYTES, TELEMETRY_CAPACITY);
   }
 
