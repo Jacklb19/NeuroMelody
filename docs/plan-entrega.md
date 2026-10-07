@@ -102,8 +102,8 @@ Estado al preparar el plan, con evidencia de S3 y verificación S4; ninguna comp
 
 | HU | Evidencia exigida para declarar terminado | Estado actual / cierre previsto |
 |---|---|---|
-| HU-01 | Manual con periférico: emparejar <15 s, estado visible; pruebas GATT/reintentos y recarga; matriz escritorio/Android | Pendiente S5. Parser unitario existente; no hay banda verificada. |
-| HU-02 | ≥3 escenarios reproducibles y velocidades; cadena idéntica detrás de SignalSource para simulador/registro/BLE | Simulador/registro verificados; completar sustitución BLE S5. |
+| HU-01 | Manual con periférico: emparejar <15 s, estado visible; pruebas GATT/reintentos y recarga; matriz escritorio/Android | S5 (6 oct): fuente GATT, reintentos 1/2/4/8 s y «Reconectar banda» con pruebas sobre GATT simulado. Falta la prueba manual con periférico del 13 oct; no se declara cumplida. |
+| HU-02 | ≥3 escenarios reproducibles y velocidades; cadena idéntica detrás de SignalSource para simulador/registro/BLE | Simulador/registro verificados; BLE implementa el mismo SignalSource (S5, 6 oct). Pendiente la cadena con periférico real. |
 | HU-03 | Inicio medido <1 s en producción/preview con equipo documentado; 30 min nativos con 0 subdesbordamientos, repetir con lazo final | S3: 30 min reales con 0. Inicio extremo a extremo <1 s no está medido; revalidación S7. |
 | HU-04 | 1.000 transiciones; tempo y modo ≥20 s, reversión sin saltos, E2E y una escucha del usuario | S4 cerrado el 5 oct: pruebas automáticas y escucha completa confirmada por el usuario, todo pasó. Grupo de oyentes posterior, propuesto 16 oct. |
 | HU-05 | Índices/estado cada ≤5 s de señal; texto accesible y gráfica; tareas largas y comprobación visual | S2/S4: índices y estado. Rendimiento y percepción manual finales S7. |
@@ -119,18 +119,18 @@ Terminación global: RF restantes y las diez HU verificadas; excepción explíci
 
 | RF | Estado verificable y cierre previsto |
 |---|---|
-| RF-01 | Pendiente S5: BLE, emparejamiento/reconexión y comprobación 13 oct. |
+| RF-01 | S5 (6 oct): descubrimiento, emparejamiento y reconexión implementados con pruebas automáticas; falta la comprobación con periférico del 13 oct. |
 | RF-02 | Simulador verificado: cinco escenarios, semillas y velocidades. |
-| RF-03 | Parser verificado; recepción GATT real pendiente S5. |
+| RF-03 | Parser y recepción vía `characteristicvaluechanged` verificados con GATT simulado; falta la recepción real del 13 oct. |
 | RF-04 | Filtro/calidad verificados con vectores y artefactos. |
 | RF-05 | Índices temporales/ventana verificados en Worker. |
-| RF-06 | Pendiente S5: PSD y LF/HF con referencias. |
+| RF-06 | S5 (6 oct): PSD (spline 4 Hz, Hann, FFT) y LF/HF en el Worker, contrastados con senoides de potencia conocida. |
 | RF-07 | **Limitado por decisión del usuario:** estimador por reglas S4, alternativa R-05, sin confianza calibrada. No hay entrenamiento, etiquetas ni ONNX; requisito literal del clasificador entrenado no cumplido. ONNX opcional, sin dependencia de una rama. |
 | RF-08 | Síntesis por capas verificada; escucha completa confirmada por el usuario el 5 oct. |
 | RF-09 | Lazo/rampas/estado provisional verificados S4; escucha confirmada el 5 oct. |
 | RF-10 | 1.000 transiciones de tempo y 1.000 fundidos de modo verificados; escucha confirmada el 5 oct. |
 | RF-11 | Reproducción/volumen/stop y Esc verificados; comprobaciones manuales de sistema/AA pendientes. |
-| RF-12 | Señal/índices/estado/confianza descriptiva verificados; PSD llega S5. |
+| RF-12 | Señal/índices/estado/confianza descriptiva verificados; LF, HF y LF/HF visibles desde S5. |
 | RF-13 | Propuesta de plan por modelo pendiente S6.4; plan manual existente. |
 | RF-14 | Sesiones locales, nube, consentimiento, RLS/aal2 y sincronización pendientes S6/S7; migración inicial solo comprobada estáticamente. |
 | RF-15 | Resumen de indicadores/descarga S6.1; texto Groq S6.4. |
