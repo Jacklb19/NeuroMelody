@@ -13,6 +13,9 @@ const result = {
   acceptedBeats: 5,
   discardedBeats: 0,
   quality: 'collecting',
+  lfPower: null,
+  hfPower: null,
+  lfHfRatio: null,
 };
 
 describe('esMensajeHaciaHilo', () => {
@@ -68,6 +71,13 @@ describe('esMensajeDesdeHilo', () => {
     expect(isMessageFromThread({ kind: 'indices', result })).toBe(true);
     expect(isMessageFromThread({ kind: 'indices', result: { ...result, rmssd: 45.2, quality: 'good' } })).toBe(true);
     expect(isMessageFromThread({ kind: 'error', message: 'falló' })).toBe(true);
+  });
+
+  it('rejects spectral indices that are missing or not finite', () => {
+    const withoutRatio: Partial<typeof result> = { ...result };
+    delete withoutRatio.lfHfRatio;
+    expect(isMessageFromThread({ kind: 'indices', result: withoutRatio })).toBe(false);
+    expect(isMessageFromThread({ kind: 'indices', result: { ...result, lfPower: Number.NaN } })).toBe(false);
   });
 
   it.each([

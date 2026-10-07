@@ -5,7 +5,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { createFakeTimeEnvironment } from '../../test/fakeTimeEnvironment';
 import { SourceChannel } from './sourceChannel';
 import type { SignalSource } from './contract';
-import { AcquisitionPanel, SIMULATOR_SEED, type CreateSimulatedSource } from './AcquisitionPanel';
+import { AcquisitionPanel, SIMULATOR_SEED, type CreateBleSource, type CreateSimulatedSource } from './AcquisitionPanel';
+import type { BluetoothAdapter } from './ble/webBluetooth';
 import { SimulatedSource } from './simulator/SimulatedSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
 import { readFileSync } from 'node:fs';
@@ -68,6 +69,7 @@ describe('AcquisitionPanel', () => {
     expect(scenarios).toEqual([
       'Simulador',
       'Registro de ejemplo',
+      'Banda Bluetooth',
       'Reposo',
       'Activación',
       'Relajación progresiva',
@@ -163,4 +165,39 @@ describe('AcquisitionPanel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/no es fiable/i);
     expect(screen.getByRole('alert')).toHaveTextContent(/revisa la colocación del dispositivo/i);
   });
+
+  it('disables the Bluetooth option when the browser lacks Web Bluetooth', () => {
+    render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} bluetooth={null} />);
+    expect(screen.getByRole('option', { name: 'Banda Bluetooth' })).toBeDisabled();
+    expect(screen.getByText(/usa chrome o edge/i)).toBeInTheDocument();
+  });
+
+  it('connects a chosen strap or reuses a remembered one', async () => {
+    const user = userEvent.setup();
+    const bluetooth: BluetoothAdapter = {
+      requestDevice: () => Promise.reject(new Error('unused')),
+      getDevices: () => Promise.resolve([]),
+    };
+    const createBle = vi.fn<CreateBleSource>(() => new FakeSource());
+    const onSourceChange = vi.fn();
+    render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} bluetooth={bluetooth} createBle={createBle} />);
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Origen de la señal' }), 'ble');
+    expect(screen.queryByLabelText(/velocidad/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Conectar banda' }));
+    await user.click(screen.getByRole('button', { name: 'Reconectar banda' }));
+
+    expect(createBle.mock.calls.map(([options]) => options.mode)).toEqual(['choose', 'remembered']);
+    expect(onSourceChange).toHaveBeenCalledTimes(2);
+  });
 });
+
+/** Inert source: the panel only needs the contract to render its state. */
+class FakeSource implements SignalSource {
+  readonly kind = 'ble' as const;
+  readonly #channel = new SourceChannel();
+  get state() { return this.#channel.state; }
+  subscribe = this.#channel.subscribe.bind(this.#channel);
+  connect = (): Promise<void> => Promise.resolve();
+  disconnect = (): Promise<void> => Promise.resolve();
+}
