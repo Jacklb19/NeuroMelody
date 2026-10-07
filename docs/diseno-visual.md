@@ -12,7 +12,7 @@ Inicio conserva sus dos recorridos. Advertencias usa una columna de lectura y ma
 
 - `src/index.css` concentra colores, tipografía, espaciado, controles, foco y composición responsive. `PageHeading` comparte la cabecera de las cinco pantallas; `Layout` mantiene navegación y enlace para saltarla.
 - Los parámetros musicales se presentan como pares semánticos `dt`/`dd`: escalón, tempo actual, destino, modo y capas programados. La confianza no calibrada queda junto al estado estimado y se conserva el aviso literal de permanencia.
-- La gráfica usa `--color-grafica-*`, enlazados mediante alias con los tokens ingleses `--color-chart-*` que ya lee `readChartPalette`. El Worker recibe la misma estructura de paleta y no se modifica. El fondo del lienzo coincide con el fondo utilizado por las pruebas de contraste.
+- La gráfica usa los tokens `--color-chart-*` que lee `readChartPalette`. El Worker recibe la misma estructura de paleta y no se modifica. El fondo del lienzo coincide con el fondo utilizado por las pruebas de contraste.
 - El control fijo «Detener» usa un símbolo cuadrado, texto y un tono tierra con borde visible. Se reserva espacio al final de la sesión y margen de desplazamiento para los controles enfocados. Se conserva Esc y el comportamiento del aviso de duración.
 - Avisos y errores usan ámbar/tierra, lenguaje descriptivo y mensajes existentes. Carga, desconexión y datos insuficientes siguen mostrando texto explícito, sin indicadores ficticios.
 - Formularios nativos, controles principales de al menos 48 px, foco visible y `prefers-reduced-motion`. En colores forzados, selección y foco conservan señales del sistema.

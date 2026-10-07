@@ -20,7 +20,7 @@ export function SelfRatingField({ legend, value, onChange }: SelfRatingFieldProp
     <fieldset className="self-rating" aria-describedby={hintId}>
       <legend>{legend} <span className="optional-mark">(opcional)</span></legend>
       <p id={hintId} className="self-rating-hint">0 = nada bien · 10 = muy bien</p>
-      <div className="rating-scale">
+      <div className="rating-scale" style={{ '--option-count': RATINGS.length } as React.CSSProperties}>
         {RATINGS.map((rating) => (
           <label key={rating} className="rating-option">
             <input

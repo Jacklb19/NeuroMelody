@@ -21,7 +21,7 @@ export function PlanPage(): React.JSX.Element {
         <legend>
           Duración de la sesión
         </legend>
-        <div className="duration-options">
+        <div className="duration-options" style={{ '--option-count': DURATIONS_MIN.length } as React.CSSProperties}>
           {DURATIONS_MIN.map((minutes) => (
             <label key={minutes} className="duration-option">
               <input
