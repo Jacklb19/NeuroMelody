@@ -94,6 +94,15 @@ describe('AudioEngine.create', () => {
 });
 
 describe('AudioEngine in use', () => {
+  it('finishes a stop quietly when the context is closed during the stop ramp', async () => {
+    const { engine } = await createEngine();
+    await engine.start();
+    const stopping = engine.stop();
+    await engine.close();
+    await expect(stopping).resolves.toBeUndefined();
+    expect(engine.state).toBe('closed');
+  });
+
   it('start resumes the context and raises the envelope over 1.5 s', async () => {
     const { engine, env, envelope } = await createEngine();
     env.context.currentTime = 2;

@@ -144,6 +144,8 @@ export class FakeAudioContext {
     return Promise.resolve();
   }
   suspend(): Promise<void> {
+    // Browsers reject this call once the context is closed.
+    if (this.state === 'closed') return Promise.reject(new DOMException('Cannot suspend a closed AudioContext.', 'InvalidStateError'));
     this.state = 'suspended';
     return Promise.resolve();
   }
