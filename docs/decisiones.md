@@ -173,6 +173,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | Sin dependencias nuevas. (1) **Entorno:** solo `src/config/env.ts` lee `import.meta.env` y valida los valores al arrancar. (2) **Rutas:** `src/config/routes.ts`. (3) **Opciones elegibles:** catálogos por funcionalidad (`*Catalog.ts`) con identificadores `as const`, tipo derivado, valor por defecto y `parseOption` en la frontera. (4) **Valores ajustables:** constantes con nombre y documentadas, en un único módulo por dominio (`thresholds.ts`, `levels.ts`, `ramps.ts`, `config.ts`). (5) **Textos:** diccionarios por área en `src/i18n/es/`; los textos con cifras son funciones con parámetros, así que ningún número se escribe dentro de una frase. (6) **Errores:** la lógica lanza errores con `code`; la interfaz los traduce. (7) **Diseño:** solo variables CSS en inglés; las rejillas que dependen de un catálogo reciben `--option-count`. (8) **Backend:** configuración desde el entorno validada con Pydantic y errores con código. |
 | Consecuencias | Cambiar una opción, un umbral o un texto toca un solo archivo. Las pruebas usan el diccionario y las constantes en lugar de repetir literales. El tipo `Messages` obliga a que otro idioma tenga las mismas claves. |
 
+## ADR-26. Ajustes visibles tras «nada fijo en el código» (P-02)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 («Sí, aplica las mejoras»). |
+| Contexto | La limpieza de ADR-25 no cambió textos ni comportamiento a propósito y dejó once decisiones visibles abiertas. |
+| Decisión | (1) Errata del doble punto corregida. (2) La interfaz no muestra textos crudos del navegador (audio, caída del Worker, descarga de un registro, historial): usa el diccionario; el detalle técnico queda solo en `/diagnostics`. (3) Una sola clave para el consejo de navegador de la cámara, para el aviso de reglas provisionales y para el aviso no clínico de los indicadores. (4) Las columnas del CSV siguen en español: el archivo es para la persona y su terapeuta; si hiciera falta para scripts, se añade otra exportación. (5) El aviso de error de la fuente se elige por el tipo de error, no por la fuente seleccionada. (6) La regla de hueco o pérdida de contacto vive en el Worker de señal, que envía un evento `contact`. (7) Cada registro de ejemplo declara su duración en el catálogo. (8) Los minutos del resumen se redondean hacia abajo en todos los casos. (9) `index.html` y el manifest se generan al compilar desde `APP_NAME`, el idioma, el diccionario y los tokens CSS. (10) Backend: CORS admite las vistas previas de Vercel solo con la forma `https://<proyecto>-<hash de 9>-<equipo>.vercel.app`, configurada con `VERCEL_PREVIEW_PROJECT` y `VERCEL_PREVIEW_TEAM` (opcionales y juntas); los alias de rama quedan fuera. (11) Backend: `httpx2` 2.13.1 en lugar de `httpx` para el `TestClient`. |
+| Consecuencias | Para activar las vistas previas hay que definir las dos variables en Vercel. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
