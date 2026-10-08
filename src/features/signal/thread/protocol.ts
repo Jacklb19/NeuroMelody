@@ -52,6 +52,8 @@ export type MessageToThread =
 /** Messages from the signal thread to the main thread. */
 export type MessageFromThread =
   | { readonly kind: 'indices'; readonly result: IndicesResult }
+  /** Whether beats keep arriving after each notification (contact and no gap). */
+  | { readonly kind: 'contact'; readonly present: boolean }
   | ({ readonly kind: 'error' } & SignalThreadFailure);
 
 type UnknownRecord = Record<string, unknown>;
@@ -179,6 +181,8 @@ export function isMessageFromThread(value: unknown): value is MessageFromThread 
   switch (value.kind) {
     case 'indices':
       return isResult(value.result);
+    case 'contact':
+      return typeof value.present === 'boolean';
     case 'error':
       return isFailure(value);
     default:

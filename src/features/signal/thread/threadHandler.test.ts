@@ -53,8 +53,7 @@ describe('createSignalThreadHandler', () => {
     for (let t = 1000; t <= 5000; t += 1000) {
       handle(notification(t));
     }
-    expect(received).toHaveLength(1);
-    expect(received[0]?.kind).toBe('indices');
+    expect(received.filter((m) => m.kind === 'indices')).toHaveLength(1);
   });
 
   it('reports when the canvas provides no 2D context', () => {

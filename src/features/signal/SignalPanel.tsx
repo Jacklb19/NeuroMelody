@@ -13,7 +13,7 @@ import {
 import { formatSignalTime } from './formatSignalTime';
 import { LF_HF_RATIO_DECIMALS, QUALITY_ICONS } from './presentation';
 import type { IndicesResult } from './processing/SignalProcessor';
-import { ANALYSIS_WINDOW_MS, MAX_GAP_MS, MIN_SPECTRUM_MS } from './processing/thresholds';
+import { ANALYSIS_WINDOW_MS, MIN_SPECTRUM_MS } from './processing/thresholds';
 import { MS_PER_MINUTE } from '../../shared/time';
 import { SignalThreadClient, createWorkerPort } from './thread/SignalThreadClient';
 import {
@@ -209,15 +209,13 @@ export function SignalPanel({
         setReading({ source, result });
         if (source.state === 'connected') onIndices?.(result);
       },
+      onContact: present => {
+        if (present) onPulse?.();
+        else onUnavailable?.();
+      },
       onError: () => onUnavailable?.(),
     });
-    let lastRrTimeMs = 0;
     const unsubscribeSource = source.subscribe({
-      onNotification: notification => {
-        if (notification.rrIntervalsMs.length > 0) lastRrTimeMs = notification.timeMs;
-        if (notification.sensorContact === false || notification.timeMs - lastRrTimeMs > MAX_GAP_MS) onUnavailable?.();
-        else onPulse?.();
-      },
       onStateChange: state => {
         if (state === 'connecting') onReset?.();
         else if (state !== 'connected') onUnavailable?.();

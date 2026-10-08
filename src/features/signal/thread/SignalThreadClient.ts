@@ -50,6 +50,8 @@ export function createWorkerPort(): ThreadPort {
 export interface SignalThreadObserver {
   readonly onIndices?: (result: IndicesResult) => void;
   readonly onError?: (failure: SignalThreadFailure) => void;
+  /** Whether beats keep arriving, decided by the signal thread on every notification. */
+  readonly onContact?: (present: boolean) => void;
 }
 
 /**
@@ -125,7 +127,8 @@ export class SignalThreadClient {
       return;
     }
     for (const observer of this.#observers) {
-      observer.onIndices?.(data.result);
+      if (data.kind === 'contact') observer.onContact?.(data.present);
+      else observer.onIndices?.(data.result);
     }
   }
 
