@@ -7,7 +7,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | # | Bloque | Repo | Alcance | Estado |
 |---|---|---|---|---|
 | 1 | S0–S4 | front | Adquisición, hilo de señal, síntesis, lazo de adaptación | Cerrados |
-| 2 | S5 Bluetooth y LF/HF | front | RF-01, RF-03, RF-06, RF-12; HU-01, RNF-10 | Código hecho; falta la prueba manual BLE (`prueba-ble.md`) |
+| 2 | S5 Bluetooth y LF/HF | front | RF-01, RF-03, RF-06, RF-12; HU-01, RNF-10 | Cerrado: prueba manual con nRF Connect superada (`prueba-ble.md`) |
 | 3 | Limpieza y separación de repos | ambos | ADR-19 a ADR-24 | Hecho |
 | 4 | Cámara del celular | front | Propuesta P-01: prototipo en `/diagnostics` y, si funciona, cuarta fuente de señal | Pendiente |
 | 5 | Vista sencilla de la sesión | front | ADR-24 | Pendiente |
@@ -42,7 +42,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 
 | RF | Estado |
 |---|---|
-| RF-01, RF-03 | Implementados y probados con GATT simulado; falta la prueba con periférico real. |
+| RF-01, RF-03 | Verificados con pruebas automáticas y con un periférico emulado (nRF Connect): emparejamiento, recepción y reconexión. Falta una banda real. |
 | RF-02, RF-04, RF-05 | Verificados (simulador con cinco escenarios, filtro, calidad e índices). |
 | RF-06 | Verificado con referencias sintéticas. |
 | RF-07 | **Limitado** (ADR-14): estimador por reglas, sin clasificador entrenado. |
@@ -54,7 +54,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 
 | HU | Estado |
 |---|---|
-| HU-01 | Pendiente de la prueba manual (conexión < 15 s y estado visible). |
+| HU-01 | Cumplida con periférico emulado: emparejamiento en menos de 15 s y estado siempre visible. |
 | HU-02, HU-04, HU-06 | Cumplidas con evidencia automática; HU-06 con revisión manual pendiente. |
 | HU-03 | 30 min sin subdesbordamientos (S3); falta medir el inicio < 1 s en vista previa. |
 | HU-05 | Cumplida; revisión de rendimiento en S7. |

@@ -32,12 +32,12 @@ function renderWith(route: string, accepted = false) {
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('routes', () => {
-  it('the home page links to the plan and the session; the navigation leaves out diagnostics', () => {
+  it('the home page links to the plan; the navigation leaves out diagnostics', () => {
     renderWith('/');
     expect(screen.getByRole('heading', { level: 1, name: 'NeuroMelody' })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: /principal/i });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
-    expect(links).toEqual(['Inicio', 'Plan', 'Sesión']);
+    expect(links).toEqual(['Inicio', 'Plan', 'Sesión', 'Historial']);
     expect(screen.getByRole('link', { name: /preparar una sesión/i })).toHaveAttribute('href', '/plan');
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
@@ -67,8 +67,12 @@ describe('routes', () => {
   it('with the warnings accepted it goes straight to the session and its panels', () => {
     renderWith('/session', true);
     expect(screen.getByText(/plan: 20 minutos/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Conecta una fuente de señal' })).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: 'Progreso de la sesión' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Fuente de señal' })).toBeInTheDocument();
+    // Signal figures stay folded under the technical details (ADR-24).
+    expect(screen.getByText('Detalles técnicos')).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i, hidden: true })).toBeInTheDocument();
   });
 
   it('the plan lets the user pick the duration with the keyboard and passes it to the session', async () => {
@@ -126,7 +130,7 @@ describe('readDuration', () => {
     ['25', 20],
     ['abc', 20],
     ['', 20],
-  ])('interpreta %j como %i minutos', (value, expected) => {
+  ])('reads %j as %i minutes', (value, expected) => {
     expect(readDuration(value)).toBe(expected);
   });
 

@@ -299,6 +299,8 @@ export class AudioEngine {
     this.#state = 'stopped';
     // The ramp already silences on the audio thread; the wait only avoids cutting it short.
     await this.#factory.wait(STOP_RAMP_S * 1000 + 10);
+    // Leaving the page closes the context during the ramp; it is already silent.
+    if (this.#context.state === 'closed') return;
     this.#audioElement?.pause();
     await this.#context.suspend();
   }

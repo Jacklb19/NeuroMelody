@@ -3,6 +3,7 @@ import { usePageTitle } from '../../app/usePageTitle';
 import { checkCapabilities } from './checkCapabilities';
 import type { EnvironmentCapabilities } from './diagnostics.types';
 import { PageHeading } from '../../shared/PageHeading';
+import { CameraPulsePanel } from './CameraPulsePanel';
 
 export function DiagnosticsPage(): React.JSX.Element {
   usePageTitle('Diagnóstico de la plataforma');
@@ -82,6 +83,8 @@ export function DiagnosticsPage(): React.JSX.Element {
           ))}
         </ul>
       </section>
+
+      <CameraPulsePanel />
 
       <section className="recheck-section">
         <h2>
