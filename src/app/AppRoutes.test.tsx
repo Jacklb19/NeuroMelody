@@ -50,7 +50,7 @@ describe('routes', () => {
     const navigation = screen.getByRole('navigation', { name: es.app.mainNavigation });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
     const labels = es.app.navigation;
-    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history]);
+    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history, labels.account]);
     expect(screen.getByRole('link', { name: es.home.prepareSession })).toHaveAttribute('href', ROUTES.plan);
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });

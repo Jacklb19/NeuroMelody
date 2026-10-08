@@ -5,6 +5,8 @@ import { RequireWarnings } from '../features/warnings/RequireWarnings';
 import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { HomePage } from '../features/home/HomePage';
 import { LandingPage } from '../features/landing/LandingPage';
+import { AccountPage } from '../features/account/AccountPage';
+import { PrivacyPage } from '../features/privacy/PrivacyPage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { SessionPage } from '../features/session/SessionPage';
 import { SessionSummaryPage } from '../features/summary/SessionSummaryPage';
@@ -34,6 +36,8 @@ export function AppRoutes(): React.JSX.Element {
         <Route path={ROUTE_SEGMENTS.summary} element={<SessionSummaryPage />} />
         <Route path={ROUTE_SEGMENTS.history} element={<HistoryPage />} />
         <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
+        <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
+        <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
         <Route path={UNKNOWN_PATH} element={<Navigate to={ROUTES.home} replace />} />
       </Route>
     </Routes>

@@ -70,6 +70,7 @@ export function LandingPage(): React.JSX.Element {
             <li><a href={`#${LANDING_SECTIONS.technology}`}>{copy.nav.technology}</a></li>
           </ul>
         </nav>
+        <Link to={ROUTES.account} className="landing-signin">{copy.nav.signIn}</Link>
         <Link to={ROUTES.app} className="landing-cta-small">{copy.nav.openApp}</Link>
       </header>
 
@@ -168,6 +169,7 @@ export function LandingPage(): React.JSX.Element {
             <ul className="privacy-points">
               {LANDING_PRIVACY_IDS.map((id) => <li key={id} data-reveal>{copy.privacy.points[id]}</li>)}
             </ul>
+            <Link to={ROUTES.privacy} className="privacy-link" data-reveal>{copy.privacy.link}</Link>
           </div>
         </section>
 
@@ -202,6 +204,7 @@ export function LandingPage(): React.JSX.Element {
           <p className="footer-brand"><BrandMark />{APP_NAME}</p>
           <p>{copy.footer.notice}</p>
           <ul>
+            <li><Link to={ROUTES.privacy}>{copy.footer.privacy}</Link></li>
             <li><Link to={ROUTES.diagnostics}>{copy.footer.diagnostics}</Link></li>
             <li><a href={SOURCE_CODE_URL} rel="noreferrer">{copy.footer.sourceCode}</a></li>
           </ul>

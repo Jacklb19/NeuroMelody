@@ -1,10 +1,13 @@
 import { BrowserRouter } from 'react-router';
 import { AppRoutes } from './app/AppRoutes';
+import { AuthProvider } from './features/account/AuthProvider';
 
 export function App(): React.JSX.Element {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

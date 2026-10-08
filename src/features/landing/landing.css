@@ -20,6 +20,10 @@
   border: var(--border-width) solid var(--landing-line); border-radius: var(--landing-pill); color: var(--landing-ink-light);
   text-decoration: none; font-size: var(--text-sm); transition: background var(--motion-duration), border-color var(--motion-duration);
 }
+.landing-signin { color: var(--landing-ink-light); font-size: var(--text-sm); text-decoration: none; }
+.landing-signin:hover { color: var(--landing-accent); }
+.privacy-link { grid-column: 2; color: var(--landing-accent); }
+.privacy-link:hover { color: var(--landing-accent-hover); }
 .landing-cta-small:hover { color: var(--landing-ink-light); background: var(--landing-night-raised); border-color: var(--landing-ink-dim); }
 .landing :where(a, button):focus-visible { outline-color: var(--landing-focus); }
 .landing main:focus { outline: none; }
@@ -151,7 +155,8 @@
   .hero-figure { grid-column: 1; grid-row: 1; width: min(100%, var(--landing-figure-mobile)); justify-self: center; margin-bottom: var(--space-8); }
   .hero-copy { grid-row: 2; }
   .landing-header nav { display: none; }
-  .landing-header .landing-cta-small { margin-left: auto; }
+  .landing-header .landing-signin { margin-left: auto; }
+  .privacy-link { grid-column: 1; }
   .about-grid, .privacy-grid { grid-template-columns: minmax(0, 1fr); }
   .highlights, .technology-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .step-list { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); padding-left: var(--space-8); }

@@ -16,4 +16,5 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   { route: ROUTES.plan, labelKey: 'plan' },
   { route: ROUTES.session, labelKey: 'session' },
   { route: ROUTES.history, labelKey: 'history' },
+  { route: ROUTES.account, labelKey: 'account' },
 ];

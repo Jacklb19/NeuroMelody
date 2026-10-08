@@ -14,6 +14,7 @@ export const landing = {
     privacy: 'Privacidad',
     technology: 'Tecnología',
     openApp: 'Abrir la app',
+    signIn: 'Entrar',
   },
   hero: {
     eyebrow: 'Música generativa · variabilidad cardíaca',

@@ -61,6 +61,13 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, evolución entre sesiones y borrado de una sesión o de todo el historial, siempre con confirmación.
 - Sin cuenta: todo vive en IndexedDB. La sincronización con la nube llega en S6.2, con segundo factor. Estimador de entrega: reglas R-05, sin ONNX (limitación RF-07, ADR-14).
 
+## `/account` y `/privacy` (S6.2, ADR-29)
+
+- **Cuenta sin sesión:** pestañas «Entrar», «Crear cuenta» (confirmación por correo) y «Recuperar contraseña» (enlace que abre `/account?mode=recovery` con el formulario de contraseña nueva).
+- **Con sesión y un dispositivo verificado:** antes de mostrar nada se pide el código TOTP (aal1 → aal2).
+- **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» queda deshabilitado con su motivo hasta que exista la API.
+- **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización, guardada en el dispositivo hasta que la API la lleve a `profiles`.
+
 ## Funciones todavía no activas — propuesta S5–S7
 
 Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Groq pendiente conserva plan manual/resumen de indicadores con «Resumen automático pendiente». Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).

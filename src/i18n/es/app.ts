@@ -12,6 +12,7 @@ export const app = {
     plan: 'Plan',
     session: 'Sesión',
     history: 'Historial',
+    account: 'Cuenta',
   },
   /** Document title of a screen, e.g. "Plan de sesión · NeuroMelody" (WCAG 2.4.2). */
   documentTitle: (page: string, appName: string): string => `${page} · ${appName}`,
