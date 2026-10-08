@@ -84,6 +84,7 @@ describe('SignalPanel', () => {
     expect(screen.getByRole('heading', { level: 2, name: copy.title })).toBeInTheDocument();
     expect(screen.getByText(copy.threadUnavailable)).toBeInTheDocument();
     expect(screen.getByText(copy.chart.unavailable(copy.chart.noOffscreenCanvas))).toBeInTheDocument();
+    expect(copy.chart.unavailable(copy.chart.noOffscreenCanvas)).not.toContain('..');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(visibleQuality()).toBe(`${copy.qualityLabel} ${copy.waitingForData}`);
     expect(screen.getByTestId('rmssd')).toHaveTextContent(common.noValue);

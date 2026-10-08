@@ -25,7 +25,7 @@ export const signal = {
       `Tacograma: intervalos entre latidos de los últimos ${String(minutes)} minutos`,
     unavailable: (reason: string): string =>
       `La gráfica no está disponible: ${reason}. Los indicadores en texto siguen actualizándose.`,
-    noOffscreenCanvas: 'Este navegador no puede dibujar la gráfica en segundo plano.',
+    noOffscreenCanvas: 'Este navegador no puede dibujar la gráfica en segundo plano',
     stylesMissing: (detail: string): string => `Faltan estilos de la gráfica (${detail})`,
     /** Keys mirror `ChartPaletteErrorCode`; the parameter is the CSS variable or value at fault. */
     paletteErrors: {
