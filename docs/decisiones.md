@@ -182,6 +182,14 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | (1) Errata del doble punto corregida. (2) La interfaz no muestra textos crudos del navegador (audio, caída del Worker, descarga de un registro, historial): usa el diccionario; el detalle técnico queda solo en `/diagnostics`. (3) Una sola clave para el consejo de navegador de la cámara, para el aviso de reglas provisionales y para el aviso no clínico de los indicadores. (4) Las columnas del CSV siguen en español: el archivo es para la persona y su terapeuta; si hiciera falta para scripts, se añade otra exportación. (5) El aviso de error de la fuente se elige por el tipo de error, no por la fuente seleccionada. (6) La regla de hueco o pérdida de contacto vive en el Worker de señal, que envía un evento `contact`. (7) Cada registro de ejemplo declara su duración en el catálogo. (8) Los minutos del resumen se redondean hacia abajo en todos los casos. (9) `index.html` y el manifest se generan al compilar desde `APP_NAME`, el idioma, el diccionario y los tokens CSS. (10) Backend: CORS admite las vistas previas de Vercel solo con la forma `https://<proyecto>-<hash de 9>-<equipo>.vercel.app`, configurada con `VERCEL_PREVIEW_PROJECT` y `VERCEL_PREVIEW_TEAM` (opcionales y juntas); los alias de rama quedan fuera. (11) Backend: `httpx2` 2.13.1 en lugar de `httpx` para el `TestClient`. |
 | Consecuencias | Para activar las vistas previas hay que definir las dos variables en Vercel. |
 
+## ADR-27. Objetivos del plan (P-03)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026; el usuario delegó la lista. |
+| Decisión | Catálogo `GOAL_IDS` con ids en inglés y textos en el diccionario, sin lenguaje clínico: `relax`, `rest_before_sleep`, `calm_after_activity`, `slow_breathing` y `pause`. Selección múltiple y opcional en `/plan`; viajan a `/session` en `QUERY_PARAMS.goals` (validados en la frontera, en orden del catálogo y sin repetir), se guardan en `SessionRecord.goals` y se muestran en el resumen y en el historial. |
+| Consecuencias | Los registros guardados antes de este cambio se leen con la lista vacía. Con la nube (S6.2) se guardan en `plans.goals`. Los objetivos no cambian la música: solo describen la intención de la sesión. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
