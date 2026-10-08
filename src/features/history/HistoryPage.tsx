@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import { useMessages } from '../../i18n/messages';
 import type { SessionRecord } from '../records/sessionRecord';
 import { useSessionStore } from '../records/sessionStoreContext';
@@ -135,26 +136,5 @@ function HistoryItem({ record, onDelete }: HistoryItemProps): React.JSX.Element 
         <ConfirmButton label={item.delete} confirmLabel={item.confirmDelete} onConfirm={() => { onDelete(record.id); }} />
       </div>
     </li>
-  );
-}
-
-interface ConfirmButtonProps {
-  readonly label: string;
-  readonly confirmLabel: string;
-  readonly onConfirm: () => void;
-}
-
-/** Deletion asks once more in place, so a stray click never erases data. */
-function ConfirmButton({ label, confirmLabel, onConfirm }: ConfirmButtonProps): React.JSX.Element {
-  const t = useMessages();
-  const [asking, setAsking] = useState(false);
-  if (!asking) {
-    return <button type="button" className="text-button danger-text" onClick={() => { setAsking(true); }}>{label}</button>;
-  }
-  return (
-    <span className="confirm-group" role="group" aria-label={label}>
-      <button type="button" className="button button-danger" onClick={onConfirm}>{confirmLabel}</button>
-      <button type="button" className="text-button" onClick={() => { setAsking(false); }}>{t.common.cancel}</button>
-    </span>
   );
 }
