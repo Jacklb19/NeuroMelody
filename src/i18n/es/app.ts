@@ -1,6 +1,9 @@
 /** Spanish copy of the app shell: skip link, main navigation and document titles (ADR-25). */
 export const app = {
   skipToContent: 'Saltar al contenido',
+  /** Description of index.html, read by search engines and link previews. */
+  shellDescription: (appName: string): string =>
+    `${appName}: música generativa adaptada en tiempo real a señales fisiológicas. Herramienta de bienestar, no es un dispositivo médico.`,
   /** Accessible name of the main navigation landmark. */
   mainNavigation: 'Principal',
   /** Labels of the main navigation; keys mirror `NAVIGATION_ITEMS`. */

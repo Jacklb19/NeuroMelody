@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { buildPwa } from './scripts/pwa/buildPwa.ts';
+import { staticShell } from './scripts/pwa/staticShell.ts';
 import { DEV_SERVER_PORT, PREVIEW_SERVER_PORT } from './ports.config.ts';
 import deployment from './vercel.json' with { type: 'json' };
 
@@ -23,7 +24,7 @@ const isolationHeaders = Object.fromEntries(ISOLATION_HEADER_NAMES.map(name => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), buildPwa()],
+  plugins: [react(), staticShell(), buildPwa()],
   server: {
     port: DEV_SERVER_PORT,
     headers: isolationHeaders,
