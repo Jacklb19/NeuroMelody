@@ -22,8 +22,15 @@ export const CHECK_PERIOD_MS = 100;
 /** Recent beats averaged by the simulator and the recordings to report the heart rate. */
 export const BEATS_FOR_HR = 4;
 
-/** Waits before automatic reconnection attempts of the strap, in ms (ADR-17). */
-export const RECONNECT_DELAYS_MS: readonly number[] = [1000, 2000, 4000, 8000];
+/**
+ * Waits before automatic reconnection attempts of the strap, in ms (ADR-17):
+ * quick tries first, then every 8 s until about one minute, because a strap
+ * can lose contact for a while when it is adjusted.
+ */
+export const RECONNECT_DELAYS_MS: readonly number[] = [1000, 2000, 4000, 8000, ...Array<number>(6).fill(8000)];
+
+/** Longest a single GATT connection attempt may take before it is abandoned. */
+export const ATTEMPT_TIMEOUT_MS = 10_000;
 
 /** Fixed seed: the same simulated session repeats on reconnect (RF-02). */
 export const SIMULATOR_SEED = 1;
