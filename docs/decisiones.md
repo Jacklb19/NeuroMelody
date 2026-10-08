@@ -199,6 +199,14 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | `/` pasa a ser una portada pública con su propio diseño (noche de bosque en la cabecera y el papel de la app en el resto) y el inicio de la app se mueve a `/app`. La cabecera muestra una escena 3D con `three` 0.180.0 (y `@types/three` 0.180.0 en desarrollo): una esfera de partículas que late con un corazón simulado y un pentagrama de cinco líneas a su alrededor. three.js se carga de forma diferida, solo en la portada y solo si hay WebGL; sin WebGL queda una figura en CSS. Animaciones de entrada y al desplazarse, todas desactivadas con `prefers-reduced-motion`; la escena se detiene fuera de pantalla y con la pestaña oculta. Colores, medidas y tiempos son tokens de `index.css`; textos en `src/i18n/es/landing.ts`. |
 | Consecuencias | La excepción a «sin animaciones decorativas» vale solo para la portada; las pantallas de escucha siguen sobrias. El manifest abre la app en `/app`. Las cifras de la cabecera son de un corazón simulado y lo dicen. |
 
+## ADR-29. Cuenta en el navegador con `@supabase/supabase-js`
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 (el usuario aprobó `@supabase/supabase-js` 2.58.0 y la cuenta real). |
+| Decisión | La biblioteca oficial de Supabase gestiona en el navegador el registro con confirmación por correo, la entrada, la recuperación de contraseña y el segundo factor TOTP, con flujo PKCE y la clave pública (las tablas tienen RLS). Se carga de forma diferida desde `AuthProvider`, así que las pantallas de escucha no la descargan. La interfaz depende de la interfaz `AuthService`; los errores de Supabase se traducen a códigos (`AccountErrorCode`) y nunca se muestra su texto. TOTP admite varios dispositivos: un segundo dispositivo es la vía de recuperación, porque Supabase no emite códigos de respaldo. El consentimiento de sincronización se guarda por ahora en el dispositivo. |
+| Consecuencias | En el panel de Supabase hay que permitir las URL de redirección (`/account` del despliegue y de `localhost:5173`) y activar TOTP. Quedan para la tarea C: borrar la cuenta (DELETE de ADR-18), llevar el consentimiento a `profiles` y sincronizar sesiones con `aal2`. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
