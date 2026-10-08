@@ -1,47 +1,43 @@
 import { useId } from 'react';
-import type { SessionSummary } from '../records/summarizeSession';
-
-const PARTS = [
-  { key: 'calibrating', label: 'Tomando la referencia' },
-  { key: 'high', label: 'Más activo que al empezar' },
-  { key: 'uncertain', label: 'Cerca del inicio' },
-  { key: 'low', label: 'Más tranquilo que al empezar' },
-] as const;
-
-function minutes(seconds: number): string {
-  const value = Math.round(seconds / 60);
-  return value < 1 && seconds > 0 ? 'menos de 1 min' : `${String(value)} min`;
-}
+import { useMessages } from '../../i18n/messages';
+import type { SessionSummary, SignalPhase } from '../records/summarizeSession';
+import { useRecordFormatter } from '../records/useRecordFormatter';
+import { PHASE_DISPLAY_ORDER } from './phaseDisplayOrder';
 
 /**
  * Share of signal time spent in each estimated state. The bar is a visual
  * aid; the list next to it carries the same figures as text.
  */
 export function StateTimeShare({ secondsByState }: Pick<SessionSummary, 'secondsByState'>): React.JSX.Element {
+  const t = useMessages();
+  const format = useRecordFormatter();
   const titleId = useId();
-  const total = PARTS.reduce((sum, part) => sum + secondsByState[part.key], 0);
+  const { stateShare } = t.summary;
+  // Typed by phase, so a phase without a name is a compile error.
+  const labels: Readonly<Record<SignalPhase, string>> = stateShare.phases;
+  const total = PHASE_DISPLAY_ORDER.reduce((sum, phase) => sum + secondsByState[phase], 0);
   return (
     <section aria-labelledby={titleId} className="state-share">
-      <h2 id={titleId}>Cómo se fue moviendo tu ritmo</h2>
+      <h2 id={titleId}>{stateShare.title}</h2>
       {total === 0 ? (
-        <p className="secondary-text">No hubo señal suficiente para estimar el estado durante esta sesión.</p>
+        <p className="secondary-text">{stateShare.empty}</p>
       ) : (
         <>
           <div className="state-bar" aria-hidden="true">
-            {PARTS.filter((part) => secondsByState[part.key] > 0).map((part) => (
-              <span key={part.key} className={`state-segment state-${part.key}`} style={{ flexGrow: secondsByState[part.key] }} />
+            {PHASE_DISPLAY_ORDER.filter((phase) => secondsByState[phase] > 0).map((phase) => (
+              <span key={phase} className={`state-segment state-${phase}`} style={{ flexGrow: secondsByState[phase] }} />
             ))}
           </div>
           <ul className="state-legend">
-            {PARTS.map((part) => (
-              <li key={part.key}>
-                <span className={`state-swatch state-${part.key}`} aria-hidden="true" />
-                {part.label}
-                <strong>{minutes(secondsByState[part.key])}</strong>
+            {PHASE_DISPLAY_ORDER.map((phase) => (
+              <li key={phase}>
+                <span className={`state-swatch state-${phase}`} aria-hidden="true" />
+                {labels[phase]}
+                <strong>{format.signalTime(secondsByState[phase])}</strong>
               </li>
             ))}
           </ul>
-          <p className="panel-footnote">Tiempo de señal. Estimación con reglas provisionales y confianza no calibrada.</p>
+          <p className="panel-footnote">{stateShare.footnote}</p>
         </>
       )}
     </section>

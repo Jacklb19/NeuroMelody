@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { SynthesisCore, FADE_DURATION_S } from './SynthesisCore';
+import { SynthesisCore } from './SynthesisCore';
+import { FADE_DURATION_S } from '../engine/ramps';
 import { MODE } from './theory';
 
 it('renders one thousand mode transitions without completing any tonal fade before twenty seconds', () => {

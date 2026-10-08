@@ -1,3 +1,5 @@
+import { MS_PER_SECOND } from '../../../shared/time';
+import { dbToGain, gainToDb } from '../core/decibels';
 import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
   CLIPPER_NAME,
@@ -8,22 +10,40 @@ import {
 } from '../worklet/workletContract';
 import { readPlaybackStats, type PlaybackStatistics } from './playbackStats';
 import { LEVELS, type LevelId } from './levels';
-import { TIMBRE_RAMP_DURATION_S, dbToGain, tempoRampDurationS, gainToDb } from './ramps';
+import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
+import { AudioEngineError } from './AudioEngineError';
 
-/** Default volume and control range (RF-18). */
+/** Default volume, control range and slider step (RF-18). */
 export const DEFAULT_VOLUME_DB = -12;
 export const MIN_VOLUME_DB = -40;
 export const MAX_VOLUME_DB = 0;
+export const VOLUME_STEP_DB = 1;
+/** Time constant of volume changes: responds immediately without clicks. */
+const VOLUME_SMOOTHING_S = 0.05;
 
 /** Limiter at the end of the chain (before the −1 dBFS clipper). */
 export const LIMITER = { thresholdDb: -6, ratio: 20, kneeDb: 0, attackS: 0.003, releaseS: 0.25 } as const;
+/** Resonance (`Q`) of the brightness low-pass filter. */
+const BRIGHTNESS_FILTER_Q = 0.5;
+/** The whole chain is stereo. */
+const OUTPUT_CHANNELS = 2;
 
-export const FADE_IN_S = 1.5;
+/** Session envelope rise when playback starts or resumes. */
+export const SESSION_FADE_IN_S = 1.5;
 /** Stop: ramp to zero in 50 ms and suspend the context (HU-06: silence in under 200 ms). */
 export const STOP_RAMP_S = 0.05;
+/** Extra wait after the stop ramp before suspending, so the ramp is never cut short. */
+const STOP_WAIT_MARGIN_MS = 10;
 export const FINAL_FADE_S = 20;
 const RESTORE_AFTER_CANCEL_S = 2;
+
+/**
+ * Media Session fallback through an `<audio>` element: off. Only Web Audio
+ * was tested and, if the system shows no controls, the fixed Stop button is
+ * enough (minor decisions in docs/decisiones.md).
+ */
+export const OUTPUT_THROUGH_AUDIO_ELEMENT = false;
 
 /** Everything the engine needs from the environment; injectable to test it without a browser. */
 export interface AudioFactory {
@@ -71,7 +91,11 @@ interface Nodes {
 function getParam(node: AudioWorkletNode, name: ParamName): AudioParam {
   const param = node.parameters.get(name);
   if (param === undefined) {
-    throw new Error(`El sintetizador no expone el parámetro ${name}.`);
+    throw new AudioEngineError(
+      'missing_parameter',
+      { parameter: name },
+      `The synthesizer does not expose the ${name} parameter.`,
+    );
   }
   return param;
 }
@@ -138,7 +162,7 @@ export class AudioEngine {
     const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,
       numberOfOutputs: 1,
-      outputChannelCount: [2],
+      outputChannelCount: [OUTPUT_CHANNELS],
       processorOptions: synthesizerOptions,
     });
     getParam(synthesizer, 'tempo').value = level.tempo;
@@ -147,12 +171,12 @@ export class AudioEngine {
 
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.Q.value = 0.5;
+    filter.Q.value = BRIGHTNESS_FILTER_Q;
     filter.frequency.value = level.brightnessHz;
 
     const reverb = context.createConvolver();
     const [left, right] = generateImpulseResponse(context.sampleRate);
-    const response = context.createBuffer(2, left.length, context.sampleRate);
+    const response = context.createBuffer(OUTPUT_CHANNELS, left.length, context.sampleRate);
     response.copyToChannel(left, 0);
     response.copyToChannel(right, 1);
     reverb.buffer = response;
@@ -176,7 +200,7 @@ export class AudioEngine {
     const clipper = factory.createWorkletNode(context, CLIPPER_NAME, {
       numberOfInputs: 1,
       numberOfOutputs: 1,
-      outputChannelCount: [2],
+      outputChannelCount: [OUTPUT_CHANNELS],
       processorOptions: clipperOptions,
     });
 
@@ -239,7 +263,7 @@ export class AudioEngine {
     const t = this.#context.currentTime;
     const envelope = this.#nodes.envelope.gain;
     hold(envelope, t);
-    envelope.linearRampToValueAtTime(1, t + FADE_IN_S);
+    envelope.linearRampToValueAtTime(1, t + SESSION_FADE_IN_S);
     this.#state = 'playing';
   }
 
@@ -282,8 +306,7 @@ export class AudioEngine {
   /** Sets the volume within −40 to 0 dB and returns the applied value. */
   setVolumeDb(db: number): number {
     const clamped = Math.min(MAX_VOLUME_DB, Math.max(MIN_VOLUME_DB, db));
-    // Short time constant: responds immediately without clicks.
-    this.#nodes.volume.gain.setTargetAtTime(dbToGain(clamped), this.#context.currentTime, 0.05);
+    this.#nodes.volume.gain.setTargetAtTime(dbToGain(clamped), this.#context.currentTime, VOLUME_SMOOTHING_S);
     return clamped;
   }
 
@@ -298,7 +321,7 @@ export class AudioEngine {
     envelope.linearRampToValueAtTime(0, t + STOP_RAMP_S);
     this.#state = 'stopped';
     // The ramp already silences on the audio thread; the wait only avoids cutting it short.
-    await this.#factory.wait(STOP_RAMP_S * 1000 + 10);
+    await this.#factory.wait(STOP_RAMP_S * MS_PER_SECOND + STOP_WAIT_MARGIN_MS);
     // Leaving the page closes the context during the ramp; it is already silent.
     if (this.#context.state === 'closed') return;
     this.#audioElement?.pause();

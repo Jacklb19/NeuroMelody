@@ -7,7 +7,8 @@ export interface SourceReading {
   readonly last: BeatNotification | null;
   /** RR intervals received since connection. */
   readonly receivedBeats: number;
-  readonly error: string | null;
+  /** Last error reported; the interface turns its code into text. */
+  readonly error: Error | null;
 }
 
 interface ReadingStore {
@@ -56,7 +57,7 @@ function createReadingStore(source: SignalSource): ReadingStore {
           onStoreChange();
         },
         onError: (error) => {
-          reading = { ...reading, error: error.message };
+          reading = { ...reading, error };
           onStoreChange();
         },
       });

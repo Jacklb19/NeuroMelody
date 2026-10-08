@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
 import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
 import { createInProcessPort } from '../../../test/inProcessThreadPort';
+import { TEST_CHART_PALETTE } from '../../../test/chartPalette';
+import { es } from '../../../i18n/es';
 import { SimulatedSource } from '../../acquisition/simulator/SimulatedSource';
+import { chartLabelsFrom } from '../drawing/chartLabels';
 import type { IndicesResult } from '../processing/SignalProcessor';
 import { SignalThreadClient } from './SignalThreadClient';
 
@@ -57,12 +60,14 @@ describe('SignalThreadClient', () => {
 
   it('reports thread errors and unrecognized responses', () => {
     const { port, onError, results } = createScene();
-    port.receiveFromThread({ kind: 'error', message: 'computation failed' });
+    port.receiveFromThread({ kind: 'error', code: 'no_2d_context' });
+    port.receiveFromThread({ kind: 'error', code: 'worker_crashed', detail: 'Uncaught Error: boom' });
     port.receiveFromThread({ kind: 'indices', result: { quality: 'good' } });
 
     expect(onError.mock.calls).toEqual([
-      ['computation failed'],
-      ['Respuesta no reconocida del hilo de señal.'],
+      [{ code: 'no_2d_context' }],
+      [{ code: 'worker_crashed', detail: 'Uncaught Error: boom' }],
+      [{ code: 'unrecognized_response' }],
     ]);
     expect(results).toEqual([]);
   });
@@ -71,34 +76,26 @@ describe('SignalThreadClient', () => {
     const { port, onError } = createScene();
     // Bypasses typing on purpose to simulate a corrupt message.
     port.send(JSON.parse('{"type":"delete"}') as never);
-    expect(onError).toHaveBeenCalledWith('Mensaje no reconocido por el hilo de señal.');
+    expect(onError).toHaveBeenCalledWith({ code: 'unrecognized_message' });
   });
 
   it('terminate closes the port and forgets the observers', () => {
     const { port, client, onError } = createScene();
     client.terminate();
-    port.receiveFromThread({ kind: 'error', message: 'late' });
+    port.receiveFromThread({ kind: 'error', code: 'no_2d_context' });
 
     expect(port.terminated).toBe(true);
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('transfers the canvas with the palette and forwards size changes', () => {
+  it('transfers the canvas with the palette and the labels and forwards size changes', () => {
     const { port, client, onError } = createScene();
     const context = new FakeDrawingContext();
     // jsdom has no OffscreenCanvas: an object with the same shape is enough.
     const canvas = { width: 0, height: 0, getContext: () => context } as unknown as OffscreenCanvas;
-    const palette = {
-      line: 'a',
-      grid: 'b',
-      text: 'c',
-      discarded: 'd',
-      lowQualityBackground: 'e',
-      lowQualityHatch: 'f',
-      font: '14px sans-serif',
-    };
+    const palette = TEST_CHART_PALETTE;
 
-    client.attachCanvas(canvas, palette, { widthCss: 300, heightCss: 100, scale: 2 });
+    client.attachCanvas(canvas, palette, chartLabelsFrom(es.common), { widthCss: 300, heightCss: 100, scale: 2 });
     client.resize({ widthCss: 400, heightCss: 100, scale: 2 });
 
     expect(port.sent.map((m) => m.kind)).toEqual(['init-canvas', 'resize']);
@@ -112,7 +109,7 @@ describe('SignalThreadClient', () => {
     const onError = vi.fn();
     const unsubscribe = client.subscribe({ onError });
     unsubscribe();
-    port.receiveFromThread({ kind: 'error', message: 'x' });
+    port.receiveFromThread({ kind: 'error', code: 'unreadable_message' });
     expect(onError).not.toHaveBeenCalled();
   });
 });

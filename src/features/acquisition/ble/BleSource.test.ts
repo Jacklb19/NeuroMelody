@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BeatNotification, ConnectionState } from '../contract';
-import { ATTEMPT_TIMEOUT_MS, BleSource, RECONNECT_DELAYS_MS, type Delay } from './BleSource';
+import { ATTEMPT_TIMEOUT_MS, RECONNECT_DELAYS_MS } from '../config';
+import { BleConnectionError, BleSource, type Delay } from './BleSource';
+import { HeartRateMeasurementError } from './parseHeartRateMeasurement';
 import type { BleDevice, BluetoothAdapter, GattServer, HeartRateCharacteristic } from './webBluetooth';
 
 function bytes(hex: string): DataView {
@@ -93,11 +95,11 @@ function setup(mode: 'choose' | 'remembered' = 'choose') {
   const source = new BleSource({ bluetooth, mode, clock: { nowMs: () => now }, delay: timers.delay });
   const states: ConnectionState[] = [];
   const notifications: BeatNotification[] = [];
-  const errors: string[] = [];
+  const errors: Error[] = [];
   source.subscribe({
     onStateChange: (state) => states.push(state),
     onNotification: (n) => notifications.push(n),
-    onError: (e) => errors.push(e.message),
+    onError: (e) => errors.push(e),
   });
   return { device, requestDevice, source, states, notifications, errors, timers, advance: (ms: number) => { now += ms; } };
 }
@@ -123,6 +125,8 @@ describe('BleSource', () => {
     await source.connect();
     device.characteristic.send('16 3C 00');
     expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(HeartRateMeasurementError);
+    expect(errors[0]).toHaveProperty('code', 'truncated_rr');
     expect(source.state).toBe('connected');
     expect(notifications).toHaveLength(0);
   });
@@ -188,6 +192,8 @@ describe('BleSource', () => {
     expect(waits).toEqual([...RECONNECT_DELAYS_MS]);
     expect(source.state).toBe('error');
     expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(BleConnectionError);
+    expect(errors[0]).toHaveProperty('code', 'link_lost');
     expect(timers.pending).toHaveLength(0);
   });
 

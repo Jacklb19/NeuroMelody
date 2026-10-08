@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { APP_NAME } from '../../../config/app';
+import { useMessages, type Messages } from '../../../i18n/messages';
+import { SECONDS_PER_MINUTE } from '../../../shared/time';
 import type { AudioFactory, AudioEngine } from '../engine/AudioEngine';
-import { MAX_VOLUME_DB, MIN_VOLUME_DB, DEFAULT_VOLUME_DB } from '../engine/AudioEngine';
+import {
+  MAX_VOLUME_DB,
+  MIN_VOLUME_DB,
+  DEFAULT_VOLUME_DB,
+  OUTPUT_THROUGH_AUDIO_ELEMENT,
+  VOLUME_STEP_DB,
+} from '../engine/AudioEngine';
+import type { AudioEngineErrorCode, AudioEngineErrorParams } from '../engine/AudioEngineError';
 import { CALIBRATION_LEVEL } from '../engine/levels';
-import { fadeStartS, warningInstantS } from '../session/durationWarnings';
-import { useAudioEngine, type AudioState } from './useAudioEngine';
+import {
+  CLOCK_CHECK_INTERVAL_MS,
+  CONTINUOUS_WARNING_PERIOD_S,
+  RESPONSE_WAIT_S,
+  fadeStartS,
+  warningInstantS,
+} from '../session/durationWarnings';
+import { STOP_SHORTCUT_KEY } from './stopShortcut';
+import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
 
 interface PlaybackPanelProps {
   readonly durationMin: number;
@@ -15,18 +32,23 @@ interface PlaybackPanelProps {
   readonly onElapsedChange?: (seconds: number) => void;
 }
 
-const STATE_TEXT: Readonly<Record<AudioState, string>> = {
-  idle: 'Lista para empezar',
-  loading: 'Preparando el audio…',
-  playing: 'Sonando',
-  stopped: 'Detenida',
-  error: 'No se pudo iniciar el audio',
-};
+/** Seeds are drawn from [0, 2^31): non-negative integers that fit the 32-bit seed of the PRNG (mulberry32). */
+const SEED_RANGE = 2 ** 31;
 
-const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31);
+const randomSeed = (): number => Math.floor(Math.random() * SEED_RANGE);
 
 function isDialogOpen(): boolean {
   return document.querySelector('dialog[open]') !== null;
+}
+
+/** Text that explains a failed start: the engine's own errors are translated by code. */
+function describeFailure(failure: AudioStartFailure, t: Messages): string {
+  if (failure.kind === 'browser') {
+    return failure.detail;
+  }
+  const messages: Readonly<Record<AudioEngineErrorCode, (params: AudioEngineErrorParams) => string>> =
+    t.audio.errors;
+  return messages[failure.error.code](failure.error.params);
 }
 
 /**
@@ -46,6 +68,7 @@ export function PlaybackPanel({
   onEngineChange,
   onElapsedChange,
 }: PlaybackPanelProps): React.JSX.Element {
+  const t = useMessages();
   const control = useAudioEngine(factory);
   const { state, stop, engine: getEngine } = control;
   const [volumeDb, setVolumeDb] = useState(DEFAULT_VOLUME_DB);
@@ -60,7 +83,7 @@ export function PlaybackPanel({
   const volumeId = useId();
   const warningTitleId = useId();
   const warningTextId = useId();
-  const planDurationS = durationMin * 60;
+  const planDurationS = durationMin * SECONDS_PER_MINUTE;
 
   const scheduleFade = useCallback(
     (engine: AudioEngine): void => {
@@ -76,7 +99,11 @@ export function PlaybackPanel({
 
   const start = async (): Promise<void> => {
     const engine = await control.start(
-      { seed: generateSeed(), initialLevel: CALIBRATION_LEVEL, outputThroughAudioElement: false },
+      {
+        seed: generateSeed(),
+        initialLevel: CALIBRATION_LEVEL,
+        outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
+      },
       volumeDb,
     );
     if (engine === null) {
@@ -131,7 +158,7 @@ export function PlaybackPanel({
         setFinished(true);
         stopNow();
       }
-    }, 1000);
+    }, CLOCK_CHECK_INTERVAL_MS);
     return () => {
       clearInterval(id);
     };
@@ -140,7 +167,7 @@ export function PlaybackPanel({
   // Escape key: stops the music unless a dialog is open.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape' && !isDialogOpen()) {
+      if (event.key === STOP_SHORTCUT_KEY && !isDialogOpen()) {
         stopNow();
       }
     };
@@ -150,6 +177,7 @@ export function PlaybackPanel({
     };
   }, [stopNow]);
 
+  const mediaArtist = t.audio.playback.mediaArtist;
   // Media Session: operating system and headset controls.
   useEffect(() => {
     if (!('mediaSession' in navigator)) {
@@ -157,7 +185,7 @@ export function PlaybackPanel({
     }
     const session = navigator.mediaSession;
     if (typeof MediaMetadata !== 'undefined') {
-      session.metadata = new MediaMetadata({ title: 'NeuroMelody', artist: 'Sesión de escucha' });
+      session.metadata = new MediaMetadata({ title: APP_NAME, artist: mediaArtist });
     }
     session.setActionHandler('pause', stopNow);
     session.setActionHandler('stop', stopNow);
@@ -165,7 +193,7 @@ export function PlaybackPanel({
       session.setActionHandler('pause', null);
       session.setActionHandler('stop', null);
     };
-  }, [stopNow]);
+  }, [stopNow, mediaArtist]);
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -179,7 +207,9 @@ export function PlaybackPanel({
     }
   }, [warning]);
 
-  const stateText = finished && state !== 'playing' ? 'La sesión terminó' : STATE_TEXT[state];
+  const stateLabels: Readonly<Record<AudioState, string>> = t.audio.playback.states;
+  const stateText = finished && state !== 'playing' ? t.audio.playback.finished : stateLabels[state];
+  const volumeText = t.common.withUnit(String(volumeDb), t.common.units.decibels);
 
   return (
     <section
@@ -187,9 +217,9 @@ export function PlaybackPanel({
       className="playback-panel"
     >
       <h2 id={titleId}>
-        Música
+        {t.audio.playback.title}
       </h2>
-      <p className="panel-footnote">Usa un volumen moderado en tu dispositivo.</p>
+      <p className="panel-footnote">{t.audio.playback.volumeNotice}</p>
 
       <div className="playback-controls">
         <button
@@ -200,17 +230,17 @@ export function PlaybackPanel({
             void start();
           }}
         >
-          <span aria-hidden="true" className="play-symbol">▷</span> Iniciar música
+          <span aria-hidden="true" className="play-symbol">▷</span> {t.audio.playback.start}
         </button>
-        <label htmlFor={volumeId}>Volumen</label>
+        <label htmlFor={volumeId}>{t.audio.playback.volume}</label>
         <input
           id={volumeId}
           type="range"
           min={MIN_VOLUME_DB}
           max={MAX_VOLUME_DB}
-          step={1}
+          step={VOLUME_STEP_DB}
           value={volumeDb}
-          aria-valuetext={`${String(volumeDb)} dB`}
+          aria-valuetext={volumeText}
           onChange={(event) => {
             const applied = getEngine()?.setVolumeDb(Number(event.target.value)) ?? Number(event.target.value);
             setVolumeDb(applied);
@@ -218,16 +248,16 @@ export function PlaybackPanel({
         />
         {/* Visual only: the control already announces the value with aria-valuetext. */}
         <span aria-hidden="true">
-          {volumeDb} dB
+          {volumeText}
         </span>
       </div>
 
       <p role="status" className="playback-status" data-state={state}>
-        Estado de la música: <strong>{stateText}</strong>
+        {t.audio.playback.statusLabel} <strong>{stateText}</strong>
       </p>
       {control.error !== null && (
         <p className="quiet-notice">
-          El audio no está disponible en este navegador ({control.error}).
+          {t.audio.playback.unavailable(describeFailure(control.error, t))}
         </p>
       )}
 
@@ -240,17 +270,19 @@ export function PlaybackPanel({
           className="duration-dialog"
         >
           <h3 id={warningTitleId}>
-            {warning === 0 ? 'La sesión planificada terminó' : 'Llevas 60 minutos de escucha continua'}
+            {warning === 0
+              ? t.audio.playback.planEndedTitle
+              : t.audio.playback.continuousListeningTitle(CONTINUOUS_WARNING_PERIOD_S / SECONDS_PER_MINUTE)}
           </h3>
           <p id={warningTextId}>
-            Si no respondes, la música se apagará en 2 minutos con un fundido suave.
+            {t.audio.playback.fadeNotice(RESPONSE_WAIT_S / SECONDS_PER_MINUTE)}
           </p>
           <div className="action-row">
             <button ref={continueButtonRef} type="button" className="button button-primary" onClick={continueSession}>
-              Continuar
+              {t.audio.playback.continue}
             </button>
             <button type="button" className="button button-secondary" onClick={finishSession}>
-              Terminar
+              {t.audio.playback.finish}
             </button>
           </div>
         </dialog>
@@ -260,10 +292,10 @@ export function PlaybackPanel({
         type="button"
         onClick={stopNow}
         disabled={state !== 'playing'}
-        aria-keyshortcuts="Escape"
+        aria-keyshortcuts={STOP_SHORTCUT_KEY}
         className="button stop-button"
       >
-        <span aria-hidden="true" className="stop-symbol" /> Detener
+        <span aria-hidden="true" className="stop-symbol" /> {t.audio.playback.stop}
       </button>
     </section>
   );

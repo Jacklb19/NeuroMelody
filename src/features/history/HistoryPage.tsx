@@ -1,50 +1,58 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
-import { formatChange, formatListened, formatRatings, formatSessionDate } from '../records/formatRecord';
+import { ROUTES, summaryPath } from '../../config/routes';
+import { useMessages } from '../../i18n/messages';
 import type { SessionRecord } from '../records/sessionRecord';
 import { useSessionStore } from '../records/sessionStoreContext';
+import { storeErrorMessage } from '../records/storeErrorMessage';
 import { summarizeSession } from '../records/summarizeSession';
+import { useRecordFormatter } from '../records/useRecordFormatter';
 import { PageHeading } from '../../shared/PageHeading';
 import { Sparkline } from '../../shared/Sparkline';
 
+/** Sessions needed before a trend across them means anything. */
+const MIN_SESSIONS_FOR_TREND = 2;
+
 type Loaded =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'error'; readonly message: string }
+  // The cause is kept as is and translated when shown.
+  | { readonly kind: 'error'; readonly cause: unknown }
   | { readonly kind: 'ready'; readonly records: readonly SessionRecord[] };
-
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : 'Error desconocido.');
 
 /**
  * Sessions saved on this device and how their indicators evolve
  * (RF-16, HU-10). Everything here can be deleted without an account.
  */
 export function HistoryPage(): React.JSX.Element {
-  usePageTitle('Historial');
+  const t = useMessages();
+  usePageTitle(t.history.title);
   const store = useSessionStore();
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
 
   const reload = useCallback((): Promise<void> => store.list().then(
     (records) => { setLoaded({ kind: 'ready', records }); },
-    (error: unknown) => { setLoaded({ kind: 'error', message: messageOf(error) }); },
+    (error: unknown) => { setLoaded({ kind: 'error', cause: error }); },
   ), [store]);
 
   useEffect(() => { void reload(); }, [reload]);
 
   const remove = (id: string): void => {
-    store.delete(id).then(reload, (error: unknown) => { setLoaded({ kind: 'error', message: messageOf(error) }); });
+    store.delete(id).then(reload, (error: unknown) => { setLoaded({ kind: 'error', cause: error }); });
   };
   const removeAll = (): void => {
-    store.clear().then(reload, (error: unknown) => { setLoaded({ kind: 'error', message: messageOf(error) }); });
+    store.clear().then(reload, (error: unknown) => { setLoaded({ kind: 'error', cause: error }); });
   };
 
   return (
     <div className="history-page">
-      <PageHeading eyebrow="Tus sesiones" title="Historial">
-        <p>Las sesiones se guardan solo en este dispositivo. Puedes borrarlas cuando quieras.</p>
+      <PageHeading eyebrow={t.history.eyebrow} title={t.history.title}>
+        <p>{t.history.introduction}</p>
       </PageHeading>
-      {loaded.kind === 'loading' && <p className="secondary-text">Cargando el historial…</p>}
-      {loaded.kind === 'error' && <p className="quiet-notice" role="alert">No se pudo leer el historial ({loaded.message}).</p>}
+      {loaded.kind === 'loading' && <p className="secondary-text">{t.history.loading}</p>}
+      {loaded.kind === 'error' && (
+        <p className="quiet-notice" role="alert">{t.records.readFailed(storeErrorMessage(loaded.cause, t))}</p>
+      )}
       {loaded.kind === 'ready' && (loaded.records.length === 0 ? <EmptyHistory /> : (
         <>
           <Evolution records={loaded.records} />
@@ -54,8 +62,8 @@ export function HistoryPage(): React.JSX.Element {
             ))}
           </ol>
           <ConfirmButton
-            label="Borrar todo el historial"
-            confirmLabel="Sí, borrar todas las sesiones"
+            label={t.history.clearAll}
+            confirmLabel={t.history.confirmClearAll}
             onConfirm={removeAll}
           />
         </>
@@ -65,32 +73,34 @@ export function HistoryPage(): React.JSX.Element {
 }
 
 function EmptyHistory(): React.JSX.Element {
+  const t = useMessages();
   return (
     <div className="empty-state">
-      <p>Aún no hay sesiones guardadas. Cuando termines una sesión de escucha aparecerá aquí, con su resumen.</p>
-      <Link to="/plan" className="button button-primary">Preparar una sesión</Link>
+      <p>{t.history.empty}</p>
+      <Link to={ROUTES.plan} className="button button-primary">{t.history.planSession}</Link>
     </div>
   );
 }
 
 /** Trend across sessions, oldest to newest, with the same data listed below as text. */
 function Evolution({ records }: { readonly records: readonly SessionRecord[] }): React.JSX.Element | null {
+  const { evolution } = useMessages().history;
   const titleId = useId();
-  if (records.length < 2) return null;
+  if (records.length < MIN_SESSIONS_FOR_TREND) return null;
   const chronological = [...records].reverse();
   const finalRmssd = chronological.map((record) => summarizeSession(record).rmssd?.end ?? null);
   const ratingsAfter = chronological.map((record) => record.ratingAfter);
   return (
     <section aria-labelledby={titleId} className="evolution">
-      <h2 id={titleId}>Evolución entre sesiones</h2>
+      <h2 id={titleId}>{evolution.title}</h2>
       <div className="evolution-charts">
         <figure>
-          <Sparkline values={finalRmssd} label="Variabilidad entre latidos al final de cada sesión, de la más antigua a la más reciente" />
-          <figcaption>Variabilidad entre latidos al final de cada sesión</figcaption>
+          <Sparkline values={finalRmssd} label={evolution.rmssdLabel} />
+          <figcaption>{evolution.rmssdCaption}</figcaption>
         </figure>
         <figure>
-          <Sparkline values={ratingsAfter} label="Cómo te sentías al terminar cada sesión, de la más antigua a la más reciente" />
-          <figcaption>Cómo te sentías al terminar</figcaption>
+          <Sparkline values={ratingsAfter} label={evolution.ratingLabel} />
+          <figcaption>{evolution.ratingCaption}</figcaption>
         </figure>
       </div>
     </section>
@@ -103,22 +113,25 @@ interface HistoryItemProps {
 }
 
 function HistoryItem({ record, onDelete }: HistoryItemProps): React.JSX.Element {
+  const t = useMessages();
+  const format = useRecordFormatter();
   const summary = summarizeSession(record);
   const titleId = useId();
+  const { item } = t.history;
   return (
     <li className="history-item" aria-labelledby={titleId}>
       <div className="history-heading">
-        <h3 id={titleId}>{formatSessionDate(record.startedAt)}</h3>
-        <span className="secondary-text">{formatListened(record.listenedSeconds)} de {record.plannedMinutes} min</span>
+        <h3 id={titleId}>{format.sessionDate(record.startedAt)}</h3>
+        <span className="secondary-text">{item.listenedOf(format.listened(record.listenedSeconds), record.plannedMinutes)}</span>
       </div>
       <dl className="history-figures">
-        <div><dt>Cómo te sentías</dt><dd>{formatRatings(record.ratingBefore, record.ratingAfter)}</dd></div>
-        <div><dt>Frecuencia media</dt><dd>{formatChange(summary.heartRate, 'lpm')}</dd></div>
-        <div><dt>RMSSD</dt><dd>{formatChange(summary.rmssd, 'ms')}</dd></div>
+        <div><dt>{t.records.ratingLabel}</dt><dd>{format.ratings(record.ratingBefore, record.ratingAfter)}</dd></div>
+        <div><dt>{item.heartRate}</dt><dd>{format.change(summary.heartRate, t.common.units.beatsPerMinute)}</dd></div>
+        <div><dt>{item.rmssd}</dt><dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd></div>
       </dl>
       <div className="history-actions">
-        <Link to={`/summary/${record.id}`} className="button button-secondary">Ver resumen</Link>
-        <ConfirmButton label="Borrar" confirmLabel="Sí, borrar esta sesión" onConfirm={() => { onDelete(record.id); }} />
+        <Link to={summaryPath(record.id)} className="button button-secondary">{item.viewSummary}</Link>
+        <ConfirmButton label={item.delete} confirmLabel={item.confirmDelete} onConfirm={() => { onDelete(record.id); }} />
       </div>
     </li>
   );
@@ -132,6 +145,7 @@ interface ConfirmButtonProps {
 
 /** Deletion asks once more in place, so a stray click never erases data. */
 function ConfirmButton({ label, confirmLabel, onConfirm }: ConfirmButtonProps): React.JSX.Element {
+  const t = useMessages();
   const [asking, setAsking] = useState(false);
   if (!asking) {
     return <button type="button" className="text-button danger-text" onClick={() => { setAsking(true); }}>{label}</button>;
@@ -139,7 +153,7 @@ function ConfirmButton({ label, confirmLabel, onConfirm }: ConfirmButtonProps): 
   return (
     <span className="confirm-group" role="group" aria-label={label}>
       <button type="button" className="button button-danger" onClick={onConfirm}>{confirmLabel}</button>
-      <button type="button" className="text-button" onClick={() => { setAsking(false); }}>Cancelar</button>
+      <button type="button" className="text-button" onClick={() => { setAsking(false); }}>{t.common.cancel}</button>
     </span>
   );
 }

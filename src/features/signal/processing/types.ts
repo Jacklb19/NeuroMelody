@@ -4,11 +4,18 @@
  * speaks of "discarded due to signal quality".
  */
 
+/**
+ * Signal states shown to the person (always in descriptive language). The
+ * list is the runtime source the thread protocol validates against.
+ */
+export const SIGNAL_QUALITIES = ['collecting', 'good', 'low'] as const;
+export type SignalQuality = (typeof SIGNAL_QUALITIES)[number];
+
 /** Reason an RR interval is excluded from the analysis. */
 export type DiscardReason =
-  /** Outside the plausible range of 300–2000 ms. */
+  /** Outside the plausible range `MIN_RR_MS`–`MAX_RR_MS` (thresholds.ts). */
   | 'out_of_range'
-  /** Deviates more than 20 % from the reference median (ectopic beat or artifact). */
+  /** Deviates more than `MAX_DEVIATION` from the reference median (ectopic beat or artifact). */
   | 'deviation'
   /** Arrived while the sensor had no skin contact. */
   | 'no_contact';

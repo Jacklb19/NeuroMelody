@@ -2,14 +2,28 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { es } from '../../i18n/es';
+import { formatClock } from '../../shared/formatClock';
+import { MS_PER_SECOND } from '../../shared/time';
 import { createFakeTimeEnvironment } from '../../test/fakeTimeEnvironment';
 import { SourceChannel } from './sourceChannel';
-import type { SignalSource } from './contract';
-import { AcquisitionPanel, SIMULATOR_SEED, type CreateBleSource, type CreateSimulatedSource } from './AcquisitionPanel';
+import type { SignalSource, SourceKind } from './contract';
+import {
+  AcquisitionPanel,
+  type CreateBleSource,
+  type CreateCameraSource,
+  type CreateSimulatedSource,
+} from './AcquisitionPanel';
+import { MAX_HR, MIN_HR, SIMULATOR_SEED } from './config';
 import type { BluetoothAdapter } from './ble/webBluetooth';
+import { CameraUnavailableError } from './camera/cameraCapture';
 import { SimulatedSource } from './simulator/SimulatedSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
+import { RECORDING_DURATION_MS, RECORDINGS_DIRECTORY, recordingFileName } from './recording/recordingCatalog';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const text = es.acquisition;
 
 /** The panel is controlled: this harness keeps the source the way App does. */
 function StatefulPanel({ createSource, createRecording }: {
@@ -33,52 +47,61 @@ function visibleState(): string {
   return screen.getByRole('status').textContent;
 }
 
+/** Status line as the panel shows it for a connection state. */
+function stateLine(state: keyof typeof text.connectionStates): string {
+  return `${text.connectionStatus} ${text.connectionStates[state]}`;
+}
+
+const combobox = (name: string): HTMLElement => screen.getByRole('combobox', { name });
+
 describe('AcquisitionPanel', () => {
   it('plays a selected recording and re-enables the controls at the end', async () => {
     const user = userEvent.setup();
     const env = createFakeTimeEnvironment();
+    const speed = 10;
     const createRecording = vi.fn((options: RecordedSourceOptions) => new RecordedSource({ ...options, ...env,
-      load: () => Promise.resolve(JSON.parse(readFileSync(`public/recordings/${options.recordId}.json`, 'utf8')) as unknown),
+      load: () => Promise.resolve(JSON.parse(readFileSync(join('public', RECORDINGS_DIRECTORY, recordingFileName(options.recordId)), 'utf8')) as unknown),
     }));
     render(<StatefulPanel createSource={options => new SimulatedSource(options)} createRecording={createRecording} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Origen de la señal' }), 'recording');
-    await user.selectOptions(screen.getByRole('combobox', { name: /^Registro$/ }), 'nsr002');
-    await user.selectOptions(screen.getByLabelText(/velocidad/i), '10');
-    await user.click(screen.getByRole('button', { name: 'Reproducir registro' }));
-    expect(createRecording).toHaveBeenCalledWith({ recordId: 'nsr002', speed: 10 });
-    expect(screen.getByRole('combobox', { name: /^Registro$/ })).toBeDisabled();
-    act(() => { env.jump(180_000); });
-    expect(screen.getByTestId('signal-time')).toHaveTextContent('30:00');
-    expect(visibleState()).toMatch(/desconectada/i);
-    expect(screen.getByRole('combobox', { name: /^Registro$/ })).toBeEnabled();
+    await user.selectOptions(combobox(text.sourceLabel), 'recording');
+    await user.selectOptions(combobox(text.recordingLabel), 'nsr002');
+    await user.selectOptions(combobox(text.speedLabel), String(speed));
+    await user.click(screen.getByRole('button', { name: text.connect.recording }));
+    expect(createRecording).toHaveBeenCalledWith({ recordId: 'nsr002', speed });
+    expect(combobox(text.recordingLabel)).toBeDisabled();
+    act(() => { env.jump(RECORDING_DURATION_MS / speed); });
+    expect(screen.getByTestId('signal-time')).toHaveTextContent(formatClock(RECORDING_DURATION_MS / MS_PER_SECOND));
+    expect(visibleState()).toBe(stateLine('disconnected'));
+    expect(combobox(text.recordingLabel)).toBeEnabled();
   });
   it('shows the disconnected state and labelled controls', () => {
     renderWithFakeTime();
 
-    expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/escenario del simulador/i)).toBeEnabled();
-    expect(screen.getByLabelText(/velocidad/i)).toBeEnabled();
-    expect(visibleState()).toMatch(/desconectada/i);
-    expect(screen.getByTestId('heart-rate')).toHaveTextContent('—');
+    expect(screen.getByRole('heading', { level: 2, name: text.title })).toBeInTheDocument();
+    expect(combobox(text.scenarioLabel)).toBeEnabled();
+    expect(combobox(text.speedLabel)).toBeEnabled();
+    expect(visibleState()).toBe(stateLine('disconnected'));
+    expect(screen.getByTestId('heart-rate')).toHaveTextContent(es.common.noValue);
   });
 
-  it('offers the five scenarios and the four speeds', () => {
+  it('offers the four sources, the five scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
     expect(scenarios).toEqual([
-      'Simulador',
-      'Registro de ejemplo',
-      'Banda Bluetooth',
-      'Reposo',
-      'Activación',
-      'Relajación progresiva',
-      'Activación creciente',
-      'Reposo con fallos de lectura',
-      '1×',
-      '2×',
-      '5×',
-      '10×',
+      text.sources.simulator,
+      text.sources.recording,
+      text.sources.ble,
+      text.experimentalOption(text.sources.camera),
+      text.scenarios.rest,
+      text.scenarios.activation,
+      text.scenarios.progressive_relaxation,
+      text.scenarios.progressive_activation,
+      text.scenarios.artifacts,
+      text.speedOption(1),
+      text.speedOption(2),
+      text.speedOption(5),
+      text.speedOption(10),
     ]);
   });
 
@@ -86,9 +109,9 @@ describe('AcquisitionPanel', () => {
     const user = userEvent.setup();
     const { createSource } = renderWithFakeTime();
 
-    await user.selectOptions(screen.getByLabelText(/escenario del simulador/i), 'activation');
-    await user.selectOptions(screen.getByLabelText(/velocidad/i), '10');
-    screen.getByRole('button', { name: /conectar simulador/i }).focus();
+    await user.selectOptions(combobox(text.scenarioLabel), 'activation');
+    await user.selectOptions(combobox(text.speedLabel), '10');
+    screen.getByRole('button', { name: text.connect.simulator }).focus();
     await user.keyboard('{Enter}');
 
     expect(createSource).toHaveBeenCalledWith({
@@ -96,21 +119,21 @@ describe('AcquisitionPanel', () => {
       speed: 10,
       seed: SIMULATOR_SEED,
     });
-    expect(visibleState()).toMatch(/conectada/i);
-    expect(screen.getByLabelText(/escenario del simulador/i)).toBeDisabled();
-    expect(screen.getByRole('button', { name: /desconectar/i })).toBeInTheDocument();
+    expect(visibleState()).toBe(stateLine('connected'));
+    expect(combobox(text.scenarioLabel)).toBeDisabled();
+    expect(screen.getByRole('button', { name: text.disconnect })).toBeInTheDocument();
   });
 
   it('shows the latest reading while notifications arrive', async () => {
     const user = userEvent.setup();
     const { env } = renderWithFakeTime();
 
-    await user.click(screen.getByRole('button', { name: /conectar simulador/i }));
+    await user.click(screen.getByRole('button', { name: text.connect.simulator }));
     act(() => {
       env.advance(3000);
     });
 
-    expect(screen.getByTestId('heart-rate')).toHaveTextContent(/^\d+ lpm$/);
+    expect(screen.getByTestId('heart-rate')).toHaveTextContent(new RegExp(`^\\d+ ${es.common.units.beatsPerMinute}$`));
     expect(Number(screen.getByTestId('received-beats').textContent)).toBeGreaterThan(0);
     expect(screen.getByTestId('signal-time')).toHaveTextContent('00:03');
   });
@@ -119,19 +142,19 @@ describe('AcquisitionPanel', () => {
     const user = userEvent.setup();
     const { env } = renderWithFakeTime();
 
-    await user.click(screen.getByRole('button', { name: /conectar simulador/i }));
-    await user.click(screen.getByRole('button', { name: /desconectar/i }));
+    await user.click(screen.getByRole('button', { name: text.connect.simulator }));
+    await user.click(screen.getByRole('button', { name: text.disconnect }));
 
-    expect(visibleState()).toMatch(/desconectada/i);
+    expect(visibleState()).toBe(stateLine('disconnected'));
     expect(env.active).toBe(false);
-    expect(screen.getByLabelText(/escenario del simulador/i)).toBeEnabled();
+    expect(combobox(text.scenarioLabel)).toBeEnabled();
   });
 
   it('stops the source when the panel unmounts', async () => {
     const user = userEvent.setup();
     const { env, unmount } = renderWithFakeTime();
 
-    await user.click(screen.getByRole('button', { name: /conectar simulador/i }));
+    await user.click(screen.getByRole('button', { name: text.connect.simulator }));
     unmount();
 
     expect(env.active).toBe(false);
@@ -157,19 +180,20 @@ describe('AcquisitionPanel', () => {
     };
     render(<StatefulPanel createSource={() => source} />);
 
-    await user.click(screen.getByRole('button', { name: /conectar simulador/i }));
+    await user.click(screen.getByRole('button', { name: text.connect.simulator }));
     act(() => {
       channel.notify({ timeMs: 1000, heartRate: 400, rrIntervalsMs: [], sensorContact: true });
     });
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/no es fiable/i);
-    expect(screen.getByRole('alert')).toHaveTextContent(/revisa la colocación del dispositivo/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      text.sourceErrors.discarded(text.notificationIssues.heart_rate_out_of_range(MIN_HR, MAX_HR)),
+    );
   });
 
   it('disables the Bluetooth option when the browser lacks Web Bluetooth', () => {
     render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} bluetooth={null} />);
-    expect(screen.getByRole('option', { name: 'Banda Bluetooth' })).toBeDisabled();
-    expect(screen.getByText(/usa chrome o edge/i)).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: text.sources.ble })).toBeDisabled();
+    expect(screen.getByText(text.bluetoothUnsupported)).toBeInTheDocument();
   });
 
   it('connects a chosen strap or reuses a remembered one', async () => {
@@ -182,22 +206,79 @@ describe('AcquisitionPanel', () => {
     const onSourceChange = vi.fn();
     render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} bluetooth={bluetooth} createBle={createBle} />);
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Origen de la señal' }), 'ble');
-    expect(screen.queryByLabelText(/velocidad/i)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Conectar banda' }));
-    await user.click(screen.getByRole('button', { name: 'Reconectar banda' }));
+    await user.selectOptions(combobox(text.sourceLabel), 'ble');
+    expect(screen.queryByRole('combobox', { name: text.speedLabel })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: text.connect.ble }));
+    await user.click(screen.getByRole('button', { name: text.reconnectRemembered }));
 
     expect(createBle.mock.calls.map(([options]) => options.mode)).toEqual(['choose', 'remembered']);
     expect(onSourceChange).toHaveBeenCalledTimes(2);
   });
+
+  it('disables the experimental camera option when the browser lacks the camera API', () => {
+    render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} cameraAvailable={false} />);
+    expect(screen.getByRole('option', { name: text.experimentalOption(text.sources.camera) })).toBeDisabled();
+    expect(screen.getByText(text.cameraUnsupported)).toBeInTheDocument();
+  });
+
+  it('connects the camera from the click, with its instructions and without scenario or speed', async () => {
+    const user = userEvent.setup();
+    const createCamera = vi.fn<CreateCameraSource>(() => new FakeSource('camera'));
+    const onSourceChange = vi.fn();
+    render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} cameraAvailable createCamera={createCamera} />);
+
+    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    expect(screen.queryByRole('combobox', { name: text.scenarioLabel })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: text.speedLabel })).not.toBeInTheDocument();
+    expect(screen.getByText(text.cameraNote)).toBeInTheDocument();
+    expect(screen.queryByText(text.cameraUnsupported)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: text.connect.camera }));
+
+    expect(createCamera).toHaveBeenCalledOnce();
+    expect(onSourceChange).toHaveBeenCalledOnce();
+  });
+
+  it('explains why the camera could not be used', async () => {
+    const user = userEvent.setup();
+    const failing = new FakeSource('camera', new CameraUnavailableError('permission_denied'));
+    function CameraPanel() {
+      const [source, setSource] = useState<SignalSource | null>(null);
+      return <AcquisitionPanel source={source} onSourceChange={setSource} cameraAvailable createCamera={() => failing} />;
+    }
+    render(<CameraPanel />);
+
+    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    await user.click(screen.getByRole('button', { name: text.connect.camera }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      text.sourceErrors.camera(text.camera.errors.permission_denied),
+    );
+    expect(visibleState()).toBe(stateLine('error'));
+  });
 });
 
-/** Inert source: the panel only needs the contract to render its state. */
+/**
+ * Inert source: the panel only needs the contract to render its state. With
+ * a `failure`, connecting ends in error and reports it once the panel has
+ * subscribed, as a real source does after the browser answers.
+ */
 class FakeSource implements SignalSource {
-  readonly kind = 'ble' as const;
+  readonly kind: SourceKind;
   readonly #channel = new SourceChannel();
+  readonly #failure: Error | null;
+  constructor(kind: SourceKind = 'ble', failure: Error | null = null) {
+    this.kind = kind;
+    this.#failure = failure;
+  }
   get state() { return this.#channel.state; }
   subscribe = this.#channel.subscribe.bind(this.#channel);
-  connect = (): Promise<void> => Promise.resolve();
+  connect = async (): Promise<void> => {
+    const failure = this.#failure;
+    if (failure === null) return;
+    this.#channel.changeState('connecting');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    this.#channel.changeState('error');
+    this.#channel.emitError(failure);
+  };
   disconnect = (): Promise<void> => Promise.resolve();
 }

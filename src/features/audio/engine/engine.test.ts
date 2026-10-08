@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { readPlaybackStats } from '../engine/playbackStats';
-import { LEVEL_IDS, LEVELS, CALIBRATION_LEVEL } from './levels';
-import { dbToGain, tempoRampDurationS, gainToDb } from './ramps';
+import { dbToGain, gainToDb } from '../core/decibels';
+import { MAX_TEMPO_BPM, MIN_TEMPO_BPM } from '../worklet/workletContract';
+import { LEVEL_IDS, LEVELS, CALIBRATION_LEVEL, nextLevel, previousLevel } from './levels';
+import { tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 
 describe('ramps', () => {
@@ -11,13 +13,13 @@ describe('ramps', () => {
     [66, 59, 20],
     [76, 59, 34],
     [66, 66, 20],
-  ])('de %i a %i BPM dura %i s', (from, to, expected) => {
+  ])('from %i to %i BPM lasts %i s', (from, to, expected) => {
     expect(tempoRampDurationS(from, to)).toBe(expected);
   });
 
   it('is never shorter than 20 s (RNF-03)', () => {
-    for (let from = 40; from <= 120; from += 1) {
-      for (let to = 40; to <= 120; to += 7) {
+    for (let from = MIN_TEMPO_BPM; from <= MAX_TEMPO_BPM; from += 1) {
+      for (let to = MIN_TEMPO_BPM; to <= MAX_TEMPO_BPM; to += 7) {
         expect(tempoRampDurationS(from, to)).toBeGreaterThanOrEqual(20);
       }
     }
@@ -46,6 +48,18 @@ describe('music levels', () => {
   it('the target tempo is between 58 and 60 BPM', () => {
     expect(LEVELS.target.tempo).toBeGreaterThanOrEqual(58);
     expect(LEVELS.target.tempo).toBeLessThanOrEqual(60);
+  });
+
+  it('every level tempo is within the synthesizer range', () => {
+    for (const id of LEVEL_IDS) {
+      expect(LEVELS[id].tempo).toBeGreaterThanOrEqual(MIN_TEMPO_BPM);
+      expect(LEVELS[id].tempo).toBeLessThanOrEqual(MAX_TEMPO_BPM);
+    }
+  });
+
+  it('climbs the ladder one adjacent step at a time', () => {
+    expect(LEVEL_IDS.map(nextLevel)).toEqual(['intermediate', 'target', null]);
+    expect(LEVEL_IDS.map(previousLevel)).toEqual([null, 'high', 'intermediate']);
   });
 });
 

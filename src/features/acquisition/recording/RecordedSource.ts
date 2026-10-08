@@ -1,10 +1,11 @@
 import type { ConnectionState, SignalSource, SourceObserver } from '../contract';
+import { CHECK_PERIOD_MS, NOTIFICATION_PERIOD_MS } from '../config';
+import { heartRateFromRr, keepRecentBeats } from '../heartRate';
 import { SourceChannel } from '../sourceChannel';
-import {
-  browserClock, browserScheduler, CHECK_PERIOD_MS, NOTIFICATION_PERIOD_MS,
-  type Clock, type Scheduler, type Speed,
-} from '../simulator/SimulatedSource';
-import { loadRecording, parseRecording, type Recording, type RecordingId } from './recording';
+import type { Speed } from '../speedCatalog';
+import { browserClock, browserScheduler, type Clock, type Scheduler } from '../timing';
+import { loadRecording, parseRecording, type Recording } from './recording';
+import type { RecordingId } from './recordingCatalog';
 
 export interface RecordedSourceOptions {
   readonly recordId: RecordingId;
@@ -89,10 +90,12 @@ export class RecordedSource implements SignalSource {
         this.#index++;
         rr = recording.rrIntervalsMs[this.#index];
       }
-      this.#recent = [...this.#recent, ...rrIntervalsMs].slice(-4);
-      const reference = this.#recent.length > 0 ? this.#recent : [recording.rrIntervalsMs[0] ?? 1000];
+      this.#recent = keepRecentBeats(this.#recent, rrIntervalsMs);
+      // Before the first complete beat, the first interval of the recording is used
+      // (parseRecording guarantees there is one).
+      const reference = this.#recent.length > 0 ? this.#recent : recording.rrIntervalsMs.slice(0, 1);
       this.#channel.notify({ timeMs: this.#nextNotificationMs,
-        heartRate: Math.round(60000 / (reference.reduce((sum, value) => sum + value, 0) / reference.length)),
+        heartRate: heartRateFromRr(reference),
         rrIntervalsMs, sensorContact: null });
       this.#nextNotificationMs += NOTIFICATION_PERIOD_MS;
     }

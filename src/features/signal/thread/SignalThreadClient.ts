@@ -1,8 +1,15 @@
 import type { SignalSource } from '../../acquisition/contract';
 import type { CanvasDimensions } from '../../signal/drawing/drawTachogram';
+import type { ChartLabels } from '../../signal/drawing/chartLabels';
 import type { ChartPalette } from '../../signal/drawing/palette';
 import type { IndicesResult } from '../processing/SignalProcessor';
-import { isMessageFromThread, type MessageToThread } from './protocol';
+import {
+  WORKER_CRASHED,
+  isMessageFromThread,
+  type MessageFromThread,
+  type MessageToThread,
+  type SignalThreadFailure,
+} from './protocol';
 
 /** Channel to the signal thread; injectable so it can be tested without a real Worker. */
 export interface ThreadPort {
@@ -24,11 +31,14 @@ export function createWorkerPort(): ThreadPort {
       worker.onmessage = (event: MessageEvent<unknown>) => {
         receiver(event.data);
       };
+      // Local failures travel as protocol messages so the client handles them in one place.
       worker.onerror = (event) => {
-        receiver({ kind: 'error', message: event.message });
+        const crashed: MessageFromThread = { kind: 'error', code: WORKER_CRASHED, detail: event.message };
+        receiver(crashed);
       };
       worker.onmessageerror = () => {
-        receiver({ kind: 'error', message: 'No se pudo leer un mensaje del hilo de señal.' });
+        const unreadable: MessageFromThread = { kind: 'error', code: 'unreadable_message' };
+        receiver(unreadable);
       };
     },
     terminate: () => {
@@ -39,7 +49,7 @@ export function createWorkerPort(): ThreadPort {
 
 export interface SignalThreadObserver {
   readonly onIndices?: (result: IndicesResult) => void;
-  readonly onError?: (message: string) => void;
+  readonly onError?: (failure: SignalThreadFailure) => void;
 }
 
 /**
@@ -75,14 +85,16 @@ export class SignalThreadClient {
 
   /**
    * Transfers the canvas to the signal thread, which draws on it from then
-   * on. The palette is read on the main thread, where the CSS variables live.
+   * on. The palette and the labels are prepared on the main thread, where the
+   * CSS variables and the dictionary live.
    */
   attachCanvas(
     canvas: OffscreenCanvas,
     palette: ChartPalette,
+    labels: ChartLabels,
     dimensions: CanvasDimensions,
   ): void {
-    this.#port.send({ kind: 'init-canvas', canvas, palette, dimensions }, [canvas]);
+    this.#port.send({ kind: 'init-canvas', canvas, palette, labels, dimensions }, [canvas]);
   }
 
   resize(dimensions: CanvasDimensions): void {
@@ -103,11 +115,13 @@ export class SignalThreadClient {
 
   #receive(data: unknown): void {
     if (!isMessageFromThread(data)) {
-      this.#notifyError('Respuesta no reconocida del hilo de señal.');
+      this.#notifyError({ code: 'unrecognized_response' });
       return;
     }
     if (data.kind === 'error') {
-      this.#notifyError(data.message);
+      this.#notifyError(
+        data.code === WORKER_CRASHED ? { code: data.code, detail: data.detail } : { code: data.code },
+      );
       return;
     }
     for (const observer of this.#observers) {
@@ -115,9 +129,9 @@ export class SignalThreadClient {
     }
   }
 
-  #notifyError(message: string): void {
+  #notifyError(failure: SignalThreadFailure): void {
     for (const observer of this.#observers) {
-      observer.onError?.(message);
+      observer.onError?.(failure);
     }
   }
 }

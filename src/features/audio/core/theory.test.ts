@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SCALES, MIDI_DRONE, MIDI_TONIC, MODE, isMode, midiFrequency, degreeNote } from './theory';
+import { SCALES, MIDI_DRONE, MIDI_TONIC, MODE, isMode, midiFrequency, degreeNote, modeName, type ModeName } from './theory';
 
 describe('session music theory', () => {
   it('uses D3 as the tonic and D2 as the drone', () => {
@@ -26,5 +26,11 @@ describe('session music theory', () => {
     expect([0, 1, 2].every(isMode)).toBe(true);
     expect(isMode(3)).toBe(false);
     expect(isMode(-1)).toBe(false);
+  });
+
+  it('names every mode by its key, whatever its numeric value', () => {
+    for (const name of Object.keys(MODE) as ModeName[]) {
+      expect(modeName(MODE[name])).toBe(name);
+    }
   });
 });

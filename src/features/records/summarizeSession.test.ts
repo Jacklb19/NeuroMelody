@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sample, sessionRecord } from '../../test/sessionRecords';
+import { COMPUTE_PERIOD_S } from '../signal/processing/thresholds';
 import { summarizeSession } from './summarizeSession';
 
 describe('summarizeSession', () => {
@@ -27,7 +28,7 @@ describe('summarizeSession', () => {
     expect(summary.rmssd).toBeNull();
   });
 
-  it('adds five seconds of signal per sample to its estimated state', () => {
+  it('adds one compute period of signal per sample to its estimated state', () => {
     const samples = [
       sample(5, { estimatedState: null }),
       sample(10, { estimatedState: null }),
@@ -36,7 +37,7 @@ describe('summarizeSession', () => {
       sample(25, { estimatedState: 'high' }),
     ];
     expect(summarizeSession(sessionRecord({ samples })).secondsByState)
-      .toEqual({ calibrating: 10, high: 5, low: 10, uncertain: 0 });
+      .toEqual({ calibrating: 2 * COMPUTE_PERIOD_S, high: COMPUTE_PERIOD_S, low: 2 * COMPUTE_PERIOD_S, uncertain: 0 });
   });
 
   it('averages LF/HF over the last samples that have one', () => {

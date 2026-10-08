@@ -1,30 +1,36 @@
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { es } from '../../i18n/es';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
+import { MIN_LEVEL_DURATION_S } from '../adaptation/rules';
 import { AudioEngine } from '../audio/engine/AudioEngine';
 import { createFakeAudioEnvironment } from '../../test/fakeAudio';
 import { calibrateToUncertain } from '../../test/adaptationReadings';
+import { SECONDS_PER_MINUTE } from '../../shared/time';
 import { SessionStage } from './SessionStage';
+
+const { narrative, stage } = es.session;
 
 describe('SessionStage', () => {
   it('asks for a signal while no source is connected', () => {
     render(<SessionStage session={new AdaptationSession()} connection="disconnected" playing={false} />);
-    expect(screen.getByRole('heading', { name: 'Conecta una fuente de señal' })).toBeVisible();
-    expect(screen.queryByText('La adaptación espera datos de buena calidad.')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: narrative.noSource.title })).toBeVisible();
+    expect(screen.getByText(narrative.noSource.detail)).toBeVisible();
+    expect(screen.queryByText(stage.waitingForQuality)).not.toBeInTheDocument();
   });
 
   it('announces the estimated state with its uncalibrated confidence', () => {
     const session = new AdaptationSession();
     render(<SessionStage session={session} connection="connected" playing />);
-    expect(screen.getByRole('status')).toHaveTextContent('Calibrando: no hay datos suficientes');
-    expect(screen.getByText('Confianza no calibrada · reglas provisionales')).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(es.adaptation.states.calibrating);
+    expect(screen.getByText(stage.confidence)).toBeVisible();
 
     act(() => { calibrateToUncertain(session); });
-    expect(screen.getByRole('status')).toHaveTextContent('Incierta');
-    expect(screen.getByRole('heading', { name: 'Tu ritmo se mantiene cerca del inicio' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(es.adaptation.states.uncertain);
+    expect(screen.getByRole('heading', { name: narrative.uncertain.title })).toBeVisible();
 
     act(() => { session.invalidate(); });
-    expect(screen.getByText('La adaptación espera datos de buena calidad.')).toBeVisible();
+    expect(screen.getByText(stage.waitingForQuality)).toBeVisible();
   });
 
   it('explains the dwell while playing and drops the notice once the step is eligible', async () => {
@@ -37,9 +43,9 @@ describe('SessionStage', () => {
 
     act(() => { calibrateToUncertain(session); });
     expect(screen.getByTestId('dwell-notice'))
-      .toHaveTextContent('Se conserva el escalón hasta completar su duración mínima de 3 minutos.');
+      .toHaveTextContent(stage.dwell(MIN_LEVEL_DURATION_S / SECONDS_PER_MINUTE));
 
-    act(() => { env.context.currentTime = 180.5; session.pulse(); });
+    act(() => { env.context.currentTime = MIN_LEVEL_DURATION_S + 0.5; session.pulse(); });
     expect(screen.queryByTestId('dwell-notice')).not.toBeInTheDocument();
   });
 });

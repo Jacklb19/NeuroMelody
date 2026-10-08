@@ -1,4 +1,6 @@
+import { useMessages } from '../../i18n/messages';
 import { formatClock } from '../../shared/formatClock';
+import { SECONDS_PER_MINUTE } from '../../shared/time';
 
 interface SessionProgressProps {
   /** Listening time measured on the audio clock, in seconds. */
@@ -12,10 +14,11 @@ interface SessionProgressProps {
  * the text next to it carries the same information for everyone.
  */
 export function SessionProgress({ elapsedS, plannedS }: SessionProgressProps): React.JSX.Element {
+  const t = useMessages();
   const shownS = Math.min(elapsedS, plannedS);
   const fraction = plannedS > 0 ? shownS / plannedS : 0;
-  const plannedMin = Math.round(plannedS / 60);
-  const elapsedMin = Math.floor(shownS / 60);
+  const plannedMin = Math.round(plannedS / SECONDS_PER_MINUTE);
+  const elapsedMin = Math.floor(shownS / SECONDS_PER_MINUTE);
   const extraS = Math.max(0, elapsedS - plannedS);
 
   return (
@@ -23,19 +26,19 @@ export function SessionProgress({ elapsedS, plannedS }: SessionProgressProps): R
       <div
         className="staff"
         role="progressbar"
-        aria-label="Progreso de la sesión"
+        aria-label={t.session.progress.label}
         aria-valuemin={0}
         aria-valuemax={plannedS}
         aria-valuenow={Math.round(shownS)}
-        aria-valuetext={`${String(elapsedMin)} de ${String(plannedMin)} minutos`}
+        aria-valuetext={t.session.progress.valueText(elapsedMin, plannedMin)}
         style={{ '--progress': fraction } as React.CSSProperties}
       >
         <span className="staff-ink" aria-hidden="true" />
         <span className="staff-note" aria-hidden="true" />
       </div>
       <p className="session-clock">
-        <span>{formatClock(shownS)}</span> de {formatClock(plannedS)}
-        {extraS > 0 && <span className="session-extra"> · {formatClock(extraS)} más</span>}
+        {t.session.progress.clock(<span key="elapsed">{formatClock(shownS)}</span>, formatClock(plannedS))}
+        {extraS > 0 && <span className="session-extra">{t.session.progress.extra(formatClock(extraS))}</span>}
       </p>
     </div>
   );

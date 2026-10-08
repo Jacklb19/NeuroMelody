@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { sessionPath } from '../src/config/routes';
+import { MAX_DURATION_MIN } from '../src/features/plan/plan';
+import { es } from '../src/i18n/es';
 
+const { playback } = es.audio;
 const durationS = process.env.AUDIO_LONG === '1' ? 1800 : 60;
 
 test(`plays for ${String(durationS)} seconds without underruns (RNF-01)`, async ({ page, browser }, testInfo) => {
@@ -17,12 +21,13 @@ test(`plays for ${String(durationS)} seconds without underruns (RNF-01)`, async 
   });
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/session?duration=60');
+  // The longest plan, so the end-of-plan notice never interrupts the check.
+  await page.goto(sessionPath(MAX_DURATION_MIN));
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Aceptar y continuar' }).click();
-  await page.getByRole('button', { name: 'Conectar simulador' }).click();
-  await page.getByRole('button', { name: 'Iniciar música' }).click();
-  await expect(page.getByText('Sonando', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
+  await page.getByRole('button', { name: playback.start }).click();
+  await expect(page.getByText(playback.states.playing, { exact: true })).toBeVisible();
 
   const readStats = () => page.evaluate(() => {
     const candidate: unknown = Reflect.get(window, '__audioContext');
@@ -62,6 +67,6 @@ test(`plays for ${String(durationS)} seconds without underruns (RNF-01)`, async 
       initial, final: samples.at(-1), samples, errors,
     }, null, 2), contentType: 'application/json' });
   }
-  await page.getByRole('button', { name: 'Detener', exact: true }).click();
-  await expect(page.getByText('Detenida', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: playback.stop, exact: true }).click();
+  await expect(page.getByText(playback.states.stopped, { exact: true })).toBeVisible();
 });

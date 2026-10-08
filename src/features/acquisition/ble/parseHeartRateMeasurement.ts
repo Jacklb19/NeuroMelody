@@ -10,11 +10,24 @@ export interface HeartRateMeasurement {
   readonly rrIntervalsMs: readonly number[];
 }
 
+/** How a notification breaks the format; the interface turns each code into text. */
+export const MEASUREMENT_ERROR_CODES = [
+  'empty',
+  'truncated_heart_rate',
+  'truncated_energy_expended',
+  'truncated_rr',
+] as const;
+
+export type MeasurementErrorCode = (typeof MEASUREMENT_ERROR_CODES)[number];
+
 /** The notification does not follow the specification format. */
 export class HeartRateMeasurementError extends Error {
-  constructor(message: string) {
-    super(message);
+  readonly code: MeasurementErrorCode;
+
+  constructor(code: MeasurementErrorCode) {
+    super(`Malformed heart rate measurement: ${code}`);
     this.name = 'HeartRateMeasurementError';
+    this.code = code;
   }
 }
 
@@ -24,6 +37,10 @@ const FLAG_CONTACT_DETECTED = 0x02;
 const FLAG_CONTACT_SUPPORTED = 0x04;
 const FLAG_ENERGY_PRESENT = 0x08;
 const FLAG_RR_PRESENT = 0x10;
+
+// Field sizes of the characteristic, in bytes.
+const UINT8_BYTES = 1;
+const UINT16_BYTES = 2;
 
 /**
  * Parses the value of the Heart Rate Measurement characteristic (RF-03).
@@ -38,31 +55,31 @@ const FLAG_RR_PRESENT = 0x10;
  * @throws HeartRateMeasurementError if the data is truncated or malformed.
  */
 export function parseHeartRateMeasurement(data: DataView): HeartRateMeasurement {
-  if (data.byteLength < 1) {
-    throw new HeartRateMeasurementError('Medición vacía.');
+  if (data.byteLength < UINT8_BYTES) {
+    throw new HeartRateMeasurementError('empty');
   }
   const flags = data.getUint8(0);
-  let offset = 1;
+  let offset = UINT8_BYTES;
 
   const hr16Bit = (flags & FLAG_HR_16_BIT) !== 0;
-  const hrBytes = hr16Bit ? 2 : 1;
-  requireBytes(data, offset, hrBytes, 'frecuencia cardíaca');
+  const hrBytes = hr16Bit ? UINT16_BYTES : UINT8_BYTES;
+  requireBytes(data, offset, hrBytes, 'truncated_heart_rate');
   const heartRate = hr16Bit
     ? data.getUint16(offset, true)
     : data.getUint8(offset);
   offset += hrBytes;
 
   if ((flags & FLAG_ENERGY_PRESENT) !== 0) {
-    requireBytes(data, offset, 2, 'energía gastada');
-    offset += 2;
+    requireBytes(data, offset, UINT16_BYTES, 'truncated_energy_expended');
+    offset += UINT16_BYTES;
   }
 
   const rrIntervalsMs: number[] = [];
   if ((flags & FLAG_RR_PRESENT) !== 0) {
-    if ((data.byteLength - offset) % 2 !== 0) {
-      throw new HeartRateMeasurementError('Intervalos RR truncados.');
+    if ((data.byteLength - offset) % UINT16_BYTES !== 0) {
+      throw new HeartRateMeasurementError('truncated_rr');
     }
-    for (; offset < data.byteLength; offset += 2) {
+    for (; offset < data.byteLength; offset += UINT16_BYTES) {
       rrIntervalsMs.push(msFromRrUnits(data.getUint16(offset, true)));
     }
   }
@@ -85,9 +102,9 @@ function requireBytes(
   data: DataView,
   offset: number,
   count: number,
-  field: string,
+  code: MeasurementErrorCode,
 ): void {
   if (data.byteLength < offset + count) {
-    throw new HeartRateMeasurementError(`Medición truncada: falta ${field}.`);
+    throw new HeartRateMeasurementError(code);
   }
 }

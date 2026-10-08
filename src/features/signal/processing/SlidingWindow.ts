@@ -3,9 +3,9 @@ import type { ClassifiedBeat, LowQualitySegment } from './types';
 import { ANALYSIS_WINDOW_MS } from './thresholds';
 
 /**
- * Last 5 minutes of signal time: classified beats and low-quality segments.
- * Measured in signal time, not wall-clock time, so the analysis is the same
- * at any simulator speed.
+ * Last {@link ANALYSIS_WINDOW_MS} of signal time: classified beats and
+ * low-quality segments. Measured in signal time, not wall-clock time, so the
+ * analysis is the same at any simulator speed.
  */
 export class SlidingWindow {
   #beats: ClassifiedBeat[] = [];

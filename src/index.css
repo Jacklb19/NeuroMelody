@@ -25,19 +25,29 @@
   --color-state-uncertain: #9fb2a4;
   --color-state-low: #3e6955;
 
-  /* Chart aliases preserve the requested Spanish tokens and the existing Worker contract. */
-  --color-grafica-linea: #3e6955;
-  --color-grafica-cuadricula: #d7dbd0;
-  --color-grafica-texto: #526158;
-  --color-grafica-descartados: #716b5e;
-  --color-grafica-baja-calidad-fondo: #f4eddd;
-  --color-grafica-baja-calidad-rayado: #876723;
-  --color-chart-line: var(--color-grafica-linea);
-  --color-chart-grid: var(--color-grafica-cuadricula);
-  --color-chart-text: var(--color-grafica-texto);
-  --color-chart-discarded: var(--color-grafica-descartados);
-  --color-chart-low-quality-background: var(--color-grafica-baja-calidad-fondo);
-  --color-chart-low-quality-hatch: var(--color-grafica-baja-calidad-rayado);
+  /* Chart colours, read by readChartPalette and sent to the signal Worker. */
+  --color-chart-line: #3e6955;
+  --color-chart-grid: #d7dbd0;
+  --color-chart-text: #526158;
+  --color-chart-discarded: #716b5e;
+  --color-chart-low-quality-background: #f4eddd;
+  --color-chart-low-quality-hatch: #876723;
+  /* Chart lengths, also read by readChartPalette: px or rem, always positive. */
+  /* The right margin leaves room for the centred label of the last minute. */
+  --chart-margin-left: 56px;
+  --chart-margin-right: 24px;
+  --chart-margin-top: 8px;
+  --chart-margin-bottom: 24px;
+  /* Gap between an axis and its tick labels. */
+  --chart-label-offset: 6px;
+  /* Distance between the diagonal lines that hatch a low-quality segment. */
+  --chart-hatch-spacing: 8px;
+  /* Half the side of the × that marks a discarded beat. */
+  --chart-marker-half-size: 4px;
+  --chart-line-width-grid: 1px;
+  --chart-line-width-hatch: 1px;
+  --chart-line-width-series: 2px;
+  --chart-line-width-discarded: 1.5px;
 
   --font-base: 'Segoe UI', 'Helvetica Neue', sans-serif;
   --font-display: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
@@ -78,6 +88,8 @@
   --chart-height: 14rem;
   --staff-gap: 0.5rem;
   --rating-size: 2.75rem;
+  /* Narrowest option in catalog-driven grids on small screens. */
+  --option-min-width: 5.5rem;
   --sparkline-height: 3rem;
   --state-bar-height: 0.75rem;
   --swatch-size: 0.75rem;
@@ -148,7 +160,8 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .home-details { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-10); border-top: var(--border-width) solid var(--color-border-subtle); margin-top: var(--space-20); padding-top: var(--space-6); color: var(--color-text-secondary); font-size: var(--text-sm); }
 .duration-fieldset { border: 0; min-width: 0; }
 .duration-fieldset legend { font-weight: var(--font-weight-strong); padding-bottom: var(--space-4); }
-.duration-options { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-3); }
+/* --option-count is set by the component from its catalog, so the grid follows the options. */
+.duration-options { display: grid; grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); gap: var(--space-3); }
 .duration-option { position: relative; display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-4) var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); cursor: pointer; background: var(--color-paper); }
 .duration-option:has(input:checked) { background: var(--color-success-background); border-color: var(--color-button-background); }
 .duration-option:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
@@ -230,6 +243,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .source-metrics dt, .signal-metrics dt { color: var(--color-text-secondary); }
 .source-metrics dd, .signal-metrics dd { text-align: right; font-weight: var(--font-weight-strong); }
 .signal-chart { height: var(--chart-height); background: var(--color-background); margin-bottom: var(--space-5); }
+.signal-chart > canvas { display: block; width: 100%; height: 100%; }
 .signal-panel > p:not(.signal-status) { color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-4); }
 .duration-dialog { position: static; width: 100%; padding: var(--space-5); border: var(--border-width) solid var(--color-error-text); background: var(--color-paper); color: var(--color-text); border-radius: var(--border-radius); margin-top: var(--space-5); }
 .duration-dialog h3, .duration-dialog p { margin-bottom: var(--space-4); }
@@ -263,7 +277,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .self-rating legend { font-weight: var(--font-weight-strong); }
 .optional-mark { font-weight: var(--font-weight-normal); color: var(--color-text-secondary); font-size: var(--text-sm); }
 .self-rating-hint { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--space-1) 0 var(--space-4); }
-.rating-scale { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: var(--space-2); }
+.rating-scale { display: grid; grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); gap: var(--space-2); }
 .rating-option { position: relative; display: grid; place-items: center; min-height: var(--rating-size); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); background: var(--color-paper); cursor: pointer; font-variant-numeric: tabular-nums; }
 .rating-option input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
 .rating-option:has(input:checked) { background: var(--color-button-background); border-color: var(--color-button-background); color: var(--color-button-text); font-weight: var(--font-weight-strong); }
@@ -278,7 +292,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .summary-figures .figure-note { font-family: var(--font-base); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .summary-figures .figure-trend { margin-top: var(--space-3); }
 .sparkline { display: block; width: 100%; height: var(--sparkline-height); overflow: visible; }
-.sparkline path { stroke: var(--color-chart-line); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sparkline path { stroke: var(--color-chart-line); stroke-width: var(--chart-line-width-series); stroke-linejoin: round; stroke-linecap: round; }
 .state-bar { display: flex; gap: var(--segment-gap); height: var(--state-bar-height); border-radius: var(--border-radius); overflow: hidden; margin-bottom: var(--space-5); }
 .state-segment { flex-basis: 0; }
 .state-calibrating { background: var(--color-state-calibrating); }
@@ -304,7 +318,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 @media (max-width: 800px) {
   .history-item { grid-template-columns: minmax(0, 1fr); }
   :root { --text-display: 4rem; }
-  .duration-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .duration-options { grid-template-columns: repeat(auto-fill, minmax(var(--option-min-width), 1fr)); }
   .listening-stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'stage' 'playback' 'progress'; }
   .listening-stage .playback-panel { border-left: 0; border-top: var(--border-width) solid var(--color-border-subtle); padding-top: var(--space-8); }
   .acquisition-panel { grid-template-columns: minmax(0, 1fr); }
@@ -328,7 +342,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   .home-actions { display: grid; gap: var(--space-4); }
   .home-details { margin-top: var(--space-12); gap: var(--space-3) var(--space-6); }
   .reading-page { padding-top: 0; }
-  .duration-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .duration-options { gap: var(--space-2); }
   .duration-option { flex-direction: column; padding: var(--space-3); }
   .duration-option > span { font-size: var(--text-metric); }
   .duration-unit { margin-top: var(--space-1); }
@@ -338,7 +352,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   :root { --text-stage: 1.875rem; }
   .stage-main, .listening-stage .playback-panel, .session-progress { padding-left: var(--space-6); padding-right: var(--space-6); }
   .stage-main { padding-top: var(--space-8); }
-  .rating-scale { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .rating-scale { grid-template-columns: repeat(auto-fill, minmax(var(--rating-size), 1fr)); }
   .summary-figures, .history-figures, .evolution-charts { grid-template-columns: minmax(0, 1fr); }
   .stage-detail { font-size: var(--text-base); }
   .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); }

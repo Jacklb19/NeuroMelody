@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { isMessageFromThread, isMessageToThread } from './protocol';
+import { es } from '../../../i18n/es';
+import { TEST_CHART_PALETTE } from '../../../test/chartPalette';
+import { chartLabelsFrom } from '../drawing/chartLabels';
+import { SIGNAL_THREAD_ERROR_CODES, isMessageFromThread, isMessageToThread } from './protocol';
 
 const notification = { timeMs: 1000, heartRate: 60, rrIntervalsMs: [1000], sensorContact: null };
 
@@ -38,27 +41,26 @@ describe('isMessageToThread', () => {
 });
 
 describe('isMessageToThread with a canvas', () => {
-  const palette = {
-    line: 'a',
-    grid: 'b',
-    text: 'c',
-    discarded: 'd',
-    lowQualityBackground: 'e',
-    lowQualityHatch: 'f',
-    font: '14px sans-serif',
-  };
+  const palette = TEST_CHART_PALETTE;
+  const labels = chartLabelsFrom(es.common);
   const canvas = { width: 1, height: 1, getContext: () => null };
   const dimensions = { widthCss: 600, heightCss: 224, scale: 2 };
 
   it('accepts valid init-canvas and resize messages', () => {
-    expect(isMessageToThread({ kind: 'init-canvas', canvas, palette, dimensions })).toBe(true);
+    expect(isMessageToThread({ kind: 'init-canvas', canvas, palette, labels, dimensions })).toBe(true);
     expect(isMessageToThread({ kind: 'resize', dimensions })).toBe(true);
   });
 
   it.each([
-    ['a canvas without getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, dimensions }],
-    ['a palette with an empty color', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, dimensions }],
-    ['a palette without a font', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, dimensions }],
+    ['a canvas without getContext', { kind: 'init-canvas', canvas: { width: 1, height: 1 }, palette, labels, dimensions }],
+    ['a palette with an empty color', { kind: 'init-canvas', canvas, palette: { ...palette, line: ' ' }, labels, dimensions }],
+    ['a palette without a font', { kind: 'init-canvas', canvas, palette: { ...palette, font: undefined }, labels, dimensions }],
+    ['a palette without a length', { kind: 'init-canvas', canvas, palette: { ...palette, marginLeft: undefined }, labels, dimensions }],
+    ['a palette with a length as text', { kind: 'init-canvas', canvas, palette: { ...palette, labelOffset: '6px' }, labels, dimensions }],
+    ['a palette with a zero hatch spacing', { kind: 'init-canvas', canvas, palette: { ...palette, hatchSpacing: 0 }, labels, dimensions }],
+    ['a palette with an infinite line width', { kind: 'init-canvas', canvas, palette: { ...palette, lineWidthSeries: Number.POSITIVE_INFINITY }, labels, dimensions }],
+    ['no labels', { kind: 'init-canvas', canvas, palette, dimensions }],
+    ['a tick label without a place for the value', { kind: 'init-canvas', canvas, palette, labels: { rrTick: 'ms' }, dimensions }],
     ['a zero scale', { kind: 'resize', dimensions: { ...dimensions, scale: 0 } }],
     ['a negative width', { kind: 'resize', dimensions: { ...dimensions, widthCss: -1 } }],
   ])('rejects %s', (_case, message) => {
@@ -70,7 +72,10 @@ describe('isMessageFromThread', () => {
   it('accepts valid indices and errors', () => {
     expect(isMessageFromThread({ kind: 'indices', result })).toBe(true);
     expect(isMessageFromThread({ kind: 'indices', result: { ...result, rmssd: 45.2, quality: 'good' } })).toBe(true);
-    expect(isMessageFromThread({ kind: 'error', message: 'failed' })).toBe(true);
+    for (const code of SIGNAL_THREAD_ERROR_CODES) {
+      expect(isMessageFromThread({ kind: 'error', code })).toBe(true);
+    }
+    expect(isMessageFromThread({ kind: 'error', code: 'worker_crashed', detail: 'Uncaught Error' })).toBe(true);
   });
 
   it('rejects spectral indices that are missing or not finite', () => {
@@ -84,7 +89,10 @@ describe('isMessageFromThread', () => {
     ['a message without kind', {}],
     ['an unknown quality', { kind: 'indices', result: { ...result, quality: 'alarm' } }],
     ['a non-numeric index', { kind: 'indices', result: { ...result, sdnn: '12' } }],
-    ['an error without message', { kind: 'error' }],
+    ['an error without code', { kind: 'error' }],
+    ['an error with an unknown code', { kind: 'error', code: 'failed' }],
+    ['an error carrying text instead of a code', { kind: 'error', message: 'failed' }],
+    ['a crash without its detail', { kind: 'error', code: 'worker_crashed' }],
   ])('rejects %s', (_case, message) => {
     expect(isMessageFromThread(message)).toBe(false);
   });

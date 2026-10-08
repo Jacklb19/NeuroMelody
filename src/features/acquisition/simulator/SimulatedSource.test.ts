@@ -3,7 +3,8 @@ import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
 import type { BeatNotification } from '../../acquisition/contract';
 import { RR_UNITS_PER_SECOND } from '../rrUnits';
 import type { ScenarioId } from './scenarios';
-import { SimulatedSource, type Speed } from './SimulatedSource';
+import type { Speed } from '../speedCatalog';
+import { SimulatedSource } from './SimulatedSource';
 
 async function createConnectedSource(
   speed: Speed = 1,

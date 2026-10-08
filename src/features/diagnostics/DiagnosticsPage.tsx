@@ -1,56 +1,33 @@
 import { useState, useId } from 'react';
 import { usePageTitle } from '../../app/usePageTitle';
+import { useMessages } from '../../i18n/messages';
+import { CAPABILITY_IDS, type CapabilityCopy, type CapabilityId } from './capabilityCatalog';
 import { checkCapabilities } from './checkCapabilities';
 import type { EnvironmentCapabilities } from './diagnostics.types';
 import { PageHeading } from '../../shared/PageHeading';
 import { CameraPulsePanel } from './CameraPulsePanel';
 
 export function DiagnosticsPage(): React.JSX.Element {
-  usePageTitle('Diagnóstico de la plataforma');
+  const t = useMessages();
+  usePageTitle(t.diagnostics.pageTitle);
   const [capabilities, setCapabilities] = useState<EnvironmentCapabilities>(() =>
     checkCapabilities(),
   );
   const [checkCounter, setCheckCounter] = useState<number>(0);
   const listId = useId();
+  // Typed against the catalog so every listed capability must have its copy.
+  const capabilityCopy: Readonly<Record<CapabilityId, CapabilityCopy>> = t.diagnostics.capabilities;
 
   const handleRecheck = (): void => {
     setCapabilities(checkCapabilities());
     setCheckCounter((prev) => prev + 1);
   };
 
-  const items = [
-    {
-      label: 'Aislamiento de origen cruzado (crossOriginIsolated)',
-      description:
-        'Indica si las cabeceras COOP y COEP están activas y habilitan memoria compartida.',
-      available: capabilities.crossOriginIsolated,
-    },
-    {
-      label: 'Soporte de Web Workers',
-      description:
-        'Permite delegar tareas de cómputo en segundo plano sin congelar la interfaz.',
-      available: capabilities.supportsWorkers,
-    },
-    {
-      label: 'Soporte de WebAssembly',
-      description:
-        'Habilita la ejecución de módulos compilados de alto rendimiento en el cliente.',
-      available: capabilities.supportsWebAssembly,
-    },
-    {
-      label: 'Soporte de SharedArrayBuffer',
-      description:
-        'Permite compartir memoria entre hilos sin copias estructuradas.',
-      available: capabilities.supportsSharedArrayBuffer,
-    },
-  ];
-
   return (
     <div className="diagnostics-page">
-      <PageHeading eyebrow="Herramienta técnica" title="Diagnóstico de la plataforma">
+      <PageHeading eyebrow={t.diagnostics.eyebrow} title={t.diagnostics.pageTitle}>
         <p>
-          Verifica la configuración base del entorno,
-          cabeceras de aislamiento y capacidades del navegador.
+          {t.diagnostics.introduction}
         </p>
       </PageHeading>
 
@@ -59,28 +36,31 @@ export function DiagnosticsPage(): React.JSX.Element {
         className="capabilities-section"
       >
         <h2 id={listId}>
-          Capacidades detectadas en tiempo de ejecución
+          {t.diagnostics.capabilitiesHeading}
         </h2>
 
         <ul className="capabilities-list">
-          {items.map((item) => (
-            <li
-              key={item.label}
-            >
-              <div>
-                <strong>{item.label}</strong>
-                <span>
-                  {item.description}
-                </span>
-              </div>
-              <span
-                role="status"
-                className={item.available ? 'capability-status available' : 'capability-status unavailable'}
+          {CAPABILITY_IDS.map((id) => {
+            const available = capabilities[id];
+            return (
+              <li
+                key={id}
               >
-                {item.available ? 'Disponible' : 'No disponible'}
-              </span>
-            </li>
-          ))}
+                <div>
+                  <strong>{capabilityCopy[id].label}</strong>
+                  <span>
+                    {capabilityCopy[id].description}
+                  </span>
+                </div>
+                <span
+                  role="status"
+                  className={available ? 'capability-status available' : 'capability-status unavailable'}
+                >
+                  {available ? t.diagnostics.available : t.diagnostics.unavailable}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -88,10 +68,10 @@ export function DiagnosticsPage(): React.JSX.Element {
 
       <section className="recheck-section">
         <h2>
-          Verificación de Reactividad
+          {t.diagnostics.recheckHeading}
         </h2>
         <p>
-          Verificaciones realizadas:{' '}
+          {t.diagnostics.checksDone}{' '}
           <strong data-testid="check-counter">{checkCounter}</strong>
         </p>
         <button
@@ -99,7 +79,7 @@ export function DiagnosticsPage(): React.JSX.Element {
           className="button button-primary"
           onClick={handleRecheck}
         >
-          Reevaluar capacidades
+          {t.diagnostics.recheck}
         </button>
       </section>
     </div>
