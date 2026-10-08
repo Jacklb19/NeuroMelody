@@ -190,6 +190,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | Catálogo `GOAL_IDS` con ids en inglés y textos en el diccionario, sin lenguaje clínico: `relax`, `rest_before_sleep`, `calm_after_activity`, `slow_breathing` y `pause`. Selección múltiple y opcional en `/plan`; viajan a `/session` en `QUERY_PARAMS.goals` (validados en la frontera, en orden del catálogo y sin repetir), se guardan en `SessionRecord.goals` y se muestran en el resumen y en el historial. |
 | Consecuencias | Los registros guardados antes de este cambio se leen con la lista vacía. Con la nube (S6.2) se guardan en `plans.goals`. Los objetivos no cambian la música: solo describen la intención de la sesión. |
 
+## ADR-28. Portada pública con animación y escena 3D
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 por el usuario («una pantalla de inicio con animaciones… como una página real en producción»; eligió three.js y la ruta `/` para la portada con la app en `/app`). |
+| Contexto | `diseno-visual.md` excluía animaciones decorativas y degradados en las pantallas de la app. Falta una página que explique el proyecto a quien llega por primera vez. |
+| Decisión | `/` pasa a ser una portada pública con su propio diseño (noche de bosque en la cabecera y el papel de la app en el resto) y el inicio de la app se mueve a `/app`. La cabecera muestra una escena 3D con `three` 0.180.0 (y `@types/three` 0.180.0 en desarrollo): una esfera de partículas que late con un corazón simulado y un pentagrama de cinco líneas a su alrededor. three.js se carga de forma diferida, solo en la portada y solo si hay WebGL; sin WebGL queda una figura en CSS. Animaciones de entrada y al desplazarse, todas desactivadas con `prefers-reduced-motion`; la escena se detiene fuera de pantalla y con la pestaña oculta. Colores, medidas y tiempos son tokens de `index.css`; textos en `src/i18n/es/landing.ts`. |
+| Consecuencias | La excepción a «sin animaciones decorativas» vale solo para la portada; las pantallas de escucha siguen sobrias. El manifest abre la app en `/app`. Las cifras de la cabecera son de un corazón simulado y lo dicen. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
