@@ -45,8 +45,7 @@ export const FRAME_RATE_WINDOW_MS = 1000;
 /** Drawing resolution of the waveform canvas; CSS scales it to the layout. */
 export const WAVEFORM_WIDTH = 600;
 export const WAVEFORM_HEIGHT = 120;
-/** Stroke width and vertical margin of the waveform, in canvas pixels. */
-export const WAVEFORM_LINE_WIDTH = 2;
+/** Vertical margin of the waveform, in canvas pixels; its colour and width come from the chart tokens. */
 export const WAVEFORM_MARGIN = 4;
 /** Smallest amplitude the waveform is scaled to, so noise is not blown up to full height. */
 export const WAVEFORM_MIN_AMPLITUDE = 1;

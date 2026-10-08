@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createFakeTimeEnvironment } from '../../../test/fakeTimeEnvironment';
 import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
 import { createInProcessPort } from '../../../test/inProcessThreadPort';
+import { TEST_CHART_PALETTE } from '../../../test/chartPalette';
 import { es } from '../../../i18n/es';
 import { SimulatedSource } from '../../acquisition/simulator/SimulatedSource';
 import { chartLabelsFrom } from '../drawing/chartLabels';
@@ -92,15 +93,7 @@ describe('SignalThreadClient', () => {
     const context = new FakeDrawingContext();
     // jsdom has no OffscreenCanvas: an object with the same shape is enough.
     const canvas = { width: 0, height: 0, getContext: () => context } as unknown as OffscreenCanvas;
-    const palette = {
-      line: 'a',
-      grid: 'b',
-      text: 'c',
-      discarded: 'd',
-      lowQualityBackground: 'e',
-      lowQualityHatch: 'f',
-      font: '14px sans-serif',
-    };
+    const palette = TEST_CHART_PALETTE;
 
     client.attachCanvas(canvas, palette, chartLabelsFrom(es.common), { widthCss: 300, heightCss: 100, scale: 2 });
     client.resize({ widthCss: 400, heightCss: 100, scale: 2 });

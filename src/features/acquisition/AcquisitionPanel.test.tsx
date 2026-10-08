@@ -7,10 +7,16 @@ import { formatClock } from '../../shared/formatClock';
 import { MS_PER_SECOND } from '../../shared/time';
 import { createFakeTimeEnvironment } from '../../test/fakeTimeEnvironment';
 import { SourceChannel } from './sourceChannel';
-import type { SignalSource } from './contract';
-import { AcquisitionPanel, type CreateBleSource, type CreateSimulatedSource } from './AcquisitionPanel';
+import type { SignalSource, SourceKind } from './contract';
+import {
+  AcquisitionPanel,
+  type CreateBleSource,
+  type CreateCameraSource,
+  type CreateSimulatedSource,
+} from './AcquisitionPanel';
 import { MAX_HR, MIN_HR, SIMULATOR_SEED } from './config';
 import type { BluetoothAdapter } from './ble/webBluetooth';
+import { CameraUnavailableError } from './camera/cameraCapture';
 import { SimulatedSource } from './simulator/SimulatedSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
 import { RECORDING_DURATION_MS, RECORDINGS_DIRECTORY, recordingFileName } from './recording/recordingCatalog';
@@ -78,7 +84,7 @@ describe('AcquisitionPanel', () => {
     expect(screen.getByTestId('heart-rate')).toHaveTextContent(es.common.noValue);
   });
 
-  it('offers the five scenarios and the four speeds', () => {
+  it('offers the four sources, the five scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
@@ -86,6 +92,7 @@ describe('AcquisitionPanel', () => {
       text.sources.simulator,
       text.sources.recording,
       text.sources.ble,
+      text.experimentalOption(text.sources.camera),
       text.scenarios.rest,
       text.scenarios.activation,
       text.scenarios.progressive_relaxation,
@@ -207,14 +214,71 @@ describe('AcquisitionPanel', () => {
     expect(createBle.mock.calls.map(([options]) => options.mode)).toEqual(['choose', 'remembered']);
     expect(onSourceChange).toHaveBeenCalledTimes(2);
   });
+
+  it('disables the experimental camera option when the browser lacks the camera API', () => {
+    render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} cameraAvailable={false} />);
+    expect(screen.getByRole('option', { name: text.experimentalOption(text.sources.camera) })).toBeDisabled();
+    expect(screen.getByText(text.cameraUnsupported)).toBeInTheDocument();
+  });
+
+  it('connects the camera from the click, with its instructions and without scenario or speed', async () => {
+    const user = userEvent.setup();
+    const createCamera = vi.fn<CreateCameraSource>(() => new FakeSource('camera'));
+    const onSourceChange = vi.fn();
+    render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} cameraAvailable createCamera={createCamera} />);
+
+    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    expect(screen.queryByRole('combobox', { name: text.scenarioLabel })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: text.speedLabel })).not.toBeInTheDocument();
+    expect(screen.getByText(text.cameraNote)).toBeInTheDocument();
+    expect(screen.queryByText(text.cameraUnsupported)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: text.connect.camera }));
+
+    expect(createCamera).toHaveBeenCalledOnce();
+    expect(onSourceChange).toHaveBeenCalledOnce();
+  });
+
+  it('explains why the camera could not be used', async () => {
+    const user = userEvent.setup();
+    const failing = new FakeSource('camera', new CameraUnavailableError('permission_denied'));
+    function CameraPanel() {
+      const [source, setSource] = useState<SignalSource | null>(null);
+      return <AcquisitionPanel source={source} onSourceChange={setSource} cameraAvailable createCamera={() => failing} />;
+    }
+    render(<CameraPanel />);
+
+    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    await user.click(screen.getByRole('button', { name: text.connect.camera }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      text.sourceErrors.camera(text.camera.errors.permission_denied),
+    );
+    expect(visibleState()).toBe(stateLine('error'));
+  });
 });
 
-/** Inert source: the panel only needs the contract to render its state. */
+/**
+ * Inert source: the panel only needs the contract to render its state. With
+ * a `failure`, connecting ends in error and reports it once the panel has
+ * subscribed, as a real source does after the browser answers.
+ */
 class FakeSource implements SignalSource {
-  readonly kind = 'ble' as const;
+  readonly kind: SourceKind;
   readonly #channel = new SourceChannel();
+  readonly #failure: Error | null;
+  constructor(kind: SourceKind = 'ble', failure: Error | null = null) {
+    this.kind = kind;
+    this.#failure = failure;
+  }
   get state() { return this.#channel.state; }
   subscribe = this.#channel.subscribe.bind(this.#channel);
-  connect = (): Promise<void> => Promise.resolve();
+  connect = async (): Promise<void> => {
+    const failure = this.#failure;
+    if (failure === null) return;
+    this.#channel.changeState('connecting');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    this.#channel.changeState('error');
+    this.#channel.emitError(failure);
+  };
   disconnect = (): Promise<void> => Promise.resolve();
 }

@@ -171,9 +171,7 @@ export function SignalPanel({
     if (chart.kind === 'ready' && container !== null) {
       const canvas = document.createElement('canvas');
       canvas.setAttribute('aria-hidden', 'true');
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.display = 'block';
+      // Its size comes from the .signal-chart > canvas rule in index.css.
       container.append(canvas);
       client.attachCanvas(chart.transfer(canvas), chart.palette, chart.labels, measure(container));
 

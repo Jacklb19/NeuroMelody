@@ -22,6 +22,17 @@ const PALETTE: ChartPalette = {
   lowQualityBackground: 'rgb(5, 5, 5)',
   lowQualityHatch: 'rgb(6, 6, 6)',
   font: '14px sans-serif',
+  marginLeft: 56,
+  marginRight: 24,
+  marginTop: 8,
+  marginBottom: 24,
+  labelOffset: 6,
+  hatchSpacing: 8,
+  markerHalfSize: 4,
+  lineWidthGrid: 1,
+  lineWidthHatch: 1,
+  lineWidthSeries: 2,
+  lineWidthDiscarded: 1.5,
 };
 
 function createScene(scenario: ScenarioId = 'rest', readPalette: () => ChartPalette = () => PALETTE) {
@@ -107,7 +118,10 @@ describe('SignalPanel', () => {
     const chart = screen.getByRole('img', { name: copy.chart.accessibleName(ANALYSIS_WINDOW_MS / MS_PER_MINUTE) });
     const summary = document.getElementById(chart.getAttribute('aria-describedby') ?? '');
     expect(summary?.tagName).toBe('DL');
-    expect(chart.querySelector('canvas')?.getAttribute('aria-hidden')).toBe('true');
+    const canvas = chart.querySelector('canvas');
+    expect(canvas?.getAttribute('aria-hidden')).toBe('true');
+    // Sized by the stylesheet, not by inline styles.
+    expect(canvas?.hasAttribute('style')).toBe(false);
     expect(scene.context.count('stroke', (o) => o.strokeStyle === PALETTE.line)).toBeGreaterThan(0);
   });
 

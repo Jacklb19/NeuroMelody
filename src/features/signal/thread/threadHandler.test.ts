@@ -2,19 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { es } from '../../../i18n/es';
 import { FakeDrawingContext } from '../../../test/fakeDrawingContext';
 import { chartLabelsFrom } from '../drawing/chartLabels';
-import type { ChartPalette } from '../drawing/palette';
+import { TEST_CHART_PALETTE } from '../../../test/chartPalette';
 import { createSignalThreadHandler } from './threadHandler';
 import type { ThreadCanvas, MessageFromThread } from './protocol';
 
-const PALETTE: ChartPalette = {
-  line: 'rgb(1, 1, 1)',
-  grid: 'rgb(2, 2, 2)',
-  text: 'rgb(3, 3, 3)',
-  discarded: 'rgb(4, 4, 4)',
-  lowQualityBackground: 'rgb(5, 5, 5)',
-  lowQualityHatch: 'rgb(6, 6, 6)',
-  font: '14px sans-serif',
-};
+const PALETTE = TEST_CHART_PALETTE;
 const LABELS = chartLabelsFrom(es.common);
 
 function createScene(context: FakeDrawingContext | null = new FakeDrawingContext()) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { es } from '../../i18n/es';
 import { BLE_FAILURES, BleConnectionError } from './ble/BleSource';
 import { HeartRateMeasurementError, MEASUREMENT_ERROR_CODES } from './ble/parseHeartRateMeasurement';
+import { CAMERA_FAILURES, CameraUnavailableError } from './camera/cameraCapture';
 import { MAX_HR, MIN_HR } from './config';
 import { describeSourceError } from './describeSourceError';
 import { RECORDING_ERROR_CODES, RecordingError } from './recording/recording';
@@ -16,6 +17,7 @@ describe('describeSourceError', () => {
     ...MEASUREMENT_ERROR_CODES.map((code) => new HeartRateMeasurementError(code)),
     ...BLE_FAILURES.map((code) => new BleConnectionError(code)),
     ...RECORDING_ERROR_CODES.map((code) => new RecordingError(code)),
+    ...CAMERA_FAILURES.map((code) => new CameraUnavailableError(code)),
   ])('has a message for $name $code', (error) => {
     const description = describeSourceError(error, text);
     expect(description.trim()).not.toBe('');

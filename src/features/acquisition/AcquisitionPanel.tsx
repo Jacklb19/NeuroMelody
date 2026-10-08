@@ -22,14 +22,18 @@ import {
 } from './recording/recordingCatalog';
 import { BleSource, type BleSourceOptions } from './ble/BleSource';
 import { browserBluetooth, type BluetoothAdapter } from './ble/webBluetooth';
+import { CameraSource } from './camera/CameraSource';
+import { cameraApiAvailable } from './camera/cameraCapture';
 
 export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalSource;
 export type CreateBleSource = (options: BleSourceOptions) => SignalSource;
+export type CreateCameraSource = () => SignalSource;
 
 const createDefaultSource: CreateSimulatedSource = (options) =>
   new SimulatedSource(options);
 const createDefaultRecording = (options: RecordedSourceOptions): SignalSource => new RecordedSource(options);
 const createDefaultBle: CreateBleSource = (options) => new BleSource(options);
+const createDefaultCamera: CreateCameraSource = () => new CameraSource();
 
 interface AcquisitionPanelProps {
   /** Current source; the parent keeps it so it can be shared with the analysis. */
@@ -41,12 +45,16 @@ interface AcquisitionPanelProps {
   readonly createBle?: CreateBleSource;
   /** Web Bluetooth adapter; `null` when the browser lacks it (RNF-10). */
   readonly bluetooth?: BluetoothAdapter | null;
+  readonly createCamera?: CreateCameraSource;
+  /** Whether the browser exposes the camera API; injected by tests like the Bluetooth adapter. */
+  readonly cameraAvailable?: boolean;
 }
 
 /**
- * Acquisition layer panel: picks the source (simulator, example recording or
- * Bluetooth strap), connects or disconnects, and always shows the connection
- * state (HU-01) with the latest reading received.
+ * Acquisition layer panel: picks the source (simulator, example recording,
+ * Bluetooth strap or the experimental camera pulse), connects or disconnects,
+ * and always shows the connection state (HU-01) with the latest reading
+ * received.
  */
 export function AcquisitionPanel({
   source,
@@ -55,6 +63,8 @@ export function AcquisitionPanel({
   createRecording = createDefaultRecording,
   createBle = createDefaultBle,
   bluetooth = browserBluetooth(),
+  createCamera = createDefaultCamera,
+  cameraAvailable = cameraApiAvailable(),
 }: AcquisitionPanelProps): React.JSX.Element {
   const t = useMessages();
   const [kind, setKind] = useState<SourceKind>(DEFAULT_SOURCE_KIND);
@@ -67,6 +77,11 @@ export function AcquisitionPanel({
   // Typed views of the dictionary: a new source, state, scenario or recording cannot ship without its text.
   const sourceNames: Readonly<Record<SourceKind, string>> = t.acquisition.sources;
   const connectLabels: Readonly<Record<SourceKind, string>> = t.acquisition.connect;
+  // Connection notices of the sources that open a device; the rest only report discarded readings.
+  const connectionNotices: Readonly<Partial<Record<SourceKind, (reason: string) => string>>> = {
+    ble: t.acquisition.sourceErrors.ble,
+    camera: t.acquisition.sourceErrors.camera,
+  };
   const stateNames: Readonly<Record<ConnectionState, string>> = t.acquisition.connectionStates;
   const scenarioNames: Readonly<Record<ScenarioId, string>> = t.acquisition.scenarios;
   const recordingNames: Readonly<Record<RecordingId, string>> = t.acquisition.recordings;
@@ -83,18 +98,25 @@ export function AcquisitionPanel({
 
   const start = (newSource: SignalSource): void => {
     onSourceChange(newSource);
-    // Called inside the click handler: Web Bluetooth needs the user gesture.
+    // Called inside the click handler: Web Bluetooth and the camera need the user gesture.
     void newSource.connect();
   };
 
+  /** Whether the browser lacks what a source needs (RNF-10). */
+  const unavailable = (id: SourceKind): boolean =>
+    (SOURCE_TRAITS[id].requiresBluetooth && bluetooth === null) || (SOURCE_TRAITS[id].requiresCamera && !cameraAvailable);
+
+  // Keyed by the catalog, so a new kind cannot ship without a way to start it.
+  const sourceFactories: Readonly<Record<SourceKind, () => SignalSource | null>> = {
+    simulator: () => createSource({ scenario, speed, seed: SIMULATOR_SEED }),
+    recording: () => createRecording({ recordId, speed }),
+    ble: () => (bluetooth === null ? null : createBle({ bluetooth, mode: 'choose' })),
+    camera: () => (cameraAvailable ? createCamera() : null),
+  };
+
   const connect = (): void => {
-    if (kind === 'ble') {
-      if (bluetooth !== null) start(createBle({ bluetooth, mode: 'choose' }));
-      return;
-    }
-    start(kind === 'simulator'
-      ? createSource({ scenario, speed, seed: SIMULATOR_SEED })
-      : createRecording({ recordId, speed }));
+    const newSource = sourceFactories[kind]();
+    if (newSource !== null) start(newSource);
   };
 
   const reconnectRemembered = (): void => {
@@ -103,9 +125,11 @@ export function AcquisitionPanel({
 
   const canRemember = kind === 'ble' && bluetooth?.getDevices !== undefined;
   const errorReason = reading.error === null ? null : describeSourceError(reading.error, t.acquisition);
+  // The notice follows the selected source (proposal P-02, item 5 keeps this open).
+  const connectionNotice = connectionNotices[kind];
   const errorText = errorReason === null ? null
     : kind === 'recording' ? t.acquisition.sourceErrors.recording(errorReason)
-      : kind === 'ble' && reading.state === 'error' ? t.acquisition.sourceErrors.ble(errorReason)
+      : connectionNotice !== undefined && reading.state === 'error' ? connectionNotice(errorReason)
         : t.acquisition.sourceErrors.discarded(errorReason);
 
   const disconnect = (): void => {
@@ -128,13 +152,13 @@ export function AcquisitionPanel({
             setKind(parseOption(SOURCE_KIND_IDS, event.target.value, DEFAULT_SOURCE_KIND));
           }}>
             {SOURCE_KIND_IDS.map((id) => (
-              <option key={id} value={id} disabled={SOURCE_TRAITS[id].requiresBluetooth && bluetooth === null}>
-                {sourceNames[id]}
+              <option key={id} value={id} disabled={unavailable(id)}>
+                {SOURCE_TRAITS[id].experimental ? t.acquisition.experimentalOption(sourceNames[id]) : sourceNames[id]}
               </option>
             ))}
           </select>
         </label>
-        {kind === 'ble' ? null : kind === 'simulator' ? <label>
+        {kind === 'simulator' ? <label>
           {t.acquisition.scenarioLabel}
           <select
             value={scenario}
@@ -149,7 +173,7 @@ export function AcquisitionPanel({
               </option>
             ))}
           </select>
-        </label> : <label>
+        </label> : kind === 'recording' ? <label>
           {t.acquisition.recordingLabel}
           <select value={recordId} disabled={active} onChange={event => {
             setRecordId(parseOption(RECORDING_IDS, event.target.value, DEFAULT_RECORDING_ID));
@@ -158,7 +182,7 @@ export function AcquisitionPanel({
               {t.acquisition.recordingOption(recordingNames[id], RECORDING_DURATION_MIN)}
             </option>)}
           </select>
-        </label>}
+        </label> : null}
 
         {SOURCE_TRAITS[kind].adjustableSpeed && <label>
           {t.acquisition.speedLabel}
@@ -186,6 +210,12 @@ export function AcquisitionPanel({
       </p>}
       {kind === 'ble' && <p className="recording-note">
         {t.acquisition.bleNote}
+      </p>}
+      {!cameraAvailable && <p className="recording-note">
+        {t.acquisition.cameraUnsupported}
+      </p>}
+      {kind === 'camera' && <p className="recording-note">
+        {t.acquisition.cameraNote}
       </p>}
 
       <div className="action-row source-button">

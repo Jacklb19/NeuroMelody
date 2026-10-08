@@ -3,12 +3,7 @@ import type { ClassifiedBeat } from '../processing/types';
 import { ANALYSIS_WINDOW_MS } from '../processing/thresholds';
 import { formatSignalTime } from '../formatSignalTime';
 import {
-  AXIS_LABEL_OFFSET_PX,
-  CHART_MARGIN_PX,
-  CROSS_SIZE_PX,
   DEFAULT_RR_RANGE_MS,
-  HATCH_SPACING_PX,
-  LINE_WIDTH_PX,
   MIN_PLOT_SIZE_PX,
   RR_AXIS_EXPANSION_MS,
   RR_AXIS_MIN_SPAN_MS,
@@ -61,7 +56,7 @@ interface Scales {
   readonly area: { x: number; y: number; width: number; height: number };
 }
 
-function computeScales(snapshot: WindowSnapshot, dims: CanvasDimensions): Scales {
+function computeScales(snapshot: WindowSnapshot, dims: CanvasDimensions, palette: ChartPalette): Scales {
   // Until the window is full, the axis starts at 0 and fills from left to right.
   const startMs = Math.max(0, snapshot.timeMs - ANALYSIS_WINDOW_MS);
   const endMs = startMs + ANALYSIS_WINDOW_MS;
@@ -79,10 +74,10 @@ function computeScales(snapshot: WindowSnapshot, dims: CanvasDimensions): Scales
   const step = maxRr - minRr > RR_AXIS_WIDE_SPAN_MS ? RR_TICK_STEP_MS.wide : RR_TICK_STEP_MS.narrow;
 
   const area = {
-    x: CHART_MARGIN_PX.left,
-    y: CHART_MARGIN_PX.top,
-    width: Math.max(MIN_PLOT_SIZE_PX, dims.widthCss - CHART_MARGIN_PX.left - CHART_MARGIN_PX.right),
-    height: Math.max(MIN_PLOT_SIZE_PX, dims.heightCss - CHART_MARGIN_PX.top - CHART_MARGIN_PX.bottom),
+    x: palette.marginLeft,
+    y: palette.marginTop,
+    width: Math.max(MIN_PLOT_SIZE_PX, dims.widthCss - palette.marginLeft - palette.marginRight),
+    height: Math.max(MIN_PLOT_SIZE_PX, dims.heightCss - palette.marginTop - palette.marginBottom),
   };
   return {
     startMs,
@@ -102,7 +97,7 @@ function computeScales(snapshot: WindowSnapshot, dims: CanvasDimensions): Scales
 function drawAxes(ctx: DrawingContext, scales: Scales, palette: ChartPalette, labels: ChartLabels): void {
   ctx.strokeStyle = palette.grid;
   ctx.fillStyle = palette.text;
-  ctx.lineWidth = LINE_WIDTH_PX.grid;
+  ctx.lineWidth = palette.lineWidthGrid;
   ctx.font = palette.font;
 
   ctx.textAlign = 'right';
@@ -113,7 +108,7 @@ function drawAxes(ctx: DrawingContext, scales: Scales, palette: ChartPalette, la
     ctx.moveTo(scales.area.x, y);
     ctx.lineTo(scales.area.x + scales.area.width, y);
     ctx.stroke();
-    ctx.fillText(fillValueSlot(labels.rrTick, String(rr)), scales.area.x - AXIS_LABEL_OFFSET_PX, y);
+    ctx.fillText(fillValueSlot(labels.rrTick, String(rr)), scales.area.x - palette.labelOffset, y);
   }
 
   ctx.textAlign = 'center';
@@ -121,7 +116,7 @@ function drawAxes(ctx: DrawingContext, scales: Scales, palette: ChartPalette, la
   // Ticks on whole signal minutes, even when the window starts mid-minute.
   const firstTickMs = Math.ceil(scales.startMs / TIME_TICK_INTERVAL_MS) * TIME_TICK_INTERVAL_MS;
   for (let t = firstTickMs; t <= scales.endMs; t += TIME_TICK_INTERVAL_MS) {
-    ctx.fillText(formatSignalTime(t), scales.x(t), scales.area.y + scales.area.height + AXIS_LABEL_OFFSET_PX);
+    ctx.fillText(formatSignalTime(t), scales.x(t), scales.area.y + scales.area.height + palette.labelOffset);
   }
 }
 
@@ -146,9 +141,9 @@ function drawSegments(
     ctx.rect(x0, scales.area.y, x1 - x0, scales.area.height);
     ctx.clip();
     ctx.strokeStyle = palette.lowQualityHatch;
-    ctx.lineWidth = LINE_WIDTH_PX.hatch;
+    ctx.lineWidth = palette.lineWidthHatch;
     ctx.beginPath();
-    for (let x = x0 - scales.area.height; x < x1; x += HATCH_SPACING_PX) {
+    for (let x = x0 - scales.area.height; x < x1; x += palette.hatchSpacing) {
       ctx.moveTo(x, scales.area.y + scales.area.height);
       ctx.lineTo(x + scales.area.height, scales.area.y);
     }
@@ -159,7 +154,7 @@ function drawSegments(
 
 function drawSeries(ctx: DrawingContext, scales: Scales, beats: readonly ClassifiedBeat[], palette: ChartPalette): void {
   ctx.strokeStyle = palette.line;
-  ctx.lineWidth = LINE_WIDTH_PX.series;
+  ctx.lineWidth = palette.lineWidthSeries;
   ctx.beginPath();
   let previous: ClassifiedBeat | null = null;
   for (const beat of beats) {
@@ -185,7 +180,8 @@ function drawDiscarded(
   palette: ChartPalette,
 ): void {
   ctx.strokeStyle = palette.discarded;
-  ctx.lineWidth = LINE_WIDTH_PX.discarded;
+  ctx.lineWidth = palette.lineWidthDiscarded;
+  const half = palette.markerHalfSize;
   for (const beat of beats) {
     if (beat.accepted) {
       continue;
@@ -193,10 +189,10 @@ function drawDiscarded(
     const x = scales.x(beat.endMs);
     const y = scales.y(beat.rrMs);
     ctx.beginPath();
-    ctx.moveTo(x - CROSS_SIZE_PX, y - CROSS_SIZE_PX);
-    ctx.lineTo(x + CROSS_SIZE_PX, y + CROSS_SIZE_PX);
-    ctx.moveTo(x - CROSS_SIZE_PX, y + CROSS_SIZE_PX);
-    ctx.lineTo(x + CROSS_SIZE_PX, y - CROSS_SIZE_PX);
+    ctx.moveTo(x - half, y - half);
+    ctx.lineTo(x + half, y + half);
+    ctx.moveTo(x - half, y + half);
+    ctx.lineTo(x + half, y - half);
     ctx.stroke();
   }
 }
@@ -205,7 +201,8 @@ function drawDiscarded(
  * Draws the tachogram: RR intervals of the analysis window against signal
  * time. Low-quality segments get a background and hatching, and discarded
  * beats an ×, so the chart does not rely on color alone (WCAG 1.4.1).
- * All colors come from the palette and all text from the labels.
+ * All colors, the font and the lengths come from the palette, and all text
+ * from the labels.
  */
 export function drawTachogram(
   ctx: DrawingContext,
@@ -219,7 +216,7 @@ export function drawTachogram(
   // Drawing happens in CSS pixels; the scale adapts the result to the screen density.
   ctx.setTransform(dims.scale, 0, 0, dims.scale, 0, 0);
 
-  const scales = computeScales(snapshot, dims);
+  const scales = computeScales(snapshot, dims, palette);
   drawSegments(ctx, scales, snapshot, palette);
   drawAxes(ctx, scales, palette, labels);
   drawSeries(ctx, scales, snapshot.beats, palette);

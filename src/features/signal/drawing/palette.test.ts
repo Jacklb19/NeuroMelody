@@ -6,6 +6,7 @@ import {
   readChartPalette,
   FAMILY_VARIABLE,
   SIZE_VARIABLE,
+  PALETTE_LENGTH_VARIABLES,
   PALETTE_VARIABLES,
   type ComputedStyles,
 } from './palette';
@@ -33,11 +34,29 @@ const COMPLETE_STYLES: Record<string, string> = {
   '--color-chart-low-quality-hatch': '#a16207',
   '--font-base': 'system-ui, sans-serif',
   '--text-sm': '0.875rem',
+  '--chart-margin-left': '56px',
+  '--chart-margin-right': '24px',
+  '--chart-margin-top': '8px',
+  '--chart-margin-bottom': '24px',
+  '--chart-label-offset': '6px',
+  '--chart-hatch-spacing': '8px',
+  '--chart-marker-half-size': '4px',
+  '--chart-line-width-grid': '1px',
+  '--chart-line-width-hatch': '1px',
+  '--chart-line-width-series': '2px',
+  '--chart-line-width-discarded': ' 1.5px',
   'font-size': '16px',
 };
 
+const ALL_VARIABLES = [
+  ...Object.values(PALETTE_VARIABLES),
+  ...Object.values(PALETTE_LENGTH_VARIABLES),
+  FAMILY_VARIABLE,
+  SIZE_VARIABLE,
+];
+
 describe('readChartPalette', () => {
-  it('reads the colors from the CSS variables and converts the size from rem to px', () => {
+  it('reads colors and lengths from the CSS variables and converts the font size from rem to px', () => {
     expect(readChartPalette(styles(COMPLETE_STYLES))).toEqual({
       line: '#2563eb',
       grid: '#e5e7eb',
@@ -46,7 +65,23 @@ describe('readChartPalette', () => {
       lowQualityBackground: '#fffbeb',
       lowQualityHatch: '#a16207',
       font: '14px system-ui, sans-serif',
+      marginLeft: 56,
+      marginRight: 24,
+      marginTop: 8,
+      marginBottom: 24,
+      labelOffset: 6,
+      hatchSpacing: 8,
+      markerHalfSize: 4,
+      lineWidthGrid: 1,
+      lineWidthHatch: 1,
+      lineWidthSeries: 2,
+      lineWidthDiscarded: 1.5,
     });
+  });
+
+  it('converts a length in rem to px', () => {
+    const palette = readChartPalette(styles({ ...COMPLETE_STYLES, '--chart-margin-left': '3.5rem' }));
+    expect(palette.marginLeft).toBe(56);
   });
 
   it('accepts a size in px', () => {
@@ -54,7 +89,7 @@ describe('readChartPalette', () => {
     expect(palette.font).toBe('13px system-ui, sans-serif');
   });
 
-  it.each(Object.values(PALETTE_VARIABLES).concat([FAMILY_VARIABLE, SIZE_VARIABLE]))(
+  it.each(ALL_VARIABLES)(
     'throws an explicit error when %s is missing',
     (variable) => {
       const incomplete = { ...COMPLETE_STYLES, [variable]: '' };
@@ -63,6 +98,18 @@ describe('readChartPalette', () => {
       expect(paletteErrorOf(styles(incomplete))).toMatchObject({ code: 'missing_variable', detail: variable });
     },
   );
+
+  it.each([
+    ['--chart-hatch-spacing', '0px'],
+    ['--chart-line-width-series', '-2px'],
+    ['--chart-margin-left', '56'],
+    ['--chart-label-offset', '10%'],
+    ['--chart-marker-half-size', 'wide'],
+  ])('throws an explicit error when %s is %s, not a positive length', (variable, value) => {
+    const invalid = styles({ ...COMPLETE_STYLES, [variable]: value });
+    expect(() => readChartPalette(invalid)).toThrow(variable);
+    expect(paletteErrorOf(invalid)).toMatchObject({ code: 'invalid_length', detail: variable });
+  });
 
   it('throws an error when the size cannot be parsed', () => {
     expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': 'not-a-size' }))).toThrow(
@@ -101,9 +148,18 @@ describe('chart tokens in src/index.css', () => {
   }
 
   it('defines every variable the palette reads', () => {
-    for (const variable of [...Object.values(PALETTE_VARIABLES), FAMILY_VARIABLE, SIZE_VARIABLE]) {
+    for (const variable of ALL_VARIABLES) {
       expect(resolve(variable), variable).not.toBe('');
     }
+  });
+
+  it('forms a palette the chart can be drawn with', () => {
+    // The browser default root size, which resolves the rem font size.
+    const computed = styles({
+      ...Object.fromEntries(ALL_VARIABLES.map((variable) => [variable, resolve(variable)])),
+      'font-size': '16px',
+    });
+    expect(() => readChartPalette(computed)).not.toThrow();
   });
 
   it('does not reuse the error colors in the chart', () => {

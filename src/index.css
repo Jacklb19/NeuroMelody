@@ -32,6 +32,22 @@
   --color-chart-discarded: #716b5e;
   --color-chart-low-quality-background: #f4eddd;
   --color-chart-low-quality-hatch: #876723;
+  /* Chart lengths, also read by readChartPalette: px or rem, always positive. */
+  /* The right margin leaves room for the centred label of the last minute. */
+  --chart-margin-left: 56px;
+  --chart-margin-right: 24px;
+  --chart-margin-top: 8px;
+  --chart-margin-bottom: 24px;
+  /* Gap between an axis and its tick labels. */
+  --chart-label-offset: 6px;
+  /* Distance between the diagonal lines that hatch a low-quality segment. */
+  --chart-hatch-spacing: 8px;
+  /* Half the side of the × that marks a discarded beat. */
+  --chart-marker-half-size: 4px;
+  --chart-line-width-grid: 1px;
+  --chart-line-width-hatch: 1px;
+  --chart-line-width-series: 2px;
+  --chart-line-width-discarded: 1.5px;
 
   --font-base: 'Segoe UI', 'Helvetica Neue', sans-serif;
   --font-display: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
@@ -227,6 +243,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .source-metrics dt, .signal-metrics dt { color: var(--color-text-secondary); }
 .source-metrics dd, .signal-metrics dd { text-align: right; font-weight: var(--font-weight-strong); }
 .signal-chart { height: var(--chart-height); background: var(--color-background); margin-bottom: var(--space-5); }
+.signal-chart > canvas { display: block; width: 100%; height: 100%; }
 .signal-panel > p:not(.signal-status) { color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-4); }
 .duration-dialog { position: static; width: 100%; padding: var(--space-5); border: var(--border-width) solid var(--color-error-text); background: var(--color-paper); color: var(--color-text); border-radius: var(--border-radius); margin-top: var(--space-5); }
 .duration-dialog h3, .duration-dialog p { margin-bottom: var(--space-4); }
@@ -275,7 +292,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .summary-figures .figure-note { font-family: var(--font-base); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .summary-figures .figure-trend { margin-top: var(--space-3); }
 .sparkline { display: block; width: 100%; height: var(--sparkline-height); overflow: visible; }
-.sparkline path { stroke: var(--color-chart-line); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sparkline path { stroke: var(--color-chart-line); stroke-width: var(--chart-line-width-series); stroke-linejoin: round; stroke-linecap: round; }
 .state-bar { display: flex; gap: var(--segment-gap); height: var(--state-bar-height); border-radius: var(--border-radius); overflow: hidden; margin-bottom: var(--space-5); }
 .state-segment { flex-basis: 0; }
 .state-calibrating { background: var(--color-state-calibrating); }

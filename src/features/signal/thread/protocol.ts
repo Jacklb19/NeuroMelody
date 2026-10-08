@@ -1,7 +1,7 @@
 import type { BeatNotification } from '../../acquisition/contract';
 import type { DrawingContext, CanvasDimensions } from '../drawing/drawTachogram';
 import { VALUE_SLOT, type ChartLabels } from '../drawing/chartLabels';
-import { PALETTE_VARIABLES, type ChartPalette } from '../drawing/palette';
+import { PALETTE_LENGTH_VARIABLES, PALETTE_VARIABLES, type ChartPalette } from '../drawing/palette';
 import type { IndicesResult } from '../processing/SignalProcessor';
 import { SIGNAL_QUALITIES } from '../processing/types';
 
@@ -64,6 +64,10 @@ function isNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function isPositiveNumber(value: unknown): value is number {
+  return isNumber(value) && value > 0;
+}
+
 function isNumberOrNull(value: unknown): value is number | null {
   return value === null || isNumber(value);
 }
@@ -83,11 +87,13 @@ function isNonEmptyText(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== '';
 }
 
+/** Lengths must be positive, as readChartPalette guarantees: a zero hatch spacing would never finish. */
 function isPalette(value: unknown): value is ChartPalette {
   return (
     isRecord(value) &&
     isNonEmptyText(value.font) &&
-    Object.keys(PALETTE_VARIABLES).every((key) => isNonEmptyText(value[key]))
+    Object.keys(PALETTE_VARIABLES).every((key) => isNonEmptyText(value[key])) &&
+    Object.keys(PALETTE_LENGTH_VARIABLES).every((key) => isPositiveNumber(value[key]))
   );
 }
 

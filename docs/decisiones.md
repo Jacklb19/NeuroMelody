@@ -100,7 +100,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Estado | Aprobado el 29 sep 2026; Bluetooth implementado el 6 oct 2026 (S5). |
 | Decisión | Tres fuentes tras el contrato `SignalSource`: simulador, banda Bluetooth y dos extractos de 30 minutos de PhysioNet nsr2db 1.0.0 (ODC-By 1.0, créditos en `public/recordings/CREDITS.md`), versionados como JSON de unos 25 KB. Bluetooth reintenta a 1, 2, 4 y 8 s tras perder el enlace y después cada 8 s hasta cerca de un minuto (ampliado el 7 oct 2026 tras la prueba manual), con un máximo de 10 s por intento y sin reiniciar el tiempo de señal, y ofrece «Reconectar banda» con `getDevices()` cuando el navegador lo expone. |
 | Desviación | Versionar los extractos es una excepción a la regla de no versionar datos, aprobada por el usuario. |
-| Consecuencias | La app se demuestra sin banda. La emulación con nRF Connect prueba el protocolo, no la precisión de una banda real. |
+| Consecuencias | La app se demuestra sin banda. La emulación con nRF Connect prueba el protocolo, no la precisión de una banda real. Desde el 7 oct hay una cuarta fuente experimental, la cámara del celular (propuesta P-01), pendiente de prueba en un teléfono real antes de pasar a decisión. |
 
 ## ADR-18. Cuenta, datos y privacidad
 

@@ -31,6 +31,7 @@ export const signal = {
     paletteErrors: {
       missing_variable: (variable: string): string => `Falta la variable CSS ${variable}.`,
       invalid_font_size: (value: string): string => `Tamaño de fuente no válido: ${value}.`,
+      invalid_length: (variable: string): string => `La variable CSS ${variable} no es una medida positiva en px o rem.`,
     },
   },
   /** Labels of the indicators, reusable wherever the same figures are shown. */

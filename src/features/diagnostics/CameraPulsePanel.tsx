@@ -14,14 +14,13 @@ import {
   PULSE_INTERVALS,
   RECENT_INTERVALS,
   WAVEFORM_HEIGHT,
-  WAVEFORM_LINE_WIDTH,
   WAVEFORM_MARGIN,
   WAVEFORM_MIN_AMPLITUDE,
   WAVEFORM_WIDTH,
 } from '../acquisition/camera/config';
 import { PulseDetector, type FrameSample } from '../acquisition/camera/pulseDetector';
 import { bpmFromRrMs } from '../acquisition/heartRate';
-import { PALETTE_VARIABLES } from '../signal/drawing/palette';
+import { ChartPaletteError, readChartPalette, type ChartPalette } from '../signal/drawing/palette';
 
 export type StartCapture = (onFrame: (sample: FrameSample) => void) => Promise<CameraCapture>;
 
@@ -39,17 +38,30 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 === 0 ? ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2 : (sorted[middle] ?? 0);
 }
 
-function drawWaveform(canvas: HTMLCanvasElement | null, detector: PulseDetector, color: string): void {
+/**
+ * The waveform shares the tachogram's colour and series width (CSS tokens).
+ * Without those styles the panel still reports the figures, like SignalPanel.
+ */
+function readWaveformPalette(): ChartPalette | null {
+  try {
+    return readChartPalette();
+  } catch (error) {
+    if (error instanceof ChartPaletteError) return null;
+    throw error;
+  }
+}
+
+function drawWaveform(canvas: HTMLCanvasElement | null, detector: PulseDetector, palette: ChartPalette | null): void {
   const context = canvas?.getContext('2d');
-  if (canvas === null || context === null || context === undefined) return;
+  if (palette === null || canvas === null || context === null || context === undefined) return;
   const points = detector.waveform;
   context.clearRect(0, 0, canvas.width, canvas.height);
   const first = points[0];
   const last = points.at(-1);
   if (first === undefined || last === undefined || last.timeMs === first.timeMs) return;
   const amplitude = Math.max(...points.map((point) => Math.abs(point.value)), WAVEFORM_MIN_AMPLITUDE);
-  context.strokeStyle = color;
-  context.lineWidth = WAVEFORM_LINE_WIDTH;
+  context.strokeStyle = palette.line;
+  context.lineWidth = palette.lineWidthSeries;
   context.beginPath();
   points.forEach((point, i) => {
     const x = ((point.timeMs - first.timeMs) / (last.timeMs - first.timeMs)) * canvas.width;
@@ -93,7 +105,7 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
 
   const begin = (): void => {
     const detector = new PulseDetector();
-    const color = getComputedStyle(document.documentElement).getPropertyValue(PALETTE_VARIABLES.line).trim();
+    const palette = readWaveformPalette();
     let intervals: number[] = [];
     let finger = false;
     let frames = 0;
@@ -101,7 +113,7 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
 
     const onFrame = (sample: FrameSample): void => {
       const beats = detector.push(sample);
-      drawWaveform(canvasRef.current, detector, color);
+      drawWaveform(canvasRef.current, detector, palette);
       frames++;
       secondStartMs ??= sample.timeMs;
       const elapsedMs = sample.timeMs - secondStartMs;
