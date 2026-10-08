@@ -1,10 +1,21 @@
-import { isRating, isSessionRecord, type SessionRecord } from './sessionRecord';
+import { isRating, isSessionRecord, MAX_RATING, MIN_RATING, type SessionRecord } from './sessionRecord';
 
-/** Raised when the local history cannot be read or written. */
+/** Why the local history failed; the interface turns each code into a sentence. */
+export const SESSION_STORE_ERROR_CODES = ['invalid_record', 'invalid_rating', 'not_found', 'access_failed', 'open_failed'] as const;
+
+export type SessionStoreErrorCode = (typeof SESSION_STORE_ERROR_CODES)[number];
+
+/**
+ * Raised when the local history cannot be read or written. `message` is for
+ * developers; what the person reads comes from `code` (ADR-25).
+ */
 export class SessionStoreError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  readonly code: SessionStoreErrorCode;
+
+  constructor(code: SessionStoreErrorCode, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = 'SessionStoreError';
+    this.code = code;
   }
 }
 
@@ -33,7 +44,7 @@ abstract class ValidatingStore implements SessionStore {
   abstract clear(): Promise<void>;
 
   async save(record: SessionRecord): Promise<void> {
-    if (!isSessionRecord(record)) throw new SessionStoreError('La sesión no tiene un formato válido.');
+    if (!isSessionRecord(record)) throw new SessionStoreError('invalid_record', 'The session record does not have a valid shape.');
     await this.write(record);
   }
 
@@ -47,9 +58,11 @@ abstract class ValidatingStore implements SessionStore {
   }
 
   async setRatingAfter(id: string, rating: number | null): Promise<SessionRecord> {
-    if (!isRating(rating)) throw new SessionStoreError('La valoración debe ser un número entero de 0 a 10.');
+    if (!isRating(rating)) {
+      throw new SessionStoreError('invalid_rating', `The rating must be a whole number from ${String(MIN_RATING)} to ${String(MAX_RATING)}.`);
+    }
     const record = await this.get(id);
-    if (record === null) throw new SessionStoreError('No se encontró la sesión.');
+    if (record === null) throw new SessionStoreError('not_found', `Session ${id} was not found.`);
     const updated = { ...record, ratingAfter: rating };
     await this.write(updated);
     return updated;
@@ -84,6 +97,7 @@ export class MemorySessionStore extends ValidatingStore {
   }
 }
 
+/** IndexedDB database, schema version and object store of the history. */
 const DATABASE = 'neuromelody';
 const VERSION = 1;
 const SESSIONS = 'sessions';
@@ -91,7 +105,7 @@ const SESSIONS = 'sessions';
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => { resolve(request.result); };
-    request.onerror = () => { reject(new SessionStoreError('No se pudo acceder al historial del dispositivo.', { cause: request.error })); };
+    request.onerror = () => { reject(new SessionStoreError('access_failed', 'Could not access the session history.', { cause: request.error })); };
   });
 }
 
@@ -116,7 +130,7 @@ export class IndexedDbSessionStore extends ValidatingStore {
       request.onsuccess = () => { resolve(request.result); };
       request.onerror = () => {
         this.#database = null;
-        reject(new SessionStoreError('No se pudo abrir el historial del dispositivo.', { cause: request.error }));
+        reject(new SessionStoreError('open_failed', 'Could not open the session history database.', { cause: request.error }));
       };
     });
     return this.#database;

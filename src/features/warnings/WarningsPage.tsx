@@ -1,36 +1,37 @@
 import { useId, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
+import { useMessages } from '../../i18n/messages';
+import { STOP_SHORTCUT_KEY } from '../audio/ui/stopShortcut';
+import { returnPathFrom } from './returnPath';
 import { useWarningsRegistry } from './warningsContext';
-import { WARNINGS, CONFIRMATION_TEXT } from './warningsText';
 import { PageHeading } from '../../shared/PageHeading';
 
-function destinationAfterAccept(state: unknown): string {
-  if (typeof state === 'object' && state !== null && 'from' in state && typeof state.from === 'string') {
-    return state.from;
-  }
-  return '/session';
-}
-
 export function WarningsPage(): React.JSX.Element {
-  usePageTitle('Antes de empezar');
+  const t = useMessages();
+  usePageTitle(t.warnings.pageTitle);
   const registry = useWarningsRegistry();
   const navigate = useNavigate();
   // Navigation state is untyped and validated before choosing the destination.
   const state: unknown = useLocation().state;
   const [confirmed, setConfirmed] = useState(false);
   const checkboxId = useId();
+  // The stop hint is built from the real stop button label and key, so it follows them.
+  const warnings = [
+    ...t.warnings.items,
+    t.warnings.stopHint(t.audio.playback.stop, t.warnings.keyNames[STOP_SHORTCUT_KEY]),
+  ];
 
   const accept = (): void => {
     registry.accept(new Date());
-    void navigate(destinationAfterAccept(state), { replace: true });
+    void navigate(returnPathFrom(state), { replace: true });
   };
 
   return (
     <div className="reading-page warnings-page">
-      <PageHeading eyebrow="Una escucha consciente" title="Antes de empezar" />
+      <PageHeading eyebrow={t.warnings.eyebrow} title={t.warnings.pageTitle} />
       <ul className="warnings-list">
-        {WARNINGS.map((text) => (
+        {warnings.map((text) => (
           <li key={text}>{text}</li>
         ))}
       </ul>
@@ -43,7 +44,7 @@ export function WarningsPage(): React.JSX.Element {
             setConfirmed(event.target.checked);
           }}
         />
-        <label htmlFor={checkboxId}>{CONFIRMATION_TEXT}</label>
+        <label htmlFor={checkboxId}>{t.warnings.confirmation}</label>
       </div>
       <button
         type="button"
@@ -51,7 +52,7 @@ export function WarningsPage(): React.JSX.Element {
         onClick={accept}
         disabled={!confirmed}
       >
-        Aceptar y continuar
+        {t.warnings.accept}
       </button>
     </div>
   );

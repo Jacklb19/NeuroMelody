@@ -1,10 +1,17 @@
-import type { LevelId } from '../audio/engine/levels';
+import { CALIBRATION_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
+import type { ActivationState } from './activationStates';
+import {
+  CALIBRATION_MS,
+  HEART_RATE_CHANGE,
+  HYSTERESIS_ESTIMATES,
+  MIN_BASELINE_READINGS,
+  MIN_LEVEL_DURATION_S,
+  NO_HIGH_WINDOW_ESTIMATES,
+  RMSSD_CHANGE,
+} from './rules';
 
-export type ActivationState = 'high' | 'low' | 'uncertain';
-export const CALIBRATION_MS = 180_000;
-export const MIN_BASELINE_READINGS = 12;
-export const MIN_LEVEL_DURATION_S = 180;
+export type { ActivationState } from './activationStates';
 
 export interface TransitionTiming {
   readonly direction: 'advance' | 'retreat';
@@ -25,8 +32,10 @@ export interface AdaptationSnapshot {
 
 /** Provisional, uncalibrated rules approved for S4; not physiological thresholds. */
 export function estimateState(hr: number, rmssd: number, baseHr: number, baseRmssd: number): ActivationState {
-  if (hr / baseHr >= 1.1 && rmssd / baseRmssd <= 0.8) return 'high';
-  if (hr / baseHr <= 0.9 && rmssd / baseRmssd >= 1.2) return 'low';
+  const hrRatio = hr / baseHr;
+  const rmssdRatio = rmssd / baseRmssd;
+  if (hrRatio >= 1 + HEART_RATE_CHANGE && rmssdRatio <= 1 - RMSSD_CHANGE) return 'high';
+  if (hrRatio <= 1 - HEART_RATE_CHANGE && rmssdRatio >= 1 + RMSSD_CHANGE) return 'low';
   return 'uncertain';
 }
 
@@ -42,7 +51,7 @@ export class AdaptationEngine {
   #consecutive = 0;
   #accepted: ActivationState | null = null;
   #recent: ActivationState[] = [];
-  #level: LevelId = 'intermediate';
+  #level: LevelId = CALIBRATION_LEVEL;
   #levelStartS = 0;
   #audioTimeS = 0;
   #acceptedAtS = 0;
@@ -53,7 +62,8 @@ export class AdaptationEngine {
     return { state: this.#accepted, calibrated: this.#calibrated,
       baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
-        this.#accepted !== 'high' && this.#level !== 'target' && this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
+        this.#accepted !== 'high' && nextLevel(this.#level) !== null &&
+        this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
       lastTransition: this.#lastTransition };
   }
 
@@ -101,20 +111,20 @@ export class AdaptationEngine {
       this.#recent = [];
     }
     this.#recent.push(state);
-    if (this.#recent.length > 3) this.#recent.shift();
+    if (this.#recent.length > NO_HIGH_WINDOW_ESTIMATES) this.#recent.shift();
     this.#consecutive = state === this.#candidate ? this.#consecutive + 1 : 1;
     this.#candidate = state;
-    const changed = this.#consecutive >= 3 && state !== this.#accepted;
+    const changed = this.#consecutive >= HYSTERESIS_ESTIMATES && state !== this.#accepted;
     if (changed) {
       this.#accepted = state;
       this.#acceptedAtS = audioTime;
     }
     const ready = this.#qualityGood && this.#accepted !== null &&
-      this.#recent.length === 3 && !this.#recent.includes('high');
+      this.#recent.length === NO_HIGH_WINDOW_ESTIMATES && !this.#recent.includes('high');
     this.#criteriaReadyS = ready ? this.#criteriaReadyS ?? audioTime : null;
     if (!playing || !this.#qualityGood) return null;
     if (changed && state === 'high') {
-      const next = this.#level === 'target' ? 'intermediate' : this.#level === 'intermediate' ? 'high' : null;
+      const next = previousLevel(this.#level);
       return next === null ? null : this.#transition(next, 'retreat', audioTime, audioTime);
     }
     return this.advance(audioTime, playing);
@@ -126,7 +136,7 @@ export class AdaptationEngine {
     if (!playing || this.#criteriaReadyS === null || !this.#qualityGood) return null;
     const eligibleAtS = Math.max(this.#levelStartS + MIN_LEVEL_DURATION_S, this.#criteriaReadyS);
     if (audioTime < eligibleAtS) return null;
-    const next = this.#level === 'high' ? 'intermediate' : this.#level === 'intermediate' ? 'target' : null;
+    const next = nextLevel(this.#level);
     return next === null ? null : this.#transition(next, 'advance', eligibleAtS, audioTime);
   }
 

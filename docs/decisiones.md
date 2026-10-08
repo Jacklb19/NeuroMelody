@@ -43,7 +43,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Campo | Contenido |
 |---|---|
 | Contexto | Hasta el S3 el código mezclaba nombres en español. |
-| Decisión | Todo el código va en inglés: identificadores, archivos, carpetas, rutas de la URL, variables CSS, nombres de pruebas y comentarios. Los mensajes de commit también. Solo quedan en español los textos que ve el usuario y los documentos de `docs/`. |
+| Decisión | Todo el código va en inglés: identificadores, archivos, carpetas, rutas de la URL, variables CSS, nombres de pruebas y comentarios. Los mensajes de commit también. Solo quedan en español los textos que ve el usuario, en los diccionarios de traducción (ADR-25), y los documentos de `docs/`. La interfaz podrá ofrecerse también en inglés. |
 | Desviación | Ninguna: el documento no fija el idioma del código. |
 | Consecuencias | Los renombrados se hacen con el renombrado de TypeScript, en commits aparte y sin cambiar el comportamiento. Quedan comentarios y nombres de pruebas en español por migrar. |
 
@@ -163,6 +163,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Estado | Aprobado el 6 oct 2026. |
 | Decisión | `/session` muestra por defecto lo que necesita alguien que escucha: estado en palabras, progreso, volumen y Detener. Las métricas (RMSSD, SDNN, LF/HF) y la gráfica pasan a un panel plegable «Ver detalles técnicos», accesible con teclado. |
 | Consecuencias | RF-12 se mantiene: todo sigue visible al desplegar el panel. Se refleja en `docs/pantallas.md` antes de construirse. |
+
+## ADR-25. Nada fijo en el código: configuración, catálogos y diccionarios
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 por instrucción del usuario («no tiene que haber nada quemado en código»). |
+| Contexto | Una auditoría encontró unos 300 textos de interfaz dentro de los componentes, listas de opciones y valores por defecto repetidos, umbrales sin nombre, rutas escritas a mano en una docena de sitios y variables de entorno declaradas pero nunca leídas. |
+| Decisión | Sin dependencias nuevas. (1) **Entorno:** solo `src/config/env.ts` lee `import.meta.env` y valida los valores al arrancar. (2) **Rutas:** `src/config/routes.ts`. (3) **Opciones elegibles:** catálogos por funcionalidad (`*Catalog.ts`) con identificadores `as const`, tipo derivado, valor por defecto y `parseOption` en la frontera. (4) **Valores ajustables:** constantes con nombre y documentadas, en un único módulo por dominio (`thresholds.ts`, `levels.ts`, `ramps.ts`, `config.ts`). (5) **Textos:** diccionarios por área en `src/i18n/es/`; los textos con cifras son funciones con parámetros, así que ningún número se escribe dentro de una frase. (6) **Errores:** la lógica lanza errores con `code`; la interfaz los traduce. (7) **Diseño:** solo variables CSS en inglés; las rejillas que dependen de un catálogo reciben `--option-count`. (8) **Backend:** configuración desde el entorno validada con Pydantic y errores con código. |
+| Consecuencias | Cambiar una opción, un umbral o un texto toca un solo archivo. Las pruebas usan el diccionario y las constantes en lugar de repetir literales. El tipo `Messages` obliga a que otro idioma tenga las mismas claves. |
 
 ## Decisiones menores aprobadas
 

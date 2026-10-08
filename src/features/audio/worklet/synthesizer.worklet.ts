@@ -6,6 +6,7 @@
 import { SynthesisCore } from '../core/SynthesisCore';
 import { scope, paramValue, type BlockParams } from './workletScope';
 import {
+  SYNTHESIZER_DEFAULTS,
   SYNTHESIZER_DESCRIPTORS,
   SYNTHESIZER_NAME,
   readSynthesizerOptions,
@@ -33,9 +34,9 @@ class SynthesizerProcessor extends scope.AudioWorkletProcessor {
     }
     this.#core.process(
       channel,
-      paramValue(params, 'tempo', 66),
-      paramValue(params, 'mode', 1),
-      paramValue(params, 'layers', 2),
+      paramValue(params, 'tempo', SYNTHESIZER_DEFAULTS.tempo),
+      paramValue(params, 'mode', SYNTHESIZER_DEFAULTS.mode),
+      paramValue(params, 'layers', SYNTHESIZER_DEFAULTS.layers),
     );
     for (let c = 1; c < output.length; c++) {
       output[c]?.set(channel);

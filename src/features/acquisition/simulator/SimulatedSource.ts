@@ -5,35 +5,12 @@ import type {
   BeatNotification,
   SourceObserver,
 } from '../../acquisition/contract';
+import { CHECK_PERIOD_MS, NOTIFICATION_PERIOD_MS } from '../config';
+import { heartRateFromRr, keepRecentBeats } from '../heartRate';
+import type { Speed } from '../speedCatalog';
+import { browserClock, browserScheduler, type Clock, type Scheduler } from '../timing';
 import { SCENARIOS, type ScenarioId } from './scenarios';
 import { createRrGenerator, type RrGenerator, type Beat } from './rrGenerator';
-
-/** Allowed signal time speed-up factors (RF-02). */
-export type Speed = 1 | 2 | 5 | 10;
-export const SPEEDS: readonly Speed[] = [1, 2, 5, 10];
-
-/** Real time source in ms; injectable for deterministic tests. */
-export interface Clock {
-  nowMs(): number;
-}
-
-/** Runs a periodic task and returns the function that cancels it. */
-export interface Scheduler {
-  repeat(task: () => void, periodMs: number): () => void;
-}
-
-export const browserClock: Clock = {
-  nowMs: () => performance.now(),
-};
-
-export const browserScheduler: Scheduler = {
-  repeat: (task, periodMs) => {
-    const id = setInterval(task, periodMs);
-    return () => {
-      clearInterval(id);
-    };
-  },
-};
 
 export interface SimulatedSourceOptions {
   readonly scenario: ScenarioId;
@@ -42,13 +19,6 @@ export interface SimulatedSourceOptions {
   readonly clock?: Clock;
   readonly scheduler?: Scheduler;
 }
-
-/** Notification period in signal time, like a BLE strap. */
-export const NOTIFICATION_PERIOD_MS = 1000;
-/** Real period at which pending notifications are checked. */
-export const CHECK_PERIOD_MS = 100;
-/** Recent beats averaged to report the heart rate. */
-const BEATS_FOR_HR = 4;
 
 /**
  * Simulated signal source (RF-02) that fulfils the same contract as the BLE strap.
@@ -136,7 +106,7 @@ export class SimulatedSource implements SignalSource {
     const generator = this.#generator;
     let pending = this.#pendingBeat;
     if (generator === null || pending === null) {
-      throw new Error('La fuente simulada no está conectada.');
+      throw new Error('The simulated source is not connected.');
     }
 
     const rrIntervalsMs: number[] = [];
@@ -156,7 +126,7 @@ export class SimulatedSource implements SignalSource {
       };
     }
 
-    this.#recentRr = [...this.#recentRr, ...rrIntervalsMs].slice(-BEATS_FOR_HR);
+    this.#recentRr = keepRecentBeats(this.#recentRr, rrIntervalsMs);
     return {
       timeMs,
       heartRate: this.#heartRate(pending),
@@ -167,9 +137,7 @@ export class SimulatedSource implements SignalSource {
 
   #heartRate(pending: Beat): number {
     // Before the first complete beat, the one in progress is used.
-    const reference = this.#recentRr.length > 0 ? this.#recentRr : [pending.rrMs];
-    const meanRr = reference.reduce((sum, rr) => sum + rr, 0) / reference.length;
-    return Math.round(60000 / meanRr);
+    return heartRateFromRr(this.#recentRr.length > 0 ? this.#recentRr : [pending.rrMs]);
   }
 
   /** Periodic contact loss of the artifacts scenario: (k·period, k·period + duration]. */

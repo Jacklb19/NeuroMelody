@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
+import { ROUTES } from '../../config/routes';
+import { useMessages } from '../../i18n/messages';
 import { useSessionStore } from '../records/sessionStoreContext';
 import type { SessionRecord } from '../records/sessionRecord';
+import { storeErrorMessage } from '../records/storeErrorMessage';
 import { PageHeading } from '../../shared/PageHeading';
 import { SessionSummaryView } from './SessionSummaryView';
 
 type Loaded =
   | { readonly kind: 'loading' }
   | { readonly kind: 'missing' }
-  | { readonly kind: 'error'; readonly message: string }
+  // The cause is kept as is and translated when shown.
+  | { readonly kind: 'error'; readonly cause: unknown }
   | { readonly kind: 'ready'; readonly record: SessionRecord };
 
 /** Summary of one session at /summary/:id (RF-15, HU-08), read from the device. */
 export function SessionSummaryPage(): React.JSX.Element {
-  usePageTitle('Resumen de la sesión');
+  const t = useMessages();
+  usePageTitle(t.summary.title);
   const { id = '' } = useParams();
   const store = useSessionStore();
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
@@ -24,7 +29,7 @@ export function SessionSummaryPage(): React.JSX.Element {
     store.get(id).then(
       (record) => { if (current) setLoaded(record === null ? { kind: 'missing' } : { kind: 'ready', record }); },
       (error: unknown) => {
-        if (current) setLoaded({ kind: 'error', message: error instanceof Error ? error.message : 'Error desconocido.' });
+        if (current) setLoaded({ kind: 'error', cause: error });
       },
     );
     return () => { current = false; };
@@ -40,11 +45,11 @@ export function SessionSummaryPage(): React.JSX.Element {
   }
   return (
     <div className="reading-page">
-      <PageHeading eyebrow="Resumen de la sesión" title={loaded.kind === 'loading' ? 'Cargando…' : 'Sesión no encontrada'}>
-        {loaded.kind === 'missing' && <p>Esta sesión no está guardada en este dispositivo. Puede que se haya borrado.</p>}
-        {loaded.kind === 'error' && <p role="alert">No se pudo leer el historial ({loaded.message}).</p>}
+      <PageHeading eyebrow={t.summary.title} title={loaded.kind === 'loading' ? t.summary.loading : t.summary.missing.title}>
+        {loaded.kind === 'missing' && <p>{t.summary.missing.detail}</p>}
+        {loaded.kind === 'error' && <p role="alert">{t.records.readFailed(storeErrorMessage(loaded.cause, t))}</p>}
       </PageHeading>
-      {loaded.kind !== 'loading' && <Link to="/history" className="button button-secondary">Ir al historial</Link>}
+      {loaded.kind !== 'loading' && <Link to={ROUTES.history} className="button button-secondary">{t.summary.goToHistory}</Link>}
     </div>
   );
 }

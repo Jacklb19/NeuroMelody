@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createFakeAudioEnvironment, type FakeNode, type FakeParam } from '../../../test/fakeAudio';
 import { TelemetryWriter, createTelemetryBuffer } from '../telemetry/telemetryRing';
+import { dbToGain } from '../core/decibels';
 import { MODE } from '../core/theory';
 import { CLIPPER_NAME, SYNTHESIZER_NAME } from '../worklet/workletContract';
-import { FINAL_FADE_S, LIMITER, AudioEngine, STOP_RAMP_S } from './AudioEngine';
-import { TIMBRE_RAMP_DURATION_S, dbToGain } from './ramps';
+import { FINAL_FADE_S, LIMITER, AudioEngine, SESSION_FADE_IN_S, STOP_RAMP_S, type AudioFactory } from './AudioEngine';
+import { AudioEngineError } from './AudioEngineError';
+import { TIMBRE_RAMP_DURATION_S } from './ramps';
 
 async function createEngine(outputThroughAudioElement = false, telemetry: SharedArrayBuffer | null = null) {
   const env = createFakeAudioEnvironment(telemetry);
@@ -91,6 +93,21 @@ describe('AudioEngine.create', () => {
     const { clipper } = await createEngine(false, buffer);
     expect(clipper.options.processorOptions).toEqual({ telemetry: buffer });
   });
+
+  it('fails with a coded error when the synthesizer lacks a parameter', async () => {
+    const env = createFakeAudioEnvironment();
+    const factory: AudioFactory = {
+      ...env.factory,
+      createWorkletNode: (context, name, options) => {
+        const node = env.factory.createWorkletNode(context, name, options);
+        env.worklets.at(-1)?.parameters.delete('tempo');
+        return node;
+      },
+    };
+    const creation = AudioEngine.create(factory, { seed: 7, initialLevel: 'intermediate', outputThroughAudioElement: false });
+    await expect(creation).rejects.toBeInstanceOf(AudioEngineError);
+    await expect(creation).rejects.toMatchObject({ code: 'missing_parameter', params: { parameter: 'tempo' } });
+  });
 });
 
 describe('AudioEngine in use', () => {
@@ -109,7 +126,8 @@ describe('AudioEngine in use', () => {
     await engine.start();
     expect(env.context.state).toBe('running');
     expect(engine.state).toBe('playing');
-    expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 3.5 });
+    expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 1, time: 2 + SESSION_FADE_IN_S });
+    expect(SESSION_FADE_IN_S).toBe(1.5);
   });
 
   it('schedules a 20 s tempo ramp from Intermediate to High activation (ΔBPM = 10)', async () => {

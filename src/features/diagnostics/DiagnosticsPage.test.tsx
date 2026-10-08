@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
+import { es } from '../../i18n/es';
+import { CAPABILITY_IDS } from './capabilityCatalog';
 import { DiagnosticsPage } from './DiagnosticsPage';
 
 describe('DiagnosticsPage', () => {
@@ -10,15 +12,14 @@ describe('DiagnosticsPage', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: /diagnóstico de la plataforma/i,
+        name: es.diagnostics.pageTitle,
       }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByText(/aislamiento de origen cruzado/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/soporte de web workers/i)).toBeInTheDocument();
-    expect(screen.getByText(/soporte de webassembly/i)).toBeInTheDocument();
+    for (const id of CAPABILITY_IDS) {
+      expect(screen.getByText(es.diagnostics.capabilities[id].label)).toBeInTheDocument();
+      expect(screen.getByText(es.diagnostics.capabilities[id].description)).toBeInTheDocument();
+    }
   });
 
   it('re-checks the capabilities and increments the interactive counter', async () => {
@@ -29,7 +30,7 @@ describe('DiagnosticsPage', () => {
     expect(counter).toHaveTextContent('0');
 
     const button = screen.getByRole('button', {
-      name: /reevaluar capacidades/i,
+      name: es.diagnostics.recheck,
     });
     await user.click(button);
 

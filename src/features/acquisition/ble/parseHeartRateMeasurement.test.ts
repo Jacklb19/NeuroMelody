@@ -74,12 +74,13 @@ describe('parseHeartRateMeasurement', () => {
   });
 
   it.each([
-    ['empty', []],
-    ['no 8-bit heart rate', [0x00]],
-    ['incomplete 16-bit heart rate', [0x01, 0x48]],
-    ['incomplete energy expended', [0x08, 0x48, 0x10]],
-    ['truncated RR', [0x10, 0x48, 0x00]],
-  ])('rejects a malformed measurement (%s)', (_case, bytes) => {
+    ['empty', [], 'empty'],
+    ['no 8-bit heart rate', [0x00], 'truncated_heart_rate'],
+    ['incomplete 16-bit heart rate', [0x01, 0x48], 'truncated_heart_rate'],
+    ['incomplete energy expended', [0x08, 0x48, 0x10], 'truncated_energy_expended'],
+    ['truncated RR', [0x10, 0x48, 0x00], 'truncated_rr'],
+  ])('rejects a malformed measurement (%s)', (_case, bytes, code) => {
     expect(() => parseHeartRateMeasurement(view(...bytes))).toThrow(HeartRateMeasurementError);
+    expect(() => parseHeartRateMeasurement(view(...bytes))).toThrow(expect.objectContaining({ code }));
   });
 });

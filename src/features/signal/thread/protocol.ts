@@ -1,7 +1,9 @@
 import type { BeatNotification } from '../../acquisition/contract';
-import type { DrawingContext, CanvasDimensions } from '../../signal/drawing/drawTachogram';
-import { PALETTE_VARIABLES, type ChartPalette } from '../../signal/drawing/palette';
-import type { SignalQuality, IndicesResult } from '../processing/SignalProcessor';
+import type { DrawingContext, CanvasDimensions } from '../drawing/drawTachogram';
+import { VALUE_SLOT, type ChartLabels } from '../drawing/chartLabels';
+import { PALETTE_VARIABLES, type ChartPalette } from '../drawing/palette';
+import type { IndicesResult } from '../processing/SignalProcessor';
+import { SIGNAL_QUALITIES } from '../processing/types';
 
 /** What the signal thread needs from the transferred canvas (an OffscreenCanvas). */
 export interface ThreadCanvas {
@@ -9,6 +11,30 @@ export interface ThreadCanvas {
   height: number;
   getContext(kind: '2d'): DrawingContext | null;
 }
+
+/**
+ * Why the signal analysis stopped updating. Logic only carries these codes;
+ * the panel words them from the dictionary (ADR-25).
+ */
+export const SIGNAL_THREAD_ERROR_CODES = [
+  /** The signal thread received a message the protocol does not define. */
+  'unrecognized_message',
+  /** The transferred canvas gave no 2D context. */
+  'no_2d_context',
+  /** A message from the signal thread could not be deserialized. */
+  'unreadable_message',
+  /** The signal thread answered something the protocol does not define. */
+  'unrecognized_response',
+] as const;
+export type SignalThreadErrorCode = (typeof SIGNAL_THREAD_ERROR_CODES)[number];
+
+/** The Worker crashed; only the browser can say why, in its own words. */
+export const WORKER_CRASHED = 'worker_crashed';
+
+/** A failure of the signal thread, as observers receive it. */
+export type SignalThreadFailure =
+  | { readonly code: SignalThreadErrorCode }
+  | { readonly code: typeof WORKER_CRASHED; readonly detail: string };
 
 /** Messages from the main thread to the signal thread. */
 export type MessageToThread =
@@ -18,6 +44,7 @@ export type MessageToThread =
       readonly kind: 'init-canvas';
       readonly canvas: ThreadCanvas;
       readonly palette: ChartPalette;
+      readonly labels: ChartLabels;
       readonly dimensions: CanvasDimensions;
     }
   | { readonly kind: 'resize'; readonly dimensions: CanvasDimensions };
@@ -25,7 +52,7 @@ export type MessageToThread =
 /** Messages from the signal thread to the main thread. */
 export type MessageFromThread =
   | { readonly kind: 'indices'; readonly result: IndicesResult }
-  | { readonly kind: 'error'; readonly message: string };
+  | ({ readonly kind: 'error' } & SignalThreadFailure);
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -64,6 +91,11 @@ function isPalette(value: unknown): value is ChartPalette {
   );
 }
 
+/** A label template must say where its figure goes, or the axis would lose it. */
+function isLabels(value: unknown): value is ChartLabels {
+  return isRecord(value) && isNonEmptyText(value.rrTick) && value.rrTick.includes(VALUE_SLOT);
+}
+
 function isDimensions(value: unknown): value is CanvasDimensions {
   return (
     isRecord(value) &&
@@ -85,8 +117,6 @@ function isCanvas(value: unknown): value is ThreadCanvas {
   );
 }
 
-const QUALITIES: readonly SignalQuality[] = ['collecting', 'good', 'low'];
-
 function isResult(value: unknown): value is IndicesResult {
   return (
     isRecord(value) &&
@@ -98,11 +128,17 @@ function isResult(value: unknown): value is IndicesResult {
     isNumber(value.coverageMs) &&
     isNumber(value.acceptedBeats) &&
     isNumber(value.discardedBeats) &&
-    QUALITIES.some((quality) => quality === value.quality) &&
+    SIGNAL_QUALITIES.some((quality) => quality === value.quality) &&
     isNumberOrNull(value.lfPower) &&
     isNumberOrNull(value.hfPower) &&
     isNumberOrNull(value.lfHfRatio)
   );
+}
+
+function isFailure(value: UnknownRecord): boolean {
+  return value.code === WORKER_CRASHED
+    ? typeof value.detail === 'string'
+    : SIGNAL_THREAD_ERROR_CODES.some((code) => code === value.code);
 }
 
 /** Validates, at the boundary, a message received by the signal thread. */
@@ -116,7 +152,12 @@ export function isMessageToThread(value: unknown): value is MessageToThread {
     case 'reset':
       return true;
     case 'init-canvas':
-      return isCanvas(value.canvas) && isPalette(value.palette) && isDimensions(value.dimensions);
+      return (
+        isCanvas(value.canvas) &&
+        isPalette(value.palette) &&
+        isLabels(value.labels) &&
+        isDimensions(value.dimensions)
+      );
     case 'resize':
       return isDimensions(value.dimensions);
     default:
@@ -133,7 +174,7 @@ export function isMessageFromThread(value: unknown): value is MessageFromThread 
     case 'indices':
       return isResult(value.result);
     case 'error':
-      return typeof value.message === 'string';
+      return isFailure(value);
     default:
       return false;
   }

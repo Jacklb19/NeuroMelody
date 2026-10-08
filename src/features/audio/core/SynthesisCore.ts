@@ -1,9 +1,12 @@
 import { createRandom, type RandomSource } from '../../acquisition/simulator/prng';
+import { SECONDS_PER_MINUTE } from '../../../shared/time';
+import { FADE_DURATION_S } from '../engine/ramps';
 import {
   SCALES,
   MIDI_DRONE,
   MIDI_TONIC,
   MODE,
+  SEMITONES_PER_OCTAVE,
   isMode,
   midiFrequency,
   degreeNote,
@@ -14,10 +17,14 @@ import {
 export const BEATS_PER_CYCLE = 16;
 /** How many beats between chord changes in the harmony layer. */
 export const BEATS_PER_CHORD = 4;
-/** Length of the layer and mode fades (docs/diseno-musical.md). */
-export const FADE_DURATION_S = 30;
 /** Voices allocated at start; no more are ever created. */
 export const MAX_VOICES = 32;
+/** Layers the `layers` parameter can turn on: drone, harmony and melody. */
+export const LAYER_COUNT = 3;
+/** The drone layer always sounds: at least one layer is active. */
+export const MIN_LAYERS = 1;
+/** Voice banks: the outgoing and the incoming mode of a crossfade. */
+const BANK_COUNT = 2;
 
 const MELODY_NOTE_PROBABILITY = 0.35;
 /** Amplitude below which a voice is released (≈ −80 dB, inaudible). */
@@ -40,6 +47,21 @@ const CHORD_ENVELOPE: Envelope = { amplitude: 0.07, attackS: 0.8, decayS: 2.5 };
 const DYAD_ENVELOPE: Envelope = { amplitude: 0.08, attackS: 2, decayS: 4 };
 const MELODY_ENVELOPE: Envelope = { amplitude: 0.09, attackS: 0.02, decayS: 1.2 };
 const DRONE_AMPLITUDE = 0.11;
+/** Slow amplitude breathing of the drone: gain = 1 − depth + depth · sin(2π · rate · t). */
+const DRONE_BREATH_HZ = 0.07;
+const DRONE_BREATH_DEPTH = 0.15;
+/** The drone sounds with its perfect fifth above, a little softer. */
+const FIFTH_SEMITONES = 7;
+const FIFTH_GAIN = 0.6;
+/** The melody plays one octave above the tonic and spans two octaves of the scale. */
+const MELODY_BASE_MIDI = MIDI_TONIC + SEMITONES_PER_OCTAVE;
+const MELODY_RANGE_OCTAVES = 2;
+/** Scale steps above the root of a triad and, over the drone, of an open dyad. */
+const CHORD_MIDDLE_STEP = 2;
+const CHORD_TOP_STEP = 4;
+const DYAD_TOP_STEP = 3;
+/** Level of the second harmonic over the sine: a soft, warm timbre. */
+const SECOND_HARMONIC_GAIN = 0.15;
 
 /**
  * Layered generative synthesis (RF-08), with no browser dependencies so it
@@ -71,23 +93,28 @@ export class SynthesisCore {
   readonly #layer = new Int8Array(MAX_VOICES);
   readonly #bank = new Int8Array(MAX_VOICES);
 
-  readonly #layerGain = new Float64Array(3);
-  readonly #layerTarget = new Float64Array(3);
-  readonly #layerStep = new Float64Array(3);
-  readonly #bankGain = new Float64Array(2);
-  readonly #bankStep = new Float64Array(2);
+  readonly #layerGain = new Float64Array(LAYER_COUNT);
+  readonly #layerTarget = new Float64Array(LAYER_COUNT);
+  readonly #layerStep = new Float64Array(LAYER_COUNT);
+  readonly #bankGain = new Float64Array(BANK_COUNT);
+  readonly #bankStep = new Float64Array(BANK_COUNT);
 
   #dronePhase = 0;
   #fifthPhase = 0;
   #lifePhase = 0;
   #beatPhase = 1;
   #beat = -1;
-  #currentMode: Mode = MODE.majorPentatonic;
-  #pendingMode: Mode = MODE.majorPentatonic;
+  #currentMode: Mode;
+  #pendingMode: Mode;
   #activeBank = 0;
   #steals = 0;
 
-  constructor(sampleRate: number, seed: number, initialMode: Mode = MODE.majorPentatonic) {
+  /**
+   * `initialMode` is required: the starting level is decided on the main
+   * thread (AudioEngine) and reaches the worklet as processor options, so the
+   * core holds no default of its own that could drift from it.
+   */
+  constructor(sampleRate: number, seed: number, initialMode: Mode) {
     this.#fs = sampleRate;
     this.#random = createRandom(seed);
     this.#fadeStep = 1 / (FADE_DURATION_S * sampleRate);
@@ -141,10 +168,10 @@ export class SynthesisCore {
     }
     this.#updateLayerTargets(layers);
 
-    const beatAdvance = tempo / (60 * this.#fs);
+    const beatAdvance = tempo / (SECONDS_PER_MINUTE * this.#fs);
     const droneIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE)) / this.#fs;
-    const fifthIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE + 7)) / this.#fs;
-    const lifeIncrement = (2 * Math.PI * 0.07) / this.#fs;
+    const fifthIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE + FIFTH_SEMITONES)) / this.#fs;
+    const lifeIncrement = (2 * Math.PI * DRONE_BREATH_HZ) / this.#fs;
 
     for (let n = 0; n < output.length; n++) {
       this.#beatPhase += beatAdvance;
@@ -158,12 +185,12 @@ export class SynthesisCore {
       this.#dronePhase += droneIncrement;
       this.#fifthPhase += fifthIncrement;
       this.#lifePhase += lifeIncrement;
-      const breathing = 0.85 + 0.15 * Math.sin(this.#lifePhase);
+      const breathing = 1 - DRONE_BREATH_DEPTH + DRONE_BREATH_DEPTH * Math.sin(this.#lifePhase);
       let sample =
         (this.#layerGain[LAYER_DRONE] ?? 0) *
         DRONE_AMPLITUDE *
         breathing *
-        (Math.sin(this.#dronePhase) + 0.6 * Math.sin(this.#fifthPhase));
+        (Math.sin(this.#dronePhase) + FIFTH_GAIN * Math.sin(this.#fifthPhase));
 
       for (let v = 0; v < MAX_VOICES; v++) {
         if (this.#state[v] !== STATE_FREE) {
@@ -180,8 +207,8 @@ export class SynthesisCore {
   }
 
   #updateLayerTargets(layers: number): void {
-    const activeLayers = Math.min(3, Math.max(1, Math.round(layers)));
-    for (let c = 0; c < 3; c++) {
+    const activeLayers = Math.min(LAYER_COUNT, Math.max(MIN_LAYERS, Math.round(layers)));
+    for (let c = 0; c < LAYER_COUNT; c++) {
       const target = c < activeLayers ? 1 : 0;
       if (target !== this.#layerTarget[c]) {
         this.#layerTarget[c] = target;
@@ -192,10 +219,10 @@ export class SynthesisCore {
   }
 
   #smoothGains(): void {
-    for (let c = 0; c < 3; c++) {
+    for (let c = 0; c < LAYER_COUNT; c++) {
       this.#layerGain[c] = moveTowards(this.#layerGain[c] ?? 0, this.#layerTarget[c] ?? 0, this.#layerStep[c] ?? 0);
     }
-    for (let b = 0; b < 2; b++) {
+    for (let b = 0; b < BANK_COUNT; b++) {
       const target = b === this.#activeBank ? 1 : 0;
       this.#bankGain[b] = moveTowards(this.#bankGain[b] ?? 0, target, this.#bankStep[b] ?? 0);
     }
@@ -209,7 +236,7 @@ export class SynthesisCore {
       // The harmonic cycle closes: the crossfade to the new mode starts.
       this.#currentMode = this.#pendingMode;
       this.#activeBank = 1 - this.#activeBank;
-      for (let b = 0; b < 2; b++) {
+      for (let b = 0; b < BANK_COUNT; b++) {
         const target = b === this.#activeBank ? 1 : 0;
         this.#bankStep[b] = Math.abs(target - (this.#bankGain[b] ?? 0)) * this.#fadeStep;
       }
@@ -223,8 +250,8 @@ export class SynthesisCore {
       this.#random() < MELODY_NOTE_PROBABILITY
     ) {
       const scale = SCALES[this.#currentMode];
-      const degree = Math.floor(this.#random() * scale.length * 2);
-      this.#triggerVoice(degreeNote(scale, degree, MIDI_TONIC + 12), LAYER_MELODY, MELODY_ENVELOPE);
+      const degree = Math.floor(this.#random() * scale.length * MELODY_RANGE_OCTAVES);
+      this.#triggerVoice(degreeNote(scale, degree, MELODY_BASE_MIDI), LAYER_MELODY, MELODY_ENVELOPE);
     }
   }
 
@@ -234,13 +261,13 @@ export class SynthesisCore {
     if (this.#currentMode === MODE.dronePentatonic) {
       // Open dyad over the drone: calmer than a full chord.
       this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
-      this.#triggerVoice(degreeNote(scale, root + 3, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
+      this.#triggerVoice(degreeNote(scale, root + DYAD_TOP_STEP, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
       return;
     }
     // Three explicit calls instead of looping over an array literal: no allocation.
     this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
-    this.#triggerVoice(degreeNote(scale, root + 2, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
-    this.#triggerVoice(degreeNote(scale, root + 4, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
+    this.#triggerVoice(degreeNote(scale, root + CHORD_MIDDLE_STEP, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
+    this.#triggerVoice(degreeNote(scale, root + CHORD_TOP_STEP, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
   }
 
   #triggerVoice(midi: number, layer: number, envelope: Envelope): void {
@@ -294,7 +321,7 @@ export class SynthesisCore {
     const gain =
       (this.#layerGain[this.#layer[v] ?? 0] ?? 0) * (this.#bankGain[this.#bank[v] ?? 0] ?? 0);
     // Sine with a little second harmonic: a soft, warm timbre.
-    return gain * amplitude * (Math.sin(phase) + 0.15 * Math.sin(2 * phase));
+    return gain * amplitude * (Math.sin(phase) + SECOND_HARMONIC_GAIN * Math.sin(2 * phase));
   }
 }
 

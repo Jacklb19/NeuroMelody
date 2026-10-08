@@ -26,12 +26,13 @@ function median(values: readonly number[]): number {
  * artifacts.
  *
  * 1. Discards RR outside the plausible range, without touching the state.
- * 2. Until 5 beats have been accepted, accepts everything within range.
- * 3. After that, discards RR that deviate more than 20 % from the median of
- *    the last 5 accepted beats.
- * 4. If 5 beats in a row are discarded for deviation, those 5 beats become
- *    the reference: this way a real, sustained change in heart rate is not
- *    discarded forever.
+ * 2. Until {@link REFERENCE_BEATS} beats have been accepted, accepts
+ *    everything within range.
+ * 3. After that, discards RR that deviate more than {@link MAX_DEVIATION}
+ *    from the median of the last {@link REFERENCE_BEATS} accepted beats.
+ * 4. If {@link DISCARDS_TO_RESET} beats in a row are discarded for deviation,
+ *    those beats become the reference: this way a real, sustained change
+ *    in heart rate is not discarded forever.
  */
 export class BeatFilter {
   #reference: number[] = [];

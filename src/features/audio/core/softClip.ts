@@ -1,6 +1,8 @@
+import { dbToGain } from './decibels';
+
 /** Absolute output ceiling: −1 dBFS. */
 export const CEILING_DBFS = -1;
-export const CEILING = 10 ** (CEILING_DBFS / 20);
+export const CEILING = dbToGain(CEILING_DBFS);
 
 /**
  * Soft clip `ceiling · tanh(x / ceiling)`. Unlike the native compressor, it

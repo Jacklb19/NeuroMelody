@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sessionRecord } from '../../test/sessionRecords';
+import { MAX_RATING } from './sessionRecord';
 import { MemorySessionStore, SessionStoreError } from './sessionStore';
 
 const OLDER = sessionRecord({ id: '017f22e2-79b0-7000-8000-000000000001', startedAt: '2026-10-06T10:00:00.000Z', endedAt: '2026-10-06T10:20:00.000Z' });
@@ -15,7 +16,9 @@ describe('MemorySessionStore', () => {
 
   it('refuses to save a malformed session', async () => {
     const store = new MemorySessionStore();
-    await expect(store.save({ ...OLDER, ratingBefore: 11 })).rejects.toBeInstanceOf(SessionStoreError);
+    const saving = store.save({ ...OLDER, ratingBefore: MAX_RATING + 1 });
+    await expect(saving).rejects.toBeInstanceOf(SessionStoreError);
+    await expect(saving).rejects.toMatchObject({ code: 'invalid_record' });
   });
 
   it('updates the rating after listening and validates it', async () => {
@@ -23,8 +26,12 @@ describe('MemorySessionStore', () => {
     await store.save({ ...OLDER, ratingAfter: null });
     expect((await store.setRatingAfter(OLDER.id, 8)).ratingAfter).toBe(8);
     expect((await store.get(OLDER.id))?.ratingAfter).toBe(8);
-    await expect(store.setRatingAfter(OLDER.id, 7.5)).rejects.toBeInstanceOf(SessionStoreError);
-    await expect(store.setRatingAfter(NEWER.id, 5)).rejects.toBeInstanceOf(SessionStoreError);
+    const fractional = store.setRatingAfter(OLDER.id, 7.5);
+    await expect(fractional).rejects.toBeInstanceOf(SessionStoreError);
+    await expect(fractional).rejects.toMatchObject({ code: 'invalid_rating' });
+    const missing = store.setRatingAfter(NEWER.id, 5);
+    await expect(missing).rejects.toBeInstanceOf(SessionStoreError);
+    await expect(missing).rejects.toMatchObject({ code: 'not_found' });
   });
 
   it('deletes one session or the whole history', async () => {

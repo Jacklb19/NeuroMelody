@@ -3,6 +3,7 @@ import {
   type DrawingContext,
   type CanvasDimensions,
 } from '../../signal/drawing/drawTachogram';
+import type { ChartLabels } from '../../signal/drawing/chartLabels';
 import type { ChartPalette } from '../../signal/drawing/palette';
 import { SignalProcessor } from '../processing/SignalProcessor';
 import { isMessageToThread, type ThreadCanvas, type MessageFromThread } from './protocol';
@@ -11,6 +12,7 @@ interface Chart {
   readonly canvas: ThreadCanvas;
   readonly context: DrawingContext;
   readonly palette: ChartPalette;
+  readonly labels: ChartLabels;
   dimensions: CanvasDimensions;
 }
 
@@ -32,7 +34,7 @@ export function createSignalThreadHandler(
 
   const redraw = (): void => {
     if (chart !== null) {
-      drawTachogram(chart.context, processor.snapshot, chart.palette, chart.dimensions);
+      drawTachogram(chart.context, processor.snapshot, chart.palette, chart.labels, chart.dimensions);
     }
   };
 
@@ -43,7 +45,7 @@ export function createSignalThreadHandler(
 
   return (data) => {
     if (!isMessageToThread(data)) {
-      send({ kind: 'error', message: 'Mensaje no reconocido por el hilo de señal.' });
+      send({ kind: 'error', code: 'unrecognized_message' });
       return;
     }
     switch (data.kind) {
@@ -56,10 +58,16 @@ export function createSignalThreadHandler(
       case 'init-canvas': {
         const context = data.canvas.getContext('2d');
         if (context === null) {
-          send({ kind: 'error', message: 'No se pudo obtener el contexto 2D del lienzo.' });
+          send({ kind: 'error', code: 'no_2d_context' });
           return;
         }
-        chart = { canvas: data.canvas, context, palette: data.palette, dimensions: data.dimensions };
+        chart = {
+          canvas: data.canvas,
+          context,
+          palette: data.palette,
+          labels: data.labels,
+          dimensions: data.dimensions,
+        };
         resizeCanvas(chart);
         break;
       }

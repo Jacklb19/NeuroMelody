@@ -2,8 +2,7 @@ import { expect, it } from 'vitest';
 import { AudioEngine } from '../audio/engine/AudioEngine';
 import { createFakeAudioEnvironment } from '../../test/fakeAudio';
 import { AdaptationSession } from './AdaptationSession';
-import { FADE_DURATION_S } from '../audio/core/SynthesisCore';
-import { tempoRampDurationS } from '../audio/engine/ramps';
+import { FADE_DURATION_S, tempoRampDurationS } from '../audio/engine/ramps';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 
 function reading(timeMs: number, high = false): IndicesResult {

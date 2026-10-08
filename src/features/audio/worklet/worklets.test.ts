@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { CEILING } from '../core/softClip';
+import { LAYER_COUNT, MIN_LAYERS } from '../core/SynthesisCore';
 import { MODE } from '../core/theory';
+import { CALIBRATION_LEVEL, LEVELS } from '../engine/levels';
 import { TelemetryReader, createTelemetryBuffer } from '../telemetry/telemetryRing';
 import type { ProcessorClass, BlockParams } from './workletScope';
 import {
+  SYNTHESIZER_DEFAULTS,
   SYNTHESIZER_DESCRIPTORS,
   CLIPPER_NAME,
   SYNTHESIZER_NAME,
@@ -71,6 +74,34 @@ describe('synthesizer processor', () => {
     expect(energy).toBeGreaterThan(0);
   });
 
+  it('starts every parameter at the calibration level, within its range', () => {
+    const calibration = LEVELS[CALIBRATION_LEVEL];
+    expect(SYNTHESIZER_DEFAULTS).toEqual({ tempo: calibration.tempo, mode: calibration.mode, layers: calibration.layers });
+    expect(SYNTHESIZER_DEFAULTS).toEqual({ tempo: 66, mode: MODE.lydian, layers: 2 });
+    for (const descriptor of SYNTHESIZER_DESCRIPTORS) {
+      expect(descriptor.defaultValue).toBe(SYNTHESIZER_DEFAULTS[descriptor.name]);
+      expect(descriptor.defaultValue).toBeGreaterThanOrEqual(descriptor.minValue);
+      expect(descriptor.defaultValue).toBeLessThanOrEqual(descriptor.maxValue);
+    }
+    expect(SYNTHESIZER_DESCRIPTORS.map((d) => [d.name, d.minValue, d.maxValue])).toEqual([
+      ['tempo', 40, 120],
+      ['mode', MODE.majorPentatonic, MODE.dronePentatonic],
+      ['layers', MIN_LAYERS, LAYER_COUNT],
+    ]);
+  });
+
+  it('falls back to the calibration level when a block carries no parameters', () => {
+    const withParams = create(SYNTHESIZER_NAME, options);
+    const withoutParams = create(SYNTHESIZER_NAME, options);
+    const expected = block(1);
+    const actual = block(1);
+    for (let i = 0; i < 10; i++) {
+      withParams.process([], [expected], params);
+      withoutParams.process([], [actual], {});
+      expect(actual[0]).toEqual(expected[0]);
+    }
+  });
+
   it('tolerates an output without channels', () => {
     expect(create(SYNTHESIZER_NAME, options).process([], [], params)).toBe(true);
   });
@@ -121,6 +152,7 @@ describe('options validation', () => {
   it.each([
     { seed: 1.5, initialMode: 1, initialLayers: 2 },
     { seed: 1, initialMode: 1, initialLayers: 0 },
+    { seed: 1, initialMode: 1, initialLayers: 4 },
     { seed: '1', initialMode: 1, initialLayers: 2 },
   ])('rejects synthesizer options %o', (options) => {
     expect(() => readSynthesizerOptions(options)).toThrow(TypeError);

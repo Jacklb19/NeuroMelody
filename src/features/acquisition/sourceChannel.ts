@@ -3,13 +3,19 @@ import type {
   BeatNotification,
   SourceObserver,
 } from './contract';
-import { validateNotification } from './validateNotification';
+import { validateNotification, type NotificationIssue } from './validateNotification';
 
-/** Error emitted by a signal source to its observers. */
+/**
+ * A notification was discarded at the layer boundary. `code` says why; the
+ * interface turns it into text, so the message is for developers only.
+ */
 export class SignalSourceError extends Error {
-  constructor(message: string) {
-    super(message);
+  readonly code: NotificationIssue;
+
+  constructor(code: NotificationIssue) {
+    super(`Notification discarded at the acquisition boundary: ${code}`);
     this.name = 'SignalSourceError';
+    this.code = code;
   }
 }
 
@@ -53,7 +59,7 @@ export class SourceChannel {
   notify(notification: BeatNotification): void {
     const result = validateNotification(notification, this.#lastTimeMs);
     if (!result.valid) {
-      this.emitError(new SignalSourceError(result.reason));
+      this.emitError(new SignalSourceError(result.code));
       return;
     }
     this.#lastTimeMs = notification.timeMs;

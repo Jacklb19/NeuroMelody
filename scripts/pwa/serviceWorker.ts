@@ -1,7 +1,9 @@
+import { APP_SHELL_PATH, CACHE_NAME_PREFIX, UNCACHED_PATH_PREFIX } from '../../src/config/pwa.ts';
+
 /** Generates an app-shell worker that never caches API or user data. */
 export function serviceWorkerSource(assets: readonly string[], version: string): string {
   return `
-const CACHE_PREFIX = 'neuromelody-shell-';
+const CACHE_PREFIX = ${JSON.stringify(CACHE_NAME_PREFIX)};
 const CACHE_NAME = CACHE_PREFIX + ${JSON.stringify(version)};
 const ASSETS = ${JSON.stringify(assets)};
 const ALLOWED_PATHS = new Set(ASSETS);
@@ -25,12 +27,12 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin
-      || url.pathname.startsWith('/api/')) return;
+      || url.pathname.startsWith(${JSON.stringify(UNCACHED_PATH_PREFIX)})) return;
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try { return await fetch(request); }
       catch (error) {
-        const shell = await (await caches.open(CACHE_NAME)).match('/index.html');
+        const shell = await (await caches.open(CACHE_NAME)).match(${JSON.stringify(APP_SHELL_PATH)});
         if (shell) return shell;
         throw error;
       }

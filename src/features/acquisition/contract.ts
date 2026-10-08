@@ -6,8 +6,9 @@
  * it cannot tell one source from another (HU-02).
  */
 
-/** Signal source kinds planned in the definition document. */
-export type SourceKind = 'simulator' | 'ble' | 'recording';
+import type { SourceKind } from './sourceCatalog';
+
+export type { SourceKind } from './sourceCatalog';
 
 /** Connection state of the source; the interface always shows it (HU-01). */
 export type ConnectionState =

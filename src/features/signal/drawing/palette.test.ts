@@ -14,6 +14,16 @@ function styles(values: Record<string, string>): ComputedStyles {
   return { getPropertyValue: (name: string) => values[name] ?? '' };
 }
 
+function paletteErrorOf(computed: ComputedStyles): ChartPaletteError {
+  try {
+    readChartPalette(computed);
+  } catch (error) {
+    if (error instanceof ChartPaletteError) return error;
+    throw error;
+  }
+  throw new Error('Expected a ChartPaletteError');
+}
+
 const COMPLETE_STYLES: Record<string, string> = {
   '--color-chart-line': ' #2563eb',
   '--color-chart-grid': '#e5e7eb',
@@ -50,6 +60,7 @@ describe('readChartPalette', () => {
       const incomplete = { ...COMPLETE_STYLES, [variable]: '' };
       expect(() => readChartPalette(styles(incomplete))).toThrow(ChartPaletteError);
       expect(() => readChartPalette(styles(incomplete))).toThrow(variable);
+      expect(paletteErrorOf(styles(incomplete))).toMatchObject({ code: 'missing_variable', detail: variable });
     },
   );
 
@@ -57,6 +68,10 @@ describe('readChartPalette', () => {
     expect(() => readChartPalette(styles({ ...COMPLETE_STYLES, '--text-sm': 'not-a-size' }))).toThrow(
       ChartPaletteError,
     );
+    expect(paletteErrorOf(styles({ ...COMPLETE_STYLES, '--text-sm': 'not-a-size' }))).toMatchObject({
+      code: 'invalid_font_size',
+      detail: 'not-a-size',
+    });
   });
 });
 

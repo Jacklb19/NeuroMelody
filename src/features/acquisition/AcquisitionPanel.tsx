@@ -1,67 +1,35 @@
 import { useEffect, useId, useState } from 'react';
+import { useMessages } from '../../i18n/messages';
+import { formatClock } from '../../shared/formatClock';
+import { parseOption } from '../../shared/parseOption';
 import type { ConnectionState, SignalSource } from './contract';
-import {
-  SCENARIOS,
-  SCENARIO_IDS,
-  type ScenarioId,
-} from './simulator/scenarios';
-import {
-  SimulatedSource,
-  SPEEDS,
-  type SimulatedSourceOptions,
-  type Speed,
-} from './simulator/SimulatedSource';
+import { SIMULATOR_SEED } from './config';
+import { describeSourceError } from './describeSourceError';
+import { DEFAULT_SCENARIO_ID, SCENARIO_IDS, type ScenarioId } from './simulator/scenarios';
+import { SimulatedSource, type SimulatedSourceOptions } from './simulator/SimulatedSource';
+import { DEFAULT_SOURCE_KIND, SOURCE_KIND_IDS, type SourceKind } from './sourceCatalog';
+import { SOURCE_TRAITS } from './sourceTraits';
+import { DEFAULT_SPEED, SPEEDS, type Speed } from './speedCatalog';
+import { MS_PER_SECOND } from '../../shared/time';
 import { useSignalSource } from './useSignalSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
-import { RECORDING_IDS, type RecordingId } from './recording/recording';
+import {
+  DEFAULT_RECORDING_ID,
+  RECORDING_DURATION_MIN,
+  RECORDING_IDS,
+  RECORDINGS_CREDITS_URL,
+  type RecordingId,
+} from './recording/recordingCatalog';
 import { BleSource, type BleSourceOptions } from './ble/BleSource';
 import { browserBluetooth, type BluetoothAdapter } from './ble/webBluetooth';
 
-/** Fixed seed: the same simulated session repeats on reconnect (RF-02). */
-export const SIMULATOR_SEED = 1;
-
 export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalSource;
 export type CreateBleSource = (options: BleSourceOptions) => SignalSource;
-
-type PanelSourceKind = 'simulator' | 'recording' | 'ble';
 
 const createDefaultSource: CreateSimulatedSource = (options) =>
   new SimulatedSource(options);
 const createDefaultRecording = (options: RecordedSourceOptions): SignalSource => new RecordedSource(options);
 const createDefaultBle: CreateBleSource = (options) => new BleSource(options);
-
-const CONNECT_TEXT: Readonly<Record<PanelSourceKind, string>> = {
-  simulator: 'Conectar simulador',
-  recording: 'Reproducir registro',
-  ble: 'Conectar banda',
-};
-
-function toKind(value: string): PanelSourceKind {
-  return value === 'recording' || value === 'ble' ? value : 'simulator';
-}
-
-const STATE_TEXT: Readonly<Record<ConnectionState, string>> = {
-  disconnected: 'Desconectada',
-  connecting: 'Conectando…',
-  connected: 'Conectada',
-  reconnecting: 'Reconectando…',
-  error: 'Error de conexión',
-};
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
-
-function toScenario(value: string): ScenarioId {
-  return SCENARIO_IDS.find((id) => id === value) ?? 'rest';
-}
-
-function toSpeed(value: string): Speed {
-  return SPEEDS.find((v) => String(v) === value) ?? 1;
-}
 
 interface AcquisitionPanelProps {
   /** Current source; the parent keeps it so it can be shared with the analysis. */
@@ -88,12 +56,20 @@ export function AcquisitionPanel({
   createBle = createDefaultBle,
   bluetooth = browserBluetooth(),
 }: AcquisitionPanelProps): React.JSX.Element {
-  const [kind, setKind] = useState<PanelSourceKind>('simulator');
-  const [recordId, setRecordId] = useState<RecordingId>('nsr001');
-  const [scenario, setScenario] = useState<ScenarioId>('rest');
-  const [speed, setSpeed] = useState<Speed>(1);
+  const t = useMessages();
+  const [kind, setKind] = useState<SourceKind>(DEFAULT_SOURCE_KIND);
+  const [recordId, setRecordId] = useState<RecordingId>(DEFAULT_RECORDING_ID);
+  const [scenario, setScenario] = useState<ScenarioId>(DEFAULT_SCENARIO_ID);
+  const [speed, setSpeed] = useState<Speed>(DEFAULT_SPEED);
   const reading = useSignalSource(source);
   const titleId = useId();
+
+  // Typed views of the dictionary: a new source, state, scenario or recording cannot ship without its text.
+  const sourceNames: Readonly<Record<SourceKind, string>> = t.acquisition.sources;
+  const connectLabels: Readonly<Record<SourceKind, string>> = t.acquisition.connect;
+  const stateNames: Readonly<Record<ConnectionState, string>> = t.acquisition.connectionStates;
+  const scenarioNames: Readonly<Record<ScenarioId, string>> = t.acquisition.scenarios;
+  const recordingNames: Readonly<Record<RecordingId, string>> = t.acquisition.recordings;
 
   // Stops the source when it is replaced or the panel unmounts.
   useEffect(
@@ -126,10 +102,11 @@ export function AcquisitionPanel({
   };
 
   const canRemember = kind === 'ble' && bluetooth?.getDevices !== undefined;
-  const errorText = reading.error === null ? null
-    : kind === 'recording' ? `No se pudo reproducir el registro (${reading.error}). Intenta conectarlo de nuevo.`
-      : kind === 'ble' && reading.state === 'error' ? `No se pudo usar la banda: ${reading.error}`
-        : `La medición no es fiable y se descartó (${reading.error}). Revisa la colocación del dispositivo.`;
+  const errorReason = reading.error === null ? null : describeSourceError(reading.error, t.acquisition);
+  const errorText = errorReason === null ? null
+    : kind === 'recording' ? t.acquisition.sourceErrors.recording(errorReason)
+      : kind === 'ble' && reading.state === 'error' ? t.acquisition.sourceErrors.ble(errorReason)
+        : t.acquisition.sourceErrors.discarded(errorReason);
 
   const disconnect = (): void => {
     void source?.disconnect();
@@ -141,72 +118,74 @@ export function AcquisitionPanel({
       className="acquisition-panel"
     >
       <h2 id={titleId}>
-        Fuente de señal
+        {t.acquisition.title}
       </h2>
 
       <div className="source-controls">
         <label>
-          Origen de la señal
+          {t.acquisition.sourceLabel}
           <select value={kind} disabled={active} onChange={event => {
-            setKind(toKind(event.target.value));
+            setKind(parseOption(SOURCE_KIND_IDS, event.target.value, DEFAULT_SOURCE_KIND));
           }}>
-            <option value="simulator">Simulador</option>
-            <option value="recording">Registro de ejemplo</option>
-            <option value="ble" disabled={bluetooth === null}>Banda Bluetooth</option>
+            {SOURCE_KIND_IDS.map((id) => (
+              <option key={id} value={id} disabled={SOURCE_TRAITS[id].requiresBluetooth && bluetooth === null}>
+                {sourceNames[id]}
+              </option>
+            ))}
           </select>
         </label>
         {kind === 'ble' ? null : kind === 'simulator' ? <label>
-          Escenario del simulador
+          {t.acquisition.scenarioLabel}
           <select
             value={scenario}
             disabled={active}
             onChange={(event) => {
-              setScenario(toScenario(event.target.value));
+              setScenario(parseOption(SCENARIO_IDS, event.target.value, DEFAULT_SCENARIO_ID));
             }}
           >
             {SCENARIO_IDS.map((id) => (
               <option key={id} value={id}>
-                {SCENARIOS[id].name}
+                {scenarioNames[id]}
               </option>
             ))}
           </select>
         </label> : <label>
-          Registro
+          {t.acquisition.recordingLabel}
           <select value={recordId} disabled={active} onChange={event => {
-            setRecordId(RECORDING_IDS.find(id => id === event.target.value) ?? 'nsr001');
+            setRecordId(parseOption(RECORDING_IDS, event.target.value, DEFAULT_RECORDING_ID));
           }}>
-            {RECORDING_IDS.map((id, index) => <option key={id} value={id}>
-              Registro {index + 1} · 30 minutos
+            {RECORDING_IDS.map((id) => <option key={id} value={id}>
+              {t.acquisition.recordingOption(recordingNames[id], RECORDING_DURATION_MIN)}
             </option>)}
           </select>
         </label>}
 
-        {kind !== 'ble' && <label>
-          Velocidad
+        {SOURCE_TRAITS[kind].adjustableSpeed && <label>
+          {t.acquisition.speedLabel}
           <select
             value={speed}
             disabled={active}
             onChange={(event) => {
-              setSpeed(toSpeed(event.target.value));
+              setSpeed(parseOption(SPEEDS, event.target.value, DEFAULT_SPEED));
             }}
           >
             {SPEEDS.map((v) => (
               <option key={v} value={v}>
-                {v}×
+                {t.acquisition.speedOption(v)}
               </option>
             ))}
           </select>
         </label>}
       </div>
       {kind === 'recording' && <p className="recording-note">
-        Datos públicos de ejemplo de PhysioNet nsr2db. La reproducción termina al completar el registro.{' '}
-        <a href="/recordings/CREDITS.md">Origen y licencia de los datos</a>
+        {t.acquisition.recordingNote}{' '}
+        <a href={RECORDINGS_CREDITS_URL}>{t.acquisition.recordingCredits}</a>
       </p>}
       {bluetooth === null && <p className="recording-note">
-        Este navegador no permite conectar una banda Bluetooth. Usa Chrome o Edge en escritorio o Android; mientras tanto puedes usar el simulador.
+        {t.acquisition.bluetoothUnsupported}
       </p>}
       {kind === 'ble' && <p className="recording-note">
-        Enciende la banda y colócala antes de conectar. Si la conexión se pierde, se intentará recuperar automáticamente.
+        {t.acquisition.bleNote}
       </p>}
 
       <div className="action-row source-button">
@@ -215,15 +194,15 @@ export function AcquisitionPanel({
           className="button button-secondary"
           onClick={active ? disconnect : connect}
         >
-          {active ? 'Desconectar' : CONNECT_TEXT[kind]}
+          {active ? t.acquisition.disconnect : connectLabels[kind]}
         </button>
         {canRemember && !active && <button type="button" className="button button-secondary" onClick={reconnectRemembered}>
-          Reconectar banda
+          {t.acquisition.reconnectRemembered}
         </button>}
       </div>
 
       <p role="status" className="connection-status" data-state={reading.state}>
-        Estado de la conexión: <strong>{STATE_TEXT[reading.state]}</strong>
+        {t.acquisition.connectionStatus} <strong>{stateNames[reading.state]}</strong>
       </p>
 
       {errorText !== null && (
@@ -231,15 +210,17 @@ export function AcquisitionPanel({
       )}
 
       <dl className="source-metrics">
-        <dt>Frecuencia cardíaca</dt>
+        <dt>{t.acquisition.metrics.heartRate}</dt>
         <dd data-testid="heart-rate">
-          {reading.last === null ? '—' : `${String(reading.last.heartRate)} lpm`}
+          {reading.last === null
+            ? t.common.noValue
+            : t.common.withUnit(String(reading.last.heartRate), t.common.units.beatsPerMinute)}
         </dd>
-        <dt>Latidos recibidos</dt>
+        <dt>{t.acquisition.metrics.receivedBeats}</dt>
         <dd data-testid="received-beats">{reading.receivedBeats}</dd>
-        <dt>Tiempo de señal</dt>
+        <dt>{t.acquisition.metrics.signalTime}</dt>
         <dd data-testid="signal-time">
-          {reading.last === null ? '—' : formatTime(reading.last.timeMs)}
+          {reading.last === null ? t.common.noValue : formatClock(reading.last.timeMs / MS_PER_SECOND)}
         </dd>
       </dl>
     </section>

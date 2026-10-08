@@ -3,11 +3,15 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { registerServiceWorker } from './app/registerServiceWorker';
+import { IS_PRODUCTION_BUILD } from './config/env';
 
-const container = document.getElementById('root');
+/** Mount node declared in index.html. */
+const ROOT_ELEMENT_ID = 'root';
+
+const container = document.getElementById(ROOT_ELEMENT_ID);
 
 if (!container) {
-  throw new Error('No se encontró el elemento raíz (#root) en el documento.');
+  throw new Error(`Root element #${ROOT_ELEMENT_ID} is missing from the document.`);
 }
 
 createRoot(container).render(
@@ -16,8 +20,8 @@ createRoot(container).render(
   </StrictMode>,
 );
 
-if (import.meta.env.PROD) {
+if (IS_PRODUCTION_BUILD) {
   void registerServiceWorker().catch((error: unknown) => {
-    console.error('No se pudo preparar el funcionamiento sin conexión.', error);
+    console.error('Could not register the service worker; offline mode is unavailable.', error);
   });
 }
