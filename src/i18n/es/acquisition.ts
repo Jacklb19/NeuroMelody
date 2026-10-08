@@ -78,14 +78,17 @@ export const acquisition = {
     signalTime: 'Tiempo de señal',
   },
 
-  /** Notice around the reason of a source error, chosen by the selected source. */
+  /** Notice around the reason of a source error, chosen by the kind of error. */
   sourceErrors: {
     recording: (reason: string): string => `No se pudo reproducir el registro (${reason}). Intenta conectarlo de nuevo.`,
     ble: (reason: string): string => `No se pudo usar la banda: ${reason}`,
     camera: (reason: string): string => `No se pudo usar la cámara: ${reason}`,
+    unexpected: (reason: string): string => `No se pudo usar la fuente de señal (${reason}). Intenta conectarla de nuevo.`,
     discarded: (reason: string): string =>
       `La medición no es fiable y se descartó (${reason}). Revisa la colocación del dispositivo.`,
   },
+  /** Reason of a failure the browser reported without a code (a failed download, for example). */
+  unexpectedSourceError: 'el navegador informó un problema inesperado',
   /** Why the boundary discarded a notification; keys mirror `NotificationIssue`. */
   notificationIssues: {
     invalid_time: 'Tiempo de señal no válido.',

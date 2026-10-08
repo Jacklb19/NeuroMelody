@@ -4,7 +4,7 @@ import { formatClock } from '../../shared/formatClock';
 import { parseOption } from '../../shared/parseOption';
 import type { ConnectionState, SignalSource } from './contract';
 import { SIMULATOR_SEED } from './config';
-import { describeSourceError } from './describeSourceError';
+import { describeSourceNotice } from './describeSourceError';
 import { DEFAULT_SCENARIO_ID, SCENARIO_IDS, type ScenarioId } from './simulator/scenarios';
 import { SimulatedSource, type SimulatedSourceOptions } from './simulator/SimulatedSource';
 import { DEFAULT_SOURCE_KIND, SOURCE_KIND_IDS, type SourceKind } from './sourceCatalog';
@@ -77,11 +77,6 @@ export function AcquisitionPanel({
   // Typed views of the dictionary: a new source, state, scenario or recording cannot ship without its text.
   const sourceNames: Readonly<Record<SourceKind, string>> = t.acquisition.sources;
   const connectLabels: Readonly<Record<SourceKind, string>> = t.acquisition.connect;
-  // Connection notices of the sources that open a device; the rest only report discarded readings.
-  const connectionNotices: Readonly<Partial<Record<SourceKind, (reason: string) => string>>> = {
-    ble: t.acquisition.sourceErrors.ble,
-    camera: t.acquisition.sourceErrors.camera,
-  };
   const stateNames: Readonly<Record<ConnectionState, string>> = t.acquisition.connectionStates;
   const scenarioNames: Readonly<Record<ScenarioId, string>> = t.acquisition.scenarios;
   const recordingNames: Readonly<Record<RecordingId, string>> = t.acquisition.recordings;
@@ -124,13 +119,7 @@ export function AcquisitionPanel({
   };
 
   const canRemember = kind === 'ble' && bluetooth?.getDevices !== undefined;
-  const errorReason = reading.error === null ? null : describeSourceError(reading.error, t.acquisition);
-  // The notice follows the selected source (proposal P-02, item 5 keeps this open).
-  const connectionNotice = connectionNotices[kind];
-  const errorText = errorReason === null ? null
-    : kind === 'recording' ? t.acquisition.sourceErrors.recording(errorReason)
-      : connectionNotice !== undefined && reading.state === 'error' ? connectionNotice(errorReason)
-        : t.acquisition.sourceErrors.discarded(errorReason);
+  const errorText = reading.error === null ? null : describeSourceNotice(reading.error, t.acquisition);
 
   const disconnect = (): void => {
     void source?.disconnect();

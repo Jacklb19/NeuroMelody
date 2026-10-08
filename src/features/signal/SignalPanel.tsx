@@ -91,9 +91,9 @@ function describeChartUnavailable(reason: ChartUnavailableReason, t: Messages['s
 }
 
 function describeThreadFailure(failure: SignalThreadFailure, t: Messages['signal']): string {
-  // Only the browser knows why its Worker crashed, so its words are shown as given.
+  // The browser's own words about the crash are technical; /diagnostics is the place for them.
   if (failure.code === WORKER_CRASHED) {
-    return failure.detail;
+    return t.workerCrashed;
   }
   const errors: Readonly<Record<SignalThreadErrorCode, string>> = t.errors;
   return errors[failure.code];

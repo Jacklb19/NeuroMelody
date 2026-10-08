@@ -29,8 +29,9 @@ export const audio = {
       error: 'No se pudo iniciar el audio',
     },
     finished: 'La sesión terminó',
-    /** `detail` explains the failure: an engine error or the browser's own text. */
+    /** `detail` explains the failure: an engine error or `browserRefused`. */
     unavailable: (detail: string): string => `El audio no está disponible en este navegador (${detail}).`,
+    browserRefused: 'el navegador no permitió iniciarlo',
     planEndedTitle: 'La sesión planificada terminó',
     continuousListeningTitle: (minutes: number): string => `Llevas ${String(minutes)} minutos de escucha continua`,
     fadeNotice: (minutes: number): string =>

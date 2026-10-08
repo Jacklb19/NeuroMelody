@@ -1,5 +1,4 @@
 import type { Messages } from '../../i18n/messages';
-import { errorMessage } from '../../shared/errorMessage';
 import { MAX_RATING, MIN_RATING } from './sessionRecord';
 import { SessionStoreError, type SessionStoreErrorCode } from './sessionStore';
 
@@ -19,5 +18,5 @@ export function storeErrorMessages(t: Messages): Readonly<Record<SessionStoreErr
 export function storeErrorMessage(error: unknown, t: Messages): string {
   return error instanceof SessionStoreError
     ? storeErrorMessages(t)[error.code]
-    : errorMessage(error, t.common.unknownError);
+    : t.common.unknownError;
 }

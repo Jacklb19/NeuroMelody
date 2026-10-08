@@ -10,8 +10,9 @@ export const signal = {
     low: 'Baja: revisa la colocación del dispositivo.',
   },
   threadUnavailable: 'El análisis de la señal no está disponible en este navegador.',
-  /** `reason` is one of `errors` or the browser's own words when the Worker crashed. */
+  /** `reason` is one of `errors` or `workerCrashed`. */
   threadFailed: (reason: string): string => `No se pudo actualizar el análisis de la señal (${reason}).`,
+  workerCrashed: 'el hilo de análisis se detuvo de forma inesperada',
   /** Keys mirror `SignalThreadErrorCode`. */
   errors: {
     unrecognized_message: 'Mensaje no reconocido por el hilo de señal.',

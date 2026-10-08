@@ -192,7 +192,8 @@ describe('PlaybackPanel', () => {
     await waitFor(() => {
       expect(state()).toContain(copy.states.error);
     });
-    expect(screen.getByText(copy.unavailable('AudioContext no disponible'))).toBeInTheDocument();
+    expect(screen.getByText(copy.unavailable(copy.browserRefused))).toBeInTheDocument();
+    expect(screen.queryByText(/AudioContext no disponible/)).not.toBeInTheDocument();
   });
 
   it('translates the engine error code instead of showing its developer message', async () => {
