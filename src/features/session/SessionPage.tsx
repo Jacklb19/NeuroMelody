@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { QUERY_PARAMS } from '../../config/routes';
@@ -9,6 +9,7 @@ import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
+import { readGoals } from '../plan/goalCatalog';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
@@ -34,6 +35,9 @@ export function SessionPage(): React.JSX.Element {
   usePageTitle(t.session.title);
   const [params] = useSearchParams();
   const durationMin = readDuration(params.get(QUERY_PARAMS.duration));
+  const goalsParam = params.get(QUERY_PARAMS.goals);
+  // Parsed once per URL value, so the handlers that depend on it stay stable.
+  const goals = useMemo(() => readGoals(goalsParam), [goalsParam]);
   const store = useSessionStore();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
@@ -76,13 +80,14 @@ export function SessionPage(): React.JSX.Element {
       sessionStartElapsedRef.current = elapsedRef.current;
       recorder.start({
         plannedMinutes: durationMin,
+        goals,
         sourceKind: sourceRef.current?.kind ?? null,
         ratingBefore: ratingBeforeRef.current,
       });
       setSavedId(null);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, finishRecording]);
+  }, [adaptation, recorder, durationMin, goals, finishRecording]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;

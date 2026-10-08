@@ -23,6 +23,7 @@ export const ROUTES = {
 /** Query parameters shared between screens. */
 export const QUERY_PARAMS = {
   duration: 'duration',
+  goals: 'goals',
 } as const;
 
 /** Summary of one saved session. */
@@ -30,7 +31,12 @@ export function summaryPath(id: string): string {
   return `/summary/${encodeURIComponent(id)}`;
 }
 
-/** The session screen with the planned duration. */
-export function sessionPath(durationMin: number): string {
-  return `${ROUTES.session}?${new URLSearchParams({ [QUERY_PARAMS.duration]: String(durationMin) }).toString()}`;
+/** Separator between goal ids in the URL; mirrors `GOALS_SEPARATOR` of the goal catalog. */
+const GOALS_SEPARATOR = ',';
+
+/** The session screen with the planned duration and, when chosen, its goals. */
+export function sessionPath(durationMin: number, goals: readonly string[] = []): string {
+  const params = new URLSearchParams({ [QUERY_PARAMS.duration]: String(durationMin) });
+  if (goals.length > 0) params.set(QUERY_PARAMS.goals, goals.join(GOALS_SEPARATOR));
+  return `${ROUTES.session}?${params.toString()}`;
 }

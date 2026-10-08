@@ -15,6 +15,7 @@ export function sessionRecord(overrides: Partial<SessionRecord> = {}): SessionRe
     startedAt: '2026-10-07T10:00:00.000Z',
     endedAt: '2026-10-07T10:20:00.000Z',
     plannedMinutes: 20,
+    goals: [],
     listenedSeconds: 1200,
     sourceKind: 'simulator',
     ratingBefore: 4,

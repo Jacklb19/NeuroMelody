@@ -7,6 +7,18 @@ export const plan = {
   minutes: (minutes: number): string => `${String(minutes)} minutos`,
   /** Unit printed after the figure of each duration option. */
   minutesUnit: 'minutos',
+  /** Optional goals (HU-07); `names` keys mirror `GoalId`. */
+  goals: {
+    legend: 'Objetivos de la sesión',
+    hint: 'Opcional: elige los que quieras.',
+    names: {
+      relax: 'Relajarme',
+      rest_before_sleep: 'Descansar antes de dormir',
+      calm_after_activity: 'Recuperar la calma después de una actividad',
+      slow_breathing: 'Acompañar una respiración lenta',
+      pause: 'Tomar una pausa para mí',
+    },
+  },
   summaryLabel: 'Resumen del plan',
   /** Sentence around the chosen duration, which is emphasised: "Duración: 20 minutos." */
   chosenDuration: {

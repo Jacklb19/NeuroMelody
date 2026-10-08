@@ -125,6 +125,7 @@ function HistoryItem({ record, onDelete }: HistoryItemProps): React.JSX.Element 
         <span className="secondary-text">{item.listenedOf(format.listened(record.listenedSeconds), record.plannedMinutes)}</span>
       </div>
       <dl className="history-figures">
+        <div><dt>{t.records.goalsLabel}</dt><dd>{format.goals(record.goals)}</dd></div>
         <div><dt>{t.records.ratingLabel}</dt><dd>{format.ratings(record.ratingBefore, record.ratingAfter)}</dd></div>
         <div><dt>{item.heartRate}</dt><dd>{format.change(summary.heartRate, t.common.units.beatsPerMinute)}</dd></div>
         <div><dt>{item.rmssd}</dt><dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd></div>

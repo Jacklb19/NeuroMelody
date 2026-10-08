@@ -169,6 +169,13 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .duration-unit { display: block; font-family: var(--font-base); font-size: var(--text-sm); line-height: var(--line-height-base); margin-top: var(--space-2); }
 input[type='radio'], input[type='checkbox'] { width: var(--checkbox-size); height: var(--checkbox-size); accent-color: var(--color-button-background); flex-shrink: 0; }
 .duration-option input { margin-top: var(--space-1); }
+.goal-fieldset { border: 0; min-width: 0; margin-bottom: var(--space-8); }
+.goal-fieldset legend { font-weight: var(--font-weight-strong); padding-bottom: var(--space-2); }
+.goal-fieldset > p { margin-bottom: var(--space-4); }
+.goal-options { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.goal-option { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); padding: var(--space-2) var(--space-4); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); cursor: pointer; background: var(--color-paper); }
+.goal-option:has(input:checked) { background: var(--color-success-background); border-color: var(--color-button-background); }
+.goal-option:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 .plan-summary { margin: var(--space-8) 0; border-left: var(--focus-width) solid var(--color-border-subtle); padding: var(--space-2) var(--space-6); }
 .plan-summary p + p { margin-top: var(--space-3); }
 .warnings-list { list-style: none; counter-reset: warnings; margin-bottom: var(--space-8); }

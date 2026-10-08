@@ -50,9 +50,13 @@ De arriba abajo:
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
 
+## Objetivos del plan (HU-07, ADR-27)
+
+En `/plan`, antes de la duración, un grupo de casillas opcionales con los objetivos del catálogo (`goalCatalog.ts`): Relajarme, Descansar antes de dormir, Recuperar la calma después de una actividad, Acompañar una respiración lenta y Tomar una pausa para mí. Viajan a `/session` en el parámetro `goals`, se guardan con la sesión y aparecen en el resumen y en el historial («Sin objetivos elegidos» si no hay).
+
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
-- **Resumen:** fecha, tiempo escuchado frente al plan, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. El texto del modelo de lenguaje aparece como «Resumen automático pendiente» hasta S6.4.
+- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. El texto del modelo de lenguaje aparece como «Resumen automático pendiente» hasta S6.4.
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, evolución entre sesiones y borrado de una sesión o de todo el historial, siempre con confirmación.
 - Sin cuenta: todo vive en IndexedDB. La sincronización con la nube llega en S6.2, con segundo factor. Estimador de entrega: reglas R-05, sin ONNX (limitación RF-07, ADR-14).
 

@@ -11,6 +11,11 @@ export const records = {
   },
   /** Both self-ratings were skipped. */
   noAnswer: 'Sin responder',
+  /** Label of the session goals, shared by the summary and the history. */
+  goalsLabel: 'Objetivos',
+  noGoals: 'Sin objetivos elegidos',
+  /** Goal names joined for one line, e.g. "Relajarme, Tomar una pausa para mí". */
+  goalList: (names: readonly string[]): string => names.join(', '),
   /** A value at the start and at the end of the session, e.g. "78 → 68". */
   change: (start: string, end: string): string => `${start} → ${end}`,
   /** A duration shorter than the given amount, e.g. "menos de 1 min". */
