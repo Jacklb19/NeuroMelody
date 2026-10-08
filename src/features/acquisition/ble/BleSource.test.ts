@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BeatNotification, ConnectionState } from '../contract';
-import { BleSource, RECONNECT_DELAYS_MS, type Delay } from './BleSource';
+import { ATTEMPT_TIMEOUT_MS, BleSource, RECONNECT_DELAYS_MS, type Delay } from './BleSource';
 import type { BleDevice, BluetoothAdapter, GattServer, HeartRateCharacteristic } from './webBluetooth';
 
 function bytes(hex: string): DataView {
@@ -28,6 +28,8 @@ class FakeCharacteristic extends EventTarget implements HeartRateCharacteristic 
 class FakeDevice extends EventTarget implements BleDevice {
   readonly characteristic = new FakeCharacteristic();
   available = true;
+  /** Simulates a platform where `gatt.connect()` never settles. */
+  hangs = false;
   connected = false;
   readonly gatt: GattServer;
 
@@ -37,6 +39,7 @@ class FakeDevice extends EventTarget implements BleDevice {
     const server: GattServer = {
       get connected() { return isConnected(); },
       connect: () => {
+        if (this.hangs) return new Promise<GattServer>(() => undefined);
         if (!this.available) return Promise.reject(new DOMException('Out of range', 'NetworkError'));
         this.connected = true;
         return Promise.resolve(server);
@@ -149,6 +152,29 @@ describe('BleSource', () => {
     advance(30_000);
     device.characteristic.send('16 3C 00 04');
     expect(notifications.at(-1)?.timeMs).toBe(30_000);
+  });
+
+  it('keeps retrying for about one minute before giving up', () => {
+    const totalMs = RECONNECT_DELAYS_MS.reduce((sum, delayMs) => sum + delayMs, 0);
+    expect(RECONNECT_DELAYS_MS.slice(0, 4)).toEqual([1000, 2000, 4000, 8000]);
+    expect(totalMs).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it('abandons a hung attempt after the timeout and tries again', async () => {
+    const { device, source, timers } = setup();
+    await source.connect();
+    device.hangs = true;
+    device.dropLink();
+
+    expect(await timers.fireNext()).toBe(1000);
+    expect(timers.pending.map((entry) => entry.delayMs)).toEqual([ATTEMPT_TIMEOUT_MS]);
+    expect(await timers.fireNext()).toBe(ATTEMPT_TIMEOUT_MS);
+    expect(source.state).toBe('reconnecting');
+    expect(timers.pending.map((entry) => entry.delayMs)).toEqual([2000]);
+
+    device.hangs = false;
+    expect(await timers.fireNext()).toBe(2000);
+    expect(source.state).toBe('connected');
   });
 
   it('gives up with an error after the last attempt', async () => {
