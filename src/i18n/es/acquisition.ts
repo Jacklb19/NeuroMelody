@@ -109,6 +109,7 @@ export const acquisition = {
     permission_denied: 'El navegador no permitió usar Bluetooth.',
     device_unavailable: 'La banda no está disponible. Comprueba que esté encendida y cerca.',
     connect_failed: 'No se pudo conectar con la banda.',
+    attempt_timed_out: 'La banda no respondió a tiempo.',
   },
   /** Example recording failures; keys mirror `RecordingErrorCode`. */
   recordingErrors: {

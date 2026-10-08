@@ -1,5 +1,5 @@
 import type { ConnectionState, SignalSource, SourceObserver } from '../contract';
-import { RECONNECT_DELAYS_MS } from '../config';
+import { ATTEMPT_TIMEOUT_MS, RECONNECT_DELAYS_MS } from '../config';
 import { SourceChannel } from '../sourceChannel';
 import { browserClock, type Clock } from '../timing';
 import { HeartRateMeasurementError, parseHeartRateMeasurement } from './parseHeartRateMeasurement';
@@ -19,6 +19,7 @@ export const BLE_FAILURES = [
   'permission_denied',
   'device_unavailable',
   'connect_failed',
+  'attempt_timed_out',
 ] as const;
 
 export type BleFailure = (typeof BLE_FAILURES)[number];
@@ -81,6 +82,8 @@ export class BleSource implements SignalSource {
   #cancelRetry: (() => void) | null = null;
   /** Incremented on every user connect/disconnect to drop stale async work. */
   #generation = 0;
+  /** Incremented on every reconnection attempt, so a timed-out one is ignored if it resolves late. */
+  #attemptId = 0;
 
   constructor(options: BleSourceOptions) {
     this.#options = options;
@@ -111,7 +114,7 @@ export class BleSource implements SignalSource {
       device.addEventListener('gattserverdisconnected', this.#onLinkLost);
       // Set before subscribing so the first measurement already has a reference.
       this.#startMs = this.#clock.nowMs();
-      await this.#subscribeMeasurements(device, generation);
+      await this.#withTimeout(this.#subscribeMeasurements(device, () => generation === this.#generation));
       if (generation !== this.#generation) return;
       this.#channel.changeState('connected');
     } catch (cause) {
@@ -151,14 +154,15 @@ export class BleSource implements SignalSource {
     return device;
   }
 
-  async #subscribeMeasurements(device: BleDevice, generation: number): Promise<void> {
+  /** @param isCurrent tells whether this work still belongs to the live connection. */
+  async #subscribeMeasurements(device: BleDevice, isCurrent: () => boolean): Promise<void> {
     if (device.gatt === undefined) {
       throw new BleConnectionError('no_gatt');
     }
     const server = await device.gatt.connect();
     const service = await server.getPrimaryService(HEART_RATE_SERVICE);
     const characteristic = await service.getCharacteristic(HEART_RATE_MEASUREMENT);
-    if (generation !== this.#generation) return;
+    if (!isCurrent()) return;
     this.#characteristic?.removeEventListener('characteristicvaluechanged', this.#onMeasurement);
     this.#characteristic = characteristic;
     characteristic.addEventListener('characteristicvaluechanged', this.#onMeasurement);
@@ -202,16 +206,36 @@ export class BleSource implements SignalSource {
   async #retry(generation: number): Promise<void> {
     const device = this.#device;
     if (device === null || generation !== this.#generation) return;
+    const attemptId = ++this.#attemptId;
+    const isCurrent = (): boolean => generation === this.#generation && attemptId === this.#attemptId;
     try {
-      await this.#subscribeMeasurements(device, generation);
-      if (generation !== this.#generation) return;
+      await this.#withTimeout(this.#subscribeMeasurements(device, isCurrent));
+      if (!isCurrent()) return;
       this.#attempt = 0;
       this.#channel.changeState('connected');
     } catch {
-      if (generation !== this.#generation) return;
+      if (!isCurrent()) return;
+      // Aborts a connection attempt that may still be pending; a no-op when idle.
+      device.gatt?.disconnect();
       this.#attempt++;
       this.#scheduleRetry();
     }
+  }
+
+  /**
+   * Rejects when `work` takes longer than ATTEMPT_TIMEOUT_MS: some platforms
+   * never settle `gatt.connect()`, which would leave the source reconnecting forever.
+   */
+  #withTimeout<T>(work: Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const cancel = this.#delay.after(() => {
+        reject(new BleConnectionError('attempt_timed_out'));
+      }, ATTEMPT_TIMEOUT_MS);
+      work.then(
+        (value) => { cancel(); resolve(value); },
+        (error: unknown) => { cancel(); reject(error instanceof Error ? error : new Error(String(error))); },
+      );
+    });
   }
 
   #release(): void {
