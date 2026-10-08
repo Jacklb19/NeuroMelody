@@ -19,6 +19,7 @@
     "recordings:extract": "node scripts/recordings/extract.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.58.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router": "8.4.0",
