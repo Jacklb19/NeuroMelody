@@ -1,3 +1,5 @@
+import { common } from './common';
+
 /** Spanish copy of the records area: stored sessions, self-ratings and the CSV export (ADR-25). */
 export const records = {
   /** Label of the self-ratings, shared by the summary and the history. */
@@ -39,7 +41,7 @@ export const records = {
       ratingBefore: 'valoracion_antes',
       ratingAfter: 'valoracion_despues',
     },
-    disclaimer: 'Indicadores descriptivos; no son una medida clínica.',
+    disclaimer: common.nonClinicalIndicators,
     /** Keyed by `CsvColumn`. */
     columns: {
       second: 'segundo',

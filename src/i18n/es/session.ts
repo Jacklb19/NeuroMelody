@@ -1,3 +1,5 @@
+import { common } from './common';
+
 /** Spanish copy of the session area (ADR-25). */
 export const session = {
   title: 'Sesión',
@@ -33,7 +35,7 @@ export const session = {
   stage: {
     eyebrow: 'Ahora',
     estimatedState: 'Estado estimado:',
-    confidence: 'Confianza no calibrada · reglas provisionales',
+    confidence: common.provisionalEstimate,
     waitingForQuality: 'La adaptación espera datos de buena calidad.',
     /** Why the music holds its step; the minutes come from the adaptation rules (ADR-12). */
     dwell: (minutes: number): string =>
