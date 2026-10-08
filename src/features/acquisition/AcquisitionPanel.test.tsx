@@ -19,7 +19,9 @@ import type { BluetoothAdapter } from './ble/webBluetooth';
 import { CameraUnavailableError } from './camera/cameraCapture';
 import { SimulatedSource } from './simulator/SimulatedSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
-import { RECORDING_DURATION_MS, RECORDINGS_DIRECTORY, recordingFileName } from './recording/recordingCatalog';
+import { RECORDINGS_DIRECTORY, recordingDurationMs, recordingFileName } from './recording/recordingCatalog';
+
+const RECORDING_DURATION_MS = recordingDurationMs('nsr001');
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

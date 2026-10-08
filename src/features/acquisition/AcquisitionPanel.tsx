@@ -15,7 +15,7 @@ import { useSignalSource } from './useSignalSource';
 import { RecordedSource, type RecordedSourceOptions } from './recording/RecordedSource';
 import {
   DEFAULT_RECORDING_ID,
-  RECORDING_DURATION_MIN,
+  RECORDING_DURATIONS_MIN,
   RECORDING_IDS,
   RECORDINGS_CREDITS_URL,
   type RecordingId,
@@ -168,7 +168,7 @@ export function AcquisitionPanel({
             setRecordId(parseOption(RECORDING_IDS, event.target.value, DEFAULT_RECORDING_ID));
           }}>
             {RECORDING_IDS.map((id) => <option key={id} value={id}>
-              {t.acquisition.recordingOption(recordingNames[id], RECORDING_DURATION_MIN)}
+              {t.acquisition.recordingOption(recordingNames[id], RECORDING_DURATIONS_MIN[id])}
             </option>)}
           </select>
         </label> : null}
