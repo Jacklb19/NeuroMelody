@@ -4,6 +4,7 @@ import { WarningsPage } from '../features/warnings/WarningsPage';
 import { RequireWarnings } from '../features/warnings/RequireWarnings';
 import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { HomePage } from '../features/home/HomePage';
+import { LandingPage } from '../features/landing/LandingPage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { SessionPage } from '../features/session/SessionPage';
 import { SessionSummaryPage } from '../features/summary/SessionSummaryPage';
@@ -13,12 +14,13 @@ import { Layout } from './Layout';
 /** react-router pattern for any path no screen claims; it leads back home. */
 const UNKNOWN_PATH = '*';
 
-/** Routes from docs/pantallas.md (react-router in declarative mode). */
+/** Routes from docs/pantallas.md (react-router in declarative mode). The landing page has its own layout. */
 export function AppRoutes(): React.JSX.Element {
   return (
     <Routes>
+      <Route index element={<LandingPage />} />
       <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
+        <Route path={ROUTE_SEGMENTS.app} element={<HomePage />} />
         <Route path={ROUTE_SEGMENTS.warnings} element={<WarningsPage />} />
         <Route path={ROUTE_SEGMENTS.plan} element={<PlanPage />} />
         <Route

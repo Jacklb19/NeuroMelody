@@ -36,8 +36,16 @@ function renderWith(route: string, accepted = false) {
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('routes', () => {
-  it('the home page links to the plan; the navigation leaves out diagnostics', () => {
+  it('the landing page explains the app and leads into it', () => {
     renderWith(ROUTES.home);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(es.landing.hero.title.accent);
+    expect(screen.getByRole('link', { name: es.landing.hero.start })).toHaveAttribute('href', ROUTES.app);
+    expect(screen.getByText(es.landing.hero.note)).toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+
+  it('the app home links to the plan; the navigation leaves out diagnostics', () => {
+    renderWith(ROUTES.app);
     expect(screen.getByRole('heading', { level: 1, name: APP_NAME })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: es.app.mainNavigation });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
@@ -48,7 +56,7 @@ describe('routes', () => {
   });
 
   it('offers a skip-to-content link', () => {
-    renderWith(ROUTES.home);
+    renderWith(ROUTES.app);
     expect(screen.getByRole('link', { name: es.app.skipToContent })).toHaveAttribute('href', `#${MAIN_CONTENT_ID}`);
     expect(screen.getByRole('main')).toHaveAttribute('id', MAIN_CONTENT_ID);
   });

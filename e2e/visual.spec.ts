@@ -22,8 +22,13 @@ for (const width of [360, 768, 1280]) {
     const pageErrors: string[] = [];
     page.on('pageerror', error => pageErrors.push(error.message));
 
+    await page.goto(ROUTES.home);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(es.landing.hero.title.accent);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('landing.png'), fullPage: true });
+
     for (const [screen, title] of [
-      ['home', APP_NAME],
+      ['app', APP_NAME],
       ['plan', es.plan.pageTitle],
       ['warnings', es.warnings.pageTitle],
       ['diagnostics', es.diagnostics.pageTitle],

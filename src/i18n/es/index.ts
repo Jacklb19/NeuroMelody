@@ -6,6 +6,7 @@ import { common } from './common';
 import { diagnostics } from './diagnostics';
 import { history } from './history';
 import { home } from './home';
+import { landing } from './landing';
 import { plan } from './plan';
 import { records } from './records';
 import { session } from './session';
@@ -20,6 +21,7 @@ import { warnings } from './warnings';
 export const es = {
   common,
   app,
+  landing,
   home,
   warnings,
   plan,

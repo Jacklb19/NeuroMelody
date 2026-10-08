@@ -108,6 +108,40 @@
   --stop-reserve: 6rem;
   --motion-duration: 160ms;
   --shadow-stop: 0 4px 16px #263a3214;
+
+  /* Landing page (ADR-28): a night forest around the beating staff, then the app's paper. */
+  --landing-night: #0c1a15;
+  --landing-night-raised: #17302a;
+  --landing-ink-light: #eef1e8;
+  --landing-ink-dim: #a9b8ad;
+  --landing-line: #3a5248;
+  --landing-accent: #e0a96a;
+  --landing-accent-hover: #ebbd85;
+  --landing-focus: #ebbd85;
+  --landing-glow-shadow: 0 0 32px #e0a96a40;
+  /* Colours of the 3D scene, read by HeroCanvas; the scene blends them additively on the night. */
+  --landing-orb-core: #3f8a67;
+  --landing-orb-glow: #b9d8c1;
+  --landing-orb-pulse: #e0a96a;
+  --landing-staff: #6f8c7c;
+  --landing-note: #f3dcae;
+  --font-data: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --landing-text-hero: clamp(2.75rem, 6vw, 5.25rem);
+  --landing-text-title: clamp(2rem, 3.6vw, 3rem);
+  --landing-hero-line-height: 1.02;
+  --landing-hero-height: 100svh;
+  --landing-copy-width: 36rem;
+  --landing-figure-bleed: 12%;
+  --landing-figure-mobile: 22rem;
+  --landing-node-size: 1.25rem;
+  --landing-pill: 999px;
+  --landing-layer-header: 2;
+  --landing-reveal-shift: 1.5rem;
+  --landing-rise-duration: 700ms;
+  --landing-draw-duration: 1400ms;
+  --landing-stagger: 90ms;
+  /* One beat of the CSS fallback orb, matching the simulated heart (about 65 bpm). */
+  --landing-beat: 920ms;
   font-family: var(--font-base);
   line-height: var(--line-height-base);
   font-weight: var(--font-weight-normal);
@@ -118,7 +152,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-padding-bottom: var(--stop-reserve); }
 body { min-width: 0; min-height: 100vh; }
-#root { width: 100%; max-width: var(--content-max-width); margin: 0 auto; padding: 0 var(--space-8); }
+#root { width: 100%; }
+.app-shell { width: 100%; max-width: var(--content-max-width); margin: 0 auto; padding: 0 var(--space-8); }
 a { color: var(--color-button-background); text-underline-offset: var(--space-1); }
 a:hover { color: var(--color-button-hover); }
 button, input, select { font: inherit; }
@@ -135,6 +170,8 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .skip-link { position: fixed; left: var(--space-4); top: calc(-1 * var(--space-24)); padding: var(--space-3) var(--space-4); background: var(--color-button-background); color: var(--color-button-text); z-index: var(--stop-layer); border-radius: var(--border-radius); }
 .skip-link:focus { top: var(--space-2); }
 .app-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-8); padding: var(--space-6) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }
+.brand { color: inherit; text-decoration: none; }
+.brand:hover { color: inherit; }
 .brand { display: inline-flex; gap: var(--space-2); align-items: center; font-family: var(--font-display); font-size: var(--text-xl); white-space: nowrap; }
 .brand-mark { width: var(--brand-size); height: var(--brand-size); color: var(--color-button-background); }
 .app-header ul { list-style: none; display: flex; gap: var(--space-8); }
@@ -338,7 +375,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 }
 @media (max-width: 520px) {
   :root { --text-2xl: 2.25rem; --text-display: 3.25rem; }
-  #root { padding: 0 var(--space-5); }
+  .app-shell { padding: 0 var(--space-5); }
   .app-header { flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-4) 0 0; }
   .app-header nav { width: 100%; }
   .app-header ul { justify-content: space-between; gap: var(--space-6); }

@@ -8,6 +8,8 @@ Una interfaz de escucha serena: papel marfil, tinta verde bosque, títulos con s
 
 Inicio conserva sus dos recorridos. Advertencias usa una columna de lectura y mantiene íntegros los textos obligatorios y la aceptación explícita. El plan convierte cada duración existente en una opción pulsable con radio nativo. Diagnóstico muestra capacidades en filas y conserva la reevaluación. En la sesión, música y estado musical comparten una superficie; fuente y señal se separan con líneas, sin tarjetas anidadas.
 
+La portada pública (`/`, ADR-28) es la única excepción: tiene animaciones, degradados y una escena 3D propios, con sus tokens `--landing-*` en `index.css` y estilos en `src/features/landing/landing.css`.
+
 ## Sistema compartido
 
 - `src/index.css` concentra colores, tipografía, espaciado, controles, foco y composición responsive. `PageHeading` comparte la cabecera de las cinco pantallas; `Layout` mantiene navegación y enlace para saltarla.

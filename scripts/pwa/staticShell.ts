@@ -50,7 +50,7 @@ export function manifestSource(tokens: ShellTokens): string {
     name: APP_NAME,
     short_name: APP_NAME,
     lang: DEFAULT_LOCALE,
-    start_url: ROUTES.home,
+    start_url: ROUTES.app,
     scope: ROUTES.home,
     display: 'standalone',
     background_color: tokens.background,

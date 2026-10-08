@@ -12,7 +12,7 @@ export interface NavigationItem {
  * is deliberately left out: it is a technical tool reached by its route.
  */
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
-  { route: ROUTES.home, labelKey: 'home' },
+  { route: ROUTES.app, labelKey: 'home' },
   { route: ROUTES.plan, labelKey: 'plan' },
   { route: ROUTES.session, labelKey: 'session' },
   { route: ROUTES.history, labelKey: 'history' },

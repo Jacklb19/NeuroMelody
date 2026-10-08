@@ -3,6 +3,7 @@
  * names instead of typing paths, so a route changes in one place.
  */
 export const ROUTE_SEGMENTS = {
+  app: 'app',
   warnings: 'warnings',
   plan: 'plan',
   session: 'session',
@@ -12,7 +13,10 @@ export const ROUTE_SEGMENTS = {
 } as const;
 
 export const ROUTES = {
+  /** Public landing page: what the app is and how it works. */
   home: '/',
+  /** Start screen of the app itself. */
+  app: `/${ROUTE_SEGMENTS.app}`,
   warnings: `/${ROUTE_SEGMENTS.warnings}`,
   plan: `/${ROUTE_SEGMENTS.plan}`,
   session: `/${ROUTE_SEGMENTS.session}`,
