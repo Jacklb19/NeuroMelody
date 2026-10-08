@@ -32,12 +32,12 @@ function renderWith(route: string, accepted = false) {
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('routes', () => {
-  it('the home page links to the plan and the session; the navigation leaves out diagnostics', () => {
+  it('the home page links to the plan; the navigation leaves out diagnostics', () => {
     renderWith('/');
     expect(screen.getByRole('heading', { level: 1, name: 'NeuroMelody' })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: /principal/i });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
-    expect(links).toEqual(['Inicio', 'Plan', 'Sesión']);
+    expect(links).toEqual(['Inicio', 'Plan', 'Sesión', 'Historial']);
     expect(screen.getByRole('link', { name: /preparar una sesión/i })).toHaveAttribute('href', '/plan');
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
@@ -130,7 +130,7 @@ describe('readDuration', () => {
     ['25', 20],
     ['abc', 20],
     ['', 20],
-  ])('interpreta %j como %i minutos', (value, expected) => {
+  ])('reads %j as %i minutes', (value, expected) => {
     expect(readDuration(value)).toBe(expected);
   });
 

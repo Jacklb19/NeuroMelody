@@ -4,6 +4,7 @@ const LINKS = [
   { route: '/', text: 'Inicio' },
   { route: '/plan', text: 'Plan' },
   { route: '/session', text: 'Sesión' },
+  { route: '/history', text: 'Historial' },
 ] as const;
 
 /**

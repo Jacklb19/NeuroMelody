@@ -8,14 +8,14 @@ import { SessionStage } from './SessionStage';
 
 describe('SessionStage', () => {
   it('asks for a signal while no source is connected', () => {
-    render(<SessionStage session={new AdaptationSession()} connection="disconnected" />);
+    render(<SessionStage session={new AdaptationSession()} connection="disconnected" playing={false} />);
     expect(screen.getByRole('heading', { name: 'Conecta una fuente de señal' })).toBeVisible();
     expect(screen.queryByText('La adaptación espera datos de buena calidad.')).not.toBeInTheDocument();
   });
 
   it('announces the estimated state with its uncalibrated confidence', () => {
     const session = new AdaptationSession();
-    render(<SessionStage session={session} connection="connected" />);
+    render(<SessionStage session={session} connection="connected" playing />);
     expect(screen.getByRole('status')).toHaveTextContent('Calibrando: no hay datos suficientes');
     expect(screen.getByText('Confianza no calibrada · reglas provisionales')).toBeVisible();
 
@@ -33,7 +33,7 @@ describe('SessionStage', () => {
     await audio.start();
     const session = new AdaptationSession();
     session.setAudio(audio);
-    render(<SessionStage session={session} connection="connected" />);
+    render(<SessionStage session={session} connection="connected" playing />);
 
     act(() => { calibrateToUncertain(session); });
     expect(screen.getByTestId('dwell-notice'))
