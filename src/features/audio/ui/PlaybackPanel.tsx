@@ -11,6 +11,8 @@ interface PlaybackPanelProps {
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
   readonly onEngineChange?: (engine: AudioEngine | null) => void;
+  /** Listening time since the first start, read from the audio clock once per second. */
+  readonly onElapsedChange?: (seconds: number) => void;
 }
 
 const STATE_TEXT: Readonly<Record<AudioState, string>> = {
@@ -42,6 +44,7 @@ export function PlaybackPanel({
   factory,
   generateSeed = randomSeed,
   onEngineChange,
+  onElapsedChange,
 }: PlaybackPanelProps): React.JSX.Element {
   const control = useAudioEngine(factory);
   const { state, stop, engine: getEngine } = control;
@@ -119,6 +122,7 @@ export function PlaybackPanel({
       if (engine === null || startTime === null) {
         return;
       }
+      onElapsedChange?.(engine.audioTime - startTime);
       if (engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
         setWarning(warningIndexRef.current);
       }
@@ -131,7 +135,7 @@ export function PlaybackPanel({
     return () => {
       clearInterval(id);
     };
-  }, [state, getEngine, planDurationS, stopNow]);
+  }, [state, getEngine, planDurationS, stopNow, onElapsedChange]);
 
   // Escape key: stops the music unless a dialog is open.
   useEffect(() => {

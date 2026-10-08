@@ -67,8 +67,12 @@ describe('routes', () => {
   it('with the warnings accepted it goes straight to the session and its panels', () => {
     renderWith('/session', true);
     expect(screen.getByText(/plan: 20 minutos/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /fuente de señal/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Conecta una fuente de señal' })).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: 'Progreso de la sesión' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Fuente de señal' })).toBeInTheDocument();
+    // Signal figures stay folded under the technical details (ADR-24).
+    expect(screen.getByText('Detalles técnicos')).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: /señal e indicadores/i, hidden: true })).toBeInTheDocument();
   });
 
   it('the plan lets the user pick the duration with the keyboard and passes it to the session', async () => {
