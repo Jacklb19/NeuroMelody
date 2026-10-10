@@ -207,6 +207,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | La biblioteca oficial de Supabase gestiona en el navegador el registro con confirmación por correo, la entrada, la recuperación de contraseña y el segundo factor TOTP, con flujo PKCE y la clave pública (las tablas tienen RLS). Se carga de forma diferida desde `AuthProvider`, así que las pantallas de escucha no la descargan. La interfaz depende de la interfaz `AuthService`; los errores de Supabase se traducen a códigos (`AccountErrorCode`) y nunca se muestra su texto. TOTP admite varios dispositivos: un segundo dispositivo es la vía de recuperación, porque Supabase no emite códigos de respaldo. El consentimiento de sincronización se guarda por ahora en el dispositivo. |
 | Consecuencias | En el panel de Supabase hay que permitir las URL de redirección (`/account` del despliegue y de `localhost:5173`) y activar TOTP. Quedan para la tarea C: borrar la cuenta (DELETE de ADR-18), llevar el consentimiento a `profiles` y sincronizar sesiones con `aal2`. |
 
+## ADR-30. Rediseño completo: tema nocturno, acceso propio y perfil
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 10 oct 2026 por el usuario, tras revisar la portada («el resto de la app pierde sentido… debes mejorar toda la app»). |
+| Contexto | Solo la portada tenía el nivel visual deseado; el inicio, el plan y la sesión se veían básicos, la cuenta mezclaba registro y ajustes, y la portada usaba recursos y secciones que el usuario rechazó (sección de tecnología, enlace al código, titular con una palabra resaltada). |
+| Decisión | (1) **Tema:** la «noche de bosque» de la portada pasa a toda la app; se cambian los tokens base de `index.css` (fondo verde profundo, tinta clara, acento ámbar) y las pruebas de contraste siguen exigiendo 4,5:1 y 3:1. (2) **Figura común:** `BreathingOrb`, un orbe en CSS que respira y puede latir; en la sesión toma el tono del estado y late con el pulso real. (3) **Portada:** lenguaje llano, sin sección de tecnología ni código fuente, titular sobrio y un trazo del pulso simulado en vivo como demostración. (4) **Acceso:** pantallas propias `/login`, `/register`, `/forgot-password` y `/reset-password`; la portada lleva a ellas y todas dejan «Continuar sin cuenta», porque escuchar sigue sin exigir cuenta (ADR-18). Registro con correo y contraseña repetida, sin correo de confirmación. «Continuar con Google» consulta antes si el proyecto lo tiene activo. La recuperación envía un enlace por el SMTP propio que el usuario configura en Supabase. (5) **Perfil:** `/account` es resumen y ajustes, accesible desde el avatar. (6) **Inicio, plan y sesión** rediseñados (detalle en `pantallas.md`). |
+| Consecuencias | Sustituye la dirección «papel marfil» de `diseno-visual.md` y la restricción de ADR-28 a la portada. En Supabase el usuario debe: desactivar «Confirm email», configurar un SMTP propio, activar el proveedor Google con sus credenciales y añadir `/app` y `/reset-password` a las URL de redirección. Sin dependencias nuevas. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

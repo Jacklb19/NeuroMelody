@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { APP_NAME } from '../src/config/app';
 import { ROUTES } from '../src/config/routes';
 import { DEFAULT_RECORDING_ID, recordingUrl } from '../src/features/acquisition/recording/recordingCatalog';
 import type { SourceKind } from '../src/features/acquisition/sourceCatalog';
@@ -14,6 +13,8 @@ const { playback } = es.audio;
 /** Signal speed-up, so the indices are ready within the timeout below. */
 const SPEED: Speed = 10;
 const RECORDING_SOURCE: SourceKind = 'recording';
+/** The start screen greets by the time of day, so any of its greetings is right. */
+const HOME_GREETING = new RegExp(Object.values(es.home.greetings).join('|'));
 
 for (const width of [360, 768, 1280]) {
   test(`existing screens remain readable and operable at ${String(width)}px`, async ({ page }, testInfo) => {
@@ -23,18 +24,18 @@ for (const width of [360, 768, 1280]) {
     page.on('pageerror', error => pageErrors.push(error.message));
 
     await page.goto(ROUTES.home);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(es.landing.hero.title.accent);
+    await expect(page.getByRole('heading', { level: 1, name: es.landing.hero.title })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('landing.png'), fullPage: true });
 
     for (const [screen, title] of [
-      ['app', APP_NAME],
+      ['app', HOME_GREETING],
       ['plan', es.plan.pageTitle],
       ['warnings', es.warnings.pageTitle],
       ['diagnostics', es.diagnostics.pageTitle],
     ] as const) {
       await page.goto(ROUTES[screen]);
-      await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: title, exact: typeof title === 'string' })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: testInfo.outputPath(`${screen}.png`), fullPage: true });
     }
