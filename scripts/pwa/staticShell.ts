@@ -23,7 +23,7 @@ export function cssToken(css: string, name: string): string {
 }
 
 export function shellTokens(css: string): ShellTokens {
-  return { background: cssToken(css, '--color-background'), theme: cssToken(css, '--color-button-background') };
+  return { background: cssToken(css, '--color-background'), theme: cssToken(css, '--color-background') };
 }
 
 /** Values index.html receives through its %NAME% placeholders. */
