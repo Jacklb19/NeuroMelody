@@ -16,6 +16,7 @@ export const ACCOUNT_ERROR_CODES = [
   'code_expired',
   'too_many_factors',
   'session_expired',
+  'google_unavailable',
   'network',
   'unknown',
 ] as const;
@@ -43,7 +44,12 @@ export interface Assurance {
 export interface AuthUser {
   readonly id: string;
   readonly email: string;
+  /** Name from the identity provider (Google), when it gave one. */
+  readonly name: string | null;
 }
+
+/** How a sign-up ended: with a session, or waiting for the confirmation email when the project requires it. */
+export type SignUpResult = 'signed_in' | 'confirmation_required';
 
 /** A verified authenticator app on one device. */
 export interface TotpFactor {
@@ -65,8 +71,12 @@ export interface AuthService {
   currentUser(): Promise<AuthUser | null>;
   /** Calls back on every change of session; returns the unsubscribe function. */
   onChange(listener: (event: AuthEvent) => void): () => void;
-  /** Creates the account; the person confirms it from the link sent by email. */
-  signUp(email: string, password: string, confirmUrl: string): Promise<void>;
+  /** Creates the account with an email and a password. */
+  signUp(email: string, password: string): Promise<SignUpResult>;
+  /** Whether this project accepts Google sign-in, so the button can say so instead of failing. */
+  googleAvailable(): Promise<boolean>;
+  /** Leaves the page for Google and comes back to `returnUrl` signed in. */
+  signInWithGoogle(returnUrl: string): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
   /** Sends a link that opens `resetUrl` in recovery mode. */

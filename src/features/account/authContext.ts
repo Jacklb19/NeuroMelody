@@ -22,6 +22,11 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Whether the account has two-step verification that this session has not passed yet (aal1 to aal2). */
+export function needsSecondFactor(assurance: Assurance): boolean {
+  return assurance.current === 'aal1' && assurance.next === 'aal2';
+}
+
 export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext);
   if (value === null) throw new Error('useAuth must be used inside AuthProvider.');

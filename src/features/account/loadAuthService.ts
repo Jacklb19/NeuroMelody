@@ -20,5 +20,5 @@ export function loadAuthService(): AuthService | null {
       autoRefreshToken: true,
     },
   });
-  return createSupabaseAuthService(client);
+  return createSupabaseAuthService(client, { url: env.supabaseUrl, anonKey: env.supabaseAnonKey });
 }

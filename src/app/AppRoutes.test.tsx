@@ -9,6 +9,7 @@ import { WarningsContext } from '../features/warnings/warningsContext';
 import { WarningsRegistry } from '../features/warnings/warningsRegistry';
 import { DEFAULT_DURATION_MIN, readDuration } from '../features/plan/plan';
 import { STOP_SHORTCUT_KEY } from '../features/audio/ui/stopShortcut';
+import { AuthProvider } from '../features/account/AuthProvider';
 import { AppRoutes } from './AppRoutes';
 import { MAIN_CONTENT_ID } from './Layout';
 
@@ -25,7 +26,10 @@ function renderWith(route: string, accepted = false) {
   render(
     <WarningsContext.Provider value={registry}>
       <MemoryRouter initialEntries={[route]}>
-        <AppRoutes />
+        {/* No account service: the screens behave as for someone without an account. */}
+        <AuthProvider loadService={() => Promise.resolve(null)}>
+          <AppRoutes />
+        </AuthProvider>
         <CurrentLocation />
       </MemoryRouter>
     </WarningsContext.Provider>,
@@ -38,20 +42,22 @@ const currentPath = () => screen.getByTestId('current-path').textContent;
 describe('routes', () => {
   it('the landing page explains the app and leads into it', () => {
     renderWith(ROUTES.home);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(es.landing.hero.title.accent);
-    expect(screen.getByRole('link', { name: es.landing.hero.start })).toHaveAttribute('href', ROUTES.app);
+    expect(screen.getByRole('heading', { level: 1, name: es.landing.hero.title })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: es.landing.hero.start })).toHaveAttribute('href', ROUTES.register);
+    expect(screen.getByRole('link', { name: es.landing.nav.signIn })).toHaveAttribute('href', ROUTES.login);
     expect(screen.getByText(es.landing.hero.note)).toBeInTheDocument();
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
-  it('the app home links to the plan; the navigation leaves out diagnostics', () => {
+  it('the app home starts a session and opens the plan; the profile sits apart from the navigation', () => {
     renderWith(ROUTES.app);
-    expect(screen.getByRole('heading', { level: 1, name: APP_NAME })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: es.home.start.title(DEFAULT_DURATION_MIN) })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: es.app.mainNavigation });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
     const labels = es.app.navigation;
-    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history, labels.account]);
-    expect(screen.getByRole('link', { name: es.home.prepareSession })).toHaveAttribute('href', ROUTES.plan);
+    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history]);
+    expect(screen.getByRole('link', { name: es.home.start.customize })).toHaveAttribute('href', ROUTES.plan);
+    expect(screen.getByRole('link', { name: es.app.profile })).toHaveAttribute('href', ROUTES.account);
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 

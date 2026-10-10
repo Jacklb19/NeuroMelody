@@ -65,14 +65,29 @@ const EVENTS: Readonly<Record<string, AuthEvent>> = {
   TOKEN_REFRESHED: 'updated',
 };
 
-/** `AuthService` over Supabase Auth: email and password with confirmation, recovery and TOTP. */
-export function createSupabaseAuthService(client: SupabaseClient): AuthService {
+/** Public settings of the Supabase project, read to know which sign-in methods are on. */
+export interface ProjectAccess {
+  readonly url: string;
+  readonly anonKey: string;
+}
+
+/** Whether the project settings say Google sign-in is enabled; any doubt reads as "no". */
+export function googleEnabled(settings: unknown): boolean {
+  if (typeof settings !== 'object' || settings === null || !('external' in settings)) return false;
+  const external = settings.external;
+  return typeof external === 'object' && external !== null && 'google' in external && external.google === true;
+}
+
+/** `AuthService` over Supabase Auth: email and password, Google, recovery and TOTP. */
+export function createSupabaseAuthService(client: SupabaseClient, project: ProjectAccess): AuthService {
   const { auth } = client;
   return {
     currentUser: () => attempt(async () => {
       const { session } = unwrap(await auth.getSession());
       const user = session?.user;
-      return user?.email === undefined ? null : { id: user.id, email: user.email };
+      if (user?.email === undefined) return null;
+      const name: unknown = user.user_metadata.full_name;
+      return { id: user.id, email: user.email, name: typeof name === 'string' && name.trim() !== '' ? name : null };
     }),
     onChange(listener) {
       const { data } = auth.onAuthStateChange((event) => {
@@ -82,8 +97,21 @@ export function createSupabaseAuthService(client: SupabaseClient): AuthService {
       });
       return () => { data.subscription.unsubscribe(); };
     },
-    signUp: (email, password, confirmUrl) => attempt(async () => {
-      unwrap(await auth.signUp({ email, password, options: { emailRedirectTo: confirmUrl } }));
+    signUp: (email, password) => attempt(async () => {
+      const { session } = unwrap(await auth.signUp({ email, password }));
+      // No session means the project still asks to confirm the email first.
+      return session === null ? 'confirmation_required' : 'signed_in';
+    }),
+    googleAvailable: async () => {
+      try {
+        const response = await fetch(`${project.url}/auth/v1/settings`, { headers: { apikey: project.anonKey } });
+        return response.ok && googleEnabled(await response.json());
+      } catch {
+        return false;
+      }
+    },
+    signInWithGoogle: (returnUrl) => attempt(async () => {
+      unwrap(await auth.signInWithOAuth({ provider: 'google', options: { redirectTo: returnUrl } }));
     }),
     signIn: (email, password) => attempt(async () => {
       unwrap(await auth.signInWithPassword({ email, password }));

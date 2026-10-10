@@ -12,6 +12,10 @@ export const ROUTE_SEGMENTS = {
   diagnostics: 'diagnostics',
   account: 'account',
   privacy: 'privacy',
+  login: 'login',
+  register: 'register',
+  forgotPassword: 'forgot-password',
+  resetPassword: 'reset-password',
 } as const;
 
 export const ROUTES = {
@@ -24,26 +28,25 @@ export const ROUTES = {
   session: `/${ROUTE_SEGMENTS.session}`,
   history: `/${ROUTE_SEGMENTS.history}`,
   diagnostics: `/${ROUTE_SEGMENTS.diagnostics}`,
+  /** Profile: summary and settings of the person, with or without an account. */
   account: `/${ROUTE_SEGMENTS.account}`,
   privacy: `/${ROUTE_SEGMENTS.privacy}`,
+  login: `/${ROUTE_SEGMENTS.login}`,
+  register: `/${ROUTE_SEGMENTS.register}`,
+  forgotPassword: `/${ROUTE_SEGMENTS.forgotPassword}`,
+  /** Opened from the recovery email to choose a new password. */
+  resetPassword: `/${ROUTE_SEGMENTS.resetPassword}`,
 } as const;
 
 /** Query parameters shared between screens. */
 export const QUERY_PARAMS = {
   duration: 'duration',
   goals: 'goals',
-  /** Opens the account screen in a given mode, e.g. after a recovery link. */
-  accountMode: 'mode',
 } as const;
 
-/**
- * Absolute URL of the account screen, for the links Supabase emails
- * (confirmation, recovery); `mode` selects the form it opens on.
- */
-export function accountUrl(origin: string, mode?: string): string {
-  const url = new URL(ROUTES.account, origin);
-  if (mode !== undefined) url.searchParams.set(QUERY_PARAMS.accountMode, mode);
-  return url.toString();
+/** Absolute URL of a route, for the links the identity provider sends or returns to. */
+export function absoluteUrl(origin: string, route: string): string {
+  return new URL(route, origin).toString();
 }
 
 /** Summary of one saved session. */
@@ -54,9 +57,21 @@ export function summaryPath(id: string): string {
 /** Separator between goal ids in the URL; mirrors `GOALS_SEPARATOR` of the goal catalog. */
 const GOALS_SEPARATOR = ',';
 
+function planParams(goals: readonly string[]): URLSearchParams {
+  const params = new URLSearchParams();
+  if (goals.length > 0) params.set(QUERY_PARAMS.goals, goals.join(GOALS_SEPARATOR));
+  return params;
+}
+
+/** The plan screen with some goals already chosen. */
+export function planPath(goals: readonly string[] = []): string {
+  const query = planParams(goals).toString();
+  return query === '' ? ROUTES.plan : `${ROUTES.plan}?${query}`;
+}
+
 /** The session screen with the planned duration and, when chosen, its goals. */
 export function sessionPath(durationMin: number, goals: readonly string[] = []): string {
-  const params = new URLSearchParams({ [QUERY_PARAMS.duration]: String(durationMin) });
-  if (goals.length > 0) params.set(QUERY_PARAMS.goals, goals.join(GOALS_SEPARATOR));
+  const params = planParams(goals);
+  params.set(QUERY_PARAMS.duration, String(durationMin));
   return `${ROUTES.session}?${params.toString()}`;
 }
