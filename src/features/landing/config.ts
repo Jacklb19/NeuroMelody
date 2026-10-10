@@ -27,6 +27,21 @@ export const SAMPLE_WINDOW_BEATS = 30;
 /** Beats the simulator keeps; older ones are dropped so memory stays flat. */
 export const SIMULATOR_HISTORY_BEATS = 64;
 
+/** The live pulse trace under the hero. */
+export const PULSE_TRACE = {
+  /** Points kept on screen; at 60 frames per second this is about six seconds. */
+  samples: 360,
+  /** Where the flat line sits, as a share of the height from the top. */
+  baseline: 0.72,
+  /** Height of the spike, as a share of the canvas height. */
+  amplitude: 0.6,
+  /** Stroke width, as a share of the canvas height. */
+  lineWidth: 0.03,
+  /** Beats shown in the still picture used with reduced motion. */
+  stillBeats: 6,
+  maxPixelRatio: 2,
+} as const;
+
 /** 3D scene of the hero. */
 export const HERO_SCENE = {
   /** Points on the sphere. */

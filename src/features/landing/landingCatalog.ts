@@ -9,12 +9,9 @@ export const LANDING_STEP_IDS = ['signal', 'analysis', 'state', 'music'] as cons
 
 export const LANDING_PRIVACY_IDS = ['local', 'camera', 'account'] as const;
 
-export const LANDING_TECHNOLOGY_IDS = ['pwa', 'audio', 'worker', 'bluetooth'] as const;
-
 /** Anchors of the in-page navigation; also the ids of the sections. */
 export const LANDING_SECTIONS = {
   howItWorks: 'how-it-works',
-  sources: 'sources',
+  moments: 'moments',
   privacy: 'privacy',
-  technology: 'technology',
 } as const;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMessages } from '../../i18n/messages';
 import { SAMPLE_REFRESH_MS, SAMPLE_WINDOW_BEATS } from './config';
 import type { HeartbeatSimulator, HeartReading } from './heartbeatSimulator';
+import { LivePulse } from './LivePulse';
 
 const EMPTY: HeartReading = { heartRate: null, rmssd: null, lastRrMs: null };
 
@@ -29,6 +30,7 @@ export function SampleReadout({ heart }: { readonly heart: HeartbeatSimulator })
   return (
     <div className="sample-readout">
       <p className="sample-tag"><span className="sample-dot" aria-hidden="true" />{sample.label}</p>
+      <LivePulse heart={heart} />
       <dl aria-label={sample.label}>
         <div><dt>{sample.heartRate}</dt><dd>{figure(reading.heartRate, units.beatsPerMinute)}</dd></div>
         <div><dt>{sample.rmssd}</dt><dd>{figure(reading.rmssd, units.milliseconds)}</dd></div>
