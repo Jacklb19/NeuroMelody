@@ -4,7 +4,7 @@ import { BLE_FAILURES, BleConnectionError } from './ble/BleSource';
 import { HeartRateMeasurementError, MEASUREMENT_ERROR_CODES } from './ble/parseHeartRateMeasurement';
 import { CAMERA_FAILURES, CameraUnavailableError } from './camera/cameraCapture';
 import { MAX_HR, MIN_HR } from './config';
-import { describeSourceError } from './describeSourceError';
+import { describeSourceError, describeSourceNotice } from './describeSourceError';
 import { RECORDING_ERROR_CODES, RecordingError } from './recording/recording';
 import { SignalSourceError } from './sourceChannel';
 import { NOTIFICATION_ISSUES } from './validateNotification';
@@ -34,7 +34,14 @@ describe('describeSourceError', () => {
     expect(describeSourceError(new BleConnectionError('no_remembered_device'), text)).toContain(text.connect.ble);
   });
 
-  it('keeps the message of an error without a code', () => {
-    expect(describeSourceError(new TypeError('Failed to fetch'), text)).toBe('Failed to fetch');
+  it('never shows the browser text of an error without a code', () => {
+    expect(describeSourceError(new TypeError('Failed to fetch'), text)).toBe(text.unexpectedSourceError);
+  });
+
+  it('chooses the notice by the kind of error, not by the selected source', () => {
+    const discarded = new SignalSourceError('invalid_rr');
+    expect(describeSourceNotice(discarded, text)).toBe(text.sourceErrors.discarded(describeSourceError(discarded, text)));
+    const denied = new CameraUnavailableError('permission_denied');
+    expect(describeSourceNotice(denied, text)).toBe(text.sourceErrors.camera(text.camera.errors.permission_denied));
   });
 });

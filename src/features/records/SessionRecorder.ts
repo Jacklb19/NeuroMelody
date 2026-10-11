@@ -3,11 +3,13 @@ import type { ActivationState } from '../adaptation/activationStates';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { COMPUTE_PERIOD_S } from '../signal/processing/thresholds';
 import { MS_PER_SECOND } from '../../shared/time';
+import type { GoalId } from '../plan/goalCatalog';
 import type { SessionRecord, SessionSample } from './sessionRecord';
 import { uuidv7 } from './uuidv7';
 
 export interface SessionStart {
   readonly plannedMinutes: number;
+  readonly goals: readonly GoalId[];
   readonly sourceKind: SourceKind | null;
   readonly ratingBefore: number | null;
 }
@@ -85,6 +87,7 @@ export class SessionRecorder {
       startedAt: new Date(session.startedAtMs).toISOString(),
       endedAt: new Date(endedAtMs).toISOString(),
       plannedMinutes: session.plannedMinutes,
+      goals: session.goals,
       listenedSeconds: Math.max(0, listenedSeconds),
       sourceKind: session.sourceKind,
       ratingBefore: session.ratingBefore,

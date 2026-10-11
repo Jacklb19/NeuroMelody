@@ -11,7 +11,7 @@ function indices(timeMs: number, overrides: Partial<IndicesResult> = {}): Indice
   };
 }
 
-const START = { plannedMinutes: 20, sourceKind: 'simulator', ratingBefore: 6 } as const;
+const START = { plannedMinutes: 20, sourceKind: 'simulator', ratingBefore: 6, goals: ['relax'] } as const;
 
 describe('SessionRecorder', () => {
   it('ignores indices while no session is running', () => {
@@ -33,6 +33,7 @@ describe('SessionRecorder', () => {
     expect(record?.samples[1]?.estimatedState).toBe('uncertain');
     expect(record?.startedAt).toBe('2026-10-07T10:00:00.000Z');
     expect(record?.endedAt).toBe('2026-10-07T10:10:00.000Z');
+    expect(record?.goals).toEqual(['relax']);
     expect(record?.ratingBefore).toBe(6);
     expect(record?.ratingAfter).toBeNull();
     expect(isSessionRecord(record)).toBe(true);

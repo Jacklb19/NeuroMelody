@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { QUERY_PARAMS } from '../../config/routes';
@@ -9,6 +9,8 @@ import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
+import { readGoals, type GoalId } from '../plan/goalCatalog';
+import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
@@ -17,11 +19,14 @@ import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
 import { useSessionStore } from '../records/sessionStoreContext';
 import { storeErrorMessage } from '../records/storeErrorMessage';
+import type { OrbHandle } from '../../shared/BreathingOrb';
 import { PageHeading } from '../../shared/PageHeading';
 import { SECONDS_PER_MINUTE } from '../../shared/time';
 import { SessionStage } from './SessionStage';
 import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
+import { SessionOrb } from './SessionOrb';
+import './session.css';
 
 /**
  * Listening session at /session (docs/pantallas.md). The simple view comes
@@ -34,6 +39,9 @@ export function SessionPage(): React.JSX.Element {
   usePageTitle(t.session.title);
   const [params] = useSearchParams();
   const durationMin = readDuration(params.get(QUERY_PARAMS.duration));
+  const goalsParam = params.get(QUERY_PARAMS.goals);
+  // Parsed once per URL value, so the handlers that depend on it stay stable.
+  const goals = useMemo(() => readGoals(goalsParam), [goalsParam]);
   const store = useSessionStore();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
@@ -53,6 +61,8 @@ export function SessionPage(): React.JSX.Element {
   const sessionStartElapsedRef = useRef(0);
   const ratingBeforeRef = useRef<number | null>(null);
   const sourceRef = useRef<SignalSource | null>(null);
+  const orbRef = useRef<OrbHandle | null>(null);
+  const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
 
   const finishRecording = useCallback((): void => {
     const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current);
@@ -76,13 +86,14 @@ export function SessionPage(): React.JSX.Element {
       sessionStartElapsedRef.current = elapsedRef.current;
       recorder.start({
         plannedMinutes: durationMin,
+        goals,
         sourceKind: sourceRef.current?.kind ?? null,
         ratingBefore: ratingBeforeRef.current,
       });
       setSavedId(null);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, finishRecording]);
+  }, [adaptation, recorder, durationMin, goals, finishRecording]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -93,6 +104,12 @@ export function SessionPage(): React.JSX.Element {
     adaptation.receive(result);
     recorder.add(result, adaptation.getSnapshot().state);
   }, [adaptation, recorder]);
+
+  // Each beat keeps the adaptation alive and makes the orb swell; stable, so the Worker is not restarted.
+  const handlePulse = useCallback((): void => {
+    adaptation.pulse();
+    orbRef.current?.beat();
+  }, [adaptation]);
 
   const handleSourceChange = useCallback((next: SignalSource): void => {
     sourceRef.current = next;
@@ -112,9 +129,20 @@ export function SessionPage(): React.JSX.Element {
     <div className="session-page">
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
+        {goals.length > 0 && (
+          <ul className="session-goals" aria-label={t.records.goalsLabel}>
+            {goals.map((goal) => <li key={goal}><GoalIcon goal={goal} /> {goalNames[goal]}</li>)}
+          </ul>
+        )}
       </PageHeading>
 
       <div className="listening-stage">
+        <SessionOrb
+          session={adaptation}
+          connection={connection}
+          progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
+          orbRef={orbRef}
+        />
         <div className="stage-main">
           <SessionStage session={adaptation} connection={connection} playing={playing} />
           <SessionCheckIn
@@ -137,7 +165,7 @@ export function SessionPage(): React.JSX.Element {
           <span className="summary-hint">{t.session.technicalDetails.hint}</span>
         </summary>
         <div className="technical-layout">
-          <SignalPanel source={source} onIndices={handleIndices} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={adaptation.pulse} />
+          <SignalPanel source={source} onIndices={handleIndices} onReset={adaptation.reset} onUnavailable={adaptation.invalidate} onPulse={handlePulse} />
           <MusicalStatePanel session={adaptation} />
         </div>
       </details>

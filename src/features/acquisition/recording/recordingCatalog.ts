@@ -18,11 +18,17 @@ export const DEFAULT_RECORDING_ID: RecordingId = 'nsr001';
 /** Version of the JSON format; the parser rejects any other. */
 export const RECORDING_SCHEMA_VERSION = 1;
 
-/** Length of every extracted segment, in minutes and in ms. */
-export const RECORDING_DURATION_MIN = 30;
-export const RECORDING_DURATION_MS = RECORDING_DURATION_MIN * 60 * 1000;
+/** Declared length of each segment, in minutes; a file must declare exactly its own. */
+export const RECORDING_DURATIONS_MIN: Readonly<Record<RecordingId, number>> = { nsr001: 30, nsr002: 30 };
 
-/** Upper bound on the intervals of a segment, far above 30 minutes of plausible beats. */
+const MS_PER_MINUTE = 60_000;
+
+/** Declared length of a segment in ms. */
+export function recordingDurationMs(id: RecordingId): number {
+  return RECORDING_DURATIONS_MIN[id] * MS_PER_MINUTE;
+}
+
+/** Upper bound on the intervals of a segment, far above an hour of plausible beats. */
 export const MAX_RECORDING_INTERVALS = 10_000;
 
 /**

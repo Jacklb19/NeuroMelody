@@ -8,9 +8,15 @@ const connect = {
   camera: 'Conectar cámara',
 };
 
+/** The one browser advice for the camera, in every notice that needs it. */
+const cameraBrowserAdvice = 'Usa Chrome en Android.';
+
+/** The one caveat of the camera, shared by the source and its prototype. */
+const cameraCaveat = 'Es menos precisa que una banda de pecho y no es una medida clínica. La imagen se procesa en el dispositivo y no se guarda.';
+
 /** How to hold the finger over the camera; shared by the camera source and its prototype. */
 const cameraInstructions =
-  'Cubre la cámara trasera con la yema del dedo, sin apretar, y mantén la mano quieta. Si tu celular lo permite, la linterna se enciende sola. Funciona mejor en Chrome para Android.';
+  `Cubre la cámara trasera con la yema del dedo, sin apretar, y mantén la mano quieta. Si tu celular lo permite, la linterna se enciende sola. ${cameraBrowserAdvice}`;
 
 /** Spanish copy of the acquisition area: the signal source panel and the camera prototype (ADR-25). */
 export const acquisition = {
@@ -59,8 +65,8 @@ export const acquisition = {
     'Este navegador no permite conectar una banda Bluetooth. Usa Chrome o Edge en escritorio o Android; mientras tanto puedes usar el simulador.',
   bleNote: 'Enciende la banda y colócala antes de conectar. Si la conexión se pierde, se intentará recuperar automáticamente.',
   cameraUnsupported:
-    'Este navegador no permite usar la cámara como fuente de señal. Usa Chrome en Android; mientras tanto puedes usar el simulador.',
-  cameraNote: `${cameraInstructions} La lectura aparece tras unos segundos con el dedo quieto; mantén esta pantalla abierta mientras la uses. Fuente experimental: es menos precisa que una banda de pecho y no es una medida clínica. La imagen se procesa en el dispositivo y no se guarda.`,
+    `Este navegador no permite usar la cámara como fuente de señal. ${cameraBrowserAdvice} Mientras tanto puedes usar el simulador.`,
+  cameraNote: `${cameraInstructions} La lectura aparece tras unos segundos con el dedo quieto; mantén esta pantalla abierta mientras la uses. Fuente experimental. ${cameraCaveat}`,
 
   connectionStatus: 'Estado de la conexión:',
   /** Keys mirror `ConnectionState`. */
@@ -78,14 +84,17 @@ export const acquisition = {
     signalTime: 'Tiempo de señal',
   },
 
-  /** Notice around the reason of a source error, chosen by the selected source. */
+  /** Notice around the reason of a source error, chosen by the kind of error. */
   sourceErrors: {
     recording: (reason: string): string => `No se pudo reproducir el registro (${reason}). Intenta conectarlo de nuevo.`,
     ble: (reason: string): string => `No se pudo usar la banda: ${reason}`,
     camera: (reason: string): string => `No se pudo usar la cámara: ${reason}`,
+    unexpected: (reason: string): string => `No se pudo usar la fuente de señal (${reason}). Intenta conectarla de nuevo.`,
     discarded: (reason: string): string =>
       `La medición no es fiable y se descartó (${reason}). Revisa la colocación del dispositivo.`,
   },
+  /** Reason of a failure the browser reported without a code (a failed download, for example). */
+  unexpectedSourceError: 'el navegador informó un problema inesperado',
   /** Why the boundary discarded a notification; keys mirror `NotificationIssue`. */
   notificationIssues: {
     invalid_time: 'Tiempo de señal no válido.',
@@ -147,10 +156,10 @@ export const acquisition = {
       unavailable: 'No disponible: usa buena luz',
     },
     footnote:
-      'Prueba para decidir si la cámara sirve como fuente de señal. Es menos precisa que una banda de pecho y no es una medida clínica. La imagen se procesa en el dispositivo y no se guarda.',
+      `Prueba para decidir si la cámara sirve como fuente de señal. ${cameraCaveat}`,
     /** Keys mirror `CameraFailure`; the camera source reports the same codes. */
     errors: {
-      unsupported: 'Este navegador no permite usar la cámara. Usa Chrome en Android.',
+      unsupported: `Este navegador no permite usar la cámara. ${cameraBrowserAdvice}`,
       permission_denied: 'No diste permiso para usar la cámara.',
       not_found: 'No se encontró ninguna cámara.',
       busy: 'Otra aplicación está usando la cámara.',

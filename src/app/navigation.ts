@@ -8,11 +8,12 @@ export interface NavigationItem {
 }
 
 /**
- * Screens of the main navigation, in order (docs/pantallas.md). Diagnostics
- * is deliberately left out: it is a technical tool reached by its route.
+ * Screens of the main navigation, in order (docs/pantallas.md). The profile
+ * is reached from the avatar; diagnostics is a technical tool reached by its
+ * route.
  */
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
-  { route: ROUTES.home, labelKey: 'home' },
+  { route: ROUTES.app, labelKey: 'home' },
   { route: ROUTES.plan, labelKey: 'plan' },
   { route: ROUTES.session, labelKey: 'session' },
   { route: ROUTES.history, labelKey: 'history' },

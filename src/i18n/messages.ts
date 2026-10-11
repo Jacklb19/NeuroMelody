@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { en } from './en';
 import { es } from './es';
 import { formattersFor, type Formatters } from './formatters';
 import { DEFAULT_LOCALE, type Locale } from './locale';
@@ -10,7 +11,8 @@ import { DEFAULT_LOCALE, type Locale } from './locale';
  */
 export type Messages = typeof es;
 
-const MESSAGES: Readonly<Record<Locale, Messages>> = { es };
+/** Typed against the Spanish dictionary: a language missing a key or changing a signature does not compile. */
+const MESSAGES: Readonly<Record<Locale, Messages>> = { es, en };
 
 /** Dictionary of a locale, for code outside React (exports, documents). */
 export function messagesFor(locale: Locale): Messages {

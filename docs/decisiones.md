@@ -173,6 +173,57 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | Sin dependencias nuevas. (1) **Entorno:** solo `src/config/env.ts` lee `import.meta.env` y valida los valores al arrancar. (2) **Rutas:** `src/config/routes.ts`. (3) **Opciones elegibles:** catálogos por funcionalidad (`*Catalog.ts`) con identificadores `as const`, tipo derivado, valor por defecto y `parseOption` en la frontera. (4) **Valores ajustables:** constantes con nombre y documentadas, en un único módulo por dominio (`thresholds.ts`, `levels.ts`, `ramps.ts`, `config.ts`). (5) **Textos:** diccionarios por área en `src/i18n/es/`; los textos con cifras son funciones con parámetros, así que ningún número se escribe dentro de una frase. (6) **Errores:** la lógica lanza errores con `code`; la interfaz los traduce. (7) **Diseño:** solo variables CSS en inglés; las rejillas que dependen de un catálogo reciben `--option-count`. (8) **Backend:** configuración desde el entorno validada con Pydantic y errores con código. |
 | Consecuencias | Cambiar una opción, un umbral o un texto toca un solo archivo. Las pruebas usan el diccionario y las constantes en lugar de repetir literales. El tipo `Messages` obliga a que otro idioma tenga las mismas claves. |
 
+## ADR-26. Ajustes visibles tras «nada fijo en el código» (P-02)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 («Sí, aplica las mejoras»). |
+| Contexto | La limpieza de ADR-25 no cambió textos ni comportamiento a propósito y dejó once decisiones visibles abiertas. |
+| Decisión | (1) Errata del doble punto corregida. (2) La interfaz no muestra textos crudos del navegador (audio, caída del Worker, descarga de un registro, historial): usa el diccionario; el detalle técnico queda solo en `/diagnostics`. (3) Una sola clave para el consejo de navegador de la cámara, para el aviso de reglas provisionales y para el aviso no clínico de los indicadores. (4) Las columnas del CSV siguen en español: el archivo es para la persona y su terapeuta; si hiciera falta para scripts, se añade otra exportación. (5) El aviso de error de la fuente se elige por el tipo de error, no por la fuente seleccionada. (6) La regla de hueco o pérdida de contacto vive en el Worker de señal, que envía un evento `contact`. (7) Cada registro de ejemplo declara su duración en el catálogo. (8) Los minutos del resumen se redondean hacia abajo en todos los casos. (9) `index.html` y el manifest se generan al compilar desde `APP_NAME`, el idioma, el diccionario y los tokens CSS. (10) Backend: CORS admite las vistas previas de Vercel solo con la forma `https://<proyecto>-<hash de 9>-<equipo>.vercel.app`, configurada con `VERCEL_PREVIEW_PROJECT` y `VERCEL_PREVIEW_TEAM` (opcionales y juntas); los alias de rama quedan fuera. (11) Backend: `httpx2` 2.13.1 en lugar de `httpx` para el `TestClient`. |
+| Consecuencias | Para activar las vistas previas hay que definir las dos variables en Vercel. |
+
+## ADR-27. Objetivos del plan (P-03)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026; el usuario delegó la lista. |
+| Decisión | Catálogo `GOAL_IDS` con ids en inglés y textos en el diccionario, sin lenguaje clínico: `relax`, `rest_before_sleep`, `calm_after_activity`, `slow_breathing` y `pause`. Selección múltiple y opcional en `/plan`; viajan a `/session` en `QUERY_PARAMS.goals` (validados en la frontera, en orden del catálogo y sin repetir), se guardan en `SessionRecord.goals` y se muestran en el resumen y en el historial. |
+| Consecuencias | Los registros guardados antes de este cambio se leen con la lista vacía. Con la nube (S6.2) se guardan en `plans.goals`. Los objetivos no cambian la música: solo describen la intención de la sesión. |
+
+## ADR-28. Portada pública con animación y escena 3D
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 por el usuario («una pantalla de inicio con animaciones… como una página real en producción»; eligió three.js y la ruta `/` para la portada con la app en `/app`). |
+| Contexto | `diseno-visual.md` excluía animaciones decorativas y degradados en las pantallas de la app. Falta una página que explique el proyecto a quien llega por primera vez. |
+| Decisión | `/` pasa a ser una portada pública con su propio diseño (noche de bosque en la cabecera y el papel de la app en el resto) y el inicio de la app se mueve a `/app`. La cabecera muestra una escena 3D con `three` 0.180.0 (y `@types/three` 0.180.0 en desarrollo): una esfera de partículas que late con un corazón simulado y un pentagrama de cinco líneas a su alrededor. three.js se carga de forma diferida, solo en la portada y solo si hay WebGL; sin WebGL queda una figura en CSS. Animaciones de entrada y al desplazarse, todas desactivadas con `prefers-reduced-motion`; la escena se detiene fuera de pantalla y con la pestaña oculta. Colores, medidas y tiempos son tokens de `index.css`; textos en `src/i18n/es/landing.ts`. |
+| Consecuencias | La excepción a «sin animaciones decorativas» vale solo para la portada; las pantallas de escucha siguen sobrias. El manifest abre la app en `/app`. Las cifras de la cabecera son de un corazón simulado y lo dicen. |
+
+## ADR-29. Cuenta en el navegador con `@supabase/supabase-js`
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 7 oct 2026 (el usuario aprobó `@supabase/supabase-js` 2.58.0 y la cuenta real). |
+| Decisión | La biblioteca oficial de Supabase gestiona en el navegador el registro con confirmación por correo, la entrada, la recuperación de contraseña y el segundo factor TOTP, con flujo PKCE y la clave pública (las tablas tienen RLS). Se carga de forma diferida desde `AuthProvider`, así que las pantallas de escucha no la descargan. La interfaz depende de la interfaz `AuthService`; los errores de Supabase se traducen a códigos (`AccountErrorCode`) y nunca se muestra su texto. TOTP admite varios dispositivos: un segundo dispositivo es la vía de recuperación, porque Supabase no emite códigos de respaldo. El consentimiento de sincronización se guarda por ahora en el dispositivo. |
+| Consecuencias | En el panel de Supabase hay que permitir las URL de redirección (`/account` del despliegue y de `localhost:5173`) y activar TOTP. Quedan para la tarea C: borrar la cuenta (DELETE de ADR-18), llevar el consentimiento a `profiles` y sincronizar sesiones con `aal2`. |
+
+## ADR-30. Rediseño completo: tema nocturno, acceso propio y perfil
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 10 oct 2026 por el usuario, tras revisar la portada («el resto de la app pierde sentido… debes mejorar toda la app»). |
+| Contexto | Solo la portada tenía el nivel visual deseado; el inicio, el plan y la sesión se veían básicos, la cuenta mezclaba registro y ajustes, y la portada usaba recursos y secciones que el usuario rechazó (sección de tecnología, enlace al código, titular con una palabra resaltada). |
+| Decisión | (1) **Tema:** la «noche de bosque» de la portada pasa a toda la app; se cambian los tokens base de `index.css` (fondo verde profundo, tinta clara, acento ámbar) y las pruebas de contraste siguen exigiendo 4,5:1 y 3:1. (2) **Figura común:** `BreathingOrb`, un orbe en CSS que respira y puede latir; en la sesión toma el tono del estado y late con el pulso real. (3) **Portada:** lenguaje llano, sin sección de tecnología ni código fuente, titular sobrio y un trazo del pulso simulado en vivo como demostración. (4) **Acceso:** pantallas propias `/login`, `/register`, `/forgot-password` y `/reset-password`; la portada lleva a ellas y todas dejan «Continuar sin cuenta», porque escuchar sigue sin exigir cuenta (ADR-18). Registro con correo y contraseña repetida, sin correo de confirmación. «Continuar con Google» consulta antes si el proyecto lo tiene activo. La recuperación envía un enlace por el SMTP propio que el usuario configura en Supabase. (5) **Perfil:** `/account` es resumen y ajustes, accesible desde el avatar. (6) **Inicio, plan y sesión** rediseñados (detalle en `pantallas.md`). |
+| Consecuencias | Sustituye la dirección «papel marfil» de `diseno-visual.md` y la restricción de ADR-28 a la portada. En Supabase el usuario debe: desactivar «Confirm email», configurar un SMTP propio, activar el proveedor Google con sus credenciales y añadir `/app` y `/reset-password` a las URL de redirección. Sin dependencias nuevas. |
+
+## ADR-31. Tema claro y oscuro, e interfaz en español e inglés
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 10 oct 2026 por instrucción del usuario («debe tener dark and light, además de español e inglés»; «combinar el verde con el blanco de antes»). |
+| Decisión | **Temas:** dos paletas escritas una sola vez en `index.css`, noche de bosque y papel marfil. El tema oscuro es fondo verde con tarjetas marfil; el claro es fondo marfil con tarjetas verdes. Una superficie con la clase `.paper` toma la paleta contraria a la de la página y `.night` conserva la oscura en cualquier tema (cabecera de la portada, cuya escena 3D está pensada para fondo oscuro). `data-theme` en el documento elige el tema; la preferencia es «como el sistema», claro u oscuro. **Idiomas:** diccionario `src/i18n/en/` con la misma forma que el español (el tipo `Messages` lo exige al compilar); el español es el idioma por defecto. **Controles:** botones de tema e idioma en las cabeceras y selectores en el perfil; ambas preferencias se guardan en el dispositivo y se validan al leerlas. |
+| Consecuencias | Toda clave nueva debe añadirse en los dos diccionarios. El CSV se exporta en el idioma de la interfaz. La gráfica de la señal toma la paleta al abrir la sesión: si se cambia el tema con la sesión abierta, la gráfica conserva los colores anteriores hasta recargar. Las pruebas de contraste verifican la paleta oscura; la clara es la que ya estaba verificada antes de ADR-30. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

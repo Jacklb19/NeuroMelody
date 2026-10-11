@@ -4,9 +4,13 @@ El rediseño de las pantallas existentes mantiene las rutas, los contratos y el 
 
 ## Dirección
 
+> **Vigente desde ADR-30 (10 oct 2026):** toda la app usa el tema «noche de bosque»: fondo verde profundo, tinta clara, acento ámbar, tarjetas con borde sutil, botones en píldora y el orbe (`BreathingOrb`) como figura común. Las animaciones son sobrias y se desactivan con `prefers-reduced-motion`. Los párrafos siguientes describen la dirección anterior y se conservan como historia; el sistema compartido (tokens en `index.css`, foco visible, controles de 48 px, contraste verificado) sigue vigente.
+
 Una interfaz de escucha serena: papel marfil, tinta verde bosque, títulos con serif y texto de controles con sans serif. Se usan fuentes disponibles en el dispositivo (Palatino/Georgia y Segoe UI/Helvetica Neue), sin descargas, dependencias ni recursos externos. No hay degradados, efectos de cristal ni animaciones decorativas.
 
 Inicio conserva sus dos recorridos. Advertencias usa una columna de lectura y mantiene íntegros los textos obligatorios y la aceptación explícita. El plan convierte cada duración existente en una opción pulsable con radio nativo. Diagnóstico muestra capacidades en filas y conserva la reevaluación. En la sesión, música y estado musical comparten una superficie; fuente y señal se separan con líneas, sin tarjetas anidadas.
+
+La portada pública (`/`, ADR-28) es la única excepción: tiene animaciones, degradados y una escena 3D propios, con sus tokens `--landing-*` en `index.css` y estilos en `src/features/landing/landing.css`.
 
 ## Sistema compartido
 

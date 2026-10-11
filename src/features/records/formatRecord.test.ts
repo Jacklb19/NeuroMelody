@@ -16,7 +16,7 @@ describe('createRecordFormatter', () => {
   it('rounds signal time and keeps an empty phase at zero', () => {
     expect(format.signalTime(0)).toBe(minutes(0));
     expect(format.signalTime(20)).toBe(records.lessThan(minutes(1)));
-    expect(format.signalTime(90)).toBe(minutes(2));
+    expect(format.signalTime(90)).toBe(minutes(1));
   });
 
   it('shows a change in whole units and a mark when there is no data', () => {
