@@ -1,6 +1,7 @@
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationEngine, type AdaptationSnapshot, type TransitionTiming } from './AdaptationEngine';
+import type { ActivationModel } from './classifier/activationModel';
 import { CALIBRATION_LEVEL, type LevelId } from '../audio/engine/levels';
 
 export interface SessionSnapshot extends AdaptationSnapshot {
@@ -9,6 +10,7 @@ export interface SessionSnapshot extends AdaptationSnapshot {
 
 /** Binds guidance to the existing audio engine; no musical timers or extra worker. */
 export class AdaptationSession {
+  #model: ActivationModel | null = null;
   #guidance = new AdaptationEngine();
   #audio: AudioEngine | null = null;
   #lastTiming: TransitionTiming | null = null;
@@ -28,8 +30,15 @@ export class AdaptationSession {
     this.#publish();
   };
 
+  /** Gives the session the trained classifier once it has loaded; `null` goes back to the rules. */
+  setModel = (model: ActivationModel | null): void => {
+    this.#model = model;
+    this.#guidance.setModel(model);
+    this.#publish();
+  };
+
   reset = (): void => {
-    this.#guidance = new AdaptationEngine();
+    this.#guidance = new AdaptationEngine(this.#model);
     this.#lastTiming = null;
     if (this.#audio !== null) {
       if (this.#audio.level !== CALIBRATION_LEVEL) this.#audio.applyLevel(CALIBRATION_LEVEL);
