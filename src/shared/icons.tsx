@@ -60,6 +60,9 @@ export const LeafIcon = (props: IconProps): React.JSX.Element => (
 export const MoonIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M19.500 14.500A8 8 0 0 1 9.500 4.500a8 8 0 1 0 10 10z" /></Icon>
 );
+export const SunIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M18.400 5.600L17 7M7 17l-1.400 1.400" /></Icon>
+);
 export const SunsetIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.600 9.600l1.800 1.800M18.400 9.600l-1.800 1.800" /></Icon>
 );

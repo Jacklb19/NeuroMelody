@@ -6,6 +6,7 @@ import { BrandMark } from '../shared/BrandMark';
 import { UserIcon } from '../shared/icons';
 import { useMessages } from '../i18n/messages';
 import { NAVIGATION_ITEMS } from './navigation';
+import { QuickPreferences } from './preferences/PreferenceControls';
 
 /** Target of the skip link, so keyboard users can jump past the navigation (WCAG 2.4.1). */
 export const MAIN_CONTENT_ID = 'main-content';
@@ -44,6 +45,7 @@ export function Layout(): React.JSX.Element {
             ))}
           </ul>
         </nav>
+        <QuickPreferences />
         <NavLink to={ROUTES.account} className="avatar" aria-label={t.app.profile}>
           {user === null ? <UserIcon /> : (user.name ?? user.email).charAt(0).toUpperCase()}
         </NavLink>
