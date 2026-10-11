@@ -224,6 +224,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | **Temas:** dos paletas escritas una sola vez en `index.css`, noche de bosque y papel marfil. El tema oscuro es fondo verde con tarjetas marfil; el claro es fondo marfil con tarjetas verdes. Una superficie con la clase `.paper` toma la paleta contraria a la de la página y `.night` conserva la oscura en cualquier tema (cabecera de la portada, cuya escena 3D está pensada para fondo oscuro). `data-theme` en el documento elige el tema; la preferencia es «como el sistema», claro u oscuro. **Idiomas:** diccionario `src/i18n/en/` con la misma forma que el español (el tipo `Messages` lo exige al compilar); el español es el idioma por defecto. **Controles:** botones de tema e idioma en las cabeceras y selectores en el perfil; ambas preferencias se guardan en el dispositivo y se validan al leerlas. |
 | Consecuencias | Toda clave nueva debe añadirse en los dos diccionarios. El CSV se exporta en el idioma de la interfaz. La gráfica de la señal toma la paleta al abrir la sesión: si se cambia el tema con la sesión abierta, la gráfica conserva los colores anteriores hasta recargar. Las pruebas de contraste verifican la paleta oscura; la clara es la que ya estaba verificada antes de ADR-30. |
 
+## ADR-32. Clasificador de activación entrenado
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 11 oct 2026 por el usuario («sin IA no puedo presentar el proyecto, y no puede ser generativa»). Sustituye a ADR-14 en lo que limitaba RF-07. |
+| Contexto | El estado se estimaba con reglas fijas (ADR-12) porque no había datos etiquetados ni modelo. El proyecto necesita un modelo de aprendizaje automático propio, no generativo. |
+| Decisión | Un clasificador supervisado (regresión logística multinomial de tres clases con confianza calibrada) entrenado con el conjunto público WESAD. Contrato de etiquetas: meditación → `low`, reposo y vídeos divertidos → `uncertain`, estrés inducido → `high`. Entradas: FC media, RMSSD y SDNN respecto a la línea base de la persona. Se entrena fuera de la app (`back/training/`, con numpy, scipy y scikit-learn solo para entrenar) y se entrega como un archivo JSON estático (`public/models/activation-classifier.json`, ADR-09) que el navegador ejecuta como aritmética: sin ONNX, sin WebAssembly (ADR-21 se mantiene) y sin dependencias nuevas en la app. Las reglas de ADR-12 quedan como respaldo si el archivo no carga. Ficha completa en `docs/modelo.md`. |
+| Resultado | Validación dejando una persona fuera: acierto equilibrado 71,9 % frente al 62,4 % de las reglas; F1 macro 0,71 frente a 0,64. |
+| Consecuencias | La pantalla indica «Estimado por un modelo entrenado» con su confianza, o las reglas provisionales si actúa el respaldo. La histéresis, las permanencias y las rampas no cambian. Cambiar el filtro de latidos, la ventana o la línea base obliga a reentrenar. No es una validación clínica: 15 personas sanas en laboratorio. El conjunto de datos no se versiona. `GET /v1/models/classifier` de la Tabla 15 no es necesario mientras el modelo sea un archivo estático. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

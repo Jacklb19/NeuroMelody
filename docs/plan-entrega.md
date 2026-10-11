@@ -45,7 +45,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | RF-01, RF-03 | Verificados con pruebas automáticas y con un periférico emulado (nRF Connect): emparejamiento, recepción y reconexión. Falta una banda real. |
 | RF-02, RF-04, RF-05 | Verificados (simulador con cinco escenarios, filtro, calidad e índices). |
 | RF-06 | Verificado con referencias sintéticas. |
-| RF-07 | **Limitado** (ADR-14): estimador por reglas, sin clasificador entrenado. |
+| RF-07 | Cumplido con un clasificador entrenado con WESAD (ADR-32, `docs/modelo.md`); reglas como respaldo. Sin validación clínica. |
 | RF-08, RF-09, RF-10 | Verificados con pruebas y escucha del usuario. |
 | RF-11, RF-17, RF-18 | Verificados; quedan comprobaciones manuales de accesibilidad y nivel acústico. |
 | RF-12 | Verificado, incluido LF/HF. |
