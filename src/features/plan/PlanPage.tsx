@@ -85,7 +85,7 @@ export function PlanPage(): React.JSX.Element {
           </fieldset>
         </div>
 
-        <section aria-label={t.plan.summaryLabel} className="plan-summary glass-card">
+        <section aria-label={t.plan.summaryLabel} className="plan-summary glass-card paper">
           <BreathingOrb className="plan-orb" />
           <p className="eyebrow">{t.plan.summaryLabel}</p>
           <p className="plan-duration"><strong>{t.plan.minutes(duration)}</strong></p>

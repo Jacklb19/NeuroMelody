@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { Link, Navigate } from 'react-router';
+import { PreferenceSelects } from '../../app/preferences/PreferenceControls';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
@@ -60,7 +61,7 @@ function ProfileHeader({ user }: { readonly user: AuthUser | null }): React.JSX.
   const copy = useMessages().account.profile;
   const name = user === null ? copy.guestName : user.name ?? user.email;
   return (
-    <header className="profile-header glass-card">
+    <header className="profile-header glass-card paper">
       <span className="avatar avatar-large" aria-hidden="true">
         {user === null ? <UserIcon /> : name.charAt(0).toUpperCase()}
       </span>
@@ -213,6 +214,8 @@ function PreferencesSection(): React.JSX.Element {
   const titleId = useId();
   return (
     <section aria-labelledby={titleId} className="profile-section">
+      <h2>{copy.sections.appearance}</h2>
+      <div className="setting-list glass-card appearance-card"><PreferenceSelects /></div>
       <h2 id={titleId}>{copy.sections.preferences}</h2>
       <div className="setting-list glass-card">
         <LinkRow to={ROUTES.privacy} icon={<ShieldIcon />} title={copy.rows.privacy.title} text={copy.rows.privacy.text} />

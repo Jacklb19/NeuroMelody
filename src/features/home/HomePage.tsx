@@ -41,7 +41,7 @@ export function HomePage(): React.JSX.Element {
         <p>{copy.question}</p>
       </header>
 
-      <section className="start-card glass-card" aria-labelledby={ids.start}>
+      <section className="start-card glass-card paper" aria-labelledby={ids.start}>
         <div className="start-copy">
           <p className="eyebrow">{copy.start.eyebrow}</p>
           <h2 id={ids.start}>{copy.start.title(DEFAULT_DURATION_MIN)}</h2>

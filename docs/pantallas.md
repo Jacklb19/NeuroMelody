@@ -68,7 +68,7 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 - **Inicio (`/app`):** saludo según la hora, tarjeta «Tu próxima sesión» (empezar o personalizar), atajos por objetivo hacia `/plan?goals=…`, y la actividad del dispositivo o, si no hay sesiones, los tres pasos de la primera.
 - **Plan (`/plan`):** objetivos y duración como tarjetas seleccionables y una tarjeta fija «Tu sesión» con el botón de empezar.
 - **Sesión (`/session`):** el escenario gira alrededor del orbe (`SessionOrb`), que toma el tono del estado estimado, late con cada latido y está rodeado por un anillo de progreso; al lado, la frase, el estado y los controles. Debajo, la fuente de señal y los detalles técnicos como tarjetas. Se conservan el pentagrama de progreso, «Detener» fijo y Esc.
-- **Cabecera de la app:** Inicio, Plan, Sesión, Historial y el avatar que abre el perfil.
+- **Cabecera de la app:** Inicio, Plan, Sesión, Historial, los botones de tema e idioma (ADR-31) y el avatar que abre el perfil. El perfil tiene además la sección «Apariencia e idioma».
 
 ## `/account` y `/privacy` (S6.2, ADR-29; las pantallas de acceso se rehicieron en ADR-30)
 

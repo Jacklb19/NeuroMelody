@@ -24,7 +24,7 @@
   position: relative; isolation: isolate; overflow: clip; min-height: var(--landing-hero-height);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center;
   padding: var(--space-24) max(var(--space-8), calc((100vw - var(--content-max-width)) / 2 + var(--space-8))) var(--space-16);
-  background: radial-gradient(ellipse at 72% 42%, var(--landing-night-raised), transparent 62%);
+  background: radial-gradient(ellipse at 72% 42%, var(--landing-night-raised), transparent 62%), var(--color-background);
 }
 .hero-copy { position: relative; z-index: 1; grid-column: 1; grid-row: 1; max-width: var(--landing-copy-width); }
 .hero-figure { grid-column: 2; grid-row: 1; position: relative; aspect-ratio: 1; width: 100%; }
@@ -98,13 +98,13 @@
 .moments-heading { position: sticky; top: var(--space-16); }
 .moment-list { list-style: none; display: grid; gap: var(--space-3); }
 .moment-list li { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-5) var(--space-6); border-radius: var(--radius-card); border: var(--border-width) solid transparent; transition: background var(--motion-duration), border-color var(--motion-duration), transform var(--motion-duration); }
-.moment-list li:hover { background: var(--color-surface); border-color: var(--color-border-subtle); transform: translateX(var(--space-2)); }
+.moment-list li:hover { background: var(--color-paper); border-color: var(--color-border-subtle); transform: translateX(var(--space-2)); }
 .moment-list h3 { margin-bottom: 0; }
 
 .source-list { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-5); }
 .source-badge { display: inline-block; margin-left: var(--space-2); padding: 0 var(--space-2); font-family: var(--font-base); font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; vertical-align: middle; color: var(--color-error-text); background: var(--color-error-background); border-radius: var(--radius-pill); }
 
-.privacy-band .landing-inner { padding-top: var(--space-16); padding-bottom: var(--space-16); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); padding-left: var(--space-12); padding-right: var(--space-12); }
+.privacy-band .landing-inner { padding-top: var(--space-16); padding-bottom: var(--space-16); background: var(--card-background); box-shadow: var(--card-shadow); border-radius: var(--radius-card); padding-left: var(--space-12); padding-right: var(--space-12); }
 .privacy-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-8) var(--space-16); align-items: center; }
 .privacy-points { list-style: none; display: grid; gap: var(--space-5); }
 .privacy-points li { padding-left: var(--space-6); border-left: var(--chart-line-width-series) solid var(--color-accent); font-size: var(--text-lg); color: var(--color-text-secondary); }
@@ -121,7 +121,7 @@
 .footer-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-4) var(--space-10); }
 .footer-brand { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-text); }
 .footer-brand .brand-mark { color: var(--color-accent); }
-.footer-meta { display: flex; gap: var(--space-6); white-space: nowrap; }
+.footer-meta { display: flex; align-items: center; gap: var(--space-6); white-space: nowrap; }
 .landing-footer a { color: var(--color-text-secondary); }
 
 /* Scroll reveal: only hidden once the script is ready to show it again. */
@@ -137,6 +137,7 @@
   .hero-figure { grid-column: 1; grid-row: 1; width: min(100%, var(--landing-figure-mobile)); justify-self: center; margin-bottom: var(--space-8); }
   .hero-copy { grid-row: 2; }
   .landing-header nav { display: none; }
+  .landing-signin { display: none; }
   .landing-account { margin-left: auto; }
   .moments-grid, .privacy-grid { grid-template-columns: minmax(0, 1fr); }
   .moments-heading { position: static; }
@@ -153,6 +154,8 @@
   .landing-inner, .landing-header { padding-left: var(--space-5); padding-right: var(--space-5); }
   .landing-header { gap: var(--space-3); }
   .landing-account { gap: var(--space-3); }
+  /* On a phone the header keeps the brand and the way in; theme and language move to the footer. */
+  .landing-account .quick-preferences { display: none; }
   .landing-brand { font-size: var(--text-lg); }
   .hero { padding-left: var(--space-5); padding-right: var(--space-5); }
   .source-list { grid-template-columns: minmax(0, 1fr); }
