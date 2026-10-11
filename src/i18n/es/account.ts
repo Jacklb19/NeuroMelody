@@ -106,6 +106,7 @@ export const account = {
       none: 'Aún no hay sesiones',
     },
     sections: {
+      appearance: 'Apariencia e idioma',
       security: 'Seguridad',
       preferences: 'Privacidad y datos',
       session: 'Sesión',
