@@ -14,6 +14,7 @@ import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
+import { loadActivationModel } from '../adaptation/classifier/activationModel';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
 import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
@@ -121,6 +122,15 @@ export function SessionPage(): React.JSX.Element {
     ratingBeforeRef.current = rating;
     setRatingBefore(rating);
   }, []);
+
+  // The trained classifier arrives a moment after the screen; until then, and if it fails, the rules estimate.
+  useEffect(() => {
+    let cancelled = false;
+    void loadActivationModel().then((model) => {
+      if (!cancelled && model !== null) adaptation.setModel(model);
+    });
+    return () => { cancelled = true; };
+  }, [adaptation]);
 
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);

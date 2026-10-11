@@ -17,6 +17,8 @@ interface SessionStageProps {
   readonly playing: boolean;
 }
 
+const PERCENT = 100;
+
 /**
  * Simple view of the session (ADR-24): the moment in plain words, the
  * estimated state with its uncalibrated confidence, and the notices that
@@ -35,6 +37,12 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
     musicPlaying: playing,
   })];
   const connected = connection === 'connected';
+  // Says who is estimating: the trained model (with its confidence once it has one) or the fallback rules.
+  const estimateNote = snapshot.estimator === 'rules'
+    ? t.session.stage.confidence
+    : snapshot.confidence === null || snapshot.state === null
+      ? t.session.stage.modelReady
+      : t.session.stage.modelConfidence(Math.round(snapshot.confidence * PERCENT));
 
   return (
     <section aria-labelledby={titleId} className="session-stage">
@@ -49,7 +57,7 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
             {snapshot.state === null ? t.adaptation.states.calibrating : t.adaptation.states[snapshot.state]}
           </strong>
         </p>
-        <p className="confidence-note">{t.session.stage.confidence}</p>
+        <p className="confidence-note" data-testid="estimate-note">{estimateNote}</p>
       </div>
 
       {connected && playing && !snapshot.qualityGood && (

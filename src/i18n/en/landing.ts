@@ -72,7 +72,7 @@ export const landing = {
       state: {
         title: 'It finds your starting point',
         text: (calibrationMinutes: number): string =>
-          `During the first ${String(calibrationMinutes)} minutes it learns how you are today, and from there it notices whether you are settling down.`,
+          `During the first ${String(calibrationMinutes)} minutes it learns how you are today. After that, a model trained on research data estimates whether you are settling down.`,
       },
       music: {
         title: 'The music keeps you company',

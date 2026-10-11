@@ -35,7 +35,12 @@ export const session = {
   stage: {
     eyebrow: 'Now',
     estimatedState: 'Estimated state:',
+    /** Shown while the rules estimate the state, because the trained model could not be loaded. */
     confidence: common.provisionalEstimate,
+    /** Shown with the trained model before it has an estimate to be confident about. */
+    modelReady: 'Estimated by a model trained on research data',
+    /** The model's calibrated probability for the state shown, as a whole percentage. */
+    modelConfidence: (percent: number): string => `Estimated by a trained model · ${String(percent)}% confidence`,
     waitingForQuality: 'The adaptation is waiting for good-quality data.',
     /** Why the music holds its step; the minutes come from the adaptation rules (ADR-12). */
     dwell: (minutes: number): string =>
