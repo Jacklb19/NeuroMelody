@@ -10,8 +10,9 @@ export const signal = {
     low: 'Baja: revisa la colocación del dispositivo.',
   },
   threadUnavailable: 'El análisis de la señal no está disponible en este navegador.',
-  /** `reason` is one of `errors` or the browser's own words when the Worker crashed. */
+  /** `reason` is one of `errors` or `workerCrashed`. */
   threadFailed: (reason: string): string => `No se pudo actualizar el análisis de la señal (${reason}).`,
+  workerCrashed: 'el hilo de análisis se detuvo de forma inesperada',
   /** Keys mirror `SignalThreadErrorCode`. */
   errors: {
     unrecognized_message: 'Mensaje no reconocido por el hilo de señal.',
@@ -25,7 +26,7 @@ export const signal = {
       `Tacograma: intervalos entre latidos de los últimos ${String(minutes)} minutos`,
     unavailable: (reason: string): string =>
       `La gráfica no está disponible: ${reason}. Los indicadores en texto siguen actualizándose.`,
-    noOffscreenCanvas: 'Este navegador no puede dibujar la gráfica en segundo plano.',
+    noOffscreenCanvas: 'Este navegador no puede dibujar la gráfica en segundo plano',
     stylesMissing: (detail: string): string => `Faltan estilos de la gráfica (${detail})`,
     /** Keys mirror `ChartPaletteErrorCode`; the parameter is the CSS variable or value at fault. */
     paletteErrors: {

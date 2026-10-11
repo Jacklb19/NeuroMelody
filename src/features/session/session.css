@@ -1,0 +1,53 @@
+/* Listening screen (ADR-24, ADR-30): the orb at the centre, the words and the controls beside it. Values come from index.css tokens. */
+.session-page .page-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); margin-bottom: var(--space-8); }
+.session-page .page-introduction { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin: 0; font-size: var(--text-sm); max-width: none; }
+.session-goals { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.session-goals li { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); color: var(--color-text); }
+.session-goals .icon { width: var(--space-4); height: var(--space-4); color: var(--color-accent); }
+
+.listening-stage {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'orb stage' 'orb playback' 'progress progress';
+  column-gap: var(--space-12); align-items: center;
+  padding: var(--space-10); border-radius: var(--radius-card); border: var(--border-width) solid var(--color-border-subtle);
+  background: radial-gradient(ellipse at 18% 40%, var(--landing-night-raised), transparent 55%), var(--card-background);
+  box-shadow: var(--card-shadow);
+}
+.session-orb { grid-area: orb; position: relative; width: var(--ring-size); height: var(--ring-size); display: grid; place-items: center; }
+.session-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.session-ring circle { fill: none; stroke-width: calc(var(--ring-width) * 0.25); }
+.session-ring-track { stroke: var(--color-border-subtle); }
+.session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; transition: stroke-dashoffset var(--progress-duration) linear; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
+.session-orb-figure { font-size: calc(var(--ring-size) * 0.82); }
+
+.listening-stage .stage-main { grid-area: stage; padding: 0 0 var(--space-6); align-self: end; }
+.listening-stage .session-stage .eyebrow { color: var(--color-accent); }
+.listening-stage .playback-panel { grid-area: playback; align-self: start; padding: var(--space-6) 0 0; border-left: 0; border-top: var(--border-width) solid var(--color-border-subtle); }
+.listening-stage .playback-panel h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.listening-stage .playback-panel > .panel-footnote { margin-bottom: var(--space-4); }
+.listening-stage .playback-controls { grid-template-columns: auto auto minmax(0, 1fr) auto; margin-top: 0; column-gap: var(--space-4); }
+.listening-stage .play-button { grid-column: auto; margin: 0 var(--space-4) 0 0; min-height: var(--stop-height); padding: 0 var(--space-8); background: var(--color-accent); box-shadow: var(--glow-accent); }
+.listening-stage .play-button:disabled { box-shadow: none; }
+.listening-stage .playback-status { margin-top: var(--space-5); padding-top: 0; border-top: 0; }
+.listening-stage .playback-status strong { display: inline; font-size: var(--text-base); font-family: var(--font-base); font-weight: var(--font-weight-strong); margin: 0 0 0 var(--space-1); }
+.listening-stage .session-progress { grid-area: progress; padding: var(--space-8) 0 0; margin-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); }
+.listening-stage .staff-note { background: var(--color-accent); box-shadow: 0 0 12px var(--landing-glow-colour); }
+.listening-stage .estimated-state strong { color: var(--color-accent); font-size: var(--text-base); }
+.listening-stage .check-in { border-top: 0; padding-top: 0; }
+.rating-option { background: var(--color-background); }
+
+/* Source and technical details as cards under the stage. */
+.session-page .acquisition-panel { margin-top: var(--space-8); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
+.session-page .technical-details { margin-top: var(--space-6); padding: 0 var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
+.session-page .signal-chart { border-radius: var(--border-radius); }
+
+@media (max-width: 900px) {
+  .listening-stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'orb' 'stage' 'playback' 'progress'; padding: var(--space-8) var(--space-6); row-gap: var(--space-6); }
+  .session-orb { justify-self: center; width: var(--ring-size-mobile); height: var(--ring-size-mobile); }
+  .session-orb-figure { font-size: calc(var(--ring-size-mobile) * 0.82); }
+  .listening-stage .stage-main { text-align: center; padding-bottom: 0; }
+  .listening-stage .stage-title, .listening-stage .stage-detail { margin-left: auto; margin-right: auto; }
+  .listening-stage .session-stage .estimated-state { justify-content: center; }
+  .listening-stage .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: var(--space-5); }
+  .listening-stage .play-button { grid-column: 1 / -1; justify-self: center; margin: 0; }
+  .session-page .acquisition-panel, .session-page .technical-details { padding-left: var(--space-5); padding-right: var(--space-5); }
+}

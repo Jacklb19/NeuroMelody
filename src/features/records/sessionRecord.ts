@@ -1,5 +1,6 @@
 import { SOURCE_KIND_IDS, type SourceKind } from '../acquisition/sourceCatalog';
 import { ACTIVATION_STATE_IDS, type ActivationState } from '../adaptation/activationStates';
+import { isGoalId, type GoalId } from '../plan/goalCatalog';
 import { isUuid } from './uuidv7';
 
 /**
@@ -25,6 +26,8 @@ export interface SessionRecord {
   readonly startedAt: string;
   readonly endedAt: string;
   readonly plannedMinutes: number;
+  /** Goals chosen in the plan (HU-07), in catalog order; empty when none. */
+  readonly goals: readonly GoalId[];
   /** Listening time measured on the audio clock. */
   readonly listenedSeconds: number;
   readonly sourceKind: SourceKind | null;
@@ -62,6 +65,15 @@ function isSample(value: unknown): value is SessionSample {
 }
 
 /**
+ * Reads a stored record: records saved before goals existed get none, then
+ * the whole record is validated. Returns `null` for anything unusable.
+ */
+export function readSessionRecord(value: unknown): SessionRecord | null {
+  const upgraded = isRecord(value) && value.goals === undefined ? { ...value, goals: [] } : value;
+  return isSessionRecord(upgraded) ? upgraded : null;
+}
+
+/**
  * Validates a record read from storage. Browser storage can be edited or
  * left over from an older version, so nothing is trusted without checking.
  */
@@ -72,6 +84,7 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && isInstant(value.endedAt)
     && Date.parse(value.endedAt) >= Date.parse(value.startedAt)
     && Number.isInteger(value.plannedMinutes) && (value.plannedMinutes as number) > 0
+    && Array.isArray(value.goals) && value.goals.every(isGoalId) && new Set(value.goals).size === value.goals.length
     && isFiniteNumber(value.listenedSeconds) && value.listenedSeconds >= 0
     && (value.sourceKind === null || SOURCE_KIND_IDS.some((kind) => kind === value.sourceKind))
     && isRating(value.ratingBefore)

@@ -47,6 +47,10 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
         <h2 id={figuresId}>{figures.title}</h2>
         <dl className="summary-figures">
           <div>
+            <dt>{t.records.goalsLabel}</dt>
+            <dd>{format.goals(record.goals)}</dd>
+          </div>
+          <div>
             <dt>{t.records.ratingLabel}</dt>
             <dd>{format.ratings(record.ratingBefore, record.ratingAfter)}</dd>
             {ratingChange !== null && <dd className="figure-note">{ratingChange}</dd>}

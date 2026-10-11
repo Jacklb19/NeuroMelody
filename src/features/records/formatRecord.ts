@@ -1,5 +1,6 @@
 import type { Formatters } from '../../i18n/formatters';
 import type { Messages } from '../../i18n/messages';
+import type { GoalId } from '../plan/goalCatalog';
 import { SECONDS_PER_MINUTE } from '../../shared/time';
 import type { Change } from './summarizeSession';
 
@@ -15,13 +16,15 @@ export interface RecordFormatter {
   sessionDate(iso: string): string;
   /** Whole listening minutes, rounded down; under one minute reads "menos de 1 min". */
   listened(seconds: number): string;
-  /** Signal minutes, rounded; a short but non-zero time reads "menos de 1 min". */
+  /** Whole signal minutes, rounded down like `listened`; a short but non-zero time reads "menos de 1 min". */
   signalTime(seconds: number): string;
   /** "78 → 68 lpm"; the empty-value mark when there is not enough data. */
   change(change: Change | null, unit: string): string;
   /** "4 → 7"; answers that were skipped show as the empty-value mark. */
   ratings(before: number | null, after: number | null): string;
   ratio(value: number | null): string;
+  /** Goal names in one line, or the no-goals text. */
+  goals(goals: readonly GoalId[]): string;
 }
 
 /** Formatter of stored sessions for a dictionary and its locale formatters. */
@@ -29,6 +32,7 @@ export function createRecordFormatter(t: Messages, format: Formatters): RecordFo
   const { common, records } = t;
   const minutes = (value: number): string => common.withUnit(String(value), common.units.minutes);
   const underSmallest = records.lessThan(minutes(SMALLEST_SHOWN_MINUTES));
+  const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const rating = (value: number | null): string => (value === null ? common.noValue : String(value));
 
   return {
@@ -38,8 +42,8 @@ export function createRecordFormatter(t: Messages, format: Formatters): RecordFo
       return whole < SMALLEST_SHOWN_MINUTES ? underSmallest : minutes(whole);
     },
     signalTime: (seconds) => {
-      const rounded = Math.round(seconds / SECONDS_PER_MINUTE);
-      return rounded < SMALLEST_SHOWN_MINUTES && seconds > 0 ? underSmallest : minutes(rounded);
+      const whole = Math.floor(seconds / SECONDS_PER_MINUTE);
+      return whole < SMALLEST_SHOWN_MINUTES && seconds > 0 ? underSmallest : minutes(whole);
     },
     change: (change, unit) => {
       if (change === null) return common.noValue;
@@ -51,5 +55,6 @@ export function createRecordFormatter(t: Messages, format: Formatters): RecordFo
       return records.change(rating(before), rating(after));
     },
     ratio: (value) => (value === null ? common.noValue : format.decimal(value, RATIO_DECIMALS)),
+    goals: (goals) => (goals.length === 0 ? records.noGoals : records.goalList(goals.map((id) => goalNames[id]))),
   };
 }

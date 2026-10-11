@@ -5,6 +5,7 @@ import {
 } from '../../signal/drawing/drawTachogram';
 import type { ChartLabels } from '../../signal/drawing/chartLabels';
 import type { ChartPalette } from '../../signal/drawing/palette';
+import { ContactMonitor } from '../processing/contactMonitor';
 import { SignalProcessor } from '../processing/SignalProcessor';
 import { isMessageToThread, type ThreadCanvas, type MessageFromThread } from './protocol';
 
@@ -30,6 +31,7 @@ export function createSignalThreadHandler(
   const processor = new SignalProcessor((result) => {
     send({ kind: 'indices', result });
   });
+  const contact = new ContactMonitor();
   let chart: Chart | null = null;
 
   const redraw = (): void => {
@@ -51,9 +53,11 @@ export function createSignalThreadHandler(
     switch (data.kind) {
       case 'notification':
         processor.process(data.notification);
+        send({ kind: 'contact', present: contact.observe(data.notification) });
         break;
       case 'reset':
         processor.reset();
+        contact.reset();
         break;
       case 'init-canvas': {
         const context = data.canvas.getContext('2d');

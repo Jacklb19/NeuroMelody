@@ -1,4 +1,5 @@
 import { acquisition } from './acquisition';
+import { account } from './account';
 import { adaptation } from './adaptation';
 import { app } from './app';
 import { audio } from './audio';
@@ -6,7 +7,9 @@ import { common } from './common';
 import { diagnostics } from './diagnostics';
 import { history } from './history';
 import { home } from './home';
+import { landing } from './landing';
 import { plan } from './plan';
+import { privacy } from './privacy';
 import { records } from './records';
 import { session } from './session';
 import { signal } from './signal';
@@ -20,6 +23,7 @@ import { warnings } from './warnings';
 export const es = {
   common,
   app,
+  landing,
   home,
   warnings,
   plan,
@@ -32,4 +36,6 @@ export const es = {
   summary,
   history,
   diagnostics,
+  account,
+  privacy,
 };

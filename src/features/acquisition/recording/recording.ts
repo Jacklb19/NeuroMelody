@@ -1,8 +1,8 @@
 import {
   MAX_RECORDING_INTERVALS,
-  RECORDING_DURATION_MS,
   RECORDING_DURATION_TOLERANCE_MS,
   RECORDING_SCHEMA_VERSION,
+  recordingDurationMs,
   recordingUrl,
   type RecordingId,
 } from './recordingCatalog';
@@ -40,7 +40,7 @@ export class RecordingError extends Error {
 export function parseRecording(value: unknown, expectedId: RecordingId): Recording {
   if (typeof value !== 'object' || value === null || !('schemaVersion' in value)
     || value.schemaVersion !== RECORDING_SCHEMA_VERSION || !('recordId' in value) || value.recordId !== expectedId
-    || !('durationMs' in value) || value.durationMs !== RECORDING_DURATION_MS
+    || !('durationMs' in value) || value.durationMs !== recordingDurationMs(expectedId)
     || !('rrIntervalsMs' in value) || !Array.isArray(value.rrIntervalsMs)) {
     throw new RecordingError('invalid_format');
   }

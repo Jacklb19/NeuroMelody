@@ -43,8 +43,9 @@ function isDialogOpen(): boolean {
 
 /** Text that explains a failed start: the engine's own errors are translated by code. */
 function describeFailure(failure: AudioStartFailure, t: Messages): string {
+  // The browser's own text is technical; the interface keeps to the dictionary.
   if (failure.kind === 'browser') {
-    return failure.detail;
+    return t.audio.playback.browserRefused;
   }
   const messages: Readonly<Record<AudioEngineErrorCode, (params: AudioEngineErrorParams) => string>> =
     t.audio.errors;

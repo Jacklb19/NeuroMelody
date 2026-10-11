@@ -39,6 +39,22 @@ export function describeSourceError(error: Error, t: AcquisitionMessages): strin
     const texts: Readonly<Record<CameraFailure, string>> = t.camera.errors;
     return texts[error.code];
   }
-  // Errors raised by the platform (a failed download, for example) carry no code: their message is all there is.
-  return error.message;
+  // Errors raised by the platform (a failed download, for example) carry no code; their wording is technical.
+  return t.unexpectedSourceError;
+}
+
+/**
+ * Whole notice for a source error. The sentence around the reason follows
+ * the kind of error, not the selected source, so a discarded reading from
+ * the camera never reads as a connection failure.
+ */
+export function describeSourceNotice(error: Error, t: AcquisitionMessages): string {
+  const reason = describeSourceError(error, t);
+  if (error instanceof BleConnectionError) return t.sourceErrors.ble(reason);
+  if (error instanceof CameraUnavailableError) return t.sourceErrors.camera(reason);
+  if (error instanceof SignalSourceError || error instanceof HeartRateMeasurementError) {
+    return t.sourceErrors.discarded(reason);
+  }
+  if (error instanceof RecordingError) return t.sourceErrors.recording(reason);
+  return t.sourceErrors.unexpected(reason);
 }

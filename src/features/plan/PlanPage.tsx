@@ -1,66 +1,115 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useId, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { QUERY_PARAMS, sessionPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
-import { CALIBRATION_LEVEL } from '../audio/engine/levels';
-import { CALIBRATION_MIN, DURATIONS_MIN, DEFAULT_DURATION_MIN } from './plan';
+import { BreathingOrb } from '../../shared/BreathingOrb';
+import { PlayIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
+import { CALIBRATION_LEVEL } from '../audio/engine/levels';
+import { GOAL_IDS, normalizeGoals, readGoals, type GoalId } from './goalCatalog';
+import { GoalIcon } from './GoalIcon';
+import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN } from './plan';
+import './plan.css';
 
 /**
- * Session plan (HU-07, RF-18). Only duration is currently configurable;
- * language-model proposals belong to S6.
+ * Session plan (HU-07, RF-18): what the person is after and how long they
+ * have, with the session they are about to start always in view. A link
+ * from the start screen can arrive with a goal already chosen.
+ * Language-model proposals belong to S6.
  */
 export function PlanPage(): React.JSX.Element {
   const t = useMessages();
   usePageTitle(t.plan.pageTitle);
+  const [params] = useSearchParams();
   const [duration, setDuration] = useState(DEFAULT_DURATION_MIN);
+  const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)));
+  const goalsHintId = useId();
+  const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const navigate = useNavigate();
 
+  const toggleGoal = (id: GoalId, chosen: boolean): void => {
+    setGoals((current) => normalizeGoals(chosen ? [...current, id] : current.filter((goal) => goal !== id)));
+  };
+
   return (
-    <div className="reading-page plan-page">
-      <PageHeading eyebrow={t.plan.eyebrow} title={t.plan.pageTitle} />
-      <fieldset className="duration-fieldset">
-        <legend>
-          {t.plan.durationLegend}
-        </legend>
-        <div className="duration-options" style={{ '--option-count': DURATIONS_MIN.length } as React.CSSProperties}>
-          {DURATIONS_MIN.map((minutes) => (
-            <label key={minutes} className="duration-option">
-              <input
-                type="radio"
-                aria-label={t.plan.minutes(minutes)}
-                name={QUERY_PARAMS.duration}
-                value={minutes}
-                checked={duration === minutes}
-                onChange={() => {
-                  setDuration(minutes);
-                }}
-              />
-              <span>{minutes}<span className="duration-unit">{' '}{t.plan.minutesUnit}</span></span>
-            </label>
-          ))}
+    <div className="plan-page">
+      <PageHeading eyebrow={t.plan.eyebrow} title={t.plan.pageTitle}>
+        <p>{t.plan.introduction}</p>
+      </PageHeading>
+
+      <div className="plan-layout">
+        <div className="plan-choices">
+          <fieldset className="plan-fieldset" aria-describedby={goalsHintId}>
+            <legend>{t.plan.goals.legend}</legend>
+            <p id={goalsHintId} className="secondary-text">{t.plan.goals.hint}</p>
+            <div className="goal-options">
+              {GOAL_IDS.map((id) => (
+                <label key={id} className="choice-card goal-option">
+                  <input
+                    type="checkbox"
+                    name={QUERY_PARAMS.goals}
+                    value={id}
+                    checked={goals.includes(id)}
+                    onChange={(event) => {
+                      toggleGoal(id, event.target.checked);
+                    }}
+                  />
+                  <span className="icon-badge"><GoalIcon goal={id} /></span>
+                  <span>{goalNames[id]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="plan-fieldset">
+            <legend>{t.plan.durationLegend}</legend>
+            <div className="duration-options" style={{ '--option-count': DURATIONS_MIN.length } as React.CSSProperties}>
+              {DURATIONS_MIN.map((minutes) => (
+                <label key={minutes} className="choice-card duration-option">
+                  <input
+                    type="radio"
+                    aria-label={t.plan.minutes(minutes)}
+                    name={QUERY_PARAMS.duration}
+                    value={minutes}
+                    checked={duration === minutes}
+                    onChange={() => {
+                      setDuration(minutes);
+                    }}
+                  />
+                  <span className="duration-figure">{minutes}</span>
+                  <span className="duration-unit">{t.plan.minutesUnit}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
-      </fieldset>
 
-      <section aria-label={t.plan.summaryLabel} className="plan-summary">
-        <p>
-          {t.plan.chosenDuration.before}<strong>{t.plan.minutes(duration)}</strong>{t.plan.chosenDuration.after}
-        </p>
-        <p className="secondary-text">
-          {t.plan.calibrationNote(t.audio.levels[CALIBRATION_LEVEL], CALIBRATION_MIN)}
-        </p>
-      </section>
-
-      <button
-        type="button"
-        className="button button-primary"
-        onClick={() => {
-          void navigate(sessionPath(duration));
-        }}
-      >
-        {t.plan.continueToSession}
-      </button>
+        <section aria-label={t.plan.summaryLabel} className="plan-summary glass-card paper">
+          <BreathingOrb className="plan-orb" />
+          <p className="eyebrow">{t.plan.summaryLabel}</p>
+          <p className="plan-duration"><strong>{t.plan.minutes(duration)}</strong></p>
+          {goals.length === 0 ? (
+            <p className="secondary-text">{t.plan.noGoals}</p>
+          ) : (
+            <ul className="plan-goals">
+              {goals.map((id) => <li key={id}><GoalIcon goal={id} /> {goalNames[id]}</li>)}
+            </ul>
+          )}
+          <p className="plan-note">
+            {t.plan.calibrationNote(t.audio.levels[CALIBRATION_LEVEL], CALIBRATION_MIN)}
+          </p>
+          <button
+            type="button"
+            className="pill-button pill-button-primary pill-button-large pill-button-block"
+            onClick={() => {
+              void navigate(sessionPath(duration, goals));
+            }}
+          >
+            <PlayIcon /> {t.plan.continueToSession}
+          </button>
+        </section>
+      </div>
     </div>
   );
 }

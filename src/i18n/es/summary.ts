@@ -1,3 +1,5 @@
+import { common } from './common';
+
 /** "1 punto", "3 puntos": Spanish plural of the self-rating points. */
 const points = (count: number): string => `${String(count)} ${count === 1 ? 'punto' : 'puntos'}`;
 
@@ -21,7 +23,7 @@ export const summary = {
     /** The seconds come from the samples averaged at each end of the session. */
     footnote: (edgeSeconds: number): string =>
       `Cada valor promedia hasta ${String(edgeSeconds)} s de señal de buena calidad al principio y al final. ` +
-      'Son indicadores descriptivos de tu señal: no miden el dolor ni son una valoración clínica.',
+      common.nonClinicalIndicators,
   },
   /** Self-rating after listening compared with the one before. */
   ratingChange: {
@@ -39,7 +41,7 @@ export const summary = {
       uncertain: 'Cerca del inicio',
       low: 'Más tranquilo que al empezar',
     },
-    footnote: 'Tiempo de señal. Estimación con reglas provisionales y confianza no calibrada.',
+    footnote: `Tiempo de señal. ${common.provisionalEstimate}.`,
   },
   pending: {
     label: 'Resumen en lenguaje sencillo',

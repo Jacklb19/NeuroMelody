@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import {
-  RECORDING_DURATION_MIN,
-  RECORDING_DURATION_MS,
+  RECORDING_DURATIONS_MIN,
   RECORDING_IDS,
   RECORDING_SCHEMA_VERSION,
   RECORDINGS_DIRECTORY,
   RECORDINGS_SAMPLE_RATE_HZ,
   RECORDINGS_SOURCE_URL,
+  recordingDurationMs,
   recordingFileName,
 } from '../../src/features/acquisition/recording/recordingCatalog.ts';
 import { extractSegment, readBeatSamples } from './wfdb.ts';
@@ -34,9 +34,9 @@ for (const recordId of RECORDING_IDS) {
   const sourceSha256 = createHash('sha256').update(bytes).digest('hex');
   const checksum = checksums.split('\n').find(line => line.trim().endsWith(`${recordId}.ecg`))?.split(/\s+/)[0];
   if (checksum !== sourceSha256) throw new Error(`Checksum mismatch for ${recordId}`);
-  const segment = extractSegment(readBeatSamples(bytes), sampleRateHz, RECORDING_DURATION_MS);
+  const segment = extractSegment(readBeatSamples(bytes), sampleRateHz, recordingDurationMs(recordId));
   const recording = { schemaVersion: RECORDING_SCHEMA_VERSION, recordId, sourceUrl: RECORDINGS_SOURCE_URL + `${recordId}.ecg`,
     sourceSha256, sampleRateHz, ...segment };
   await writeFile(`${directory}/${recordingFileName(recordId)}`, JSON.stringify(recording) + '\n');
-  process.stdout.write(`${recordId}: ${String(segment.rrIntervalsMs.length)} RR intervals, ${String(RECORDING_DURATION_MIN)} minutes, SHA-256 verified\n`);
+  process.stdout.write(`${recordId}: ${String(segment.rrIntervalsMs.length)} RR intervals, ${String(RECORDING_DURATIONS_MIN[recordId])} minutes, SHA-256 verified\n`);
 }

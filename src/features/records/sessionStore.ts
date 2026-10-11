@@ -1,4 +1,4 @@
-import { isRating, isSessionRecord, MAX_RATING, MIN_RATING, type SessionRecord } from './sessionRecord';
+import { isRating, isSessionRecord, MAX_RATING, MIN_RATING, readSessionRecord, type SessionRecord } from './sessionRecord';
 
 /** Why the local history failed; the interface turns each code into a sentence. */
 export const SESSION_STORE_ERROR_CODES = ['invalid_record', 'invalid_rating', 'not_found', 'access_failed', 'open_failed'] as const;
@@ -49,12 +49,11 @@ abstract class ValidatingStore implements SessionStore {
   }
 
   async get(id: string): Promise<SessionRecord | null> {
-    const value = await this.read(id);
-    return isSessionRecord(value) ? value : null;
+    return readSessionRecord(await this.read(id));
   }
 
   async list(): Promise<SessionRecord[]> {
-    return (await this.readAll()).filter(isSessionRecord).sort(newestFirst);
+    return (await this.readAll()).map(readSessionRecord).filter((record) => record !== null).sort(newestFirst);
   }
 
   async setRatingAfter(id: string, rating: number | null): Promise<SessionRecord> {

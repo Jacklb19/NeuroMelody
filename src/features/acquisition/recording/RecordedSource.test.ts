@@ -7,7 +7,7 @@ import { NOTIFICATION_PERIOD_MS } from '../config';
 import { RecordedSource } from './RecordedSource';
 import { parseRecording, RecordingError } from './recording';
 import {
-  RECORDING_DURATION_MS,
+  recordingDurationMs,
   RECORDING_IDS,
   RECORDING_SCHEMA_VERSION,
   RECORDINGS_DIRECTORY,
@@ -18,6 +18,8 @@ import {
 function example(id: RecordingId): unknown {
   return JSON.parse(readFileSync(join('public', RECORDINGS_DIRECTORY, recordingFileName(id)), 'utf8')) as unknown;
 }
+
+const RECORDING_DURATION_MS = recordingDurationMs('nsr001');
 
 async function playback(speed: 1 | 10, jump: boolean) {
   const env = createFakeTimeEnvironment();
