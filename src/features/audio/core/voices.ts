@@ -10,9 +10,13 @@ const SILENCE_THRESHOLD = 1e-4;
 const STATE_FREE = 0;
 const STATE_ATTACK = 1;
 const STATE_DECAY = 2;
+/** Chosen but not yet sounding: a note may start a few milliseconds after it is decided. */
+const STATE_WAITING = 3;
 
 /** Stereo places of the notes of a held chord, from its lowest note up (−1 left, 1 right). */
 const CHORD_PANS = [-0.5, 0.2, -0.15, 0.5] as const;
+/** The notes of a chord enter this far apart, from the lowest up, like a slowly rolled chord. */
+const CHORD_ROLL_S = 0.045;
 
 /** Where the composer sends the notes it decides; the voice pool sounds them. */
 export interface NoteSink {
@@ -21,8 +25,17 @@ export interface NoteSink {
    *
    * @param pan Place between the left (−1) and the right (1).
    * @param velocity How hard it is struck, from 0 to 1: softer notes are also mellower.
+   * @param delayS Seconds to wait before it sounds, so notes do not all fall exactly on the grid.
    */
-  strike(midi: number, timbre: Timbre, pan: number, velocity: number, layer: number, bank: number): void;
+  strike(
+    midi: number,
+    timbre: Timbre,
+    pan: number,
+    velocity: number,
+    delayS: number,
+    layer: number,
+    bank: number,
+  ): void;
   /**
    * Holds a chord until the next one. Notes the previous chord of the bank
    * already holds keep sounding untouched; the others are let go.
@@ -73,12 +86,19 @@ export class VoicePool implements NoteSink {
   readonly #note = new Int16Array(MAX_VOICES);
   /** 1 while the voice is a chord note that has not been let go. */
   readonly #held = new Int8Array(MAX_VOICES);
+  /** Samples a waiting voice still has to wait. */
+  readonly #delay = new Int32Array(MAX_VOICES);
 
   #steals = 0;
 
   /** The last sample rendered. */
   left = 0;
   right = 0;
+  /**
+   * Scales the overtones of the held notes: the owner moves it slowly around
+   * 1 so the pad opens and closes over minutes instead of staying fixed.
+   */
+  padTone = 1;
 
   /**
    * `layerGain` and `bankLevel` are read on every sample: the owner fades them
@@ -106,8 +126,16 @@ export class VoicePool implements NoteSink {
     return count;
   }
 
-  strike(midi: number, timbre: Timbre, pan: number, velocity: number, layer: number, bank: number): void {
-    this.#start(midi, timbre, pan, velocity, layer, bank, false);
+  strike(
+    midi: number,
+    timbre: Timbre,
+    pan: number,
+    velocity: number,
+    delayS: number,
+    layer: number,
+    bank: number,
+  ): void {
+    this.#start(midi, timbre, pan, velocity, delayS, layer, bank, false);
   }
 
   holdChord(notes: readonly number[], baseMidi: number, timbre: Timbre, layer: number, bank: number): void {
@@ -126,7 +154,7 @@ export class VoicePool implements NoteSink {
     for (let i = 0; i < notes.length; i++) {
       const midi = baseMidi + (notes[i] ?? 0);
       if (!this.#holds(midi, bank)) {
-        this.#start(midi, timbre, CHORD_PANS[i % CHORD_PANS.length] ?? 0, 1, layer, bank, true);
+        this.#start(midi, timbre, CHORD_PANS[i % CHORD_PANS.length] ?? 0, 1, i * CHORD_ROLL_S, layer, bank, true);
       }
     }
   }
@@ -145,6 +173,14 @@ export class VoicePool implements NoteSink {
     let sumRight = 0;
     for (let v = 0; v < MAX_VOICES; v++) {
       if (this.#state[v] === STATE_FREE) {
+        continue;
+      }
+      if (this.#state[v] === STATE_WAITING) {
+        const delay = (this.#delay[v] ?? 0) - 1;
+        this.#delay[v] = delay;
+        if (delay <= 0) {
+          this.#state[v] = STATE_ATTACK;
+        }
         continue;
       }
       const peak = this.#peak[v] ?? 0;
@@ -175,8 +211,9 @@ export class VoicePool implements NoteSink {
 
       // Overtones follow the square of the loudness: bright when struck, mellow in the tail.
       const loudness = amplitude / peak;
+      const tone = this.#held[v] === 1 ? this.padTone : 1;
       const bend =
-        sine(phaseModulator) * ((this.#indexBody[v] ?? 0) + (this.#indexRange[v] ?? 0) * loudness * loudness);
+        sine(phaseModulator) * tone * ((this.#indexBody[v] ?? 0) + (this.#indexRange[v] ?? 0) * loudness * loudness);
       const a = sine(phaseA + bend);
       const b = sine(phaseB + bend);
       const gain = amplitude * (this.#layerGain[this.#layer[v] ?? 0] ?? 0) * (this.#bankLevel[this.#bank[v] ?? 0] ?? 0);
@@ -209,6 +246,7 @@ export class VoicePool implements NoteSink {
     timbre: Timbre,
     pan: number,
     velocity: number,
+    delayS: number,
     layer: number,
     bank: number,
     held: boolean,
@@ -251,7 +289,9 @@ export class VoicePool implements NoteSink {
     this.#gainARight[chosen] = panGain(pan - timbre.width / 2, true);
     this.#gainBLeft[chosen] = panGain(pan + timbre.width / 2, false);
     this.#gainBRight[chosen] = panGain(pan + timbre.width / 2, true);
-    this.#state[chosen] = STATE_ATTACK;
+    const delay = Math.round(delayS * this.#fs);
+    this.#delay[chosen] = delay;
+    this.#state[chosen] = delay > 0 ? STATE_WAITING : STATE_ATTACK;
     this.#layer[chosen] = layer;
     this.#bank[chosen] = bank;
     this.#note[chosen] = midi;

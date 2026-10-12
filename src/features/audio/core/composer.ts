@@ -16,6 +16,10 @@ const MELODY_START_LOW = 2;
 const MELODY_START_HIGH = 5;
 /** Melody notes fall at random within this distance of the centre. */
 const MELODY_PAN_RANGE = 0.3;
+/** A struck note sounds up to this long after its place on the grid: played by hand, not by a machine. */
+const HUMAN_DELAY_S = 0.025;
+/** How much the loudness of a struck note varies at random below what the phrase asks. */
+const HUMAN_VELOCITY_RANGE = 0.12;
 
 /** A motif is a short melodic idea of 3 to 6 notes, repeated 2 or 3 times before a new one is invented. */
 const MOTIF_MIN_NOTES = 3;
@@ -35,6 +39,8 @@ const SEQUENCE_SHIFTS = [-2, -1, 1, 2] as const;
 /** Silence after a phrase, in ticks, so the melody breathes. */
 const PHRASE_REST_MIN_TICKS = 4;
 const PHRASE_REST_MAX_TICKS = 10;
+/** In the quietest stretches of a session the rests grow up to this many times longer. */
+const SPARSE_REST_FACTOR = 2;
 /** Degrees searched around the last note of a phrase for a note of the chord, nearest first. */
 const RESOLUTION_OFFSETS = [0, -1, 1, -2, 2] as const;
 /** Loudness of the notes of a phrase: it rises to the middle and falls again. */
@@ -42,7 +48,12 @@ const PHRASE_VELOCITY_EDGE = 0.72;
 
 /** Broken chord: on every second beat that does not start a chord, one of its notes may sound an octave above. */
 const BROKEN_CHORD_EVERY_BEATS = 2;
-const BROKEN_CHORD_PROBABILITY = 0.75;
+/** Chance that it does, from the quietest stretches of a session to the busiest. */
+const BROKEN_CHORD_MIN_PROBABILITY = 0.45;
+const BROKEN_CHORD_MAX_PROBABILITY = 0.9;
+/** Chance that the note sounds an octave above the chord, from the lowest stretches to the highest. */
+const BROKEN_CHORD_MIN_RAISE = 0.35;
+const BROKEN_CHORD_MAX_RAISE = 0.95;
 /** Chance that the next note is the one above the previous; otherwise the one below. */
 const BROKEN_CHORD_RISE_PROBABILITY = 0.65;
 /** Highest note it plays, in semitones above the tonic (B5); above it the note stays in its own octave. */
@@ -52,6 +63,12 @@ const BROKEN_CHORD_MIN_VELOCITY = 0.7;
 
 const CHIME_PAN_RANGE = 0.6;
 const CHIME_MIN_VELOCITY = 0.65;
+/** Chance that a chime sounds when its loop comes round, in the quietest stretches of a session. */
+const CHIME_MIN_PROBABILITY = 0.55;
+/** A chime may sound this long after its place on the grid. */
+const CHIME_DELAY_S = 0.08;
+/** The lift of the session moves the start of a new motif by up to this many degrees, down or up. */
+const LIFT_DEGREES = 1;
 
 /**
  * Decides what one voice bank plays: the chords of its mode in order, the
@@ -93,6 +110,9 @@ export class BankComposer {
   #rest = 0;
   #degree = 0;
   #phraseStart = 0;
+  /** Slow moods of the session, from 0 to 1 (see `onTick`). */
+  #density = 1;
+  #lift = 0.5;
 
   constructor(bank: number, mode: Mode, random: RandomSource, colour: RandomSource, sink: NoteSink) {
     this.#bank = bank;
@@ -138,8 +158,12 @@ export class BankComposer {
    * @param tick Half beats since the session started.
    * @param harmony Whether the harmony layer is heard.
    * @param melody Whether the melody layer is heard.
+   * @param density How busy this stretch of the session is, from 0 (sparse) to 1.
+   * @param lift How high this stretch of the session sits, from 0 (low) to 1.
    */
-  onTick(tick: number, harmony: boolean, melody: boolean): void {
+  onTick(tick: number, harmony: boolean, melody: boolean, density: number, lift: number): void {
+    this.#density = density;
+    this.#lift = lift;
     const onBeat = tick % TICKS_PER_BEAT === 0;
     const beat = tick / TICKS_PER_BEAT;
     const startsChord = onBeat && beat % this.#arrangement.beatsPerChord === 0;
@@ -190,19 +214,24 @@ export class BankComposer {
   }
 
   #brokenChord(): void {
-    if (this.#random() >= BROKEN_CHORD_PROBABILITY) {
+    const chance =
+      BROKEN_CHORD_MIN_PROBABILITY + (BROKEN_CHORD_MAX_PROBABILITY - BROKEN_CHORD_MIN_PROBABILITY) * this.#density;
+    if (this.#random() >= chance) {
       return;
     }
     const notes = this.#chord.length;
     const move = this.#random() < BROKEN_CHORD_RISE_PROBABILITY ? 1 : notes - 1;
     this.#brokenIndex = (this.#brokenIndex + move) % notes;
-    const raised = (this.#chord[this.#brokenIndex] ?? 0) + SEMITONES_PER_OCTAVE;
-    const note = raised > BROKEN_CHORD_TOP ? raised - SEMITONES_PER_OCTAVE : raised;
+    const own = this.#chord[this.#brokenIndex] ?? 0;
+    const raise = BROKEN_CHORD_MIN_RAISE + (BROKEN_CHORD_MAX_RAISE - BROKEN_CHORD_MIN_RAISE) * this.#lift;
+    const raised = this.#random() < raise ? own + SEMITONES_PER_OCTAVE : own;
+    const note = raised > BROKEN_CHORD_TOP ? own : raised;
     this.#sink.strike(
       MIDI_TONIC + note,
       BROKEN_CHORD_TIMBRE,
       (this.#colour() * 2 - 1) * BROKEN_CHORD_PAN_RANGE,
       BROKEN_CHORD_MIN_VELOCITY + this.#colour() * (1 - BROKEN_CHORD_MIN_VELOCITY),
+      this.#colour() * HUMAN_DELAY_S,
       LAYER.harmony,
       this.#bank,
     );
@@ -217,11 +246,16 @@ export class BankComposer {
       }
       const loop = CHIME_LOOPS[c];
       this.#chimeTicks[c] = (loop?.periodBeats ?? 1) * TICKS_PER_BEAT;
+      // In a sparse stretch some turns of the loop pass in silence.
+      if (this.#random() >= CHIME_MIN_PROBABILITY + (1 - CHIME_MIN_PROBABILITY) * this.#density) {
+        continue;
+      }
       this.#sink.strike(
         MIDI_TONIC + (loop?.semitones ?? 0),
         CHIME_TIMBRE,
         (this.#colour() * 2 - 1) * CHIME_PAN_RANGE,
         CHIME_MIN_VELOCITY + this.#colour() * (1 - CHIME_MIN_VELOCITY),
+        this.#colour() * CHIME_DELAY_S,
         LAYER.harmony,
         this.#bank,
       );
@@ -266,7 +300,8 @@ export class BankComposer {
       degreeNote(scale, degree, MELODY_BASE_MIDI),
       MELODY_TIMBRE,
       (this.#colour() * 2 - 1) * MELODY_PAN_RANGE,
-      PHRASE_VELOCITY_EDGE + (1 - PHRASE_VELOCITY_EDGE) * arch,
+      (PHRASE_VELOCITY_EDGE + (1 - PHRASE_VELOCITY_EDGE) * arch) * (1 - this.#colour() * HUMAN_VELOCITY_RANGE),
+      this.#colour() * HUMAN_DELAY_S,
       LAYER.melody,
       this.#bank,
     );
@@ -274,10 +309,9 @@ export class BankComposer {
     const ticks = this.#motifTicks[index] ?? 1;
     if (last) {
       this.#position = -1;
-      this.#rest =
-        ticks +
-        PHRASE_REST_MIN_TICKS +
-        Math.floor(this.#random() * (PHRASE_REST_MAX_TICKS - PHRASE_REST_MIN_TICKS + 1));
+      const rest =
+        PHRASE_REST_MIN_TICKS + Math.floor(this.#random() * (PHRASE_REST_MAX_TICKS - PHRASE_REST_MIN_TICKS + 1));
+      this.#rest = ticks + Math.round(rest * (1 + (SPARSE_REST_FACTOR - 1) * (1 - this.#density)));
     } else {
       this.#position = index + 1;
       this.#wait = ticks - 1;
@@ -288,7 +322,9 @@ export class BankComposer {
     if (this.#motifUses <= 0) {
       this.#inventMotif();
       this.#phraseStart =
-        MELODY_START_LOW + Math.floor(this.#random() * (MELODY_START_HIGH - MELODY_START_LOW + 1));
+        MELODY_START_LOW +
+        Math.floor(this.#random() * (MELODY_START_HIGH - MELODY_START_LOW + 1)) +
+        Math.round((this.#lift * 2 - 1) * LIFT_DEGREES);
     } else {
       const shift = SEQUENCE_SHIFTS[Math.floor(this.#random() * SEQUENCE_SHIFTS.length)] ?? 0;
       const top = Math.round(SCALES[this.#mode].length * MELODY_RANGE_OCTAVES);

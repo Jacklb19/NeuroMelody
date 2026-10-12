@@ -22,6 +22,18 @@ export const BEATS_PER_CYCLE = 16;
 const COLOUR_SEED_OFFSET = 0x5bd1e995;
 
 /**
+ * Slow cycles that keep a long session from repeating, in seconds: how busy
+ * the music is, how high it sits and how open the pad sounds. The periods are
+ * primes, so the three never come back to the same combination in a session.
+ */
+const DENSITY_PERIOD_S = 127;
+const LIFT_PERIOD_S = 211;
+const TONE_PERIOD_S = 337;
+/** Range the overtones of the pad move in, as a factor of what its timbre defines. */
+const PAD_TONE_MIN = 0.7;
+const PAD_TONE_MAX = 1.2;
+
+/**
  * Layered generative synthesis (RF-08), with no browser dependencies so it
  * can be tested deterministically. The AudioWorklet processor only calls it
  * block by block.
@@ -67,6 +79,12 @@ export class SynthesisCore {
   readonly #bankLevel = new Float64Array(BANK_COUNT);
   readonly #bankStep = new Float64Array(BANK_COUNT);
 
+  /** Where each slow cycle starts, in cycles: different in every session. */
+  readonly #densityStart: number;
+  readonly #liftStart: number;
+  readonly #toneStart: number;
+  #samples = 0;
+
   #tickPhase = 1;
   #tick = -1;
   #currentMode: Mode;
@@ -90,6 +108,9 @@ export class SynthesisCore {
 
     const random = createRandom(seed);
     const colour = createRandom(seed ^ COLOUR_SEED_OFFSET);
+    this.#densityStart = colour();
+    this.#liftStart = colour();
+    this.#toneStart = colour();
     this.#voices = new VoicePool(sampleRate, this.#layerGain, this.#bankLevel);
     this.#composers = Array.from(
       { length: BANK_COUNT },
@@ -164,6 +185,7 @@ export class SynthesisCore {
     const tickAdvance = (tempo * TICKS_PER_BEAT) / (SECONDS_PER_MINUTE * this.#fs);
 
     for (let n = 0; n < left.length; n++) {
+      this.#samples++;
       this.#tickPhase += tickAdvance;
       if (this.#tickPhase >= 1) {
         this.#tickPhase -= 1;
@@ -242,17 +264,29 @@ export class SynthesisCore {
       this.#composers[this.#activeBank]?.start(this.#currentMode);
     }
 
+    // The slow cycles follow the clock, not the beat: a slower tempo does not stretch them.
+    const seconds = this.#samples / this.#fs;
+    const density = slowCycle(this.#densityStart, seconds, DENSITY_PERIOD_S);
+    const lift = slowCycle(this.#liftStart, seconds, LIFT_PERIOD_S);
+    this.#voices.padTone =
+      PAD_TONE_MIN + (PAD_TONE_MAX - PAD_TONE_MIN) * slowCycle(this.#toneStart, seconds, TONE_PERIOD_S);
+
     const harmony = this.#heard(LAYER.harmony);
     const melody = this.#heard(LAYER.melody);
     for (let b = 0; b < BANK_COUNT; b++) {
       // The outgoing bank plays on in its own mode until its fade ends.
       if (b === this.#activeBank || (this.#bankGain[b] ?? 0) > 0) {
-        this.#composers[b]?.onTick(this.#tick, harmony, melody);
+        this.#composers[b]?.onTick(this.#tick, harmony, melody, density, lift);
       } else {
         this.#composers[b]?.stop();
       }
     }
   }
+}
+
+/** Value from 0 to 1 of a sine cycle of `periodS` seconds that began at `start` cycles. */
+function slowCycle(start: number, seconds: number, periodS: number): number {
+  return 0.5 + 0.5 * sine(start + seconds / periodS);
 }
 
 function moveTowards(current: number, target: number, step: number): number {

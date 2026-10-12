@@ -27,7 +27,7 @@ class Recorder implements NoteSink {
   readonly chords: (readonly number[])[] = [];
   releases = 0;
 
-  strike(midi: number, _timbre: unknown, _pan: number, velocity: number, layer: number): void {
+  strike(midi: number, _timbre: unknown, _pan: number, velocity: number, _delayS: number, layer: number): void {
     this.strikes.push({ tick: this.tick, midi, layer, velocity });
   }
   holdChord(notes: readonly number[]): void {
@@ -38,12 +38,16 @@ class Recorder implements NoteSink {
   }
 }
 
+/** Slow moods of the session the composer is given on every tick; the middle of their ranges. */
+const DENSITY = 0.5;
+const LIFT = 0.5;
+
 function run(mode: Mode, seed: number, ticks: number, harmony = true, melody = true): Recorder {
   const recorder = new Recorder();
   const composer = new BankComposer(0, mode, createRandom(seed), createRandom(seed + 1), recorder);
   for (let tick = 0; tick < ticks; tick++) {
     recorder.tick = tick;
-    composer.onTick(tick, harmony, melody);
+    composer.onTick(tick, harmony, melody, DENSITY, LIFT);
   }
   return recorder;
 }
@@ -87,10 +91,10 @@ describe('BankComposer', () => {
   it('lets the chord go once the harmony layer is no longer heard, and plays nothing above it', () => {
     const recorder = new Recorder();
     const composer = new BankComposer(0, MODE.lydian, createRandom(1), createRandom(2), recorder);
-    composer.onTick(0, true, false);
+    composer.onTick(0, true, false, DENSITY, LIFT);
     expect(recorder.chords).toHaveLength(1);
     for (let tick = 1; tick < LONG_RUN_TICKS; tick++) {
-      composer.onTick(tick, false, false);
+      composer.onTick(tick, false, false, DENSITY, LIFT);
     }
     expect(recorder.releases).toBe(1);
     expect(recorder.chords).toHaveLength(1);
