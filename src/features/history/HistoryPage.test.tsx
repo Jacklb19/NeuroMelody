@@ -45,7 +45,7 @@ describe('HistoryPage', () => {
     expect(within(items[1] as HTMLElement).getByText(es.common.withUnit(es.records.change('20', '30'), es.common.units.milliseconds)))
       .toBeVisible();
     expect(within(items[0] as HTMLElement).getByText(es.records.noAnswer)).toBeVisible();
-    expect(screen.getByRole('heading', { name: history.evolution.title })).toBeVisible();
+    expect(screen.getByRole('link', { name: history.progress.action })).toHaveAttribute('href', ROUTES.progress);
   });
 
   it('deletes a session only after confirming', async () => {

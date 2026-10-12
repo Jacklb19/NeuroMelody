@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { ConfirmButton } from '../../shared/ConfirmButton';
+import { ArrowRightIcon } from '../../shared/icons';
 import { useMessages } from '../../i18n/messages';
 import type { SessionRecord } from '../records/sessionRecord';
 import { useSessionStore } from '../records/sessionStoreContext';
@@ -10,10 +11,6 @@ import { storeErrorMessage } from '../records/storeErrorMessage';
 import { summarizeSession } from '../records/summarizeSession';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { PageHeading } from '../../shared/PageHeading';
-import { Sparkline } from '../../shared/Sparkline';
-
-/** Sessions needed before a trend across them means anything. */
-const MIN_SESSIONS_FOR_TREND = 2;
 
 type Loaded =
   | { readonly kind: 'loading' }
@@ -22,8 +19,8 @@ type Loaded =
   | { readonly kind: 'ready'; readonly records: readonly SessionRecord[] };
 
 /**
- * Sessions saved on this device and how their indicators evolve
- * (RF-16, HU-10). Everything here can be deleted without an account.
+ * Sessions saved on this device (RF-16, HU-10), with the way into how
+ * they evolve. Everything here can be deleted without an account.
  */
 export function HistoryPage(): React.JSX.Element {
   const t = useMessages();
@@ -56,7 +53,7 @@ export function HistoryPage(): React.JSX.Element {
       )}
       {loaded.kind === 'ready' && (loaded.records.length === 0 ? <EmptyHistory /> : (
         <>
-          <Evolution records={loaded.records} />
+          <ProgressInvite />
           <ol className="history-list">
             {loaded.records.map((record) => (
               <HistoryItem key={record.id} record={record} onDelete={remove} />
@@ -83,27 +80,17 @@ function EmptyHistory(): React.JSX.Element {
   );
 }
 
-/** Trend across sessions, oldest to newest, with the same data listed below as text. */
-function Evolution({ records }: { readonly records: readonly SessionRecord[] }): React.JSX.Element | null {
-  const { evolution } = useMessages().history;
+/** The evolution across sessions has its own screen (ADR-33); the history leads to it. */
+function ProgressInvite(): React.JSX.Element {
+  const { progress } = useMessages().history;
   const titleId = useId();
-  if (records.length < MIN_SESSIONS_FOR_TREND) return null;
-  const chronological = [...records].reverse();
-  const finalRmssd = chronological.map((record) => summarizeSession(record).rmssd?.end ?? null);
-  const ratingsAfter = chronological.map((record) => record.ratingAfter);
   return (
-    <section aria-labelledby={titleId} className="evolution">
-      <h2 id={titleId}>{evolution.title}</h2>
-      <div className="evolution-charts">
-        <figure>
-          <Sparkline values={finalRmssd} label={evolution.rmssdLabel} />
-          <figcaption>{evolution.rmssdCaption}</figcaption>
-        </figure>
-        <figure>
-          <Sparkline values={ratingsAfter} label={evolution.ratingLabel} />
-          <figcaption>{evolution.ratingCaption}</figcaption>
-        </figure>
+    <section aria-labelledby={titleId} className="glass-card progress-invite">
+      <div>
+        <h2 id={titleId}>{progress.title}</h2>
+        <p className="secondary-text">{progress.text}</p>
       </div>
+      <Link to={ROUTES.progress} className="pill-button pill-button-primary">{progress.action} <ArrowRightIcon /></Link>
     </section>
   );
 }

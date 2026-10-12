@@ -16,6 +16,7 @@
 .home-section h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); margin-bottom: var(--space-2); }
 .home-section > .secondary-text { margin-bottom: var(--space-6); }
 .section-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.section-links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
 .section-link { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-strong); text-decoration: none; }
 .goal-shortcuts { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-4); }
 .goal-shortcuts .goal-shortcut { height: 100%; display: grid; align-content: start; font-weight: var(--font-weight-strong); }

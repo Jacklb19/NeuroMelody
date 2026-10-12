@@ -89,7 +89,10 @@ export function HomePage(): React.JSX.Element {
         <section aria-labelledby={ids.activity} className="home-section">
           <div className="section-row">
             <h2 id={ids.activity}>{copy.activity.title}</h2>
-            <Link to={ROUTES.history} className="section-link">{copy.activity.seeHistory} <ArrowRightIcon /></Link>
+            <div className="section-links">
+              <Link to={ROUTES.progress} className="section-link">{copy.activity.seeProgress} <ArrowRightIcon /></Link>
+              <Link to={ROUTES.history} className="section-link">{copy.activity.seeHistory} <ArrowRightIcon /></Link>
+            </div>
           </div>
           <dl className="home-stats">
             <div className="glass-card"><dt>{copy.activity.sessions}</dt><dd>{totals.count}</dd></div>
