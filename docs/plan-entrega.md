@@ -17,7 +17,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | 9 | Clasificador entrenado | front + back | RF-07; ADR-32, `modelo.md` | Hecho |
 | 10 | Respiración guiada | front | ADR-33 (1): el orbe marca un ritmo lento de inhalar y exhalar durante la sesión | Hecho: opcional, al tempo de la música (4 tiempos al inhalar, 6 al exhalar); falta que el usuario la pruebe con música y con «reducir movimiento» |
 | 11 | Tu progreso | front | ADR-33 (2): evolución entre sesiones de pulso, variabilidad y autovaloración | Hecho: `/progress` con las sesiones del dispositivo; falta la revisión del usuario con sesiones reales |
-| 12 | S6.2 API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19. JWT con PyJWT, `aal2`, migración, sesiones idempotentes, borrado de sesión y de cuenta, despliegue del back, sincronización en el front | Pendiente (plan aprobado el 11 oct) |
+| 12 | S6.2 API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19, ADR-34. JWT con PyJWT, `aal2`, migración, sesiones idempotentes, borrado de sesión y de cuenta, sincronización en el front | Hecho en local, con pruebas. Falta del usuario: aplicar la migración en Supabase, desplegar el back, poner su URL en el front (`VITE_API_BASE_URL` y `connect-src`) y probar con una cuenta real |
 | 13 | Informe para el terapeuta | front | ADR-33 (4): resumen imprimible de un periodo | Pendiente |
 | 14 | Recolección de datos y reentrenamiento | front + back | ADR-33 (3): protocolo guiado con etiquetas, consentimiento, exportación y nueva versión del modelo | Pendiente; después del bloque 12 |
 | 15 | S6.4 Modelo de lenguaje | back + front | RF-13, RF-15; ADR-08. Plan propuesto y resumen con esquema cerrado | Pendiente |
@@ -58,7 +58,8 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | RF-11, RF-17, RF-18 | Verificados; quedan comprobaciones manuales de accesibilidad y nivel acústico. |
 | RF-12 | Verificado, incluido LF/HF. |
 | RF-13 | Plan manual hecho; propuesta por modelo en S6.4. |
-| RF-14, RF-15, RF-16 | Pendientes en S6 y S7. |
+| RF-14 | Implementado: sesiones en el dispositivo y, con cuenta, dos pasos y consentimiento, también en la nube. Verificado con pruebas automáticas y con la migración en una base local; falta la prueba con el proyecto real. |
+| RF-15, RF-16 | Hechos en el dispositivo (resumen, CSV, historial y «Tu progreso»); falta el texto del modelo de lenguaje (bloque 15). |
 
 | HU | Estado |
 |---|---|
@@ -67,7 +68,8 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | HU-03 | 30 min sin subdesbordamientos (S3); falta medir el inicio < 1 s en vista previa. |
 | HU-05 | Cumplida; revisión de rendimiento en S7. |
 | HU-07 | Plan manual hecho; falta la propuesta del modelo. |
-| HU-08, HU-09, HU-10 | Pendientes en S6 y S7. |
+| HU-08, HU-10 | Cumplidas en el dispositivo; HU-08 espera el resumen del modelo de lenguaje. |
+| HU-09 | Pendiente (bloque 16, sin conexión). |
 
 ## Riesgos
 

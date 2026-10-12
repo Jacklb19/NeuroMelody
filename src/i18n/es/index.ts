@@ -3,6 +3,7 @@ import { account } from './account';
 import { adaptation } from './adaptation';
 import { app } from './app';
 import { audio } from './audio';
+import { cloud } from './cloud';
 import { common } from './common';
 import { diagnostics } from './diagnostics';
 import { history } from './history';
@@ -37,6 +38,7 @@ export const es = {
   summary,
   history,
   progress,
+  cloud,
   diagnostics,
   account,
   privacy,

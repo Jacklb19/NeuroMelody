@@ -2,7 +2,7 @@
 export const history = {
   title: 'History',
   eyebrow: 'Your sessions',
-  introduction: 'Sessions are saved only on this device. You can delete them whenever you like.',
+  introduction: 'Your saved sessions. You can delete them whenever you like.',
   loading: 'Loading your history…',
   empty: 'No saved sessions yet. When you finish a listening session it will show up here, with its summary.',
   planSession: 'Set up a session',

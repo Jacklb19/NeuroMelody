@@ -5,7 +5,8 @@ import { ROUTES } from '../../config/routes';
 import { useFormatters, useMessages } from '../../i18n/messages';
 import { PageHeading } from '../../shared/PageHeading';
 import { COMPUTE_PERIOD_S } from '../signal/processing/thresholds';
-import { readConsent, writeConsent } from './consentStore';
+import { useAuth } from '../account/authContext';
+import { useCloudSync } from '../cloud/cloudSyncContext';
 import { PRIVACY_SECTION_IDS } from './privacyCatalog';
 
 /**
@@ -17,8 +18,11 @@ export function PrivacyPage(): React.JSX.Element {
   const format = useFormatters();
   const copy = t.privacy;
   usePageTitle(copy.pageTitle);
-  const [consentAt, setConsentAt] = useState(readConsent);
+  // With an account the consent is the one in the profile (ADR-18); without one it stays on this device.
+  const { consentAt, setConsent } = useCloudSync();
+  const signedIn = useAuth().state.kind === 'signed_in';
   const [withdrawn, setWithdrawn] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const consentId = useId();
   const sectionText = (id: (typeof PRIVACY_SECTION_IDS)[number]): string =>
     id === 'device' ? copy.sections.device.text(COMPUTE_PERIOD_S) : copy.sections[id].text;
@@ -44,8 +48,9 @@ export function PrivacyPage(): React.JSX.Element {
             type="checkbox"
             checked={consentAt !== null}
             onChange={(event) => {
-              setConsentAt(writeConsent(event.target.checked, new Date()));
-              setWithdrawn(!event.target.checked);
+              const given = event.target.checked;
+              setSaveFailed(false);
+              setConsent(given).then(() => { setWithdrawn(!given); }, () => { setSaveFailed(true); });
             }}
           />
           <label htmlFor={`${consentId}-box`}>{copy.consent.label}</label>
@@ -55,7 +60,8 @@ export function PrivacyPage(): React.JSX.Element {
             ? copy.consent.given(format.dateTime(consentAt))
             : withdrawn ? copy.consent.withdrawn : copy.consent.notGiven}
         </p>
-        <p className="panel-footnote">{copy.consent.deviceOnly}</p>
+        {saveFailed && <p className="quiet-notice" role="alert">{copy.consent.saveFailed}</p>}
+        <p className="panel-footnote">{signedIn ? copy.consent.stored.account : copy.consent.stored.device}</p>
       </section>
 
       <Link to={ROUTES.account} className="button button-secondary">{copy.backToAccount}</Link>

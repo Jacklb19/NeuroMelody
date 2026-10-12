@@ -2,7 +2,7 @@
 export const history = {
   title: 'Historial',
   eyebrow: 'Tus sesiones',
-  introduction: 'Las sesiones se guardan solo en este dispositivo. Puedes borrarlas cuando quieras.',
+  introduction: 'Tus sesiones guardadas. Puedes borrarlas cuando quieras.',
   loading: 'Cargando el historial…',
   empty: 'Aún no hay sesiones guardadas. Cuando termines una sesión de escucha aparecerá aquí, con su resumen.',
   planSession: 'Preparar una sesión',

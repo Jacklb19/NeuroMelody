@@ -1,4 +1,5 @@
 import type { Messages } from '../../i18n/messages';
+import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { MAX_RATING, MIN_RATING } from './sessionRecord';
 import { SessionStoreError, type SessionStoreErrorCode } from './sessionStore';
 
@@ -14,9 +15,12 @@ export function storeErrorMessages(t: Messages): Readonly<Record<SessionStoreErr
   };
 }
 
-/** What the person reads when the local history fails to load or save. */
+/** What the person reads when the history fails to load, save or delete, on the device or in the cloud. */
 export function storeErrorMessage(error: unknown, t: Messages): string {
-  return error instanceof SessionStoreError
-    ? storeErrorMessages(t)[error.code]
-    : t.common.unknownError;
+  if (error instanceof SessionStoreError) return storeErrorMessages(t)[error.code];
+  if (error instanceof CloudError) {
+    const reasons: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
+    return reasons[error.code];
+  }
+  return t.common.unknownError;
 }

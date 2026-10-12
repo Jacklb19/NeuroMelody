@@ -31,6 +31,9 @@ function fakeService(overrides: Partial<AuthService> = {}, user: AuthUser | null
     enrollTotp: () => Promise.reject(new AccountError('unknown')),
     verifyTotp: () => Promise.resolve(),
     removeTotp: () => Promise.resolve(),
+    accessToken: () => Promise.resolve(null),
+    syncConsent: () => Promise.resolve(null),
+    setSyncConsent: () => Promise.resolve(),
     ...overrides,
   };
 }
