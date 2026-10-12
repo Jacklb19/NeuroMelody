@@ -2,6 +2,7 @@ import type { Locale } from '../../i18n/locale';
 import { DURATIONS_MIN, type DurationMin } from '../plan/plan';
 import type { GoalId } from '../plan/goalCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
+import type { NarrativeFigures } from '../summary/narrativeFigures';
 
 /**
  * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
@@ -68,10 +69,11 @@ export interface CloudApi {
   /** Asks for a session length for the chosen goals. Only the goals, the hour and the language travel. */
   suggestPlan(goals: readonly GoalId[], localHour: number, locale: Locale): Promise<PlanSuggestion>;
   /**
-   * Asks for the plain-words summary of a session stored in the cloud. Calling it states
-   * the person's consent to send the aggregated figures of that session to the language model.
+   * Asks for the plain-words summary of a session, from its aggregated figures. The session
+   * does not have to be in the cloud. Calling it states the person's consent to send those
+   * figures to the language model.
    */
-  summarizeSession(id: string, locale: Locale): Promise<SessionNarrative>;
+  summarizeSession(id: string, locale: Locale, figures: NarrativeFigures): Promise<SessionNarrative>;
 }
 
 /** Paths of the API, relative to its base URL. */
@@ -154,6 +156,22 @@ function summaryFromWire(value: unknown): CloudSessionSummary | null {
   if (!isJson(value) || typeof value.id !== 'string') return null;
   const rating = value.rating_after;
   return { id: value.id, ratingAfter: typeof rating === 'number' ? rating : null };
+}
+
+/** The figures of a summary in the API's field names. */
+function figuresToWire(figures: NarrativeFigures): Json {
+  return {
+    planned_minutes: figures.plannedMinutes,
+    listened_minutes: figures.listenedMinutes,
+    goals: figures.goals,
+    pulse_start: figures.pulse?.start ?? null,
+    pulse_end: figures.pulse?.end ?? null,
+    variation_start: figures.variation?.start ?? null,
+    variation_end: figures.variation?.end ?? null,
+    minutes_by_state: figures.minutesByState,
+    rating_before: figures.ratingBefore,
+    rating_after: figures.ratingAfter,
+  };
 }
 
 /** Text the API marked as generated automatically; anything else is not shown. */
@@ -245,9 +263,10 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
       if (plan === null) throw new CloudError('unknown');
       return plan;
     },
-    async summarizeSession(id, locale) {
+    async summarizeSession(id, locale, figures) {
       const path = `${SESSIONS_PATH}/${encodeURIComponent(id)}${SUMMARY_SUFFIX}`;
-      const narrative = narrativeFromWire(await json(await request('POST', path, { consent: true, locale })));
+      const body = { consent: true, locale, figures: figuresToWire(figures) };
+      const narrative = narrativeFromWire(await json(await request('POST', path, body)));
       if (narrative === null) throw new CloudError('unknown');
       return narrative;
     },

@@ -4,6 +4,7 @@ import type { SessionRecord } from '../records/sessionRecord';
 import { sample, sessionRecord } from '../../test/sessionRecords';
 import { CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
 import { createMirroredSessionStore } from './mirroredSessionStore';
+import { narrativeFigures } from '../summary/narrativeFigures';
 import {
   createPendingDeletions,
   createSyncMarks,
@@ -260,10 +261,34 @@ describe('cloud API client', () => {
     await expect(answering({ ...plan, duration_minutes: 25 }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
     await expect(answering({ ...plan, generated: false }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
 
-    expect(await answering({ text: 'Escuchaste 20 minutos.', generated: true, model: 'm' }).summarizeSession(ID_A, 'en')).toEqual({ text: 'Escuchaste 20 minutos.' });
-    // Asking is the consent, so the request says so.
-    expect(sent.at(-1)).toEqual({ url: `https://api.example.test/v1/sessions/${ID_A}/summary`, body: { consent: true, locale: 'en' } });
-    await expect(answering({ text: '', generated: true }).summarizeSession(ID_A, 'en')).rejects.toMatchObject({ code: 'unknown' });
-    await expect(answering({ code: 'language_model_unavailable' }, 502).summarizeSession(ID_A, 'en')).rejects.toMatchObject({ code: 'language_model_unavailable' });
+    // What the summary screen shows of this session: pulse 78 → 68, a rating before and none after.
+    const figures = narrativeFigures(sessionRecord({
+      goals: ['relax'],
+      ratingAfter: null,
+      samples: [sample(5, { meanHr: 78.4, rmssd: 20, estimatedState: null }), sample(10, { meanHr: 67.6, rmssd: 30, estimatedState: null })],
+    }));
+    expect(await answering({ text: 'Escuchaste 20 minutos.', generated: true, model: 'm' }).summarizeSession(ID_A, 'en', figures)).toEqual({ text: 'Escuchaste 20 minutos.' });
+    // Asking is the consent, so the request says so; only whole figures and catalog values travel.
+    expect(sent.at(-1)).toEqual({
+      url: `https://api.example.test/v1/sessions/${ID_A}/summary`,
+      body: {
+        consent: true,
+        locale: 'en',
+        figures: {
+          planned_minutes: 20,
+          listened_minutes: 20,
+          goals: ['relax'],
+          pulse_start: 78,
+          pulse_end: 68,
+          variation_start: 20,
+          variation_end: 30,
+          minutes_by_state: null,
+          rating_before: 4,
+          rating_after: null,
+        },
+      },
+    });
+    await expect(answering({ text: '', generated: true }).summarizeSession(ID_A, 'en', figures)).rejects.toMatchObject({ code: 'unknown' });
+    await expect(answering({ code: 'language_model_unavailable' }, 502).summarizeSession(ID_A, 'en', figures)).rejects.toMatchObject({ code: 'language_model_unavailable' });
   });
 });

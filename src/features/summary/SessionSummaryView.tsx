@@ -77,7 +77,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
 
       <StateTimeShare secondsByState={summary.secondsByState} />
 
-      <AutomaticSummary sessionId={record.id} />
+      <AutomaticSummary record={record} />
 
       <div className="action-row summary-actions">
         <button

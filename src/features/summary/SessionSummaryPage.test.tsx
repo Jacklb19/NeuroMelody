@@ -34,7 +34,7 @@ describe('SessionSummaryPage', () => {
     );
     expect(screen.getByText(/no miden el dolor/i)).toBeVisible();
     // Without an account the plain-language text says what it needs instead of pretending to be pending.
-    expect(screen.getByText(es.summary.automatic.needs.unavailable)).toBeVisible();
+    expect(screen.getByText(es.summary.automatic.unavailable)).toBeVisible();
     expect(screen.getByRole('button', { name: es.summary.download })).toBeEnabled();
   });
 

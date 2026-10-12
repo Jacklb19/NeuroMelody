@@ -3,21 +3,10 @@ import { Link } from 'react-router';
 import { ROUTES } from '../../config/routes';
 import { useLocale, useMessages } from '../../i18n/messages';
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
-import { useCloudSync, type CloudSyncStatus } from '../cloud/cloudSyncContext';
+import { useCloudSync } from '../cloud/cloudSyncContext';
+import type { SessionRecord } from '../records/sessionRecord';
 import { narrativeStorage, readNarrative, writeNarrative } from './narrativeCache';
-
-/** Sync statuses in which the session cannot be in the account, so its summary cannot be asked for. */
-type BlockingStatus = 'unavailable' | 'signed_out' | 'needs_second_factor' | 'needs_consent';
-
-/** Where each of them is solved; a deployment without an API has nowhere to go. */
-const NEXT_STEP: Readonly<Record<BlockingStatus, string | null>> = {
-  unavailable: null,
-  signed_out: ROUTES.login,
-  needs_second_factor: ROUTES.account,
-  needs_consent: ROUTES.privacy,
-};
-
-const isBlocking = (status: CloudSyncStatus): status is BlockingStatus => status in NEXT_STEP;
+import { narrativeFigures } from './narrativeFigures';
 
 type Request =
   | { readonly kind: 'idle' }
@@ -27,11 +16,13 @@ type Request =
 /**
  * The session in a few plain sentences written by the language model
  * (RF-15, HU-08), always marked as generated automatically. It is written
- * only when the person asks, after reading what travels: aggregated figures
- * of the session stored in their account, never the signal. The text is
- * kept on the device, so it is asked for once.
+ * only when the person asks, after reading what travels: the aggregated
+ * figures this screen already shows, never the signal. It needs an account
+ * and nothing else: the session does not have to be in the cloud. The text
+ * is kept on the device, so it is asked for once.
  */
-export function AutomaticSummary({ sessionId }: { readonly sessionId: string }): React.JSX.Element {
+export function AutomaticSummary({ record }: { readonly record: SessionRecord }): React.JSX.Element {
+  const sessionId = record.id;
   const t = useMessages();
   const copy = t.summary.automatic;
   const locale = useLocale();
@@ -44,12 +35,11 @@ export function AutomaticSummary({ sessionId }: { readonly sessionId: string }):
     ? written.text
     : readNarrative(narrativeStorage(), sessionId, locale);
   const errors: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
-  const actions: Readonly<Partial<Record<CloudSyncStatus, string>>> = t.cloud.actions;
 
   const ask = (): void => {
     if (api === null) return;
     setRequest({ kind: 'working' });
-    api.summarizeSession(sessionId, locale).then(
+    api.summarizeSession(sessionId, locale, narrativeFigures(record)).then(
       (narrative) => {
         writeNarrative(narrativeStorage(), sessionId, locale, narrative.text);
         setWritten({ sessionId, locale, text: narrative.text });
@@ -59,9 +49,7 @@ export function AutomaticSummary({ sessionId }: { readonly sessionId: string }):
     );
   };
 
-  const blocked = isBlocking(status) ? status : null;
-  const nextStep = blocked === null ? null : NEXT_STEP[blocked];
-  const canAsk = blocked === null && api !== null;
+  const canAsk = api !== null;
 
   return (
     <section className="summary-section automatic-summary" aria-labelledby={titleId}>
@@ -74,14 +62,11 @@ export function AutomaticSummary({ sessionId }: { readonly sessionId: string }):
           </>
         )}
         {request.kind === 'working' && <p className="secondary-text">{copy.working}</p>}
-        {request.kind === 'failed' && (
-          <p className="quiet-notice">{request.code === 'not_found' ? copy.notInCloud : copy.failed(errors[request.code])}</p>
-        )}
+        {request.kind === 'failed' && <p className="quiet-notice">{copy.failed(errors[request.code])}</p>}
       </div>
-      {blocked !== null && text === null && (
+      {!canAsk && text === null && (
         <p className="pending-note">
-          {copy.needs[blocked]}
-          {nextStep !== null && <> <Link to={nextStep}>{actions[blocked]}</Link></>}
+          {status === 'unavailable' ? copy.unavailable : <>{copy.needsAccount} <Link to={ROUTES.login}>{t.cloud.actions.signed_out}</Link></>}
         </p>
       )}
       {canAsk && request.kind !== 'working' && (
