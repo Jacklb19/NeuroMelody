@@ -159,6 +159,22 @@ describe('SynthesisCore', () => {
     expect(core.bankGain(0)).toBe(0);
   }, RENDER_TIMEOUT_MS);
 
+  it('keeps the outgoing mode playing during the crossfade and silences it afterwards', () => {
+    const core = new SynthesisCore(FS, 5, MODE.lydian);
+    core.setInitialLayers(2);
+    const p = { tempo: 60, mode: MODE.dronePentatonic as number, layers: 2 };
+    // The 16-beat cycle closes at 16 s; 20 s later the crossfade is two thirds done.
+    renderAudio(core, 36, p);
+    expect(core.activeBank).toBe(1);
+    expect(core.soundingVoices(0)).toBeGreaterThan(0);
+    expect(core.soundingVoices(1)).toBeGreaterThan(0);
+
+    // The fade ends at 46 s; the last chord of the old mode then needs its release to die away.
+    renderAudio(core, 60, p);
+    expect(core.soundingVoices(0)).toBe(0);
+    expect(core.soundingVoices(1)).toBeGreaterThan(0);
+  }, RENDER_TIMEOUT_MS);
+
   it('turns layers on and off with a 30 s fade', () => {
     const core = new SynthesisCore(FS, 2, MODE.majorPentatonic);
     core.setInitialLayers(3);

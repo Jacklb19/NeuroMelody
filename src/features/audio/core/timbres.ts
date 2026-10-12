@@ -14,8 +14,15 @@ export interface Timbre {
   readonly amplitude: number;
   /** Time to reach the peak, in seconds. */
   readonly attackS: number;
-  /** Time constant of the fade after the peak, in seconds. */
+  /** Time constant of the fall after the peak, in seconds. */
   readonly decayS: number;
+  /**
+   * Share of the peak a held note settles at (0 to 1). A struck note has no
+   * sustain: it rings and fades on its own.
+   */
+  readonly sustain: number;
+  /** Time constant of the fade once a held note is let go, in seconds. */
+  readonly releaseS: number;
   /** Distance of each oscillator from the pitch of the note, in Hz: they beat at twice this rate. */
   readonly detuneHz: number;
   /** Stereo distance between the two oscillators, from 0 (both centred) to 1 (one on each side). */
@@ -24,28 +31,50 @@ export interface Timbre {
   readonly brightness: number;
   /** Amount of overtones left when the note has faded (modulation index, in radians). */
   readonly body: number;
+  /** Pitch of the modulating oscillator over the pitch of the note: 1 is warm, 2 is glassy. */
+  readonly ratio: number;
 }
 
-/** Chords of the harmony layer: a soft pad that swells and fades. */
-export const CHORD_TIMBRE: Timbre = {
-  amplitude: 0.08,
-  attackS: 0.8,
-  decayS: 2.5,
+/** Chords of the high-activation level: a pad that swells in under two seconds. */
+export const PAD_TIMBRE: Timbre = {
+  amplitude: 0.05,
+  attackS: 1.4,
+  decayS: 3,
+  sustain: 0.7,
+  releaseS: 2.5,
   detuneHz: 0.35,
   width: 0.6,
-  brightness: 1.3,
-  body: 0.45,
+  brightness: 1.7,
+  body: 0.5,
+  ratio: 1,
 };
 
-/** Open dyads over the drone at the target level: slower and darker than a chord. */
-export const DYAD_TIMBRE: Timbre = {
-  amplitude: 0.09,
-  attackS: 2,
+/** Chords of the intermediate level: the same pad, slower and a little darker. */
+export const SLOW_PAD_TIMBRE: Timbre = {
+  amplitude: 0.052,
+  attackS: 2.6,
   decayS: 4,
+  sustain: 0.7,
+  releaseS: 4,
+  detuneHz: 0.3,
+  width: 0.7,
+  brightness: 1.45,
+  body: 0.45,
+  ratio: 1,
+};
+
+/** Open dyads over the drone at the target level: the slowest and darkest pad. */
+export const DYAD_TIMBRE: Timbre = {
+  amplitude: 0.075,
+  attackS: 3.5,
+  decayS: 5,
+  sustain: 0.75,
+  releaseS: 5,
   detuneHz: 0.25,
   width: 0.7,
-  brightness: 0.9,
-  body: 0.35,
+  brightness: 1.15,
+  body: 0.4,
+  ratio: 1,
 };
 
 /** Melody notes: a soft struck tone, close to an electric piano. */
@@ -53,10 +82,41 @@ export const MELODY_TIMBRE: Timbre = {
   amplitude: 0.1,
   attackS: 0.012,
   decayS: 1.4,
+  sustain: 0,
+  releaseS: 1.4,
   detuneHz: 0.5,
   width: 0.3,
-  brightness: 2.2,
+  brightness: 3.2,
+  body: 0.35,
+  ratio: 1,
+};
+
+/** Single chord notes of the intermediate level: the melody tone, softer and longer. */
+export const BROKEN_CHORD_TIMBRE: Timbre = {
+  amplitude: 0.06,
+  attackS: 0.02,
+  decayS: 2.2,
+  sustain: 0,
+  releaseS: 2.2,
+  detuneHz: 0.4,
+  width: 0.4,
+  brightness: 2.5,
   body: 0.3,
+  ratio: 1,
+};
+
+/** Sparse high notes of the target level: a glassy tone with a long tail. */
+export const CHIME_TIMBRE: Timbre = {
+  amplitude: 0.05,
+  attackS: 0.03,
+  decayS: 4.5,
+  sustain: 0,
+  releaseS: 4.5,
+  detuneHz: 0.3,
+  width: 0.5,
+  brightness: 1.7,
+  body: 0.2,
+  ratio: 2,
 };
 
 /**

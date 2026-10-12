@@ -208,7 +208,7 @@ for (const scene of SCENES) {
   const { left, right, report } = renderScene(scene);
   await writeFile(`${directory}${scene.file}.wav`, encodeWav(left, right, SAMPLE_RATE, dither));
   reports.push(report);
-  const bands = report.bands.map((band) => `${band.label} ${(band.share * 100).toFixed(1)}%`).join(' | ');
+  const bands = report.bands.map((band) => `${band.label} ${(band.share * 100).toFixed(2)}%`).join(' | ');
   console.log(
     `${scene.file}: peak ${report.peakDbfs.toFixed(1)} dBFS, rms ${report.rmsDbfs.toFixed(1)} dBFS, loudness ${report.loudnessDba.toFixed(1)} dBA, ` +
       `stereo correlation ${report.stereoCorrelation.toFixed(2)}, core ${report.coreSpeedTimesRealTime.toFixed(0)}x real time` +
