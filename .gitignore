@@ -49,3 +49,6 @@ tmp/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Muestras de audio renderizadas (scripts/audio)
+audio-samples/

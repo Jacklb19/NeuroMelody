@@ -25,7 +25,7 @@ const VOLUME_SMOOTHING_S = 0.05;
 /** Limiter at the end of the chain (before the −1 dBFS clipper). */
 export const LIMITER = { thresholdDb: -6, ratio: 20, kneeDb: 0, attackS: 0.003, releaseS: 0.25 } as const;
 /** Resonance (`Q`) of the brightness low-pass filter. */
-const BRIGHTNESS_FILTER_Q = 0.5;
+export const BRIGHTNESS_FILTER_Q = 0.5;
 /** The whole chain is stereo. */
 const OUTPUT_CHANNELS = 2;
 
