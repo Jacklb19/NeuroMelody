@@ -116,6 +116,7 @@ export const account = {
       secondFactor: { title: 'Verificación en dos pasos', on: 'Activa', off: 'Sin activar', action: 'Gestionar' },
       privacy: { title: 'Privacidad y consentimiento', text: 'Qué se guarda y dónde.' },
       history: { title: 'Historial de sesiones', text: 'Revisa o borra tus sesiones.' },
+      collect: { title: 'Ayuda a mejorar la app', text: 'Una grabación guiada para que el modelo aprenda de ti. Opcional.' },
       signOut: { title: 'Cerrar sesión', text: 'Tus sesiones seguirán en este dispositivo.' },
       deleteAccount: {
         title: 'Borrar la cuenta',

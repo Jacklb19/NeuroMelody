@@ -116,6 +116,7 @@ export const account = {
       secondFactor: { title: 'Two-step verification', on: 'On', off: 'Not turned on', action: 'Manage' },
       privacy: { title: 'Privacy and consent', text: 'What is saved and where.' },
       history: { title: 'Session history', text: 'Review or delete your sessions.' },
+      collect: { title: 'Help improve the app', text: 'A guided recording so the model can learn from you. Optional.' },
       signOut: { title: 'Sign out', text: 'Your sessions will stay on this device.' },
       deleteAccount: {
         title: 'Delete the account',

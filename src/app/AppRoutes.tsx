@@ -18,6 +18,7 @@ import { SessionSummaryPage } from '../features/summary/SessionSummaryPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { ProgressPage } from '../features/progress/ProgressPage';
 import { ReportPage } from '../features/report/ReportPage';
+import { CollectionPage } from '../features/collection/CollectionPage';
 import { Layout } from './Layout';
 
 /** react-router pattern for any path no screen claims; it leads back home. */
@@ -53,6 +54,14 @@ export function AppRoutes(): React.JSX.Element {
           <Route path={ROUTE_SEGMENTS.history} element={<HistoryPage />} />
           <Route path={ROUTE_SEGMENTS.progress} element={<ProgressPage />} />
           <Route path={ROUTE_SEGMENTS.report} element={<ReportPage />} />
+          <Route
+            path={ROUTE_SEGMENTS.collect}
+            element={
+              <RequireWarnings>
+                <CollectionPage />
+              </RequireWarnings>
+            }
+          />
           <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
           <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
           <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
