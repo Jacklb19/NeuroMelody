@@ -62,16 +62,18 @@ describe('synthesizer processor', () => {
     ]);
   });
 
-  it('produces sound and copies the left channel to the right', () => {
+  it('produces sound on both channels', () => {
     const processor = create(SYNTHESIZER_NAME, options);
     const output = block(2);
-    let energy = 0;
+    const energy = [0, 0];
     for (let i = 0; i < 100; i++) {
       expect(processor.process([], [output], params)).toBe(true);
-      energy += (output[0] ?? new Float32Array()).reduce((s, x) => s + x * x, 0);
-      expect(output[1]).toEqual(output[0]);
+      output.forEach((channel, c) => {
+        energy[c] = (energy[c] ?? 0) + channel.reduce((s, x) => s + x * x, 0);
+      });
     }
-    expect(energy).toBeGreaterThan(0);
+    expect(energy[0]).toBeGreaterThan(0);
+    expect(energy[1]).toBeGreaterThan(0);
   });
 
   it('starts every parameter at the calibration level, within its range', () => {

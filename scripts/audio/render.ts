@@ -18,7 +18,7 @@ import { BRIGHTNESS_FILTER_Q, LIMITER, SESSION_FADE_IN_S } from '../../src/featu
 import { generateImpulseResponse } from '../../src/features/audio/engine/impulseResponse.ts';
 import { LEVELS, type LevelId } from '../../src/features/audio/engine/levels.ts';
 import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from '../../src/features/audio/engine/ramps.ts';
-import { bandEnergies, convolve, convolverNormalization, encodeWav, lowPass } from './dsp.ts';
+import { convolve, convolverNormalization, encodeWav, lowPass, spectrum } from './dsp.ts';
 
 /** Same rate and block size as the session context and its worklet. */
 const SAMPLE_RATE = 48_000;
@@ -66,6 +66,8 @@ interface Report {
   readonly file: string;
   readonly peakDbfs: number;
   readonly rmsDbfs: number;
+  /** Level as the ear weighs it (A curve): the figure to compare loudness between labels. */
+  readonly loudnessDba: number;
   readonly stereoCorrelation: number;
   readonly reachesLimiter: boolean;
   readonly coreSpeedTimesRealTime: number;
@@ -86,20 +88,23 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
 
   const core = new SynthesisCore(SAMPLE_RATE, SAMPLE_SEED, start.mode);
   core.setInitialLayers(start.layers);
-  const dry = new Float32Array(length);
-  const block = new Float32Array(BLOCK);
+  const dry = [new Float32Array(length), new Float32Array(length)] as const;
+  const blockLeft = new Float32Array(BLOCK);
+  const blockRight = new Float32Array(BLOCK);
   const tempoRampS = tempoRampDurationS(start.tempo, end.tempo);
   const startedAt = performance.now();
   for (let offset = 0; offset < length; offset += BLOCK) {
     const timeS = offset / SAMPLE_RATE;
     const changed = scene.change !== undefined && timeS >= changeS;
     core.process(
-      block,
+      blockLeft,
+      blockRight,
       ramp(start.tempo, end.tempo, changeS, tempoRampS, timeS),
       changed ? end.mode : start.mode,
       changed ? end.layers : start.layers,
     );
-    dry.set(block, offset);
+    dry[0].set(blockLeft, offset);
+    dry[1].set(blockRight, offset);
   }
   const coreSpeed = scene.durationS / ((performance.now() - startedAt) / 1000);
 
@@ -107,7 +112,6 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
   const cutoffAt = (timeS: number): number =>
     start.brightnessHz *
     (end.brightnessHz / start.brightnessHz) ** ramp(0, 1, changeS, TIMBRE_RAMP_DURATION_S, timeS);
-  const filtered = lowPass(dry, SAMPLE_RATE, BRIGHTNESS_FILTER_Q, BLOCK, cutoffAt);
   const response = generateImpulseResponse(SAMPLE_RATE);
   const normalization = convolverNormalization(response, SAMPLE_RATE);
   const volume = dbToGain(SAMPLE_VOLUME_DB);
@@ -118,7 +122,9 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
   let cross = 0;
   let leftSquares = 0;
   let rightSquares = 0;
-  const [left, right] = response.map((channel) => {
+  // A stereo response convolves each input channel with its own side (ConvolverNode).
+  const [left, right] = response.map((channel, side) => {
+    const filtered = lowPass(dry[side] ?? dry[0], SAMPLE_RATE, BRIGHTNESS_FILTER_Q, BLOCK, cutoffAt);
     const wet = convolve(filtered, channel);
     const output = new Float32Array(length);
     for (let n = 0; n < length; n++) {
@@ -140,6 +146,7 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
     rightSquares += r * r;
   }
   const mid = Float32Array.from(left, (l, n) => (l + (right[n] ?? 0)) / 2);
+  const { bands, aWeightedDb } = spectrum(mid, SAMPLE_RATE, BAND_EDGES_HZ);
   softClipBlock(left);
   softClipBlock(right);
 
@@ -150,10 +157,11 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
       file: scene.file,
       peakDbfs: gainToDb(peak),
       rmsDbfs: gainToDb(Math.sqrt(squares / length)),
+      loudnessDba: aWeightedDb,
       stereoCorrelation: cross / Math.sqrt(leftSquares * rightSquares),
       reachesLimiter: gainToDb(peak) > LIMITER.thresholdDb,
       coreSpeedTimesRealTime: coreSpeed,
-      bands: bandEnergies(mid, SAMPLE_RATE, BAND_EDGES_HZ),
+      bands,
     },
   };
 }
@@ -202,7 +210,7 @@ for (const scene of SCENES) {
   reports.push(report);
   const bands = report.bands.map((band) => `${band.label} ${(band.share * 100).toFixed(1)}%`).join(' | ');
   console.log(
-    `${scene.file}: peak ${report.peakDbfs.toFixed(1)} dBFS, rms ${report.rmsDbfs.toFixed(1)} dBFS, ` +
+    `${scene.file}: peak ${report.peakDbfs.toFixed(1)} dBFS, rms ${report.rmsDbfs.toFixed(1)} dBFS, loudness ${report.loudnessDba.toFixed(1)} dBA, ` +
       `stereo correlation ${report.stereoCorrelation.toFixed(2)}, core ${report.coreSpeedTimesRealTime.toFixed(0)}x real time` +
       `${report.reachesLimiter ? ', REACHES THE LIMITER' : ''}\n  ${bands}`,
   );

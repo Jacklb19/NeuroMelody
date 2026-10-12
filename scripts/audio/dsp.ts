@@ -150,8 +150,30 @@ export interface BandEnergy {
   readonly share: number;
 }
 
-/** Share of the energy of `signal` between each pair of consecutive `edgesHz`. */
-export function bandEnergies(signal: Float32Array, sampleRate: number, edgesHz: readonly number[]): BandEnergy[] {
+export interface Spectrum {
+  readonly bands: readonly BandEnergy[];
+  /**
+   * Level with the A curve of IEC 61672, which weighs each frequency by how
+   * loud the ear hears it: two files with the same value sound about as loud.
+   */
+  readonly aWeightedDb: number;
+}
+
+/** Corner frequencies of the A-weighting curve (IEC 61672), in Hz, and its gain at 1 kHz. */
+const A_CORNERS_HZ = [20.6, 107.7, 737.9, 12_194] as const;
+const A_GAIN_AT_1_KHZ = 10 ** (2 / 20);
+
+function aWeight(frequency: number): number {
+  const f2 = frequency * frequency;
+  const [c1, c2, c3, c4] = A_CORNERS_HZ;
+  return (
+    (A_GAIN_AT_1_KHZ * c4 * c4 * f2 * f2) /
+    ((f2 + c1 * c1) * Math.sqrt((f2 + c2 * c2) * (f2 + c3 * c3)) * (f2 + c4 * c4))
+  );
+}
+
+/** Share of the energy of `signal` between each pair of consecutive `edgesHz`, and its A-weighted level. */
+export function spectrum(signal: Float32Array, sampleRate: number, edgesHz: readonly number[]): Spectrum {
   const size = nextPowerOfTwo(signal.length);
   const re = new Float64Array(size);
   const im = new Float64Array(size);
@@ -159,20 +181,26 @@ export function bandEnergies(signal: Float32Array, sampleRate: number, edgesHz: 
   fft(re, im, false);
   const totals = new Float64Array(edgesHz.length - 1);
   let total = 0;
+  let weighted = 0;
   for (let bin = 1; bin < size / 2; bin++) {
     const frequency = (bin * sampleRate) / size;
     const power = (re[bin] ?? 0) ** 2 + (im[bin] ?? 0) ** 2;
     total += power;
+    weighted += power * aWeight(frequency) ** 2;
     for (let band = 0; band < totals.length; band++) {
       if (frequency >= (edgesHz[band] ?? 0) && frequency < (edgesHz[band + 1] ?? 0)) {
         totals[band] = (totals[band] ?? 0) + power;
       }
     }
   }
-  return Array.from(totals, (power, band) => ({
-    label: `${String(edgesHz[band])}-${String(edgesHz[band + 1])} Hz`,
-    share: total === 0 ? 0 : power / total,
-  }));
+  return {
+    bands: Array.from(totals, (power, band) => ({
+      label: `${String(edgesHz[band])}-${String(edgesHz[band + 1])} Hz`,
+      share: total === 0 ? 0 : power / total,
+    })),
+    // Parseval: the mean square of the signal is twice the sum over positive bins, divided by size × length.
+    aWeightedDb: 10 * Math.log10((2 * weighted) / (size * signal.length)),
+  };
 }
 
 /** Stereo 16-bit PCM WAV file. `dither` returns uniform numbers in [0, 1). */
