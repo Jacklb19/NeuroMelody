@@ -41,7 +41,7 @@ export function LoginPage(): React.JSX.Element {
   if (state.kind === 'signed_in' && service !== null) {
     return (
       <AuthLayout title={t.account.totp.challengeTitle} subtitle={t.account.totp.challengeText}>
-        <SecondFactorChallenge service={service} onVerified={enter} />
+        <SecondFactorChallenge service={service} onVerified={enter} onSignedOut={refresh} />
       </AuthLayout>
     );
   }

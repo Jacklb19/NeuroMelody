@@ -9,6 +9,7 @@ import { AccountPage } from '../features/account/AccountPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { RegisterPage } from '../features/account/RegisterPage';
+import { RequireSecondStep } from '../features/account/RequireSecondStep';
 import { ResetPasswordPage } from '../features/account/ResetPasswordPage';
 import { PrivacyPage } from '../features/privacy/PrivacyPage';
 import { PlanPage } from '../features/plan/PlanPage';
@@ -31,7 +32,14 @@ export function AppRoutes(): React.JSX.Element {
       <Route path={ROUTE_SEGMENTS.forgotPassword} element={<ForgotPasswordPage />} />
       <Route path={ROUTE_SEGMENTS.resetPassword} element={<ResetPasswordPage />} />
       <Route element={<Layout />}>
-        <Route path={ROUTE_SEGMENTS.app} element={<HomePage />} />
+        <Route
+          path={ROUTE_SEGMENTS.app}
+          element={
+            <RequireSecondStep>
+              <HomePage />
+            </RequireSecondStep>
+          }
+        />
         <Route path={ROUTE_SEGMENTS.warnings} element={<WarningsPage />} />
         <Route path={ROUTE_SEGMENTS.plan} element={<PlanPage />} />
         <Route
