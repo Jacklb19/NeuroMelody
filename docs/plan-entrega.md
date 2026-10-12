@@ -16,7 +16,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | 8 | Cuenta en el navegador y Google (S6.2 front, S6.3) | front | ADR-29, ADR-30: registro, inicio de sesión, recuperación, dos pasos, Google, perfil | Hecho; falta la prueba del usuario contra Supabase real |
 | 9 | Clasificador entrenado | front + back | RF-07; ADR-32, `modelo.md` | Hecho |
 | 10 | Respiración guiada | front | ADR-33 (1): el orbe marca un ritmo lento de inhalar y exhalar durante la sesión | Hecho: opcional, al tempo de la música (4 tiempos al inhalar, 6 al exhalar); falta que el usuario la pruebe con música y con «reducir movimiento» |
-| 11 | Tu progreso | front | ADR-33 (2): evolución entre sesiones de pulso, variabilidad y autovaloración | Pendiente |
+| 11 | Tu progreso | front | ADR-33 (2): evolución entre sesiones de pulso, variabilidad y autovaloración | Hecho: `/progress` con las sesiones del dispositivo; falta la revisión del usuario con sesiones reales |
 | 12 | S6.2 API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19. JWT con PyJWT, `aal2`, migración, sesiones idempotentes, borrado de sesión y de cuenta, despliegue del back, sincronización en el front | Pendiente (plan aprobado el 11 oct) |
 | 13 | Informe para el terapeuta | front | ADR-33 (4): resumen imprimible de un periodo | Pendiente |
 | 14 | Recolección de datos y reentrenamiento | front + back | ADR-33 (3): protocolo guiado con etiquetas, consentimiento, exportación y nueva versión del modelo | Pendiente; después del bloque 12 |
