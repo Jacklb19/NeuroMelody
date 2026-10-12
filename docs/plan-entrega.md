@@ -18,7 +18,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | 10 | Respiración guiada | front | ADR-33 (1): el orbe marca un ritmo lento de inhalar y exhalar durante la sesión | Hecho: opcional, al tempo de la música (4 tiempos al inhalar, 6 al exhalar); falta que el usuario la pruebe con música y con «reducir movimiento» |
 | 11 | Tu progreso | front | ADR-33 (2): evolución entre sesiones de pulso, variabilidad y autovaloración | Hecho: `/progress` con las sesiones del dispositivo; falta la revisión del usuario con sesiones reales |
 | 12 | S6.2 API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19, ADR-34. JWT con PyJWT, `aal2`, migración, sesiones idempotentes, borrado de sesión y de cuenta, sincronización en el front | Hecho y publicado el 12 oct: el back responde en `https://neuro-m-back.vercel.app` y el front lo llama. Falta la prueba del usuario con una cuenta real |
-| 13 | Informe para el terapeuta | front | ADR-33 (4): resumen imprimible de un periodo | Pendiente |
+| 13 | Informe para el terapeuta | front | ADR-33 (4): resumen imprimible de un periodo | Hecho en la rama `feat/therapist-report` (sin fusionar): `/report` con la impresión del navegador; falta la revisión del usuario con sesiones reales y una impresión de prueba |
 | 14 | Recolección de datos y reentrenamiento | front + back | ADR-33 (3): protocolo guiado con etiquetas, consentimiento, exportación y nueva versión del modelo | Pendiente; después del bloque 12 |
 | 15 | S6.4 Modelo de lenguaje | back + front | RF-13, RF-15; ADR-08. Plan propuesto y resumen con esquema cerrado | Pendiente |
 | 16 | S7.1 Sin conexión | front | HU-09, RNF-08. Sesión completa sin red y cola de sincronización sin duplicados | Pendiente |

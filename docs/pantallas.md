@@ -17,7 +17,8 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | `/session` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | No | `/summary/:id` (al terminar), `/` |
 | `/summary/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | No para los indicadores locales; sí para el texto del modelo y la sincronización | `/history`, `/` |
 | `/history` | Historial | Revisar sesiones anteriores y borrarlas; lleva a la evolución entre sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/summary/:id`, `/progress`, `/` |
-| `/progress` | Tu progreso | Ver cómo cambian entre sesiones el pulso, la variación entre latidos y la autovaloración, al empezar y al terminar (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 11 | No: usa las sesiones guardadas en el dispositivo | `/plan`, `/history` (por la cabecera) |
+| `/progress` | Tu progreso | Ver cómo cambian entre sesiones el pulso, la variación entre latidos y la autovaloración, al empezar y al terminar (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 11 | No: usa las sesiones guardadas en el dispositivo | `/plan`, `/report`, `/history` (por la cabecera) |
+| `/report` | Informe de tus sesiones | Preparar una hoja con el resumen de un grupo de sesiones para imprimirla o guardarla como PDF y llevarla a quien acompaña a la persona (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 13 | No: usa las sesiones guardadas en el dispositivo y no envía nada | `/plan`, `/progress` (por el navegador) |
 | `/account` | Perfil | Resumen y ajustes de la persona (ADR-30): actividad en el dispositivo, seguridad (contraseña y verificación en dos pasos), privacidad, cerrar sesión. Sin cuenta, invita a crear una. Se abre desde el avatar de la cabecera. | — | RF-14 | S6 | No (sin cuenta muestra la actividad local) | `/login`, `/register`, `/privacy`, `/history` |
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
@@ -39,6 +40,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `SessionSummaryPage` (`src/features/summary/`) | S6.1 | `/summary/:id` |
 | `HistoryPage` (`src/features/history/`) | S6.1 | `/history` |
 | `ProgressPage` y `BeforeAfterChart` (`src/features/progress/`) | Bloque 11 (ADR-33) | `/progress` |
+| `ReportPage` (`src/features/report/`) | Bloque 13 (ADR-33) | `/report`; reutiliza el selector de sesiones (`RangePicker`) y la gráfica de `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
 
@@ -87,6 +89,21 @@ Se llega desde «Tu actividad» en el inicio y desde la tarjeta del historial; n
 5. **Aviso** de que son indicadores descriptivos.
 
 Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de que la evolución aparece a partir de la segunda. Cuando haya sincronización (bloque 12), las sesiones de la nube entran por la misma lista.
+
+## `/report`, informe para compartir (ADR-33, solo en el dispositivo)
+
+Se llega desde la tarjeta «Compártelo con quien te acompaña», al final de «Tu progreso»; abre con el mismo grupo de sesiones que estaba elegido allí (viaja en la dirección, parámetro `range`). No está en la cabecera.
+
+1. **En pantalla, fuera de la hoja:** qué es y para quién, el selector de sesiones («Últimas 7», «Últimas 30», «Todas») y el botón «Imprimir o guardar como PDF», que abre la impresión del navegador. Nada de esto se imprime.
+2. **La hoja** (lo único que se imprime), siempre sobre papel claro, con el tema que tenga la app:
+   - marca, fecha en que se preparó, título y periodo que cubre (de la sesión más antigua a la más reciente);
+   - sesiones, minutos escuchados y los objetivos elegidos con cuántas veces;
+   - por cada tema (pulso, variación entre latidos, cómo se sentía): qué es, promedio al empezar y al terminar, en cuántas sesiones cambió y la gráfica de «al empezar» y «al terminar»;
+   - tabla sesión por sesión: fecha, tiempo escuchado, con qué se midió y los tres valores;
+   - «Para leer esta hoja»: qué es la app, que son indicadores descriptivos y no una valoración clínica, cómo se toman los dos valores y, si las hay, cuántas sesiones se hicieron con el simulador o un registro de ejemplo (sus cifras no son de la persona).
+3. La hoja habla de «la persona», no de «tú», porque la lee alguien más.
+
+Sin sesiones invita a preparar una y no muestra hoja ni botón.
 
 ## Rediseño de la app (ADR-30)
 
