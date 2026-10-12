@@ -17,7 +17,7 @@ import { MAX_RATING, MIN_RATING } from '../records/sessionRecord';
 import { EDGE_SECONDS } from '../records/summarizeSession';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { useSessionRecords } from '../records/useSessionRecords';
-import { AVERAGE_DECIMALS, reportOf, type Report } from './report';
+import { AVERAGE_DECIMALS, measuredSessions, reportOf, type Report } from './report';
 import './report.css';
 
 /**
@@ -37,7 +37,10 @@ export function ReportPage(): React.JSX.Element {
   const setRange = (next: ProgressRangeId): void => {
     setParams({ [QUERY_PARAMS.range]: next }, { replace: true });
   };
-  const report = useMemo(() => reportOf(selectRange(records ?? [], range)), [records, range]);
+  // Sessions made to try the app (simulator, sample recordings) are nobody's pulse: they never reach the sheet.
+  const measured = useMemo(() => (records === null ? null : measuredSessions(records)), [records]);
+  const report = useMemo(() => reportOf(selectRange(measured ?? [], range)), [measured, range]);
+  const excluded = records === null || measured === null ? 0 : records.length - measured.length;
 
   return (
     <div className="report-page">
@@ -46,13 +49,13 @@ export function ReportPage(): React.JSX.Element {
           <p>{copy.introduction}</p>
         </PageHeading>
         {records === null && <p className="secondary-text">{t.progress.loading}</p>}
-        {records !== null && records.length === 0 && (
+        {measured !== null && measured.length === 0 && (
           <div className="empty-state">
-            <p>{copy.empty}</p>
+            <p>{excluded === 0 ? copy.empty : copy.onlyTrials}</p>
             <Link to={ROUTES.plan} className="button button-primary">{t.progress.planSession}</Link>
           </div>
         )}
-        {records !== null && records.length > 0 && (
+        {measured !== null && measured.length > 0 && (
           <div className="report-controls">
             <RangePicker value={range} onChange={setRange} />
             <div className="report-print">
@@ -63,8 +66,11 @@ export function ReportPage(): React.JSX.Element {
             </div>
           </div>
         )}
+        {measured !== null && measured.length > 0 && excluded > 0 && (
+          <p className="secondary-text report-excluded" data-testid="report-excluded">{copy.excluded(excluded)}</p>
+        )}
       </div>
-      {records !== null && records.length > 0 && <ReportSheet report={report} />}
+      {measured !== null && measured.length > 0 && <ReportSheet report={report} />}
     </div>
   );
 }
@@ -145,7 +151,6 @@ function ReportSheet({ report }: { readonly report: Report }): React.JSX.Element
           <li>{copy.notes.whatItIs(APP_NAME)}</li>
           <li>{t.common.nonClinicalIndicators}</li>
           <li>{copy.notes.edges(EDGE_SECONDS)}</li>
-          {report.demoSessions > 0 && <li data-testid="report-demo-note">{copy.notes.demo(report.demoSessions, progress.sessions)}</li>}
         </ul>
       </footer>
     </article>

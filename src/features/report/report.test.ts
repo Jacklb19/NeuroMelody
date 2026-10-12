@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sample, sessionRecord } from '../../test/sessionRecords';
-import { reportOf } from './report';
+import { measuredSessions, reportOf } from './report';
 
 // Newest first, as the store lists them.
 const RECORDS = [
@@ -57,10 +57,15 @@ describe('reportOf', () => {
     expect(reportOf([RECORDS[2] ?? sessionRecord()]).averages.heartRate).toEqual({ start: null, end: null });
   });
 
-  it('counts the goals chosen, the most chosen first, and the sessions that measured nobody', () => {
-    const report = reportOf(RECORDS);
-    expect(report.goals).toEqual([{ id: 'pause', sessions: 2 }, { id: 'relax', sessions: 1 }]);
-    expect(report.demoSessions).toBe(1);
+  it('counts the goals chosen, the most chosen first', () => {
+    expect(reportOf(RECORDS).goals).toEqual([{ id: 'pause', sessions: 2 }, { id: 'relax', sessions: 1 }]);
+  });
+
+  it('is made only of sessions that measured the person, or that used no source at all', () => {
+    const withoutSource = sessionRecord({ id: '017f22e2-79b0-7000-8000-000000000004', sourceKind: null });
+    const recorded = sessionRecord({ id: '017f22e2-79b0-7000-8000-000000000005', sourceKind: 'recording' });
+    const kept = measuredSessions([...RECORDS, withoutSource, recorded]);
+    expect(kept.map((record) => record.sourceKind)).toEqual(['ble', 'camera', null]);
   });
 
   it('is empty without sessions', () => {

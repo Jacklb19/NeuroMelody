@@ -55,23 +55,30 @@ describe('ReportPage', () => {
     renderWithStore(ROUTES.report, ROUTES.report, <ReportPage />, await storeWith(OLDER, NEWER));
 
     const sheet = within(await screen.findByRole('article', { name: report.sheetTitle }));
-    expect(sheet.getByText(report.period(format.longDate(OLDER.startedAt), format.longDate(NEWER.startedAt)))).toBeInTheDocument();
+    // The simulated session is nobody's pulse: the sheet covers the measured one alone.
+    expect(sheet.getByText(report.period(format.longDate(OLDER.startedAt), format.longDate(OLDER.startedAt)))).toBeInTheDocument();
     expect(sheet.getByTestId('report-insight-heartRate')).toHaveTextContent(report.metrics.heartRate.insight(1, 1));
     expect(sheet.getByText(report.goals.count(es.plan.goals.names.relax, 1))).toBeInTheDocument();
 
     const rows = sheet.getAllByRole('row');
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
     expect(rows[1]).toHaveTextContent(es.acquisition.sources.ble);
     expect(rows[1]).toHaveTextContent(es.common.withUnit(es.records.change('78', '68'), es.common.units.beatsPerMinute));
-    expect(rows[2]).toHaveTextContent(es.acquisition.sources.simulator);
-
-    // A simulated session is named as such, so its figures are not read as the person's.
-    expect(sheet.getByTestId('report-demo-note')).toHaveTextContent(report.notes.demo(1, 2));
+    expect(sheet.queryByText(es.acquisition.sources.simulator)).not.toBeInTheDocument();
+    // The screen, not the sheet, says a trial session was left out.
+    expect(screen.getByTestId('report-excluded')).toHaveTextContent(report.excluded(1));
     expect(sheet.getByText(es.common.nonClinicalIndicators)).toBeInTheDocument();
     expect(sheet.getByText(report.notes.whatItIs(APP_NAME))).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: report.print }));
     expect(print).toHaveBeenCalledOnce();
+  });
+
+  it('has no sheet when every saved session was made to try the app', async () => {
+    renderWithStore(ROUTES.report, ROUTES.report, <ReportPage />, await storeWith(NEWER));
+    expect(await screen.findByText(report.onlyTrials)).toBeVisible();
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: report.print })).not.toBeInTheDocument();
   });
 
   it('opens on the range that came in the address', async () => {
