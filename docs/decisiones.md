@@ -234,6 +234,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Resultado | Validación dejando una persona fuera: acierto equilibrado 71,9 % frente al 62,4 % de las reglas; F1 macro 0,71 frente a 0,64. |
 | Consecuencias | La pantalla indica «Estimado por un modelo entrenado» con su confianza, o las reglas provisionales si actúa el respaldo. La histéresis, las permanencias y las rampas no cambian. Cambiar el filtro de latidos, la ventana o la línea base obliga a reentrenar. No es una validación clínica: 15 personas sanas en laboratorio. El conjunto de datos no se versiona. `GET /v1/models/classifier` de la Tabla 15 no es necesario mientras el modelo sea un archivo estático. |
 
+## ADR-33. Funciones que hacen útil la app más allá de la demostración
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 11 oct 2026 por el usuario («anota todas, por orden de facilidad y urgencia»). |
+| Contexto | La app adapta la música al pulso, pero da pocos motivos para volver y no muestra si sirve. Ninguna de estas funciones estaba en la especificación. |
+| Decisión | Se añaden seis funciones, en este orden dentro del plan (`plan-entrega.md`): (1) **Respiración guiada:** el orbe de la sesión marca un ritmo lento de inhalar y exhalar, opcional, sincronizado con la música; da contenido al objetivo «Acompañar una respiración lenta». (2) **Tu progreso:** vista con la evolución entre sesiones del pulso, la variabilidad y la autovaloración antes y después. (3) **Recolección de datos y reentrenamiento:** un protocolo guiado y corto (reposo, respiración lenta, tarea exigente) que guarda cada tramo con su etiqueta, con consentimiento explícito; los datos se exportan, se reentrena en `back/training/` y se publica una nueva versión del modelo (ADR-32). El modelo nunca se reentrena solo dentro de la app. (4) **Informe para el terapeuta:** resumen imprimible de un periodo, hecho con la impresión del navegador. (5) **Paisaje sonoro:** elegir entre dos o tres timbres o ambientes. (6) **Recordatorios** a la hora elegida, donde el navegador lo permita. |
+| Consecuencias | Cada función se ubica en `pantallas.md` y se planifica antes de programarse. Todas mantienen el lenguaje no clínico: describen, no prometen efectos. Sin dependencias nuevas previstas para (1), (2) y (4). La (3) necesita la API; la (5) toca el motor de audio y exige repetir la prueba de audio; la (6) depende de permisos y varía entre sistemas, así que puede quedar limitada. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
