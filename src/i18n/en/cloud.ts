@@ -26,6 +26,7 @@ export const cloud = {
     session_conflict: 'a session already exists under another account.',
     not_found: 'the session is no longer in the cloud.',
     invalid_request: 'a session is not in a format the service accepts.',
+    language_model_unavailable: 'the automatic text is not available right now.',
     storage_unavailable: 'the service is not responding right now.',
     network: 'there is no connection.',
     unknown: 'an unexpected error occurred.',

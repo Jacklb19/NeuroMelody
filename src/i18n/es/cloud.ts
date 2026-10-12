@@ -27,6 +27,7 @@ export const cloud = {
     not_found: 'la sesión ya no está en la nube.',
     invalid_request: 'una sesión no tiene un formato que el servicio acepte.',
     storage_unavailable: 'el servicio no responde ahora mismo.',
+    language_model_unavailable: 'el texto automático no está disponible ahora mismo.',
     network: 'no hay conexión.',
     unknown: 'ocurrió un error inesperado.',
   },
