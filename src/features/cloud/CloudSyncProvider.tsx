@@ -6,7 +6,7 @@ import { SessionStoreContext, useSessionStore } from '../records/sessionStoreCon
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
 import { createMirroredSessionStore } from './mirroredSessionStore';
-import { createSyncMarks, syncSessions, type SyncMarks } from './syncSessions';
+import { createPendingDeletions, createSyncMarks, syncSessions, type PendingDeletions, type SyncMarks } from './syncSessions';
 
 interface CloudSyncProviderProps {
   readonly children: React.ReactNode;
@@ -18,17 +18,22 @@ interface CloudSyncProviderProps {
 
 type Progress = 'idle' | 'syncing' | 'synced' | 'failed';
 
+/** Fired by the browser when the device gets a connection back. */
+const ONLINE_EVENT = 'online';
+
 const errorCode = (cause: unknown): CloudErrorCode => (cause instanceof CloudError ? cause.code : 'unknown');
 
 /**
  * What the mirrored store and the sync read at the moment they act: the API
- * while syncing is on, and the marks of whoever is signed in. It lives
+ * while syncing is on, and the marks and queued deletions of whoever is signed in. It lives
  * outside React's rendering because the store must keep its identity (the
  * session screen ends its recording when the store it holds changes).
  */
 class SyncLink {
   api: CloudApi | null = null;
   marks: SyncMarks = createSyncMarks(null);
+  deletions: PendingDeletions = createPendingDeletions(null);
+  userId: string | null = null;
   #running = false;
 
   connect(api: CloudApi | null): void {
@@ -36,7 +41,9 @@ class SyncLink {
   }
 
   useMarksOf(userId: string | null): void {
+    this.userId = userId;
     this.marks = createSyncMarks(userId);
+    this.deletions = createPendingDeletions(userId);
   }
 
   /** Claims the single sync pass; `false` when one is already running. */
@@ -93,6 +100,10 @@ export function CloudSyncProvider({
   const [progress, setProgress] = useState<Progress>('idle');
   const [error, setError] = useState<CloudErrorCode | null>(null);
   const [revision, setRevision] = useState(0);
+  // What the queue of this account held when it was opened, then what the last change left in it.
+  const storedPending = useMemo(() => createPendingDeletions(userId).size, [userId]);
+  const [pendingChange, setPendingChange] = useState<{ readonly userId: string | null; readonly count: number } | null>(null);
+  const pendingDeletions = pendingChange !== null && pendingChange.userId === userId ? pendingChange.count : storedPending;
 
   const fail = useCallback((cause: unknown): void => {
     setError(errorCode(cause));
@@ -106,8 +117,10 @@ export function CloudSyncProvider({
       mirrored: createMirroredSessionStore({
         local,
         marks: () => created.marks,
+        deletions: () => created.deletions,
         cloud: () => created.api,
         onUploadError: fail,
+        onPendingChange: () => { setPendingChange({ userId: created.userId, count: created.deletions.size }); },
       }),
     };
   });
@@ -123,13 +136,14 @@ export function CloudSyncProvider({
     if (current === null || !link.begin()) return;
     setProgress('syncing');
     try {
-      const result = await syncSessions({ api: current, store: local, marks: link.marks });
+      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions });
       if (result.downloaded > 0 || result.removed > 0) setRevision((value) => value + 1);
       setError(null);
       setProgress('synced');
     } catch (cause) {
       fail(cause);
     } finally {
+      setPendingChange({ userId: link.userId, count: link.deletions.size });
       link.end();
     }
   }, [link, local, fail]);
@@ -142,6 +156,14 @@ export function CloudSyncProvider({
     const id = setTimeout(() => { void syncNow(); }, 0);
     return () => { clearTimeout(id); };
   }, [active, userId, syncNow]);
+
+  // What could not be sent or deleted without a connection goes out when it returns (HU-09).
+  useEffect(() => {
+    if (!active) return undefined;
+    const catchUp = (): void => { void syncNow(); };
+    window.addEventListener(ONLINE_EVENT, catchUp);
+    return () => { window.removeEventListener(ONLINE_EVENT, catchUp); };
+  }, [active, syncNow]);
 
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();
@@ -162,8 +184,8 @@ export function CloudSyncProvider({
   else status = progress === 'idle' ? 'syncing' : progress;
 
   const value = useMemo<CloudSyncValue>(() => ({
-    status, error: status === 'failed' ? error : null, revision, consentAt, setConsent, syncNow, api: userId === null ? null : api,
-  }), [status, error, revision, consentAt, setConsent, syncNow, api, userId]);
+    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, api: userId === null ? null : api,
+  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, api, userId]);
 
   return (
     <CloudSyncContext value={value}>

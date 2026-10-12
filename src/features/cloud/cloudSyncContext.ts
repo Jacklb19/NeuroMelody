@@ -26,6 +26,8 @@ export interface CloudSyncValue {
   readonly error: CloudErrorCode | null;
   /** Grows every time a sync changed the history of this device: screens read it again. */
   readonly revision: number;
+  /** Sessions deleted on this device whose deletion has not reached the cloud yet (HU-09). */
+  readonly pendingDeletions: number;
   /**
    * The instant the person agreed to sync: from their profile when signed in,
    * from this device otherwise. The two are never mixed, so an answer left on
@@ -45,6 +47,7 @@ const DEVICE_ONLY: CloudSyncValue = {
   status: 'unavailable',
   error: null,
   revision: 0,
+  pendingDeletions: 0,
   consentAt: null,
   setConsent: () => Promise.resolve(),
   syncNow: () => Promise.resolve(),

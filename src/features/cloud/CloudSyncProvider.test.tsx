@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { es } from '../../i18n/es';
@@ -64,6 +64,18 @@ describe('CloudSyncProvider', () => {
     expect(await screen.findByText(status.synced)).toBeVisible();
     expect(requests).toEqual([`GET ${API}/v1/sessions`, `POST ${API}/v1/sessions`]);
     expect(seen.size).toBe(1);
+  });
+
+  it('catches up by itself when the connection returns', async () => {
+    const requests: string[] = [];
+    await renderSync(account({ current: 'aal2', next: 'aal2' }, '2026-10-07T10:00:00.000Z'), requests);
+    await screen.findByText(status.synced);
+    const before = requests.length;
+
+    act(() => { window.dispatchEvent(new Event('online')); });
+
+    // The session was sent by the first pass; this one only asks what the cloud has.
+    await waitFor(() => { expect(requests.slice(before)).toEqual([`GET ${API}/v1/sessions`]); });
   });
 
   it.each([

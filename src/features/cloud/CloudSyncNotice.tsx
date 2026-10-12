@@ -17,7 +17,7 @@ const NEXT_STEP: Readonly<Partial<Record<CloudSyncStatus, string>>> = {
  */
 export function CloudSyncNotice(): React.JSX.Element {
   const copy = useMessages().cloud;
-  const { status, error, syncNow } = useCloudSync();
+  const { status, error, syncNow, pendingDeletions } = useCloudSync();
   const statuses: Readonly<Record<Exclude<CloudSyncStatus, 'failed'>, string>> = copy.status;
   const errors: Readonly<Record<CloudErrorCode, string>> = copy.errors;
   const nextStep = NEXT_STEP[status];
@@ -30,6 +30,7 @@ export function CloudSyncNotice(): React.JSX.Element {
       {status === 'failed' && (
         <> <button type="button" className="text-button" onClick={() => { void syncNow(); }}>{copy.retry}</button></>
       )}
+      {pendingDeletions > 0 && <> <span data-testid="pending-deletions">{copy.pendingDeletions(pendingDeletions)}</span></>}
     </p>
   );
 }
