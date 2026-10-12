@@ -33,6 +33,7 @@ const BAND_EDGES_HZ = [20, 150, 500, 2000, 6000, 20_000];
 const OUTPUT_DIRECTORY = fileURLToPath(new URL('../../audio-samples/', import.meta.url));
 const PAGE_NAME = 'escuchar.html';
 const REPORT_NAME = 'metrics.json';
+const WAV_EXTENSION = '.wav';
 
 interface Scene {
   readonly file: string;
@@ -166,17 +167,20 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
   };
 }
 
-/** Rewrites the listening page with every label folder found. */
+/** Rewrites the listening page with every WAV file of every label folder found. */
 async function writePage(): Promise<void> {
   const entries = await readdir(OUTPUT_DIRECTORY, { withFileTypes: true });
   const labels = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
-  const sections = labels.map((label) => {
-    const players = SCENES.map(
-      (scene) =>
-        `<figure><figcaption>${scene.title}</figcaption><audio controls preload="none" src="${label}/${scene.file}.wav"></audio></figure>`,
-    );
-    return `<section><h2>${label}</h2>${players.join('')}</section>`;
-  });
+  const sections: string[] = [];
+  for (const label of labels) {
+    const files = (await readdir(OUTPUT_DIRECTORY + label)).filter((name) => name.endsWith(WAV_EXTENSION)).sort();
+    const players = files.map((name) => {
+      const file = name.slice(0, -WAV_EXTENSION.length);
+      const title = SCENES.find((scene) => scene.file === file)?.title ?? file;
+      return `<figure><figcaption>${title}</figcaption><audio controls preload="none" src="${label}/${name}"></audio></figure>`;
+    });
+    sections.push(`<section><h2>${label}</h2>${players.join('')}</section>`);
+  }
   const page = `<!doctype html>
 <html lang="es">
 <meta charset="utf-8">
@@ -206,7 +210,7 @@ const dither = createRandom(SAMPLE_SEED);
 const reports: Report[] = [];
 for (const scene of SCENES) {
   const { left, right, report } = renderScene(scene);
-  await writeFile(`${directory}${scene.file}.wav`, encodeWav(left, right, SAMPLE_RATE, dither));
+  await writeFile(`${directory}${scene.file}${WAV_EXTENSION}`, encodeWav(left, right, SAMPLE_RATE, dither));
   reports.push(report);
   const bands = report.bands.map((band) => `${band.label} ${(band.share * 100).toFixed(2)}%`).join(' | ');
   console.log(
