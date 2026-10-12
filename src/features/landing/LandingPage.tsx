@@ -235,11 +235,12 @@ export function LandingPage(): React.JSX.Element {
         <div className="landing-inner footer-inner">
           <p className="footer-brand"><BrandMark />{APP_NAME}</p>
           <p className="footer-notice">{copy.footer.notice}</p>
-          <p className="footer-meta">
+          {/* A div, not a paragraph: the preference buttons come in their own block. */}
+          <div className="footer-meta">
             <QuickPreferences />
             <Link to={ROUTES.privacy}>{copy.footer.privacy}</Link>
             <span>{copy.footer.project}</span>
-          </p>
+          </div>
         </div>
       </footer>
     </div>
