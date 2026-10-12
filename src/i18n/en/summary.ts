@@ -41,7 +41,7 @@ export const summary = {
       uncertain: 'Close to where it started',
       low: 'Calmer than when you started',
     },
-    footnote: `Signal time. ${common.provisionalEstimate}.`,
+    footnote: 'Signal time. The state is an estimate from your pulse, not a clinical measurement.',
   },
   pending: {
     label: 'Plain-language summary',

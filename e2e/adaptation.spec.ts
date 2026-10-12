@@ -1,26 +1,28 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type TestInfo } from '@playwright/test';
 import { ROUTES } from '../src/config/routes';
 import type { ScenarioId } from '../src/features/acquisition/simulator/scenarios';
 import type { Speed } from '../src/features/acquisition/speedCatalog';
+import { AdaptationEngine } from '../src/features/adaptation/AdaptationEngine';
+import { parseActivationModel } from '../src/features/adaptation/classifier/activationModel';
 import {
   CALIBRATION_MS,
-  HEART_RATE_CHANGE,
   HYSTERESIS_ESTIMATES,
   MIN_BASELINE_READINGS,
   MIN_LEVEL_DURATION_S,
-  RMSSD_CHANGE,
 } from '../src/features/adaptation/rules';
 import { LEVEL_IDS, LEVELS } from '../src/features/audio/engine/levels';
 import { MIN_TEMPO_RAMP_S, SECONDS_PER_BPM } from '../src/features/audio/engine/ramps';
 import { STOP_SHORTCUT_KEY } from '../src/features/audio/ui/stopShortcut';
 import { COMPUTE_PERIOD_MS } from '../src/features/signal/processing/thresholds';
-import type { SignalQuality } from '../src/features/signal/processing/types';
+import type { IndicesResult } from '../src/features/signal/processing/SignalProcessor';
 import { es } from '../src/i18n/es';
 import { MS_PER_SECOND } from '../src/shared/time';
 
 interface Ramp { readonly from: number; readonly to: number; readonly start: number; readonly end: number; readonly requestedAt: number }
-interface Signal { readonly timeMs: number; readonly meanHr: number | null; readonly rmssd: number | null; readonly quality: SignalQuality; readonly receivedAt: number; readonly audioTimeS: number | null }
+interface Signal extends IndicesResult { readonly receivedAt: number; readonly audioTimeS: number | null }
+/** The classifier the built app ships, so the test decides exactly as the app does (ADR-32). */
+const MODEL_FILE = 'public/models/activation-classifier.json';
 interface EvidenceWindow extends Window { adaptationEvidence: { ramps: Ramp[]; signals: Signal[]; audioStartS: number | null } }
 
 const { playback } = es.audio;
@@ -109,14 +111,14 @@ test('rising activation closes the loop with native AudioParam ramps and latency
   const evidence = await page.evaluate(() => (window as unknown as EvidenceWindow).adaptationEvidence);
   const baseline = evidence.signals.filter(s => s.timeMs <= CALIBRATION_MS && s.quality === 'good' && s.meanHr !== null && s.rmssd !== null);
   expect(baseline.length).toBeGreaterThanOrEqual(MIN_BASELINE_READINGS);
-  const baseHr = baseline.reduce((sum, s) => sum + (s.meanHr ?? 0), 0) / baseline.length;
-  const baseRmssd = baseline.reduce((sum, s) => sum + (s.rmssd ?? 0), 0) / baseline.length;
-  let count = 0;
+  // Replays the recorded readings through the same guidance and model to find when "high" was accepted.
+  const model = parseActivationModel(JSON.parse(await readFile(MODEL_FILE, 'utf8')));
+  expect(model).not.toBeNull();
+  const replay = new AdaptationEngine(model);
   let acceptedAt: number | null = null;
-  for (const signal of evidence.signals.filter(s => s.timeMs >= CALIBRATION_MS)) {
-    count = signal.quality === 'good' && (signal.meanHr ?? 0) / baseHr >= 1 + HEART_RATE_CHANGE
-      && (signal.rmssd ?? Infinity) / baseRmssd <= 1 - RMSSD_CHANGE ? count + 1 : 0;
-    if (count === HYSTERESIS_ESTIMATES) { acceptedAt = signal.receivedAt; break; }
+  for (const signal of evidence.signals) {
+    replay.process(signal, 0, false);
+    if (replay.snapshot.state === 'high') { acceptedAt = signal.receivedAt; break; }
   }
   expect(acceptedAt).not.toBeNull();
   const high = evidence.ramps.find(r => r.to === LEVELS.high.tempo);
