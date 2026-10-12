@@ -5,12 +5,13 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { ROUTE_SEGMENTS, ROUTES } from '../../config/routes';
 import { es } from '../../i18n/es';
+import { fakeAuthService as fakeService } from '../../test/fakeAuthService';
 import { AuthProvider } from './AuthProvider';
-import { AccountError, type Assurance, type AuthService, type AuthUser } from './authService';
+import { AccountError, type AuthService, type AuthUser } from './authService';
 import { LoginPage } from './LoginPage';
-import { sessionStorageKey } from './loadAuthService';
 import { RegisterPage } from './RegisterPage';
 import { RequireSecondStep } from './RequireSecondStep';
+import { sessionMayExist, sessionStorageKey } from './sessionHint';
 import { createSupabaseAuthService, googleEnabled, toAccountError } from './supabaseAuthService';
 
 const copy = es.account;
@@ -19,37 +20,16 @@ const typing = (): ReturnType<typeof userEvent.setup> => userEvent.setup({ delay
 const USER: AuthUser = { id: 'user-1', email: 'persona@example.test', name: null };
 const PASSWORD = 'una-contraseña-larga';
 
-function fakeService(overrides: Partial<AuthService> = {}, user: AuthUser | null = null, assurance: Assurance = { current: 'aal1', next: 'aal1' }): AuthService {
-  return {
-    currentUser: () => Promise.resolve(user),
-    onChange: () => () => undefined,
-    signUp: () => Promise.resolve('signed_in'),
-    googleAvailable: () => Promise.resolve(false),
-    signInWithGoogle: () => Promise.resolve(),
-    signIn: () => Promise.resolve(),
-    signOut: () => Promise.resolve(),
-    requestPasswordReset: () => Promise.resolve(),
-    updatePassword: () => Promise.resolve(),
-    assurance: () => Promise.resolve(assurance),
-    listTotpFactors: () => Promise.resolve([{ id: 'phone', name: null, createdAt: '2026-10-07T10:00:00Z' }]),
-    enrollTotp: () => Promise.reject(new AccountError('unknown')),
-    verifyTotp: () => Promise.resolve(),
-    removeTotp: () => Promise.resolve(),
-    accessToken: () => Promise.resolve(null),
-    syncConsent: () => Promise.resolve(null),
-    setSyncConsent: () => Promise.resolve(),
-    ...overrides,
-  };
-}
-
-function renderAt(route: string, service: AuthService) {
+function renderAt(route: string, service: AuthService, sessionKept = false) {
   render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider loadService={() => Promise.resolve(service)}>
+      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept}>
         <Routes>
           <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
-          <Route path={ROUTE_SEGMENTS.app} element={<RequireSecondStep><p>app</p></RequireSecondStep>} />
+          <Route element={<RequireSecondStep paths={[ROUTES.app]} />}>
+            <Route path={ROUTE_SEGMENTS.app} element={<p>app</p>} />
+          </Route>
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -75,6 +55,19 @@ describe('sign-in screens', () => {
     renderAt(ROUTES.login, fakeService({}, USER, { current: 'aal1', next: 'aal2' }));
     expect(await screen.findByRole('heading', { name: copy.totp.challengeTitle })).toBeInTheDocument();
     expect(screen.queryByText('app')).not.toBeInTheDocument();
+  });
+
+  it('holds the sign-in form back while a kept session is read, instead of showing it for an instant', async () => {
+    let answer: (user: AuthUser) => void = () => undefined;
+    const reading = new Promise<AuthUser | null>((resolve) => { answer = resolve; });
+    renderAt(ROUTES.login, fakeService({ currentUser: () => reading }, USER, { current: 'aal1', next: 'aal2' }), true);
+
+    expect(await screen.findByText(copy.auth.working)).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: copy.login.pageTitle })).not.toBeInTheDocument();
+
+    answer(USER);
+    expect(await screen.findByRole('heading', { name: copy.totp.challengeTitle })).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: copy.login.pageTitle })).not.toBeInTheDocument();
   });
 
   it('asks for the code when a sign-in lands straight in the app, and lets the person sign out instead', async () => {
@@ -146,6 +139,20 @@ describe('Supabase boundary', () => {
 
     await expect(service.signOut()).resolves.toBeUndefined();
     expect(window.localStorage.getItem(storageKey)).toBeNull();
+  });
+
+  it('expects a session only when one is kept or a sign-in is coming back with its code', () => {
+    const url = 'https://project.supabase.co';
+    const key = sessionStorageKey(url);
+    const storage = (kept: readonly string[]): Pick<Storage, 'getItem'> => ({ getItem: (name) => (kept.includes(name) ? '{}' : null) });
+    expect(sessionMayExist(url, storage([]), '')).toBe(false);
+    expect(sessionMayExist(url, storage([key]), '')).toBe(true);
+    // Coming back from Google: the code is in the address and its secret is still kept.
+    expect(sessionMayExist(url, storage([`${key}-code-verifier`]), '?code=abc')).toBe(true);
+    // A code in the address that no sign-in of this browser started is not a session on its way.
+    expect(sessionMayExist(url, storage([]), '?code=abc')).toBe(false);
+    // A deployment without accounts never makes anyone wait.
+    expect(sessionMayExist(null, storage([key]), '?code=abc')).toBe(false);
   });
 
   it('reads Google as enabled only when the project settings say so', () => {
