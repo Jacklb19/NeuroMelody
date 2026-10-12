@@ -14,6 +14,13 @@ export const report = {
   eyebrow: 'To share',
   introduction: 'A sheet that sums up your sessions, to print or save as a PDF and take to whoever accompanies you: your therapist, your doctor or someone you trust. It is built from the sessions saved on this device and is not sent anywhere.',
   empty: 'No sessions saved yet. Once you finish the first one, you can prepare your report here.',
+  /** Every saved session was made to try the app, so there is nothing of the person to report. */
+  onlyTrials: 'The saved sessions were made with the simulator or with a sample recording, which are for trying the app. The report is built from the sessions in which your pulse was measured.',
+  /** Sessions left out of the sheet, said on screen only. */
+  excluded: (count: number): string =>
+    count === 1
+      ? 'One trial session (simulator or sample recording) is left out of the report.'
+      : `${String(count)} trial sessions (simulator or sample recording) are left out of the report.`,
   print: 'Print or save as PDF',
   printHint: 'Your browser\'s print window opens. For a PDF, choose "Save as PDF" as the printer.',
   /** Title of the printed sheet. */
@@ -70,8 +77,5 @@ export const report = {
     /** How the two values of every session are taken; the seconds come from `EDGE_SECONDS`. */
     edges: (seconds: number): string =>
       `"At the start" and "at the end" are the average of the first and the last ${String(seconds)} seconds with a good signal in each session.`,
-    /** Sessions whose figures are not the person's. */
-    demo: (count: number, total: number): string =>
-      `${sessionsOf(count, total)} ${count === 1 ? 'was' : 'were'} made with the simulator or with a sample recording: their figures are not the person's.`,
   },
 };

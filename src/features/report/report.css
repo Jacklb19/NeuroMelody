@@ -2,6 +2,7 @@
 .report-page { padding-bottom: var(--space-12); }
 .report-controls { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-6) var(--space-10); margin-bottom: var(--space-10); }
 .report-controls .range-picker { margin-bottom: 0; }
+.report-excluded { margin: calc(-1 * var(--space-5)) 0 var(--space-10); font-size: var(--text-sm); }
 .report-print { display: grid; gap: var(--space-3); justify-items: start; max-width: var(--report-hint-max-width); font-size: var(--text-sm); }
 
 .report-page .report-sheet { max-width: var(--report-sheet-width); margin: 0 auto; padding: var(--space-12) var(--space-10); background: var(--color-paper); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--border-radius); box-shadow: var(--card-shadow); print-color-adjust: exact; -webkit-print-color-adjust: exact; }

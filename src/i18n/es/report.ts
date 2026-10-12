@@ -14,6 +14,13 @@ export const report = {
   eyebrow: 'Para compartir',
   introduction: 'Una hoja con el resumen de tus sesiones, para imprimir o guardar como PDF y llevarla a quien te acompaña: tu terapeuta, tu médico o alguien de confianza. Se arma con las sesiones guardadas en este dispositivo y no se envía a ningún lado.',
   empty: 'Aún no hay sesiones guardadas. Cuando termines la primera, aquí podrás preparar tu informe.',
+  /** Every saved session was made to try the app, so there is nothing of the person to report. */
+  onlyTrials: 'Las sesiones guardadas se hicieron con el simulador o con un registro de ejemplo, que sirven para probar la app. El informe se arma con las sesiones en las que se midió tu pulso.',
+  /** Sessions left out of the sheet, said on screen only. */
+  excluded: (count: number): string =>
+    count === 1
+      ? 'Una sesión de prueba (simulador o registro de ejemplo) no entra en el informe.'
+      : `${String(count)} sesiones de prueba (simulador o registro de ejemplo) no entran en el informe.`,
   print: 'Imprimir o guardar como PDF',
   printHint: 'Se abre la ventana de impresión de tu navegador. Para un PDF, elige «Guardar como PDF» como impresora.',
   /** Title of the printed sheet. */
@@ -70,8 +77,5 @@ export const report = {
     /** How the two values of every session are taken; the seconds come from `EDGE_SECONDS`. */
     edges: (seconds: number): string =>
       `«Al empezar» y «al terminar» son el promedio de los primeros y los últimos ${String(seconds)} segundos con buena señal de cada sesión.`,
-    /** Sessions whose figures are not the person's. */
-    demo: (count: number, total: number): string =>
-      `${sessionsOf(count, total)} se ${count === 1 ? 'hizo' : 'hicieron'} con el simulador o con un registro de ejemplo: sus cifras no son de la persona.`,
   },
 };

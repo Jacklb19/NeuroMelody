@@ -102,10 +102,12 @@ Se llega desde la tarjeta «Compártelo con quien te acompaña», al final de «
    - sesiones, minutos escuchados y los objetivos elegidos con cuántas veces;
    - por cada tema (pulso, variación entre latidos, cómo se sentía): qué es, promedio al empezar y al terminar, en cuántas sesiones cambió y la gráfica de «al empezar» y «al terminar»;
    - tabla sesión por sesión: fecha, tiempo escuchado, con qué se midió y los tres valores;
-   - «Para leer esta hoja»: qué es la app, que son indicadores descriptivos y no una valoración clínica, cómo se toman los dos valores y, si las hay, cuántas sesiones se hicieron con el simulador o un registro de ejemplo (sus cifras no son de la persona).
+   - «Para leer esta hoja»: qué es la app, que son indicadores descriptivos y no una valoración clínica y cómo se toman los dos valores.
 3. La hoja habla de «la persona», no de «tú», porque la lee alguien más.
 
-Sin sesiones invita a preparar una y no muestra hoja ni botón.
+Las sesiones hechas con el simulador o con un registro de ejemplo sirven para probar la app y no entran en el informe: ni en la hoja ni en sus cifras. Si se dejó alguna fuera, la pantalla lo dice (la hoja no). El selector cuenta solo las sesiones que entran.
+
+Sin sesiones, o si todas son de prueba, invita a preparar una y no muestra hoja ni botón.
 
 ## `/collect`, grabación guiada para el modelo (ADR-33, solo en el dispositivo)
 
