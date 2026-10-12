@@ -478,6 +478,8 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .pending-note { font-size: var(--text-sm); color: var(--color-text-secondary); max-width: var(--reading-max-width); }
 .summary-actions { margin-top: var(--space-10); }
 .empty-state { padding: var(--space-10); background: var(--color-surface); border-radius: var(--border-radius); display: grid; gap: var(--space-6); justify-items: start; }
+.cloud-notice { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.cloud-notice .text-button { min-height: 0; padding: 0; font-size: inherit; text-decoration: underline; cursor: pointer; }
 .progress-invite { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-8); }
 .progress-invite h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); margin-bottom: var(--space-1); }
 .history-list { list-style: none; margin-top: var(--space-10); border-top: var(--border-width) solid var(--color-border-subtle); margin-bottom: var(--space-8); }

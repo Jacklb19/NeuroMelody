@@ -35,7 +35,12 @@ export const privacy = {
     given: (date: string): string => `Consent given on ${date}.`,
     notGiven: 'No consent: your sessions stay only on this device.',
     withdrawn: 'You withdrew your consent. Your sessions stay only on this device.',
-    deviceOnly: 'This is saved on this device and will be sent to your account when syncing is available.',
+    /** Where the answer is kept, by whether someone is signed in. */
+    stored: {
+      device: 'Without an account, your answer stays on this device. Once you sign in, the one in your account applies.',
+      account: 'Your answer is saved in your account. If you withdraw it, your sessions stop being sent; the ones already in the cloud can be deleted from the history.',
+    },
+    saveFailed: 'Your answer could not be saved in your account. Please try again.',
   },
   backToAccount: 'Go to account',
 };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SECONDS_PER_MINUTE } from '../../shared/time';
+import { useCloudSync } from '../cloud/cloudSyncContext';
 import type { SessionRecord } from './sessionRecord';
 import { useSessionStore } from './sessionStoreContext';
 
@@ -10,6 +11,8 @@ import { useSessionStore } from './sessionStoreContext';
  */
 export function useSessionRecords(): readonly SessionRecord[] | null {
   const store = useSessionStore();
+  // A sync that brought or removed sessions makes the list be read again.
+  const { revision } = useCloudSync();
   const [records, setRecords] = useState<readonly SessionRecord[] | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -18,7 +21,7 @@ export function useSessionRecords(): readonly SessionRecord[] | null {
       () => { if (!cancelled) setRecords([]); },
     );
     return () => { cancelled = true; };
-  }, [store]);
+  }, [store, revision]);
   return records;
 }
 

@@ -117,7 +117,15 @@ export const account = {
       privacy: { title: 'Privacy and consent', text: 'What is saved and where.' },
       history: { title: 'Session history', text: 'Review or delete your sessions.' },
       signOut: { title: 'Sign out', text: 'Your sessions will stay on this device.' },
-      deleteAccount: { title: 'Delete the account', text: 'It will be available along with session syncing.' },
+      deleteAccount: {
+        title: 'Delete the account',
+        text: 'Deletes your account and everything it keeps in the cloud. Sessions on this device are left alone.',
+        unavailable: 'Not available in this version of the app.',
+        action: 'Delete the account',
+        confirm: 'Yes, delete my account',
+        /** `reason` is one of the cloud error sentences. */
+        failed: (reason: string): string => `The account could not be deleted: ${reason}`,
+      },
     },
     passwordChanged: 'Your password was saved.',
     close: 'Close',

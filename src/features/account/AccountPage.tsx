@@ -4,7 +4,10 @@ import { PreferenceSelects } from '../../app/preferences/PreferenceControls';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ChevronRightIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
+import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
+import { useCloudSync } from '../cloud/cloudSyncContext';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { needsSecondFactor, useAuth } from './authContext';
@@ -239,8 +242,39 @@ function SessionSection({ service, onChanged }: { readonly service: AuthService;
           </button>
         </SettingRow>
         <FormError code={error} />
-        <SettingRow icon={<UserIcon />} title={copy.rows.deleteAccount.title} text={copy.rows.deleteAccount.text} />
+        <DeleteAccountRow service={service} onChanged={onChanged} />
       </div>
     </section>
+  );
+}
+
+/**
+ * Deletes the account and everything it keeps in the cloud (ADR-18), after
+ * asking once more. What this device stores is left alone: it never needed
+ * an account.
+ */
+function DeleteAccountRow({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
+  const t = useMessages();
+  const copy = t.account.profile.rows.deleteAccount;
+  const { api } = useCloudSync();
+  const [failure, setFailure] = useState<CloudErrorCode | null>(null);
+  const reasons: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
+
+  const deleteAccount = (): void => {
+    if (api === null) return;
+    setFailure(null);
+    api.deleteAccount()
+      // The account is gone, so its session on this device is closed; a refusal to sign out changes nothing.
+      .then(() => service.signOut().catch(() => undefined))
+      .then(onChanged, (cause: unknown) => { setFailure(cause instanceof CloudError ? cause.code : 'unknown'); });
+  };
+
+  return (
+    <>
+      <SettingRow icon={<UserIcon />} title={copy.title} text={api === null ? copy.unavailable : copy.text}>
+        {api !== null && <ConfirmButton label={copy.action} confirmLabel={copy.confirm} onConfirm={deleteAccount} />}
+      </SettingRow>
+      {failure !== null && <p role="alert" className="form-error">{copy.failed(reasons[failure])}</p>}
+    </>
   );
 }

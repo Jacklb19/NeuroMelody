@@ -25,6 +25,10 @@ const ERROR_CODES: Readonly<Record<string, AccountErrorCode>> = {
   refresh_token_not_found: 'session_expired',
 };
 
+/** Where the sync consent lives (ADR-18): the person's own row, protected by row level security. */
+const PROFILES_TABLE = 'profiles';
+const CONSENT_COLUMN = 'sync_consent_at';
+
 /** Prefix Supabase leaves off some QR codes; with it the SVG works as an image URL. */
 const SVG_DATA_URL_PREFIX = 'data:image/svg+xml;utf-8,';
 
@@ -149,6 +153,22 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
     }),
     removeTotp: (factorId) => attempt(async () => {
       unwrap(await auth.mfa.unenroll({ factorId }));
+    }),
+    accessToken: () => attempt(async () => unwrap(await auth.getSession()).session?.access_token ?? null),
+    syncConsent: () => attempt(async () => {
+      const userId = unwrap(await auth.getSession()).session?.user.id;
+      if (userId === undefined) return null;
+      const { data, error } = await client.from(PROFILES_TABLE).select(CONSENT_COLUMN).eq('id', userId).maybeSingle();
+      if (error !== null) throw new AccountError('unknown');
+      // Row level security only ever returns the person's own profile.
+      const stored: unknown = (data as Readonly<Record<string, unknown>> | null)?.[CONSENT_COLUMN];
+      return typeof stored === 'string' ? stored : null;
+    }),
+    setSyncConsent: (givenAt) => attempt(async () => {
+      const userId = unwrap(await auth.getSession()).session?.user.id;
+      if (userId === undefined) throw new AccountError('session_expired');
+      const { error } = await client.from(PROFILES_TABLE).update({ [CONSENT_COLUMN]: givenAt }).eq('id', userId);
+      if (error !== null) throw new AccountError('unknown');
     }),
   };
 }
