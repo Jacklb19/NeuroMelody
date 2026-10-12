@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
-import { describe, it, expect } from 'vitest';
+import { act } from 'react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { APP_NAME } from '../config/app';
 import { ROUTES, sessionPath } from '../config/routes';
 import { es } from '../i18n/es';
@@ -10,6 +11,9 @@ import { WarningsRegistry } from '../features/warnings/warningsRegistry';
 import { DEFAULT_DURATION_MIN, readDuration } from '../features/plan/plan';
 import { STOP_SHORTCUT_KEY } from '../features/audio/ui/stopShortcut';
 import { AuthProvider } from '../features/account/AuthProvider';
+import type { AuthService } from '../features/account/authService';
+import { SESSION_CHECK_TIMEOUT_MS } from '../features/account/config';
+import { fakeAuthService } from '../test/fakeAuthService';
 import { AppRoutes } from './AppRoutes';
 import { MAIN_CONTENT_ID } from './Layout';
 
@@ -18,7 +22,14 @@ function CurrentLocation() {
   return <output data-testid="current-path">{`${pathname}${search}`}</output>;
 }
 
-function renderWith(route: string, accepted = false) {
+interface AccountSetup {
+  /** No account service by default: the screens behave as for someone without an account. */
+  readonly loadService?: () => Promise<AuthService | null>;
+  /** Whether this browser seems to keep a session, so the app waits to know who it is. */
+  readonly expectSession?: () => boolean;
+}
+
+function renderWith(route: string, accepted = false, account: AccountSetup = {}) {
   const registry = new WarningsRegistry(null);
   if (accepted) {
     registry.accept(new Date());
@@ -26,8 +37,7 @@ function renderWith(route: string, accepted = false) {
   render(
     <WarningsContext.Provider value={registry}>
       <MemoryRouter initialEntries={[route]}>
-        {/* No account service: the screens behave as for someone without an account. */}
-        <AuthProvider loadService={() => Promise.resolve(null)}>
+        <AuthProvider loadService={account.loadService ?? (() => Promise.resolve(null))} expectSession={account.expectSession ?? (() => false)}>
           <AppRoutes />
         </AuthProvider>
         <CurrentLocation />
@@ -119,6 +129,44 @@ describe('routes', () => {
   it('sets a document title per screen', () => {
     renderWith(ROUTES.plan);
     expect(document.title).toBe(`${es.plan.pageTitle} · ${APP_NAME}`);
+  });
+});
+
+describe('two-step verification on the way into the app', () => {
+  const homeTitle = es.home.start.title(DEFAULT_DURATION_MIN);
+  const appIsHidden = (): void => {
+    expect(screen.queryByRole('heading', { level: 2, name: homeTitle })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: es.app.mainNavigation })).not.toBeInTheDocument();
+  };
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows nothing of the app while a kept session is read, then asks for the code', async () => {
+    let deliver: (service: AuthService) => void = () => undefined;
+    const loading = new Promise<AuthService | null>((resolve) => { deliver = resolve; });
+    renderWith(ROUTES.app, false, { loadService: () => loading, expectSession: () => true });
+    appIsHidden();
+
+    deliver(fakeAuthService({}, { id: 'user-1', email: 'persona@example.test', name: null }, { current: 'aal1', next: 'aal2' }));
+    expect(await screen.findByRole('heading', { name: es.account.totp.challengeTitle })).toBeInTheDocument();
+    expect(currentPath()).toBe(ROUTES.login);
+    appIsHidden();
+  });
+
+  it('stops waiting when the account service does not answer', () => {
+    vi.useFakeTimers();
+    renderWith(ROUTES.app, false, { loadService: () => new Promise(() => undefined), expectSession: () => true });
+    appIsHidden();
+
+    act(() => { vi.advanceTimersByTime(SESSION_CHECK_TIMEOUT_MS); });
+    expect(screen.getByRole('heading', { level: 2, name: homeTitle })).toBeInTheDocument();
+  });
+
+  it('never waits when this browser keeps no session', () => {
+    renderWith(ROUTES.app, false, { loadService: () => new Promise(() => undefined) });
+    expect(screen.getByRole('heading', { level: 2, name: homeTitle })).toBeInTheDocument();
   });
 });
 

@@ -1,16 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../../config/env';
 import type { AuthService } from './authService';
+import { sessionStorageKey } from './sessionHint';
 import { createSupabaseAuthService } from './supabaseAuthService';
-
-/**
- * Where the browser keeps the session. It is the name Supabase uses by
- * default, written out so the service can also forget the session by itself
- * when the server cannot confirm a sign-out.
- */
-export function sessionStorageKey(supabaseUrl: string): string {
-  return `sb-${new URL(supabaseUrl).hostname.split('.')[0] ?? ''}-auth-token`;
-}
 
 /**
  * The account service of this deployment, or `null` when it was built

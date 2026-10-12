@@ -120,6 +120,8 @@
   --landing-stagger: 90ms;
   /* One beat of the CSS fallback orb, matching the simulated heart (about 65 bpm). */
   --landing-beat: 920ms;
+  /* How long the screen that waits for a kept session stays empty before saying it is working. */
+  --session-check-delay: 600ms;
   --totp-qr-size: 12rem;
 
   /* Shared surface language of the whole app (ADR-30). */

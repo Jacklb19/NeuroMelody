@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext, type AuthState } from './authContext';
 import type { AuthService } from './authService';
+import { SESSION_CHECK_TIMEOUT_MS } from './config';
+import { sessionMayExistHere } from './sessionHint';
 
 
 type ServiceLoader = () => Promise<AuthService | null>;
@@ -11,15 +13,19 @@ interface AuthProviderProps {
   readonly children: React.ReactNode;
   /** Injectable so tests run without Supabase. */
   readonly loadService?: ServiceLoader;
+  /** Whether this browser seems to keep a session; injectable for the same reason. */
+  readonly expectSession?: () => boolean;
 }
 
 /**
  * Holds the account session for every screen (RF-14). The Supabase client
- * loads after the first render, so the app never waits for it.
+ * loads after the first render. Someone without a kept session never waits
+ * for it; with one, the screens that depend on who is signed in hold back
+ * until it answers, for a bounded time (`isCheckingSession`).
  */
-export function AuthProvider({ children, loadService = defaultLoader }: AuthProviderProps): React.JSX.Element {
+export function AuthProvider({ children, loadService = defaultLoader, expectSession = sessionMayExistHere }: AuthProviderProps): React.JSX.Element {
   const [service, setService] = useState<AuthService | null>(null);
-  const [state, setState] = useState<AuthState>({ kind: 'loading' });
+  const [state, setState] = useState<AuthState>(() => ({ kind: 'loading', sessionExpected: expectSession() }));
   // Recovery lasts until the password changes, whatever session events arrive meanwhile.
   const recoveryRef = useRef(false);
 
@@ -57,6 +63,16 @@ export function AuthProvider({ children, loadService = defaultLoader }: AuthProv
       unsubscribe();
     };
   }, [loadService, read]);
+
+  const waiting = state.kind === 'loading' && state.sessionExpected;
+  useEffect(() => {
+    if (!waiting) return undefined;
+    // A service that does not answer (no network, a blocked download) must not leave a blank screen.
+    const timer = setTimeout(() => {
+      setState((current) => (current.kind === 'loading' ? { kind: 'loading', sessionExpected: false } : current));
+    }, SESSION_CHECK_TIMEOUT_MS);
+    return () => { clearTimeout(timer); };
+  }, [waiting]);
 
   const refresh = useCallback(async () => {
     if (service !== null) await read(service);

@@ -22,6 +22,9 @@ import { Layout } from './Layout';
 /** react-router pattern for any path no screen claims; it leads back home. */
 const UNKNOWN_PATH = '*';
 
+/** Where a sign-in lands (Google comes back here), so where the code of two-step verification is asked. */
+const SECOND_STEP_PATHS = [ROUTES.app];
+
 /** Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in screens have their own layouts. */
 export function AppRoutes(): React.JSX.Element {
   return (
@@ -31,32 +34,28 @@ export function AppRoutes(): React.JSX.Element {
       <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
       <Route path={ROUTE_SEGMENTS.forgotPassword} element={<ForgotPasswordPage />} />
       <Route path={ROUTE_SEGMENTS.resetPassword} element={<ResetPasswordPage />} />
-      <Route element={<Layout />}>
-        <Route
-          path={ROUTE_SEGMENTS.app}
-          element={
-            <RequireSecondStep>
-              <HomePage />
-            </RequireSecondStep>
-          }
-        />
-        <Route path={ROUTE_SEGMENTS.warnings} element={<WarningsPage />} />
-        <Route path={ROUTE_SEGMENTS.plan} element={<PlanPage />} />
-        <Route
-          path={ROUTE_SEGMENTS.session}
-          element={
-            <RequireWarnings>
-              <SessionPage />
-            </RequireWarnings>
-          }
-        />
-        <Route path={ROUTE_SEGMENTS.summary} element={<SessionSummaryPage />} />
-        <Route path={ROUTE_SEGMENTS.history} element={<HistoryPage />} />
-        <Route path={ROUTE_SEGMENTS.progress} element={<ProgressPage />} />
-        <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
-        <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
-        <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
-        <Route path={UNKNOWN_PATH} element={<Navigate to={ROUTES.home} replace />} />
+      {/* The code of two-step verification is asked above the layout, so nothing of the app shows before it. */}
+      <Route element={<RequireSecondStep paths={SECOND_STEP_PATHS} />}>
+        <Route element={<Layout />}>
+          <Route path={ROUTE_SEGMENTS.app} element={<HomePage />} />
+          <Route path={ROUTE_SEGMENTS.warnings} element={<WarningsPage />} />
+          <Route path={ROUTE_SEGMENTS.plan} element={<PlanPage />} />
+          <Route
+            path={ROUTE_SEGMENTS.session}
+            element={
+              <RequireWarnings>
+                <SessionPage />
+              </RequireWarnings>
+            }
+          />
+          <Route path={ROUTE_SEGMENTS.summary} element={<SessionSummaryPage />} />
+          <Route path={ROUTE_SEGMENTS.history} element={<HistoryPage />} />
+          <Route path={ROUTE_SEGMENTS.progress} element={<ProgressPage />} />
+          <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
+          <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
+          <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
+          <Route path={UNKNOWN_PATH} element={<Navigate to={ROUTES.home} replace />} />
+        </Route>
       </Route>
     </Routes>
   );
