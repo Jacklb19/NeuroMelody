@@ -260,4 +260,5 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Pruebas de navegador | Playwright 1.63.0 con Chrome y Edge instalados (S3). |
 | Licencia | MIT para el código. |
 | Cabeceras | COOP, COEP, CSP y HSTS en `vercel.json`, también aplicadas en el servidor de desarrollo de Vite. |
+| Dependencias del back en Vercel | Vercel instala las `dependencies` de `pyproject.toml` e ignora `requirements.txt` cuando existen los dos. Las dos listas llevan los mismos paquetes fijados y una prueba lo comprueba (12 oct). |
 | Media Session | Se probó solo con Web Audio; si el sistema no muestra controles, basta el botón fijo. |

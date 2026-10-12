@@ -73,6 +73,20 @@ const EVENTS: Readonly<Record<string, AuthEvent>> = {
 export interface ProjectAccess {
   readonly url: string;
   readonly anonKey: string;
+  /** Name under which the browser keeps the session (see `sessionStorageKey`). */
+  readonly storageKey: string;
+}
+
+/** What Supabase stores next to the session, by the ending of its storage name. */
+const SESSION_STORAGE_SUFFIXES = ['', '-code-verifier', '-user'];
+
+/** Forgets the session kept in this browser, without asking the server. */
+function forgetStoredSession(storageKey: string): void {
+  try {
+    for (const suffix of SESSION_STORAGE_SUFFIXES) window.localStorage.removeItem(`${storageKey}${suffix}`);
+  } catch {
+    // Without storage there is no session kept to forget.
+  }
 }
 
 /** Whether the project settings say Google sign-in is enabled; any doubt reads as "no". */
@@ -120,10 +134,19 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
     signIn: (email, password) => attempt(async () => {
       unwrap(await auth.signInWithPassword({ email, password }));
     }),
-    signOut: () => attempt(async () => {
-      const { error } = await auth.signOut();
-      if (error !== null) throw toAccountError(error);
-    }),
+    // Signing out must always work on this device. When the server cannot confirm it (the
+    // session may no longer exist there: adding two-step verification closes the sessions
+    // of the other devices), Supabase keeps the session stored, and the person would stay
+    // signed in with no way out. The stored session is then forgotten here.
+    signOut: async () => {
+      try {
+        const { error } = await auth.signOut();
+        if (error === null) return;
+      } catch {
+        // Handled below, like an error returned by Supabase.
+      }
+      forgetStoredSession(project.storageKey);
+    },
     requestPasswordReset: (email, resetUrl) => attempt(async () => {
       unwrap(await auth.resetPasswordForEmail(email, { redirectTo: resetUrl }));
     }),

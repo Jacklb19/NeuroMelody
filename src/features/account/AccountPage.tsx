@@ -41,7 +41,7 @@ export function AccountPage(): React.JSX.Element {
       <div className="profile-page profile-challenge">
         <h1>{t.account.totp.challengeTitle}</h1>
         <p className="secondary-text">{t.account.totp.challengeText}</p>
-        <SecondFactorChallenge service={service} onVerified={refresh} />
+        <SecondFactorChallenge service={service} onVerified={refresh} onSignedOut={refresh} />
       </div>
     );
   }

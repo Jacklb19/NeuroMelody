@@ -152,6 +152,8 @@ export const account = {
     added: 'Device added.',
     challengeTitle: 'Confirm it is you',
     challengeText: 'Enter the code your authenticator app is showing.',
+    /** Way out of the code step: the app works without an account. */
+    signOutInstead: 'I do not have the code: sign out',
     invalidFormat: (digits: number): string => `Enter the ${String(digits)} digits of the code.`,
   },
 };
