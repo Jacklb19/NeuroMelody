@@ -148,8 +148,8 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 - **Historial:** bajo el título, una línea dice dónde están las sesiones: solo en el dispositivo (con el enlace a lo que falta: entrar, activar los dos pasos o dar el consentimiento), sincronizando, o en el dispositivo y en la cuenta. Si falla, lo dice con el motivo y ofrece «Reintentar».
 - **Qué hace:** sube las sesiones del dispositivo que la nube no tiene, baja las que solo tiene la nube y las guarda en el dispositivo, e iguala la valoración final. Historial, resumen y «Tu progreso» siguen leyendo del dispositivo.
 - **Guardar:** al terminar una sesión se guarda primero en el dispositivo y se envía después; si el envío falla, no se pierde nada y se reintenta en la siguiente sincronización.
-- **Borrar:** con la sincronización activa, una sesión se borra primero de la nube. Si la nube no lo confirma, no se borra nada y se explica por qué. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
-- **Sin conexión:** la app sigue funcionando en el dispositivo; la cola de envíos pendientes llega con el bloque 16.
+- **Borrar:** una sesión se borra del dispositivo al instante, con o sin conexión. Si ya estaba en la cuenta, su borrado queda anotado en una cola (por cuenta, en el dispositivo) hasta que la nube lo confirme; la siguiente sincronización entrega la cola antes de leer la nube, así que una sesión borrada sin conexión no vuelve a aparecer. Mientras quede algún borrado en camino, la línea del historial lo dice. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
+- **Sin conexión (HU-09, bloque 16):** la sesión completa funciona sin red. Lo que se guardó, valoró o borró sin conexión sale solo cuando la conexión vuelve (el navegador avisa y la app sincroniza), y también al abrir el historial o con «Reintentar». Reenviar no duplica nada: cada sesión viaja con el id que le dio el dispositivo.
 
 ## Funciones todavía no activas
 
