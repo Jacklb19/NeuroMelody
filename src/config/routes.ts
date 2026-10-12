@@ -10,6 +10,7 @@ export const ROUTE_SEGMENTS = {
   summary: 'summary/:id',
   history: 'history',
   progress: 'progress',
+  report: 'report',
   diagnostics: 'diagnostics',
   account: 'account',
   privacy: 'privacy',
@@ -30,6 +31,8 @@ export const ROUTES = {
   history: `/${ROUTE_SEGMENTS.history}`,
   /** Evolution across the sessions saved on the device. */
   progress: `/${ROUTE_SEGMENTS.progress}`,
+  /** Printable summary of a range of sessions, to share with whoever accompanies the person. */
+  report: `/${ROUTE_SEGMENTS.report}`,
   diagnostics: `/${ROUTE_SEGMENTS.diagnostics}`,
   /** Profile: summary and settings of the person, with or without an account. */
   account: `/${ROUTE_SEGMENTS.account}`,
@@ -45,6 +48,8 @@ export const ROUTES = {
 export const QUERY_PARAMS = {
   duration: 'duration',
   goals: 'goals',
+  /** Which sessions the report covers: an id of the progress range catalog. */
+  range: 'range',
 } as const;
 
 /** Absolute URL of a route, for the links the identity provider sends or returns to. */
@@ -55,6 +60,11 @@ export function absoluteUrl(origin: string, route: string): string {
 /** Summary of one saved session. */
 export function summaryPath(id: string): string {
   return `/summary/${encodeURIComponent(id)}`;
+}
+
+/** The report of a range of sessions (an id of the progress range catalog). */
+export function reportPath(range: string): string {
+  return `${ROUTES.report}?${new URLSearchParams({ [QUERY_PARAMS.range]: range }).toString()}`;
 }
 
 /** Separator between goal ids in the URL; mirrors `GOALS_SEPARATOR` of the goal catalog. */
