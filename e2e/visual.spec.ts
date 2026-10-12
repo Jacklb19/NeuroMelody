@@ -46,7 +46,7 @@ for (const width of [360, 768, 1280]) {
     const stop = page.getByRole('button', { name: playback.stop, exact: true });
     await expect(stop).toBeVisible();
     await expect(stop).toBeDisabled();
-    await expect(page.getByText(es.session.stage.confidence)).toBeVisible();
+    await expect(page.getByText(es.session.stage.modelReady)).toBeVisible();
     await expect(page.getByTestId('activation-state')).toHaveText(es.adaptation.states.calibrating);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 

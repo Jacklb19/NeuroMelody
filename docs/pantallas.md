@@ -11,12 +11,13 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | Ruta | Pantalla | Propósito | HU | RF | Sprint | ¿Requiere sesión? | Lleva a |
 |---|---|---|---|---|---|---|---|
 | `/` | Portada | Página pública (ADR-28): qué es NeuroMelody, cómo funciona su lazo, fuentes de señal, privacidad y tecnología, con escena 3D animada y acceso a la app. Diseño propio, fuera del `Layout` de la app. | — | — | Portada | No | `/app`, `/plan`, `/account`, `/privacy`, `/diagnostics` |
-| `/app` | Inicio de la app | Punto de entrada de la app: iniciar una sesión de escucha y acceder al plan, al historial y a la cuenta. | — | — | S3 (antes en `/`) | No | `/warnings` (si no se aceptaron), `/plan`, `/session`, `/history`, `/account`, `/privacy` |
+| `/app` | Inicio de la app | Punto de entrada de la app: iniciar una sesión de escucha y acceder al plan, al historial, al progreso y a la cuenta. | — | — | S3 (antes en `/`) | No | `/warnings` (si no se aceptaron), `/plan`, `/session`, `/history`, `/progress`, `/account`, `/privacy` |
 | `/warnings` | Advertencias de uso | Presentar el carácter no clínico de la aplicación y registrar la aceptación explícita antes de la primera sesión. | — | RF-17 | S3 | No (se guarda en el dispositivo y se sincroniza en `profiles` si hay cuenta) | `/plan`, `/session`, `/privacy` |
 | `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. En S6 se suma la propuesta del modelo de lenguaje. | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | No para el plan manual; sí para pedir la propuesta al modelo | `/session`, `/` |
 | `/session` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | No | `/summary/:id` (al terminar), `/` |
 | `/summary/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | No para los indicadores locales; sí para el texto del modelo y la sincronización | `/history`, `/` |
-| `/history` | Historial | Revisar sesiones anteriores y la evolución de los indicadores; borrar sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/summary/:id`, `/` |
+| `/history` | Historial | Revisar sesiones anteriores y borrarlas; lleva a la evolución entre sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/summary/:id`, `/progress`, `/` |
+| `/progress` | Tu progreso | Ver cómo cambian entre sesiones el pulso, la variación entre latidos y la autovaloración, al empezar y al terminar (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 11 | No: usa las sesiones guardadas en el dispositivo | `/plan`, `/history` (por la cabecera) |
 | `/account` | Perfil | Resumen y ajustes de la persona (ADR-30): actividad en el dispositivo, seguridad (contraseña y verificación en dos pasos), privacidad, cerrar sesión. Sin cuenta, invita a crear una. Se abre desde el avatar de la cabecera. | — | RF-14 | S6 | No (sin cuenta muestra la actividad local) | `/login`, `/register`, `/privacy`, `/history` |
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
@@ -34,8 +35,10 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `SignalPanel` (`src/features/signal/`) | S2 | `/session`, detalles técnicos |
 | `MusicalStatePanel` (`src/features/adaptation/`) | S4 | `/session`, detalles técnicos |
 | `SessionCheckIn` (`src/features/session/`) | S6.1 | `/session`, escenario de escucha: valoración antes de empezar y enlace al resumen al detener |
+| `BreathingGuide` (`src/features/session/breathing/`) | Bloque 10 (ADR-33) | `/session`, escenario de escucha, bajo el orbe: botón para activar la respiración guiada y la palabra que la acompaña |
 | `SessionSummaryPage` (`src/features/summary/`) | S6.1 | `/summary/:id` |
 | `HistoryPage` (`src/features/history/`) | S6.1 | `/history` |
+| `ProgressPage` y `BeforeAfterChart` (`src/features/progress/`) | Bloque 11 (ADR-33) | `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
 
@@ -52,6 +55,17 @@ De arriba abajo:
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
 
+## Respiración guiada en `/session` (ADR-33)
+
+Vive en el escenario de escucha, bajo el orbe. No añade ruta ni pantalla.
+
+- **Activarla:** un botón en píldora «Respirar con la música», que la persona enciende y apaga cuando quiere. Empieza encendida solo si en el plan eligió «Acompañar una respiración lenta»; en cualquier otro caso empieza apagada.
+- **Qué hace:** el orbe crece al inhalar y se recoge al exhalar, y debajo se lee «Inhala» o «Exhala». El orbe sigue latiendo con el pulso mientras guía la respiración.
+- **Ritmo:** se cuenta en tiempos de la música (inhalar 4, exhalar 6), así que la respiración se hace más lenta cuando la música baja el paso. Sin música sonando usa el tempo con el que empieza toda sesión. Sigue el tempo de la música, no el golpe exacto de cada compás: el motor de audio no se toca.
+- **Reducir movimiento:** el orbe queda quieto y la palabra sola marca el cambio.
+- **Lectores de pantalla:** la palabra se anuncia al cambiar, porque es la función que la persona activó.
+- **Límites:** no cambia la música ni el estado estimado, no se guarda con la sesión y no promete ningún efecto.
+
 ## Objetivos del plan (HU-07, ADR-27)
 
 En `/plan`, antes de la duración, un grupo de casillas opcionales con los objetivos del catálogo (`goalCatalog.ts`): Relajarme, Descansar antes de dormir, Recuperar la calma después de una actividad, Acompañar una respiración lenta y Tomar una pausa para mí. Viajan a `/session` en el parámetro `goals`, se guardan con la sesión y aparecen en el resumen y en el historial («Sin objetivos elegidos» si no hay).
@@ -59,8 +73,20 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
 - **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. El texto del modelo de lenguaje aparece como «Resumen automático pendiente» hasta S6.4.
-- **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, evolución entre sesiones y borrado de una sesión o de todo el historial, siempre con confirmación.
-- Sin cuenta: todo vive en IndexedDB. La sincronización con la nube llega en S6.2, con segundo factor. Estimador de entrega: reglas R-05, sin ONNX (limitación RF-07, ADR-14).
+- **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, una tarjeta que lleva a «Tu progreso» y borrado de una sesión o de todo el historial, siempre con confirmación.
+- Sin cuenta, todo vive en IndexedDB. Con cuenta, verificación en dos pasos y consentimiento, las sesiones se sincronizan con la nube (ver «Sincronización»). El estado lo estima el clasificador entrenado, con las reglas como respaldo (ADR-32).
+
+## `/progress`, «Tu progreso» (ADR-33, solo en el dispositivo)
+
+Se llega desde «Tu actividad» en el inicio y desde la tarjeta del historial; no está en la cabecera. De arriba abajo:
+
+1. **Qué sesiones se muestran:** tres botones en píldora, «Últimas 7», «Últimas 30» (por defecto) y «Todas». Todo lo que hay debajo responde a esa elección.
+2. **Totales:** sesiones, minutos escuchados y desde qué fecha.
+3. **Una tarjeta por tema** («Tu pulso», «Variación entre latidos», «Cómo te sentías»): título, una línea que explica qué es, una frase que cuenta en cuántas sesiones el valor terminó más bajo o más alto que al empezar, y una gráfica con dos líneas, «Al empezar» y «Al terminar», de la sesión más antigua a la más reciente. Una sesión sin datos deja un hueco en la línea. Al señalar una sesión, o al recorrerlas con las flechas del teclado, se leen sus dos valores.
+4. **Los mismos datos en una tabla**, plegada por defecto.
+5. **Aviso** de que son indicadores descriptivos.
+
+Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de que la evolución aparece a partir de la segunda. Cuando haya sincronización (bloque 12), las sesiones de la nube entran por la misma lista.
 
 ## Rediseño de la app (ADR-30)
 
@@ -74,9 +100,19 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 
 - **Cuenta sin sesión:** pestañas «Entrar», «Crear cuenta» (confirmación por correo) y «Recuperar contraseña» (enlace que abre `/account?mode=recovery` con el formulario de contraseña nueva).
 - **Con sesión y un dispositivo verificado:** antes de mostrar nada se pide el código TOTP (aal1 → aal2).
-- **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» queda deshabilitado con su motivo hasta que exista la API.
-- **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización, guardada en el dispositivo hasta que la API la lleve a `profiles`.
+- **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» pide confirmación, borra la cuenta y todo lo que guarda en la nube, y cierra la sesión; las sesiones del dispositivo no se tocan.
+- **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización. Sin cuenta, la respuesta se queda en el dispositivo; con cuenta, se guarda en `profiles` y es la única que vale.
 
-## Funciones todavía no activas — propuesta S5–S7
+## Sincronización de sesiones (RF-14, ADR-34)
+
+No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la sesión pasó la verificación en dos pasos y la persona dio su consentimiento en `/privacy`.
+
+- **Historial:** bajo el título, una línea dice dónde están las sesiones: solo en el dispositivo (con el enlace a lo que falta: entrar, activar los dos pasos o dar el consentimiento), sincronizando, o en el dispositivo y en la cuenta. Si falla, lo dice con el motivo y ofrece «Reintentar».
+- **Qué hace:** sube las sesiones del dispositivo que la nube no tiene, baja las que solo tiene la nube y las guarda en el dispositivo, e iguala la valoración final. Historial, resumen y «Tu progreso» siguen leyendo del dispositivo.
+- **Guardar:** al terminar una sesión se guarda primero en el dispositivo y se envía después; si el envío falla, no se pierde nada y se reintenta en la siguiente sincronización.
+- **Borrar:** con la sincronización activa, una sesión se borra primero de la nube. Si la nube no lo confirma, no se borra nada y se explica por qué. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
+- **Sin conexión:** la app sigue funcionando en el dispositivo; la cola de envíos pendientes llega con el bloque 16.
+
+## Funciones todavía no activas
 
 Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Groq pendiente conserva plan manual/resumen de indicadores con «Resumen automático pendiente». Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).

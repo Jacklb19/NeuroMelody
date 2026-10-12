@@ -8,19 +8,27 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 |---|---|---|---|---|
 | 1 | S0–S4 | front | Adquisición, hilo de señal, síntesis, lazo de adaptación | Cerrados |
 | 2 | S5 Bluetooth y LF/HF | front | RF-01, RF-03, RF-06, RF-12; HU-01, RNF-10 | Cerrado: prueba manual con nRF Connect superada (`prueba-ble.md`) |
-| 3 | Limpieza y separación de repos | ambos | ADR-19 a ADR-24 | Hecho |
-| 4 | Cámara del celular | front | Propuesta P-01: prototipo en `/diagnostics` y, si funciona, cuarta fuente de señal | Pendiente |
-| 5 | Vista sencilla de la sesión | front | ADR-24 | Pendiente |
-| 6 | S6.1 Sesiones locales | front + back | RF-14 (local), RF-15, RF-16; HU-07, HU-08, HU-10; autovaloración (ADR-23) | Pendiente |
-| 7 | S6.2 Cuenta, API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19. Correo, TOTP completo, JWT, migraciones RLS/aal2, sesiones idempotentes, borrado y `docs/autenticacion.md` | Pendiente |
-| 8 | S6.3 Google | back + front | Google por redirección y revisión integrada | Pendiente |
-| 9 | S6.4 Modelo de lenguaje | back + front | RF-13, RF-15; ADR-08. Plan propuesto y resumen con esquema cerrado | Pendiente |
-| 10 | S7.1 Sin conexión | front | HU-09, RNF-08. Sesión completa sin red y cola de sincronización sin duplicados | Pendiente |
-| 11 | S7.2 Accesibilidad y rendimiento | front | RNF-01 a RNF-06, RNF-09, RNF-10 | Pendiente |
-| 12 | S7.3 Cierre | ambos | Matriz final, pruebas completas, documentación y demo | Pendiente |
-| 13 | Publicación | ambos | Push del usuario, vista previa y producción, comprobaciones reales | Pendiente |
+| 3 | Limpieza y separación de repos | ambos | ADR-19 a ADR-26 | Hecho |
+| 4 | Cámara del celular | front | Propuesta P-01: prototipo en `/diagnostics` y cuarta fuente «experimental» | Hecho; falta la prueba del usuario en su celular para quitar la etiqueta |
+| 5 | Vista sencilla de la sesión | front | ADR-24 | Hecho |
+| 6 | S6.1 Sesiones locales | front | RF-14 (local), RF-15, RF-16; HU-07, HU-08, HU-10; autovaloración (ADR-23) y objetivos (ADR-27) | Hecho |
+| 7 | Portada, rediseño, temas e idiomas | front | ADR-28, ADR-30, ADR-31 | Hecho |
+| 8 | Cuenta en el navegador y Google (S6.2 front, S6.3) | front | ADR-29, ADR-30: registro, inicio de sesión, recuperación, dos pasos, Google, perfil | Hecho; falta la prueba del usuario contra Supabase real |
+| 9 | Clasificador entrenado | front + back | RF-07; ADR-32, `modelo.md` | Hecho |
+| 10 | Respiración guiada | front | ADR-33 (1): el orbe marca un ritmo lento de inhalar y exhalar durante la sesión | Hecho: opcional, al tempo de la música (4 tiempos al inhalar, 6 al exhalar); falta que el usuario la pruebe con música y con «reducir movimiento» |
+| 11 | Tu progreso | front | ADR-33 (2): evolución entre sesiones de pulso, variabilidad y autovaloración | Hecho: `/progress` con las sesiones del dispositivo; falta la revisión del usuario con sesiones reales |
+| 12 | S6.2 API y sincronización | back + front | RF-14; ADR-10, ADR-18, ADR-19, ADR-34. JWT con PyJWT, `aal2`, migración, sesiones idempotentes, borrado de sesión y de cuenta, sincronización en el front | Hecho en local, con pruebas. Falta del usuario: aplicar la migración en Supabase, desplegar el back, poner su URL en el front (`VITE_API_BASE_URL` y `connect-src`) y probar con una cuenta real |
+| 13 | Informe para el terapeuta | front | ADR-33 (4): resumen imprimible de un periodo | Pendiente |
+| 14 | Recolección de datos y reentrenamiento | front + back | ADR-33 (3): protocolo guiado con etiquetas, consentimiento, exportación y nueva versión del modelo | Pendiente; después del bloque 12 |
+| 15 | S6.4 Modelo de lenguaje | back + front | RF-13, RF-15; ADR-08. Plan propuesto y resumen con esquema cerrado | Pendiente |
+| 16 | S7.1 Sin conexión | front | HU-09, RNF-08. Sesión completa sin red y cola de sincronización sin duplicados | Pendiente |
+| 17 | Paisaje sonoro | front | ADR-33 (5): elegir entre dos o tres timbres o ambientes; toca el motor de audio | Pendiente |
+| 18 | Recordatorios | front | ADR-33 (6): aviso a la hora elegida, donde el navegador lo permita | Pendiente |
+| 19 | S7.2 Accesibilidad y rendimiento | front | RNF-01 a RNF-06, RNF-09, RNF-10 | Pendiente |
+| 20 | S7.3 Cierre | ambos | Matriz final, pruebas completas, documentación y demo | Pendiente |
+| 21 | Publicación | ambos | Push del usuario, vista previa y producción, comprobaciones reales | Continua: el front se publica en `neruomelody.vercel.app` desde `main` |
 
-**Ruta crítica:** sesión local → cuenta/TOTP/API/RLS/aal2 → sincronización → sin conexión → validación → publicación. La cámara y la vista sencilla no la bloquean. El agente no recorta alcance por su cuenta.
+**Ruta crítica:** API/RLS/aal2 → sincronización → sin conexión → validación → cierre. Los bloques 10, 11 y 13 son cortos y no dependen del back, por eso van antes o entre medias; el 14 necesita la API; el 17 y el 18 son los más costosos o menos fiables y van al final. El agente no recorta alcance por su cuenta.
 
 ## Recursos que aporta el usuario
 
@@ -45,12 +53,13 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | RF-01, RF-03 | Verificados con pruebas automáticas y con un periférico emulado (nRF Connect): emparejamiento, recepción y reconexión. Falta una banda real. |
 | RF-02, RF-04, RF-05 | Verificados (simulador con cinco escenarios, filtro, calidad e índices). |
 | RF-06 | Verificado con referencias sintéticas. |
-| RF-07 | **Limitado** (ADR-14): estimador por reglas, sin clasificador entrenado. |
+| RF-07 | Cumplido con un clasificador entrenado con WESAD (ADR-32, `docs/modelo.md`); reglas como respaldo. Sin validación clínica. |
 | RF-08, RF-09, RF-10 | Verificados con pruebas y escucha del usuario. |
 | RF-11, RF-17, RF-18 | Verificados; quedan comprobaciones manuales de accesibilidad y nivel acústico. |
 | RF-12 | Verificado, incluido LF/HF. |
 | RF-13 | Plan manual hecho; propuesta por modelo en S6.4. |
-| RF-14, RF-15, RF-16 | Pendientes en S6 y S7. |
+| RF-14 | Implementado: sesiones en el dispositivo y, con cuenta, dos pasos y consentimiento, también en la nube. Verificado con pruebas automáticas y con la migración en una base local; falta la prueba con el proyecto real. |
+| RF-15, RF-16 | Hechos en el dispositivo (resumen, CSV, historial y «Tu progreso»); falta el texto del modelo de lenguaje (bloque 15). |
 
 | HU | Estado |
 |---|---|
@@ -59,7 +68,8 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | HU-03 | 30 min sin subdesbordamientos (S3); falta medir el inicio < 1 s en vista previa. |
 | HU-05 | Cumplida; revisión de rendimiento en S7. |
 | HU-07 | Plan manual hecho; falta la propuesta del modelo. |
-| HU-08, HU-09, HU-10 | Pendientes en S6 y S7. |
+| HU-08, HU-10 | Cumplidas en el dispositivo; HU-08 espera el resumen del modelo de lenguaje. |
+| HU-09 | Pendiente (bloque 16, sin conexión). |
 
 ## Riesgos
 

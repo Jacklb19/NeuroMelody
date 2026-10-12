@@ -26,6 +26,7 @@ export const home = {
     sessions: 'Sesiones',
     minutes: 'Minutos escuchados',
     seeHistory: 'Ver historial',
+    seeProgress: 'Ver tu progreso',
   },
   last: {
     title: 'Tu última sesión',

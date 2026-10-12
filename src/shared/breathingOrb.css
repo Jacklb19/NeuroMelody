@@ -9,13 +9,21 @@
   inset: 22%;
   background: radial-gradient(circle at 36% 30%, var(--orb-highlight), var(--orb-colour) 46%, var(--orb-shade) 100%);
   box-shadow: inset 0 0 0.12em var(--orb-highlight), 0 0 0.35em color-mix(in srgb, var(--orb-colour) 45%, transparent);
-  transition: background var(--orb-tone-duration) ease;
+  transition: background var(--orb-tone-duration) ease, scale var(--orb-guided-settle) linear;
   animation: orb-breathe var(--orb-breath) ease-in-out infinite;
 }
-.orb-glow { inset: 6%; background: radial-gradient(circle, color-mix(in srgb, var(--orb-colour) 38%, transparent), transparent 68%); animation: orb-breathe var(--orb-breath) ease-in-out infinite reverse; }
+.orb-glow { inset: 6%; background: radial-gradient(circle, color-mix(in srgb, var(--orb-colour) 38%, transparent), transparent 68%); transition: scale var(--orb-guided-settle) linear; animation: orb-breathe var(--orb-breath) ease-in-out infinite reverse; }
 .orb-ring { border: var(--border-width) solid color-mix(in srgb, var(--orb-colour) 55%, transparent); }
 .orb-ring-outer { inset: 0; animation: orb-spin var(--orb-spin) linear infinite; border-style: dashed; opacity: 0.5; }
 .orb-ring-inner { inset: 11%; opacity: 0.7; }
+/*
+ * Guided breath: the orb's own breath stops and its size follows the fullness set from the session.
+ * `scale` leaves `transform` free, so the orb still beats; the short transition smooths switching the guide on and off.
+ */
+.orb[data-guided] .orb-core, .orb[data-guided] .orb-glow {
+  animation: none;
+  scale: calc(var(--orb-guided-min) + (var(--orb-guided-max) - var(--orb-guided-min)) * var(--orb-breath-fullness, 0));
+}
 @keyframes orb-breathe { 0%, 100% { transform: scale(0.97); } 50% { transform: scale(1.03); } }
 @keyframes orb-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {

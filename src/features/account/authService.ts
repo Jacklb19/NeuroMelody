@@ -89,4 +89,10 @@ export interface AuthService {
   /** Verifies a code: finishes an enrollment or raises the session to `aal2`. */
   verifyTotp(factorId: string, code: string): Promise<void>;
   removeTotp(factorId: string): Promise<void>;
+  /** The token the API verifies (ADR-19); `null` when nobody is signed in. */
+  accessToken(): Promise<string | null>;
+  /** The instant the person agreed to sync, from their profile (ADR-18); `null` without consent. */
+  syncConsent(): Promise<string | null>;
+  /** Records the consent in the profile, or withdraws it with `null`. */
+  setSyncConsent(givenAt: string | null): Promise<void>;
 }

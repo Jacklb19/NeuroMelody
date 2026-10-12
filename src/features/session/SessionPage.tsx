@@ -14,6 +14,7 @@ import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
+import { loadActivationModel } from '../adaptation/classifier/activationModel';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
 import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
@@ -26,6 +27,8 @@ import { SessionStage } from './SessionStage';
 import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
+import { BreathingGuide } from './breathing/BreathingGuide';
+import { BREATHING_GOAL } from './breathing/breathingPattern';
 import './session.css';
 
 /**
@@ -48,7 +51,9 @@ export function SessionPage(): React.JSX.Element {
   const [adaptation] = useState(() => new AdaptationSession());
   const [recorder] = useState(() => new SessionRecorder());
   const [elapsedS, setElapsedS] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  // The engine while the music plays; the breathing guide follows its tempo.
+  const [engine, setEngine] = useState<AudioEngine | null>(null);
+  const playing = engine !== null;
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The cause is kept as is and translated when shown.
@@ -75,10 +80,10 @@ export function SessionPage(): React.JSX.Element {
     );
   }, [recorder, store]);
 
-  const handleEngineChange = useCallback((engine: AudioEngine | null): void => {
-    adaptation.setAudio(engine);
-    setPlaying(engine !== null);
-    if (engine === null) {
+  const handleEngineChange = useCallback((next: AudioEngine | null): void => {
+    adaptation.setAudio(next);
+    setEngine(next);
+    if (next === null) {
       finishRecording();
       return;
     }
@@ -122,6 +127,15 @@ export function SessionPage(): React.JSX.Element {
     setRatingBefore(rating);
   }, []);
 
+  // The trained classifier arrives a moment after the screen; until then, and if it fails, the rules estimate.
+  useEffect(() => {
+    let cancelled = false;
+    void loadActivationModel().then((model) => {
+      if (!cancelled && model !== null) adaptation.setModel(model);
+    });
+    return () => { cancelled = true; };
+  }, [adaptation]);
+
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);
 
@@ -137,12 +151,15 @@ export function SessionPage(): React.JSX.Element {
       </PageHeading>
 
       <div className="listening-stage">
-        <SessionOrb
-          session={adaptation}
-          connection={connection}
-          progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
-          orbRef={orbRef}
-        />
+        <div className="orb-column">
+          <SessionOrb
+            session={adaptation}
+            connection={connection}
+            progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
+            orbRef={orbRef}
+          />
+          <BreathingGuide startActive={goals.includes(BREATHING_GOAL)} engine={engine} orbRef={orbRef} />
+        </div>
         <div className="stage-main">
           <SessionStage session={adaptation} connection={connection} playing={playing} />
           <SessionCheckIn

@@ -1,9 +1,15 @@
 import { useImperativeHandle, useRef, type Ref } from 'react';
 import './breathingOrb.css';
 
-/** What a caller can ask of the orb: swell once, as on a heartbeat. */
+/** What a caller can ask of the orb. */
 export interface OrbHandle {
+  /** Swell once, as on a heartbeat. */
   beat(): void;
+  /**
+   * Follow a guided breath: 0 is the end of breathing out and 1 the end of
+   * breathing in. `null` hands the orb back to its own slow breath.
+   */
+  breathe(fullness: number | null): void;
 }
 
 /** Tone of the orb; `idle` breathes slowly on its own. Mirrors the estimated states without alarm colours. */
@@ -22,6 +28,8 @@ const BEAT_KEYFRAMES: Keyframe[] = [
   { transform: 'scale(1)', offset: 1 },
 ];
 const BEAT_DURATION_MS = 620;
+/** Read by breathingOrb.css to size the orb while it follows a guided breath. */
+const BREATH_FULLNESS_PROPERTY = '--orb-breath-fullness';
 
 /**
  * The living figure of the app: a soft sphere inside the rings of a staff.
@@ -30,8 +38,21 @@ const BEAT_DURATION_MS = 620;
  */
 export function BreathingOrb({ tone = 'idle', ref, className }: BreathingOrbProps): React.JSX.Element {
   const coreRef = useRef<HTMLSpanElement | null>(null);
+  const rootRef = useRef<HTMLSpanElement | null>(null);
 
   useImperativeHandle(ref, () => ({
+    breathe(fullness) {
+      const root = rootRef.current;
+      if (root === null) return;
+      // Written straight to the element: it changes every frame and must not re-render the screen.
+      if (fullness === null) {
+        delete root.dataset.guided;
+        root.style.removeProperty(BREATH_FULLNESS_PROPERTY);
+        return;
+      }
+      root.dataset.guided = '';
+      root.style.setProperty(BREATH_FULLNESS_PROPERTY, String(fullness));
+    },
     beat() {
       const core = coreRef.current;
       // Older engines lack Web Animations; reduced motion keeps the orb still.
@@ -42,7 +63,7 @@ export function BreathingOrb({ tone = 'idle', ref, className }: BreathingOrbProp
   }), []);
 
   return (
-    <span className={className === undefined ? 'orb' : `orb ${className}`} data-tone={tone} aria-hidden="true">
+    <span className={className === undefined ? 'orb' : `orb ${className}`} data-tone={tone} aria-hidden="true" ref={rootRef}>
       <span className="orb-ring orb-ring-outer" />
       <span className="orb-ring orb-ring-inner" />
       <span className="orb-glow" />

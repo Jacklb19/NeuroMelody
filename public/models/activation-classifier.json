@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "kind": "multinomial_logistic_regression",
+  "trainedAt": "2026-10-11",
+  "dataset": {
+    "name": "WESAD",
+    "citation": "Schmidt, Reiss, Duerichen, Marberger, Van Laerhoven. Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. ICMI 2018.",
+    "subjects": 15,
+    "examplesPerClass": {
+      "low": 1296,
+      "uncertain": 3720,
+      "high": 1706
+    }
+  },
+  "features": [
+    "ln_heart_rate_ratio",
+    "ln_rmssd_ratio",
+    "ln_sdnn_ratio"
+  ],
+  "classes": [
+    "low",
+    "uncertain",
+    "high"
+  ],
+  "mean": [
+    0.069723,
+    -0.221148,
+    -0.086458
+  ],
+  "scale": [
+    0.198731,
+    0.615742,
+    0.293796
+  ],
+  "weights": [
+    [
+      -1.890225,
+      -0.296895,
+      0.428247
+    ],
+    [
+      -2.265925,
+      -1.738041,
+      -0.147195
+    ],
+    [
+      4.156151,
+      2.034936,
+      -0.281052
+    ]
+  ],
+  "bias": [
+    -0.071947,
+    0.51724,
+    -0.445293
+  ],
+  "temperature": 1.4928,
+  "metrics": {
+    "evaluation": "leave-one-subject-out",
+    "model": {
+      "balancedAccuracy": 0.7187,
+      "macroF1": 0.7062,
+      "f1ByClass": {
+        "low": 0.531,
+        "uncertain": 0.7736,
+        "high": 0.8139
+      },
+      "confusionMatrix": [
+        [
+          780,
+          429,
+          87
+        ],
+        [
+          741,
+          2736,
+          243
+        ],
+        [
+          121,
+          188,
+          1397
+        ]
+      ]
+    },
+    "currentRules": {
+      "balancedAccuracy": 0.6235,
+      "macroF1": 0.6434,
+      "f1ByClass": {
+        "low": 0.4771,
+        "uncertain": 0.7809,
+        "high": 0.6723
+      },
+      "confusionMatrix": [
+        [
+          468,
+          670,
+          158
+        ],
+        [
+          198,
+          3194,
+          328
+        ],
+        [
+          0,
+          596,
+          1110
+        ]
+      ]
+    },
+    "randomForestReference": {
+      "balancedAccuracy": 0.6587,
+      "macroF1": 0.6532,
+      "f1ByClass": {
+        "low": 0.4925,
+        "uncertain": 0.7332,
+        "high": 0.7338
+      },
+      "confusionMatrix": [
+        [
+          644,
+          567,
+          85
+        ],
+        [
+          599,
+          2674,
+          447
+        ],
+        [
+          76,
+          333,
+          1297
+        ]
+      ]
+    },
+    "balancedAccuracyBySubject": {
+      "S2": 0.3386,
+      "S3": 0.7813,
+      "S4": 0.434,
+      "S5": 0.8354,
+      "S6": 0.7833,
+      "S7": 0.9179,
+      "S8": 0.9535,
+      "S9": 0.6815,
+      "S10": 0.7079,
+      "S11": 0.6667,
+      "S13": 1.0,
+      "S14": 0.6298,
+      "S15": 0.718,
+      "S16": 0.5898,
+      "S17": 0.7
+    },
+    "reliabilityBeforeCalibration": [
+      {
+        "from": 0.0,
+        "to": 0.5,
+        "examples": 548,
+        "meanConfidence": 0.4772,
+        "accuracy": 0.4982
+      },
+      {
+        "from": 0.5,
+        "to": 0.7,
+        "examples": 3538,
+        "meanConfidence": 0.5992,
+        "accuracy": 0.7176
+      },
+      {
+        "from": 0.7,
+        "to": 0.85,
+        "examples": 987,
+        "meanConfidence": 0.7626,
+        "accuracy": 0.7457
+      },
+      {
+        "from": 0.85,
+        "to": 1.0,
+        "examples": 1649,
+        "meanConfidence": 0.9558,
+        "accuracy": 0.8278
+      }
+    ],
+    "reliability": [
+      {
+        "from": 0.0,
+        "to": 0.5,
+        "examples": 1383,
+        "meanConfidence": 0.4662,
+        "accuracy": 0.5965
+      },
+      {
+        "from": 0.5,
+        "to": 0.7,
+        "examples": 3430,
+        "meanConfidence": 0.5697,
+        "accuracy": 0.7493
+      },
+      {
+        "from": 0.7,
+        "to": 0.85,
+        "examples": 825,
+        "meanConfidence": 0.7764,
+        "accuracy": 0.6521
+      },
+      {
+        "from": 0.85,
+        "to": 1.0,
+        "examples": 1084,
+        "meanConfidence": 0.9413,
+        "accuracy": 0.9041
+      }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import { CALIBRATION_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import type { ActivationState } from './activationStates';
+import { predictActivation, type ActivationModel } from './classifier/activationModel';
 import {
   CALIBRATION_MS,
   HEART_RATE_CHANGE,
@@ -25,12 +26,18 @@ export interface AdaptationSnapshot {
   readonly calibrated: boolean;
   readonly baselineReadings: number;
   readonly qualityGood: boolean;
+  /** Who estimated the accepted state: the trained model, or the rules when no model is loaded. */
+  readonly estimator: EstimatorKind;
+  /** Calibrated probability the model gives the accepted state; `null` with the rules, which have none. */
+  readonly confidence: number | null;
   readonly level: LevelId;
   readonly waitingForDwell: boolean;
   readonly lastTransition: TransitionTiming | null;
 }
 
-/** Provisional, uncalibrated rules approved for S4; not physiological thresholds. */
+export type EstimatorKind = 'model' | 'rules';
+
+/** Provisional, uncalibrated rules (ADR-12); the fallback when the trained model is unavailable. */
 export function estimateState(hr: number, rmssd: number, baseHr: number, baseRmssd: number): ActivationState {
   const hrRatio = hr / baseHr;
   const rmssdRatio = rmssd / baseRmssd;
@@ -39,12 +46,22 @@ export function estimateState(hr: number, rmssd: number, baseHr: number, baseRms
   return 'uncertain';
 }
 
-/** Pure guidance: signal time calibrates; the audio clock governs dwell time. */
+/**
+ * Pure guidance: signal time calibrates; the audio clock governs dwell time.
+ * The state of each reading comes from the trained classifier (ADR-32) when
+ * one is given, and from the rules otherwise; hysteresis, dwell and the
+ * musical steps are the same for both.
+ */
 export class AdaptationEngine {
+  #model: ActivationModel | null;
   #lastTimeMs = -1;
   #sumHr = 0;
   #sumRmssd = 0;
+  #sumSdnn = 0;
+  #sdnnCount = 0;
   #count = 0;
+  #confidence: number | null = null;
+  #acceptedConfidence: number | null = null;
   #calibrated = false;
   #qualityGood = false;
   #candidate: ActivationState | null = null;
@@ -58,9 +75,19 @@ export class AdaptationEngine {
   #criteriaReadyS: number | null = null;
   #lastTransition: TransitionTiming | null = null;
 
+  constructor(model: ActivationModel | null = null) {
+    this.#model = model;
+  }
+
+  /** Swaps the estimator, for example when the model finishes loading mid-session. */
+  setModel(model: ActivationModel | null): void {
+    this.#model = model;
+  }
+
   get snapshot(): AdaptationSnapshot {
     return { state: this.#accepted, calibrated: this.#calibrated,
       baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
+      estimator: this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
         this.#accepted !== 'high' && nextLevel(this.#level) !== null &&
         this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
@@ -90,7 +117,7 @@ export class AdaptationEngine {
     if (!Number.isFinite(result.timeMs) || result.timeMs <= this.#lastTimeMs) return null;
     this.#lastTimeMs = result.timeMs;
     this.#audioTimeS = audioTime;
-    const { meanHr, rmssd } = result;
+    const { meanHr, rmssd, sdnn } = result;
     this.#qualityGood = result.quality === 'good' && meanHr !== null && rmssd !== null &&
       Number.isFinite(meanHr) && Number.isFinite(rmssd) && meanHr > 0 && rmssd > 0;
     if (!this.#calibrated) {
@@ -98,13 +125,18 @@ export class AdaptationEngine {
         this.#sumHr += meanHr;
         this.#sumRmssd += rmssd;
         this.#count++;
+        if (sdnn !== null && Number.isFinite(sdnn) && sdnn > 0) {
+          this.#sumSdnn += sdnn;
+          this.#sdnnCount++;
+        }
       }
       this.#calibrated = result.timeMs >= CALIBRATION_MS && this.#count >= MIN_BASELINE_READINGS;
       if (!this.#calibrated) return null;
     }
     const state = this.#qualityGood && meanHr !== null && rmssd !== null
-      ? estimateState(meanHr, rmssd, this.#sumHr / this.#count, this.#sumRmssd / this.#count)
+      ? this.#estimate(meanHr, rmssd, sdnn)
       : 'uncertain';
+    if (!this.#qualityGood) this.#confidence = null;
     if (!this.#qualityGood) {
       // Bad quality breaks the previous nomination, but can establish Uncertain.
       if (this.#candidate !== 'uncertain') this.#consecutive = 0;
@@ -119,6 +151,8 @@ export class AdaptationEngine {
       this.#accepted = state;
       this.#acceptedAtS = audioTime;
     }
+    // The confidence shown follows the latest reading that agrees with the accepted state.
+    if (state === this.#accepted) this.#acceptedConfidence = this.#confidence;
     const ready = this.#qualityGood && this.#accepted !== null &&
       this.#recent.length === NO_HIGH_WINDOW_ESTIMATES && !this.#recent.includes('high');
     this.#criteriaReadyS = ready ? this.#criteriaReadyS ?? audioTime : null;
@@ -138,6 +172,25 @@ export class AdaptationEngine {
     if (audioTime < eligibleAtS) return null;
     const next = nextLevel(this.#level);
     return next === null ? null : this.#transition(next, 'advance', eligibleAtS, audioTime);
+  }
+
+  /** The model's estimate when it can give one; the rules otherwise. */
+  #estimate(meanHr: number, rmssd: number, sdnn: number | null): ActivationState {
+    const baseHr = this.#sumHr / this.#count;
+    const baseRmssd = this.#sumRmssd / this.#count;
+    if (this.#model !== null && sdnn !== null && this.#sdnnCount > 0) {
+      const prediction = predictActivation(
+        this.#model,
+        { meanHr, rmssd, sdnn },
+        { meanHr: baseHr, rmssd: baseRmssd, sdnn: this.#sumSdnn / this.#sdnnCount },
+      );
+      if (prediction !== null) {
+        this.#confidence = prediction.confidence;
+        return prediction.state;
+      }
+    }
+    this.#confidence = null;
+    return estimateState(meanHr, rmssd, baseHr, baseRmssd);
   }
 
   #transition(next: LevelId, direction: TransitionTiming['direction'], eligibleAtS: number, scheduledAtS: number): LevelId {

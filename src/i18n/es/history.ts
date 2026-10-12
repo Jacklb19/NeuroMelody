@@ -2,18 +2,17 @@
 export const history = {
   title: 'Historial',
   eyebrow: 'Tus sesiones',
-  introduction: 'Las sesiones se guardan solo en este dispositivo. Puedes borrarlas cuando quieras.',
+  introduction: 'Tus sesiones guardadas. Puedes borrarlas cuando quieras.',
   loading: 'Cargando el historial…',
   empty: 'Aún no hay sesiones guardadas. Cuando termines una sesión de escucha aparecerá aquí, con su resumen.',
   planSession: 'Preparar una sesión',
   clearAll: 'Borrar todo el historial',
   confirmClearAll: 'Sí, borrar todas las sesiones',
-  evolution: {
-    title: 'Evolución entre sesiones',
-    rmssdLabel: 'Variabilidad entre latidos al final de cada sesión, de la más antigua a la más reciente',
-    rmssdCaption: 'Variabilidad entre latidos al final de cada sesión',
-    ratingLabel: 'Cómo te sentías al terminar cada sesión, de la más antigua a la más reciente',
-    ratingCaption: 'Cómo te sentías al terminar',
+  /** Way into the progress view, which shows the evolution across sessions (ADR-33). */
+  progress: {
+    title: 'Mira cómo te ha ido',
+    text: 'Tu pulso y cómo te sentías, sesión a sesión.',
+    action: 'Ver tu progreso',
   },
   item: {
     listenedOf: (listened: string, plannedMinutes: number): string => `${listened} de ${String(plannedMinutes)} min`,

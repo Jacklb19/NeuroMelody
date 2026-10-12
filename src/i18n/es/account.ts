@@ -117,7 +117,15 @@ export const account = {
       privacy: { title: 'Privacidad y consentimiento', text: 'Qué se guarda y dónde.' },
       history: { title: 'Historial de sesiones', text: 'Revisa o borra tus sesiones.' },
       signOut: { title: 'Cerrar sesión', text: 'Tus sesiones seguirán en este dispositivo.' },
-      deleteAccount: { title: 'Borrar la cuenta', text: 'Estará disponible con la sincronización de sesiones.' },
+      deleteAccount: {
+        title: 'Borrar la cuenta',
+        text: 'Borra tu cuenta y todo lo que guarda en la nube. Las sesiones de este dispositivo no se tocan.',
+        unavailable: 'No está disponible en esta versión de la app.',
+        action: 'Borrar la cuenta',
+        confirm: 'Sí, borrar mi cuenta',
+        /** `reason` is one of the cloud error sentences. */
+        failed: (reason: string): string => `No se pudo borrar la cuenta: ${reason}`,
+      },
     },
     passwordChanged: 'Tu contraseña se guardó.',
     close: 'Cerrar',

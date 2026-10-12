@@ -67,8 +67,17 @@
   --segment-gap: 2px;
   --stage-text-max-width: 30ch;
   --stage-detail-max-width: 48ch;
+  --breath-hint-max-width: 28ch;
   --progress-duration: 1s;
   --waveform-height: 6rem;
+  /* Charts of the progress view (ADR-33). */
+  --trend-chart-height: 11rem;
+  --trend-axis-width: 2rem;
+  --trend-dot-size: 0.5rem;
+  --trend-dot-size-active: 0.75rem;
+  --trend-dot-ring: 2px;
+  --progress-copy-max-width: 34ch;
+  --progress-date-min-width: 9rem;
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
@@ -127,6 +136,10 @@
   --orb-breath: 5.5s;
   --orb-spin: 60s;
   --orb-tone-duration: 1.6s;
+  /* Guided breathing (ADR-33): size of the orb at the end of breathing out and of breathing in, and how fast it follows. */
+  --orb-guided-min: 0.8;
+  --orb-guided-max: 1.1;
+  --orb-guided-settle: 300ms;
   --avatar-size: 2.75rem;
   --avatar-size-large: 5rem;
   --auth-card-width: 27rem;
@@ -181,6 +194,9 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --color-state-uncertain: #9fb2a4;
   --color-state-low: #5fb38a;
   --color-chart-line: #7fd1a4;
+  /* The two series of the progress charts; the pair keeps its distance under colour blindness on the card surface. */
+  --color-chart-start: #c98338;
+  --color-chart-end: #3fa37f;
   --color-chart-grid: #24403a;
   --color-chart-text: #a9b8ad;
   --color-chart-discarded: #b3a58a;
@@ -227,6 +243,8 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --color-state-uncertain: #9fb2a4;
   --color-state-low: #3e6955;
   --color-chart-line: #3e6955;
+  --color-chart-start: #a8642a;
+  --color-chart-end: #1e8c70;
   --color-chart-grid: #d7dbd0;
   --color-chart-text: #526158;
   --color-chart-discarded: #716b5e;
@@ -259,6 +277,8 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
 .pill-button-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
 .pill-button-ghost:hover:not(:disabled) { background: var(--color-paper); color: var(--color-text); }
 .pill-button-block { width: 100%; }
+/* A pill that is switched on: the breathing guide, the range of the progress view. */
+.pill-button[aria-pressed='true'] { background: var(--color-success-background); border-color: var(--color-accent); color: var(--color-text); box-shadow: var(--glow-accent); }
 .glass-card { padding: var(--space-6); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); transition: border-color var(--motion-duration), transform var(--motion-duration); }
 a.glass-card { display: block; color: inherit; text-decoration: none; }
 a.glass-card:hover, li.glass-card:hover { border-color: var(--color-border); transform: translateY(-2px); }
@@ -435,7 +455,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .rating-option:has(input:checked) { background: var(--color-button-background); border-color: var(--color-button-background); color: var(--color-button-text); font-weight: var(--font-weight-strong); }
 .rating-option:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 .summary-page, .history-page { padding-bottom: var(--space-12); }
-.summary-section, .state-share, .evolution { margin-top: var(--space-10); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); }
+.summary-section, .state-share { margin-top: var(--space-10); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); }
 .after-rating { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-8); background: var(--color-surface); border-radius: var(--border-radius); }
 .after-rating .self-rating { width: 100%; }
 .summary-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8) var(--space-10); font-variant-numeric: tabular-nums; }
@@ -458,8 +478,10 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .pending-note { font-size: var(--text-sm); color: var(--color-text-secondary); max-width: var(--reading-max-width); }
 .summary-actions { margin-top: var(--space-10); }
 .empty-state { padding: var(--space-10); background: var(--color-surface); border-radius: var(--border-radius); display: grid; gap: var(--space-6); justify-items: start; }
-.evolution-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-10); }
-.evolution figcaption { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.cloud-notice { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.cloud-notice .text-button { min-height: 0; padding: 0; font-size: inherit; text-decoration: underline; cursor: pointer; }
+.progress-invite { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-8); }
+.progress-invite h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); margin-bottom: var(--space-1); }
 .history-list { list-style: none; margin-top: var(--space-10); border-top: var(--border-width) solid var(--color-border-subtle); margin-bottom: var(--space-8); }
 .history-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: var(--space-4) var(--space-8); align-items: center; padding: var(--space-6) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }
 .history-heading h3 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
@@ -496,7 +518,7 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   .stage-main, .listening-stage .playback-panel, .session-progress { padding-left: var(--space-6); padding-right: var(--space-6); }
   .stage-main { padding-top: var(--space-8); }
   .rating-scale { grid-template-columns: repeat(auto-fill, minmax(var(--rating-size), 1fr)); }
-  .summary-figures, .history-figures, .evolution-charts { grid-template-columns: minmax(0, 1fr); }
+  .summary-figures, .history-figures { grid-template-columns: minmax(0, 1fr); }
   .stage-detail { font-size: var(--text-base); }
   .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); }
   .source-controls { grid-template-columns: minmax(0, 1fr); }

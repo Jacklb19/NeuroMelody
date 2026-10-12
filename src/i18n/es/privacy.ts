@@ -35,7 +35,12 @@ export const privacy = {
     given: (date: string): string => `Consentimiento dado el ${date}.`,
     notGiven: 'Sin consentimiento: tus sesiones se quedan solo en este dispositivo.',
     withdrawn: 'Retiraste el consentimiento. Tus sesiones se quedan solo en este dispositivo.',
-    deviceOnly: 'Se guarda en este dispositivo y se enviará a tu cuenta cuando la sincronización esté disponible.',
+    /** Where the answer is kept, by whether someone is signed in. */
+    stored: {
+      device: 'Sin cuenta, tu respuesta se queda en este dispositivo. Al entrar, vale la que tengas en tu cuenta.',
+      account: 'Tu respuesta se guarda en tu cuenta. Si lo retiras, tus sesiones dejan de enviarse; las que ya están en la nube puedes borrarlas desde el historial.',
+    },
+    saveFailed: 'No se pudo guardar tu respuesta en la cuenta. Inténtalo de nuevo.',
   },
   backToAccount: 'Ir a la cuenta',
 };

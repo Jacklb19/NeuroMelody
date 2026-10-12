@@ -72,7 +72,7 @@ export const landing = {
       state: {
         title: 'Encuentra tu punto de partida',
         text: (calibrationMinutes: number): string =>
-          `Durante los primeros ${String(calibrationMinutes)} minutos aprende cómo estás hoy, y desde ahí nota si te vas calmando.`,
+          `Durante los primeros ${String(calibrationMinutes)} minutos aprende cómo estás hoy. Después, un modelo entrenado con datos de investigación estima si te vas calmando.`,
       },
       music: {
         title: 'La música te acompaña',
