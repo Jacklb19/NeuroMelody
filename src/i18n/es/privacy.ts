@@ -24,6 +24,10 @@ export const privacy = {
       title: 'Resumen automático',
       text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente.',
     },
+    collection: {
+      title: 'Grabaciones guiadas',
+      text: 'Si decides hacer una grabación guiada para mejorar el modelo, se guardan en este dispositivo los intervalos entre tus latidos y el nombre de cada tramo, con un código al azar que no dice quién eres. No se envían solas: tú las exportas y decides a quién dárselas, y puedes borrarlas cuando quieras.',
+    },
     rights: {
       title: 'Tus derechos',
       text: 'Conforme a la Ley 1581 de 2012, puedes conocer, actualizar, rectificar y suprimir tus datos y retirar tu consentimiento en cualquier momento, desde esta app o escribiendo a los responsables del proyecto.',

@@ -24,6 +24,10 @@ export const privacy = {
       title: 'Automatic summary',
       text: 'If you ask for it, a language model receives only aggregated figures from the session to write a summary in plain words, marked as automatically generated.',
     },
+    collection: {
+      title: 'Guided recordings',
+      text: 'If you choose to make a guided recording to improve the model, the intervals between your heartbeats and the name of each stage are kept on this device, with a random code that does not say who you are. They are never sent on their own: you export them and decide whom to give them to, and you can delete them whenever you want.',
+    },
     rights: {
       title: 'Your rights',
       text: "Under Colombia's Law 1581 of 2012, you can access, update, correct and delete your data and withdraw your consent at any time, from this app or by writing to the people responsible for the project.",

@@ -22,6 +22,7 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | `/account` | Perfil | Resumen y ajustes de la persona (ADR-30): actividad en el dispositivo, seguridad (contraseña y verificación en dos pasos), privacidad, cerrar sesión. Sin cuenta, invita a crear una. Se abre desde el avatar de la cabecera. | — | RF-14 | S6 | No (sin cuenta muestra la actividad local) | `/login`, `/register`, `/privacy`, `/history` |
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
+| `/collect` | Ayuda a mejorar la app | Grabación guiada (ADR-33): reposo, respiración lenta y tarea de concentración, cada tramo guardado con su etiqueta, con consentimiento explícito, en el dispositivo; exportar y borrar. El modelo no se entrena aquí. | — | RF-07 | Bloque 14 | No (pide las advertencias aceptadas, como la sesión) | `/app`, `/warnings` |
 | `/diagnostics` | Diagnóstico de la plataforma | Verificar el aislamiento de origen cruzado y las capacidades del navegador. Herramienta técnica, no forma parte del recorrido del paciente. | — | — | S0 | No | `/` |
 
 ## Paneles existentes y su ubicación
@@ -40,6 +41,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `SessionSummaryPage` (`src/features/summary/`) | S6.1 | `/summary/:id` |
 | `HistoryPage` (`src/features/history/`) | S6.1 | `/history` |
 | `ProgressPage` y `BeforeAfterChart` (`src/features/progress/`) | Bloque 11 (ADR-33) | `/progress` |
+| `CollectionPage` (`src/features/collection/`) | Bloque 14 (ADR-33) | `/collect`; reutiliza `AcquisitionPanel`, el orbe y la respiración guiada |
 | `ReportPage` (`src/features/report/`) | Bloque 13 (ADR-33) | `/report`; reutiliza el selector de sesiones (`RangePicker`) y la gráfica de `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
@@ -104,6 +106,17 @@ Se llega desde la tarjeta «Compártelo con quien te acompaña», al final de «
 3. La hoja habla de «la persona», no de «tú», porque la lee alguien más.
 
 Sin sesiones invita a preparar una y no muestra hoja ni botón.
+
+## `/collect`, grabación guiada para el modelo (ADR-33, solo en el dispositivo)
+
+Se llega desde el perfil («Ayuda a mejorar la app», en Preferencias). Es opcional y no cambia nada de las sesiones. Pide las advertencias de uso aceptadas, como `/session`.
+
+1. **Antes de empezar:** qué se va a hacer (tres tramos con su duración), qué se guarda, la casilla de consentimiento y, debajo, la fuente de señal (el mismo panel de `/session`). «Empezar la grabación» solo se activa con la casilla marcada y la fuente conectada. Con el simulador o un registro de ejemplo avisa de que esos latidos no enseñan nada al modelo.
+2. **Cada tramo** (reposo 5 min, respiración lenta 3 min, tarea de concentración 3 min): primero las instrucciones y «Empezar este tramo»; después la actividad (el orbe en reposo, el orbe con «Inhala/Exhala», o restar de 7 en 7 desde 1000 escribiendo cada resultado), el pentagrama de progreso y el tiempo que queda. El tiempo es tiempo de señal: si la señal se corta y vuelve a empezar, el tramo se repite. «Dejarlo por ahora» descarta todo.
+3. **Al terminar:** la grabación se guarda en el dispositivo (base propia, aparte del historial) y se puede exportar.
+4. **Tus grabaciones:** lista con fecha, fuente y número de latidos; «Exportar N grabaciones» descarga un archivo JSON y cada una se borra con confirmación.
+
+Qué se guarda: los intervalos entre latidos de cada tramo con su etiqueta, la fuente, la fecha, el instante del consentimiento y un código al azar del dispositivo (agrupa las grabaciones de una persona sin decir quién es). Nada se envía: la persona exporta el archivo y decide a quién dárselo. El reentrenamiento se hace fuera de la app, en `back/training` (ver su README); el modelo nunca se reentrena solo.
 
 ## Rediseño de la app (ADR-30)
 

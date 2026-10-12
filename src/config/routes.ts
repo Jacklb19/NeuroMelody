@@ -11,6 +11,7 @@ export const ROUTE_SEGMENTS = {
   history: 'history',
   progress: 'progress',
   report: 'report',
+  collect: 'collect',
   diagnostics: 'diagnostics',
   account: 'account',
   privacy: 'privacy',
@@ -33,6 +34,8 @@ export const ROUTES = {
   progress: `/${ROUTE_SEGMENTS.progress}`,
   /** Printable summary of a range of sessions, to share with whoever accompanies the person. */
   report: `/${ROUTE_SEGMENTS.report}`,
+  /** Guided recording that gives the classifier examples of the person. */
+  collect: `/${ROUTE_SEGMENTS.collect}`,
   diagnostics: `/${ROUTE_SEGMENTS.diagnostics}`,
   /** Profile: summary and settings of the person, with or without an account. */
   account: `/${ROUTE_SEGMENTS.account}`,

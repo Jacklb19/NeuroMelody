@@ -1,0 +1,44 @@
+/* Guided recording (ADR-33): one card for the step in course, the signal source under it and the saved recordings. Values come from index.css tokens. */
+.collection-page { max-width: var(--reading-max-width); margin: 0 auto; padding-bottom: var(--space-12); display: grid; gap: var(--space-8); }
+.collection-page .page-heading { margin-bottom: 0; }
+.collection-card { padding: var(--space-8); display: grid; gap: var(--space-5); }
+.collection-card h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); line-height: var(--heading-line-height); margin-bottom: 0; }
+.collection-card:focus { outline: none; }
+.collection-card .eyebrow, .collection-card .quiet-notice, .collection-card .confirmation-control { margin: 0; }
+
+.collection-steps { list-style: none; counter-reset: stage; display: grid; gap: var(--space-4); }
+.collection-steps li { counter-increment: stage; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 var(--space-4); align-items: baseline; }
+.collection-steps li::before { content: counter(stage); grid-row: span 2; font-family: var(--font-display); font-size: var(--text-metric); line-height: 1; color: var(--color-accent); }
+.collection-steps li > .secondary-text { grid-column: 2 / -1; font-size: var(--text-sm); }
+.collection-duration { font-size: var(--text-sm); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.collection-facts { display: grid; gap: var(--space-2); padding-left: var(--space-5); color: var(--color-text-secondary); }
+.collection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); }
+
+/* A stage: what to do, in large words, and the time left. */
+.collection-stage { justify-items: start; }
+.collection-instruction { font-size: var(--text-lg); max-width: var(--introduction-max-width); }
+.collection-activity { width: 100%; display: grid; justify-items: center; gap: var(--space-4); padding: var(--space-6) 0; text-align: center; }
+.collection-stage .staff { width: 100%; }
+.collection-clock { font-family: var(--font-display); font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
+.collection-task { justify-items: stretch; text-align: left; }
+.collection-task .collection-instruction { font-family: var(--font-display); font-size: var(--text-stage); line-height: var(--heading-line-height); }
+.collection-answer { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.collection-input { flex: 1; min-width: var(--totp-input-width); min-height: var(--control-height); padding: var(--space-3) var(--space-4); background: var(--color-background); color: var(--color-text); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); font-family: var(--font-data); font-size: var(--text-xl); }
+.collection-input:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 var(--focus-width) var(--landing-glow-colour); }
+
+/* The source panel stays on the page during the protocol, but steps back. */
+.collection-source { padding: var(--space-8); }
+.collection-source[data-quiet] .source-controls { display: none; }
+
+.collection-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-6); margin-bottom: var(--space-2); }
+.collection-list h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); margin-bottom: 0; }
+.collection-list ul { list-style: none; display: grid; gap: var(--space-3); margin-top: var(--space-5); }
+.collection-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-6); }
+.collection-list li > div { display: grid; gap: var(--space-1); }
+.collection-list li .secondary-text { font-size: var(--text-sm); }
+
+@media (max-width: 600px) {
+  .collection-card, .collection-source { padding: var(--space-6); }
+  .collection-steps li { grid-template-columns: auto minmax(0, 1fr); }
+  .collection-duration { grid-column: 2; }
+}
