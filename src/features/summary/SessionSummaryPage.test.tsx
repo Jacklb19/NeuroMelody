@@ -33,7 +33,8 @@ describe('SessionSummaryPage', () => {
       es.common.withUnit(es.records.change('78', '68'), es.common.units.beatsPerMinute),
     );
     expect(screen.getByText(/no miden el dolor/i)).toBeVisible();
-    expect(screen.getByText(es.summary.pending.title)).toBeVisible();
+    // Without an account the plain-language text says what it needs instead of pretending to be pending.
+    expect(screen.getByText(es.summary.automatic.needs.unavailable)).toBeVisible();
     expect(screen.getByRole('button', { name: es.summary.download })).toBeEnabled();
   });
 

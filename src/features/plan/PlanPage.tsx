@@ -9,20 +9,22 @@ import { PageHeading } from '../../shared/PageHeading';
 import { CALIBRATION_LEVEL } from '../audio/engine/levels';
 import { GOAL_IDS, normalizeGoals, readGoals, type GoalId } from './goalCatalog';
 import { GoalIcon } from './GoalIcon';
-import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN } from './plan';
+import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
+import { PlanSuggestionCard } from './PlanSuggestionCard';
 import './plan.css';
 
 /**
  * Session plan (HU-07, RF-18): what the person is after and how long they
  * have, with the session they are about to start always in view. A link
- * from the start screen can arrive with a goal already chosen.
- * Language-model proposals belong to S6.
+ * from the start screen can arrive with a goal already chosen. With an
+ * account, the language model can propose the length (RF-13); the person
+ * always decides.
  */
 export function PlanPage(): React.JSX.Element {
   const t = useMessages();
   usePageTitle(t.plan.pageTitle);
   const [params] = useSearchParams();
-  const [duration, setDuration] = useState(DEFAULT_DURATION_MIN);
+  const [duration, setDuration] = useState<DurationMin>(DEFAULT_DURATION_MIN);
   const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)));
   const goalsHintId = useId();
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
@@ -82,6 +84,7 @@ export function PlanPage(): React.JSX.Element {
                 </label>
               ))}
             </div>
+            <PlanSuggestionCard goals={goals} duration={duration} onAccept={setDuration} />
           </fieldset>
         </div>
 

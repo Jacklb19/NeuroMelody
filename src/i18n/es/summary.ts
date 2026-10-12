@@ -43,10 +43,27 @@ export const summary = {
     },
     footnote: 'Tiempo de señal. El estado es una estimación a partir de tu pulso, no una medida clínica.',
   },
-  pending: {
+  /** The session told in plain words by the language model (RF-15); always marked as generated automatically. */
+  automatic: {
     label: 'Resumen en lenguaje sencillo',
-    title: 'Resumen automático pendiente.',
-    detail: 'El texto en lenguaje sencillo, generado automáticamente, estará disponible cuando conectes tu cuenta.',
+    title: 'Tu sesión en pocas palabras',
+    generatedMark: 'Texto generado automáticamente. Describe las cifras; no es una valoración.',
+    /** What travels, said before asking: asking is the consent. */
+    notice: 'Para escribirlo, un modelo de lenguaje recibe solo cifras de esta sesión: minutos escuchados, pulso y variación al empezar y al terminar, tiempo en cada estado y tus dos valoraciones. No recibe tu nombre, la fecha ni tus latidos.',
+    ask: 'Acepto y quiero el resumen',
+    askAgain: 'Pedir otro',
+    working: 'Escribiendo el resumen…',
+    /** Why it cannot be asked for; keys mirror the sync statuses that prevent it. */
+    needs: {
+      unavailable: 'El resumen automático no está disponible en esta versión de la app. Arriba tienes todos los indicadores de la sesión.',
+      signed_out: 'El resumen automático necesita una cuenta, con la sesión guardada en ella.',
+      needs_second_factor: 'El resumen automático necesita la verificación en dos pasos, porque usa datos de tu sesión guardados en tu cuenta.',
+      needs_consent: 'El resumen automático usa la sesión guardada en tu cuenta, y para guardarla falta tu consentimiento.',
+    },
+    /** The session is on this device but not in the account yet. */
+    notInCloud: 'Esta sesión todavía no está en tu cuenta. Espera a que se sincronice (lo ves en el historial) e inténtalo de nuevo.',
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `No se pudo escribir el resumen: ${reason} Los indicadores de arriba no cambian.`,
   },
   download: 'Descargar datos (CSV)',
   viewHistory: 'Ver historial',

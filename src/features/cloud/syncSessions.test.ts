@@ -27,6 +27,8 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
       return Promise.resolve();
     },
     deleteAccount: () => Promise.resolve(),
+    suggestPlan: () => Promise.reject(new CloudError('language_model_unavailable')),
+    summarizeSession: () => Promise.reject(new CloudError('language_model_unavailable')),
   };
 }
 
@@ -173,5 +175,30 @@ describe('cloud API client', () => {
     await expect(answering(404, { code: 'not_found' }).deleteSession(ID_A)).resolves.toBeUndefined();
     const signedOut = createCloudApi({ baseUrl: 'https://api.example.test', accessToken: () => Promise.resolve(null) });
     await expect(signedOut.listSessions()).rejects.toMatchObject({ code: 'unauthenticated' });
+  });
+
+  it('asks the language model through the API and shows only what came back marked as generated', async () => {
+    const sent: { url: string; body: unknown }[] = [];
+    const answering = (body: unknown, status = 200): CloudApi => createCloudApi({
+      baseUrl: 'https://api.example.test',
+      accessToken: () => Promise.resolve('token-1'),
+      fetch: (input, init) => {
+        sent.push({ url: typeof input === "string" ? input : "", body: JSON.parse(typeof init?.body === 'string' ? init.body : 'null') as unknown });
+        return Promise.resolve(new Response(JSON.stringify(body), { status }));
+      },
+    });
+    const plan = { duration_minutes: 30, note: ' Media hora va bien. ', generated: true, model: 'm' };
+
+    expect(await answering(plan).suggestPlan(['relax'], 22, 'es')).toEqual({ durationMin: 30, note: 'Media hora va bien.' });
+    expect(sent[0]).toEqual({ url: 'https://api.example.test/v1/plans/suggest', body: { goals: ['relax'], local_hour: 22, locale: 'es' } });
+    // A length the app does not offer, or a text not marked as generated, is not shown.
+    await expect(answering({ ...plan, duration_minutes: 25 }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
+    await expect(answering({ ...plan, generated: false }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
+
+    expect(await answering({ text: 'Escuchaste 20 minutos.', generated: true, model: 'm' }).summarizeSession(ID_A, 'en')).toEqual({ text: 'Escuchaste 20 minutos.' });
+    // Asking is the consent, so the request says so.
+    expect(sent.at(-1)).toEqual({ url: `https://api.example.test/v1/sessions/${ID_A}/summary`, body: { consent: true, locale: 'en' } });
+    await expect(answering({ text: '', generated: true }).summarizeSession(ID_A, 'en')).rejects.toMatchObject({ code: 'unknown' });
+    await expect(answering({ code: 'language_model_unavailable' }, 502).summarizeSession(ID_A, 'en')).rejects.toMatchObject({ code: 'language_model_unavailable' });
   });
 });

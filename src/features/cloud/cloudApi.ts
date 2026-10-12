@@ -1,9 +1,13 @@
+import type { Locale } from '../../i18n/locale';
+import { DURATIONS_MIN, type DurationMin } from '../plan/plan';
+import type { GoalId } from '../plan/goalCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
 
 /**
- * Client of the NeuroMelody API (ADR-19): sessions in the cloud and the
- * account. The API only stores and returns data; nothing that sounds
- * depends on it. Every request carries the person's Supabase token.
+ * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
+ * account and the two texts the language model writes (ADR-08). The API
+ * only stores, returns and words data; nothing that sounds depends on it.
+ * Every request carries the person's Supabase token.
  */
 
 /** Why a request failed: the API's own codes plus what can go wrong on the way. */
@@ -15,6 +19,8 @@ export const CLOUD_ERROR_CODES = [
   'not_found',
   'invalid_request',
   'storage_unavailable',
+  /** The language model did not answer, or answered something the API refused. */
+  'language_model_unavailable',
   'network',
   'unknown',
 ] as const;
@@ -38,6 +44,18 @@ export interface CloudSessionSummary {
   readonly ratingAfter: number | null;
 }
 
+/** A plan proposed by the language model (RF-13): one of the allowed lengths and a sentence about it. */
+export interface PlanSuggestion {
+  readonly durationMin: DurationMin;
+  /** Text generated automatically; the interface always says so. */
+  readonly note: string;
+}
+
+/** A session told in plain words by the language model (RF-15). Generated automatically. */
+export interface SessionNarrative {
+  readonly text: string;
+}
+
 export interface CloudApi {
   /** Stores a session; sending it again changes nothing but the rating given afterwards. */
   saveSession(record: SessionRecord): Promise<void>;
@@ -47,11 +65,20 @@ export interface CloudApi {
   /** Deleting a session the cloud no longer has is not an error: the result is the same. */
   deleteSession(id: string): Promise<void>;
   deleteAccount(): Promise<void>;
+  /** Asks for a session length for the chosen goals. Only the goals, the hour and the language travel. */
+  suggestPlan(goals: readonly GoalId[], localHour: number, locale: Locale): Promise<PlanSuggestion>;
+  /**
+   * Asks for the plain-words summary of a session stored in the cloud. Calling it states
+   * the person's consent to send the aggregated figures of that session to the language model.
+   */
+  summarizeSession(id: string, locale: Locale): Promise<SessionNarrative>;
 }
 
 /** Paths of the API, relative to its base URL. */
 const SESSIONS_PATH = '/v1/sessions';
 const ACCOUNT_PATH = '/v1/account';
+const PLAN_SUGGESTION_PATH = '/v1/plans/suggest';
+const SUMMARY_SUFFIX = '/summary';
 const NOT_FOUND = 404;
 
 type Json = Readonly<Record<string, unknown>>;
@@ -129,6 +156,26 @@ function summaryFromWire(value: unknown): CloudSessionSummary | null {
   return { id: value.id, ratingAfter: typeof rating === 'number' ? rating : null };
 }
 
+/** Text the API marked as generated automatically; anything else is not shown. */
+function generatedText(body: Json, field: string): string | null {
+  const text = body[field];
+  return body.generated === true && typeof text === 'string' && text.trim() !== '' ? text.trim() : null;
+}
+
+/** Reads a proposed plan. The length is checked against the app's own options, whatever the API says. */
+export function planFromWire(value: unknown): PlanSuggestion | null {
+  if (!isJson(value)) return null;
+  const durationMin = DURATIONS_MIN.find((minutes) => minutes === value.duration_minutes);
+  const note = generatedText(value, 'note');
+  return durationMin === undefined || note === null ? null : { durationMin, note };
+}
+
+export function narrativeFromWire(value: unknown): SessionNarrative | null {
+  if (!isJson(value)) return null;
+  const text = generatedText(value, 'text');
+  return text === null ? null : { text };
+}
+
 interface CloudApiOptions {
   /** Base URL of the API, without a trailing slash (`env.apiBaseUrl`). */
   readonly baseUrl: string;
@@ -191,6 +238,18 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
     async deleteAccount() {
       const response = await request('DELETE', ACCOUNT_PATH);
       if (!response.ok) throw await failure(response);
+    },
+    async suggestPlan(goals, localHour, locale) {
+      const body = await json(await request('POST', PLAN_SUGGESTION_PATH, { goals, local_hour: localHour, locale }));
+      const plan = planFromWire(body);
+      if (plan === null) throw new CloudError('unknown');
+      return plan;
+    },
+    async summarizeSession(id, locale) {
+      const path = `${SESSIONS_PATH}/${encodeURIComponent(id)}${SUMMARY_SUFFIX}`;
+      const narrative = narrativeFromWire(await json(await request('POST', path, { consent: true, locale })));
+      if (narrative === null) throw new CloudError('unknown');
+      return narrative;
     },
   };
 }
