@@ -53,15 +53,10 @@ export const summary = {
     ask: 'Acepto y quiero el resumen',
     askAgain: 'Pedir otro',
     working: 'Escribiendo el resumen…',
-    /** Why it cannot be asked for; keys mirror the sync statuses that prevent it. */
-    needs: {
-      unavailable: 'El resumen automático no está disponible en esta versión de la app. Arriba tienes todos los indicadores de la sesión.',
-      signed_out: 'El resumen automático necesita una cuenta, con la sesión guardada en ella.',
-      needs_second_factor: 'El resumen automático necesita la verificación en dos pasos, porque usa datos de tu sesión guardados en tu cuenta.',
-      needs_consent: 'El resumen automático usa la sesión guardada en tu cuenta, y para guardarla falta tu consentimiento.',
-    },
-    /** The session is on this device but not in the account yet. */
-    notInCloud: 'Esta sesión todavía no está en tu cuenta. Espera a que se sincronice (lo ves en el historial) e inténtalo de nuevo.',
+    /** This deployment has no API to ask. */
+    unavailable: 'El resumen automático no está disponible en esta versión de la app. Arriba tienes todos los indicadores de la sesión.',
+    /** Nobody is signed in; the link to sign in follows. */
+    needsAccount: 'El resumen automático necesita una cuenta. La sesión puede seguir solo en este dispositivo.',
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `No se pudo escribir el resumen: ${reason} Los indicadores de arriba no cambian.`,
   },

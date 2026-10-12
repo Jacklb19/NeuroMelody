@@ -53,15 +53,10 @@ export const summary = {
     ask: 'I agree and want the summary',
     askAgain: 'Ask for another',
     working: 'Writing the summary…',
-    /** Why it cannot be asked for; keys mirror the sync statuses that prevent it. */
-    needs: {
-      unavailable: 'The automatic summary is not available in this version of the app. All the indicators of the session are above.',
-      signed_out: 'The automatic summary needs an account, with the session saved in it.',
-      needs_second_factor: 'The automatic summary needs two-step verification, because it uses data of your session saved in your account.',
-      needs_consent: 'The automatic summary uses the session saved in your account, and saving it needs your consent.',
-    },
-    /** The session is on this device but not in the account yet. */
-    notInCloud: 'This session is not in your account yet. Wait for it to sync (you can see it in the history) and try again.',
+    /** This deployment has no API to ask. */
+    unavailable: 'The automatic summary is not available in this version of the app. All the indicators of the session are above.',
+    /** Nobody is signed in; the link to sign in follows. */
+    needsAccount: 'The automatic summary needs an account. The session can stay on this device alone.',
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `The summary could not be written: ${reason} The indicators above do not change.`,
   },

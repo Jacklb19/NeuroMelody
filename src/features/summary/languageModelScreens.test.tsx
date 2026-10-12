@@ -7,10 +7,12 @@ import { es } from '../../i18n/es';
 import { CloudError, type CloudApi } from '../cloud/cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from '../cloud/cloudSyncContext';
 import { PlanPage } from '../plan/PlanPage';
+import { sessionRecord } from '../../test/sessionRecords';
 import { AutomaticSummary } from './AutomaticSummary';
 import { NARRATIVE_STORAGE_KEY } from './narrativeCache';
 
-const SESSION_ID = '017f22e2-79b0-7cc3-98c4-dc0c0c07398f';
+const RECORD = sessionRecord();
+const SESSION_ID = RECORD.id;
 const plan = es.plan;
 const automatic = es.summary.automatic;
 
@@ -83,14 +85,15 @@ describe('automatic summary (RF-15)', () => {
   it('sends nothing until the person agrees, then shows the text as generated and keeps it on the device', async () => {
     const user = userEvent.setup();
     const summarizeSession = vi.fn<CloudApi['summarizeSession']>(() => Promise.resolve({ text: 'Escuchaste 20 minutos.' }));
-    renderWith(cloud('synced', { summarizeSession }), <AutomaticSummary sessionId={SESSION_ID} />);
+    // An account is enough: no two-step verification and no session in the cloud.
+    renderWith(cloud('needs_second_factor', { summarizeSession }), <AutomaticSummary record={RECORD} />);
 
     // What travels is said before the button.
     expect(screen.getByText(automatic.notice)).toBeVisible();
     expect(summarizeSession).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: automatic.ask }));
 
-    expect(summarizeSession).toHaveBeenCalledWith(SESSION_ID, 'es');
+    expect(summarizeSession).toHaveBeenCalledWith(SESSION_ID, 'es', expect.objectContaining({ plannedMinutes: 20, ratingBefore: 4, ratingAfter: 7 }));
     expect(await screen.findByTestId('narrative-text')).toHaveTextContent('Escuchaste 20 minutos.');
     expect(screen.getByText(automatic.generatedMark)).toBeVisible();
     expect(window.localStorage.getItem(NARRATIVE_STORAGE_KEY)).toContain('Escuchaste 20 minutos.');
@@ -103,29 +106,26 @@ describe('automatic summary (RF-15)', () => {
       'not an entry',
     ]));
     const summarizeSession = vi.fn<CloudApi['summarizeSession']>();
-    renderWith(cloud('signed_out', null), <AutomaticSummary sessionId={SESSION_ID} />);
+    renderWith(cloud('signed_out', null), <AutomaticSummary record={RECORD} />);
 
     expect(screen.getByTestId('narrative-text')).toHaveTextContent('Tu pulso pasó de 78 a 68.');
     expect(screen.getByText(automatic.generatedMark)).toBeVisible();
     expect(summarizeSession).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['signed_out', ROUTES.login],
-    ['needs_second_factor', ROUTES.account],
-    ['needs_consent', ROUTES.privacy],
-  ] as const)('says what is missing when the status is %s', (status, route) => {
-    renderWith(cloud(status, {}), <AutomaticSummary sessionId={SESSION_ID} />);
-    expect(screen.getByText(automatic.needs[status], { exact: false })).toBeVisible();
-    expect(screen.getByRole('link', { name: es.cloud.actions[status] })).toHaveAttribute('href', route);
+  it('asks only for an account when nobody is signed in', () => {
+    renderWith(cloud('signed_out', null), <AutomaticSummary record={RECORD} />);
+    expect(screen.getByText(automatic.needsAccount, { exact: false })).toBeVisible();
+    expect(screen.getByRole('link', { name: es.cloud.actions.signed_out })).toHaveAttribute('href', ROUTES.login);
     expect(screen.queryByRole('button', { name: automatic.ask })).not.toBeInTheDocument();
   });
 
-  it('explains a session that is not in the account yet instead of a generic failure', async () => {
+  it('says why when the summary could not be written and leaves the way to ask again', async () => {
     const user = userEvent.setup();
-    const summarizeSession = (): Promise<never> => Promise.reject(new CloudError('not_found'));
-    renderWith(cloud('synced', { summarizeSession }), <AutomaticSummary sessionId={SESSION_ID} />);
+    const summarizeSession = (): Promise<never> => Promise.reject(new CloudError('language_model_unavailable'));
+    renderWith(cloud('synced', { summarizeSession }), <AutomaticSummary record={RECORD} />);
     await user.click(screen.getByRole('button', { name: automatic.ask }));
-    expect(await screen.findByText(automatic.notInCloud)).toBeVisible();
+    expect(await screen.findByText(automatic.failed(es.cloud.errors.language_model_unavailable))).toBeVisible();
+    expect(screen.getByRole('button', { name: automatic.ask })).toBeEnabled();
   });
 });
