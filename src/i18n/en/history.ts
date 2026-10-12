@@ -8,12 +8,11 @@ export const history = {
   planSession: 'Set up a session',
   clearAll: 'Delete all history',
   confirmClearAll: 'Yes, delete all sessions',
-  evolution: {
-    title: 'Changes across sessions',
-    rmssdLabel: 'Variation between heartbeats at the end of each session, from oldest to most recent',
-    rmssdCaption: 'Variation between heartbeats at the end of each session',
-    ratingLabel: 'How you felt at the end of each session, from oldest to most recent',
-    ratingCaption: 'How you felt at the end',
+  /** Way into the progress view, which shows the evolution across sessions (ADR-33). */
+  progress: {
+    title: 'See how it has gone',
+    text: 'Your pulse and how you felt, session by session.',
+    action: 'View your progress',
   },
   item: {
     listenedOf: (listened: string, plannedMinutes: number): string => `${listened} of ${String(plannedMinutes)} min`,

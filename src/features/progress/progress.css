@@ -1,0 +1,62 @@
+/* Progress view (ADR-33): totals, one card per metric with its chart, and the same figures as a table. Values come from index.css tokens. */
+.progress-page { padding-bottom: var(--space-12); }
+.range-picker { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-8); }
+
+.progress-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8); }
+.progress-totals dt { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-2); }
+.progress-totals dd { font-family: var(--font-display); font-size: var(--text-2xl); line-height: var(--heading-line-height); }
+
+.progress-cards { display: grid; gap: var(--space-6); }
+.progress-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); align-items: center; gap: var(--space-10); padding: var(--space-8); }
+.progress-copy { max-width: var(--progress-copy-max-width); }
+.progress-copy h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-stage); line-height: var(--heading-line-height); letter-spacing: var(--tracking-heading); margin-bottom: var(--space-3); }
+.progress-insight { margin-top: var(--space-5); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); font-size: var(--text-lg); }
+.progress-note { color: var(--color-text-secondary); margin-bottom: var(--space-6); }
+.progress-card .progress-note { margin-bottom: 0; }
+.progress-notice { margin-top: var(--space-8); font-size: var(--text-sm); color: var(--color-text-muted); text-align: center; }
+
+/* Chart: the figures of the axis and the dates are text around a plot that stretches to the card. */
+.trend-legend { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.trend-legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.trend-frame { display: grid; grid-template-columns: var(--trend-axis-width) minmax(0, 1fr); gap: var(--space-4); }
+.trend-axis { display: flex; flex-direction: column; justify-content: space-between; margin: -0.5em 0; text-align: right; font-size: var(--text-xs); line-height: 1; color: var(--color-chart-text); font-variant-numeric: tabular-nums; }
+.trend-plot { position: relative; height: var(--trend-chart-height); margin-right: var(--trend-dot-size-active); border-radius: var(--border-radius); touch-action: pan-y; }
+.trend-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.trend-grid { stroke: var(--color-chart-grid); stroke-width: var(--chart-line-width-grid); }
+.trend-line { fill: none; stroke-width: var(--chart-line-width-series); stroke-linejoin: round; stroke-linecap: round; }
+.trend-line-start { stroke: var(--color-chart-start); }
+.trend-line-end { stroke: var(--color-chart-end); }
+
+/* A dot sits on the line with a ring of the surface around it; the start is hollow so the two series differ by more than colour. */
+.trend-dot { flex-shrink: 0; display: inline-block; width: var(--trend-dot-size); height: var(--trend-dot-size); border-radius: 50%; border: var(--trend-dot-ring) solid; }
+.trend-dot-start { border-color: var(--color-chart-start); background: var(--color-paper); }
+.trend-dot-end { border-color: var(--color-chart-end); background: var(--color-chart-end); }
+.trend-plot > .trend-dot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); translate: -50% -50%; box-shadow: 0 0 0 var(--trend-dot-ring) var(--color-paper); transition: width var(--motion-duration), height var(--motion-duration); }
+.trend-plot > .trend-dot.is-active { width: var(--trend-dot-size-active); height: var(--trend-dot-size-active); }
+.trend-crosshair { position: absolute; top: 0; bottom: 0; left: calc(var(--x) * 1%); width: var(--border-width); background: var(--color-border); translate: -50% 0; }
+.trend-readout { position: absolute; z-index: 1; top: 0; left: calc(var(--x) * 1%); translate: var(--space-4) 0; display: grid; gap: var(--space-1); width: max-content; padding: var(--space-3) var(--space-4); background: var(--color-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--border-radius); box-shadow: var(--card-shadow); font-size: var(--text-sm); color: var(--color-text-secondary); pointer-events: none; }
+.trend-readout[data-side='left'] { translate: calc(-100% - var(--space-4)) 0; }
+.trend-readout p { display: flex; align-items: center; gap: var(--space-2); }
+.trend-readout strong { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.trend-readout-date { font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+.trend-dates { display: flex; justify-content: space-between; margin: var(--space-3) var(--trend-dot-size-active) 0 calc(var(--trend-axis-width) + var(--space-4)); font-size: var(--text-xs); color: var(--color-chart-text); }
+.trend-dates:has(span:only-child) { justify-content: center; }
+
+/* The same figures as a table, one click away. */
+.progress-data { margin-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); border-bottom: var(--border-width) solid var(--color-border-subtle); }
+.progress-data > summary { display: flex; align-items: center; min-height: var(--control-height); padding: var(--space-4) 0; font-weight: var(--font-weight-strong); cursor: pointer; }
+.progress-table-scroll { overflow-x: auto; padding-bottom: var(--space-6); }
+.progress-data table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.progress-data caption { text-align: left; color: var(--color-text-secondary); margin-bottom: var(--space-3); }
+.progress-data th, .progress-data td { padding: var(--space-3) var(--space-4) var(--space-3) 0; text-align: left; white-space: nowrap; border-bottom: var(--border-width) solid var(--color-border-subtle); }
+.progress-data thead th { font-weight: var(--font-weight-normal); color: var(--color-text-secondary); }
+.progress-data tbody th { font-weight: var(--font-weight-strong); white-space: normal; min-width: var(--progress-date-min-width); }
+
+@media (max-width: 900px) {
+  .progress-card { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); padding: var(--space-6); }
+  .progress-copy { max-width: none; }
+}
+@media (max-width: 600px) {
+  .progress-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .progress-totals dd { font-size: var(--text-metric); }
+}

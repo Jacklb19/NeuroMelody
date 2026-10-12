@@ -24,7 +24,6 @@
 .breathing-guide { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }
 .breath-word { font-family: var(--font-display); font-size: var(--text-stage); line-height: var(--heading-line-height); color: var(--color-text); }
 .breath-hint { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-secondary); max-width: var(--breath-hint-max-width); }
-.breathing-toggle[aria-pressed='true'] { background: var(--color-success-background); border-color: var(--color-accent); color: var(--color-text); box-shadow: var(--glow-accent); }
 
 .listening-stage .stage-main { grid-area: stage; padding: 0 0 var(--space-6); align-self: end; }
 .listening-stage .session-stage .eyebrow { color: var(--color-accent); }

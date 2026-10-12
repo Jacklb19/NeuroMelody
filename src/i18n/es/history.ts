@@ -8,12 +8,11 @@ export const history = {
   planSession: 'Preparar una sesión',
   clearAll: 'Borrar todo el historial',
   confirmClearAll: 'Sí, borrar todas las sesiones',
-  evolution: {
-    title: 'Evolución entre sesiones',
-    rmssdLabel: 'Variabilidad entre latidos al final de cada sesión, de la más antigua a la más reciente',
-    rmssdCaption: 'Variabilidad entre latidos al final de cada sesión',
-    ratingLabel: 'Cómo te sentías al terminar cada sesión, de la más antigua a la más reciente',
-    ratingCaption: 'Cómo te sentías al terminar',
+  /** Way into the progress view, which shows the evolution across sessions (ADR-33). */
+  progress: {
+    title: 'Mira cómo te ha ido',
+    text: 'Tu pulso y cómo te sentías, sesión a sesión.',
+    action: 'Ver tu progreso',
   },
   item: {
     listenedOf: (listened: string, plannedMinutes: number): string => `${listened} de ${String(plannedMinutes)} min`,

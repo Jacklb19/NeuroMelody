@@ -9,6 +9,7 @@ export const ROUTE_SEGMENTS = {
   session: 'session',
   summary: 'summary/:id',
   history: 'history',
+  progress: 'progress',
   diagnostics: 'diagnostics',
   account: 'account',
   privacy: 'privacy',
@@ -27,6 +28,8 @@ export const ROUTES = {
   plan: `/${ROUTE_SEGMENTS.plan}`,
   session: `/${ROUTE_SEGMENTS.session}`,
   history: `/${ROUTE_SEGMENTS.history}`,
+  /** Evolution across the sessions saved on the device. */
+  progress: `/${ROUTE_SEGMENTS.progress}`,
   diagnostics: `/${ROUTE_SEGMENTS.diagnostics}`,
   /** Profile: summary and settings of the person, with or without an account. */
   account: `/${ROUTE_SEGMENTS.account}`,
