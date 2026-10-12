@@ -10,6 +10,8 @@ export interface Formatters {
   dateTime(iso: string): string;
   /** "7 oct." */
   shortDate(iso: string): string;
+  /** "7 de octubre de 2026": a date that must still make sense read months later. */
+  longDate(iso: string): string;
 }
 
 const cache = new Map<Locale, Formatters>();
@@ -20,6 +22,7 @@ function create(locale: Locale): Formatters {
   const decimals = new Map<number, Intl.NumberFormat>();
   const dateTime = new Intl.DateTimeFormat(tag, { dateStyle: 'long', timeStyle: 'short' });
   const shortDate = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' });
+  const longDate = new Intl.DateTimeFormat(tag, { dateStyle: 'long' });
   return {
     integer: (value) => integer.format(value),
     decimal: (value, fractionDigits) => {
@@ -32,6 +35,7 @@ function create(locale: Locale): Formatters {
     },
     dateTime: (iso) => dateTime.format(new Date(iso)),
     shortDate: (iso) => shortDate.format(new Date(iso)),
+    longDate: (iso) => longDate.format(new Date(iso)),
   };
 }
 

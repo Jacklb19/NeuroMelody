@@ -18,11 +18,15 @@ export const privacy = {
     },
     cloud: {
       title: 'En la nube, solo con tu consentimiento',
-      text: 'Con una cuenta y el segundo factor activo, puedes sincronizar los indicadores agregados de tus sesiones. Nunca se envía la señal cruda. Los datos se guardan en Supabase con acceso limitado a tu cuenta.',
+      text: 'Con una cuenta y el segundo factor activo, puedes sincronizar los indicadores agregados de tus sesiones. La señal de tus sesiones nunca se envía. Los datos se guardan en Supabase con acceso limitado a tu cuenta.',
     },
     summary: {
       title: 'Resumen automático',
       text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente.',
+    },
+    collection: {
+      title: 'Grabaciones guiadas',
+      text: 'Si decides hacer una grabación guiada para mejorar el modelo, se guardan en este dispositivo los intervalos entre tus latidos y el nombre de cada tramo, con un código al azar que no dice quién eres. No se envían solas. Tú decides, una por una, si exportarlas o enviarlas para entrenar el modelo de la app; enviarlas pide tu permiso expreso y la verificación en dos pasos, porque son tus latidos, y puedes retirarlas o borrarlas cuando quieras.',
     },
     rights: {
       title: 'Tus derechos',

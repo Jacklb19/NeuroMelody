@@ -43,10 +43,22 @@ export const summary = {
     },
     footnote: 'Tiempo de señal. El estado es una estimación a partir de tu pulso, no una medida clínica.',
   },
-  pending: {
+  /** The session told in plain words by the language model (RF-15); always marked as generated automatically. */
+  automatic: {
     label: 'Resumen en lenguaje sencillo',
-    title: 'Resumen automático pendiente.',
-    detail: 'El texto en lenguaje sencillo, generado automáticamente, estará disponible cuando conectes tu cuenta.',
+    title: 'Tu sesión en pocas palabras',
+    generatedMark: 'Texto generado automáticamente. Describe las cifras; no es una valoración.',
+    /** What travels, said before asking: asking is the consent. */
+    notice: 'Para escribirlo, un modelo de lenguaje recibe solo cifras de esta sesión: minutos escuchados, pulso y variación al empezar y al terminar, tiempo en cada estado y tus dos valoraciones. No recibe tu nombre, la fecha ni tus latidos.',
+    ask: 'Acepto y quiero el resumen',
+    askAgain: 'Pedir otro',
+    working: 'Escribiendo el resumen…',
+    /** This deployment has no API to ask. */
+    unavailable: 'El resumen automático no está disponible en esta versión de la app. Arriba tienes todos los indicadores de la sesión.',
+    /** Nobody is signed in; the link to sign in follows. */
+    needsAccount: 'El resumen automático necesita una cuenta. La sesión puede seguir solo en este dispositivo.',
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `No se pudo escribir el resumen: ${reason} Los indicadores de arriba no cambian.`,
   },
   download: 'Descargar datos (CSV)',
   viewHistory: 'Ver historial',

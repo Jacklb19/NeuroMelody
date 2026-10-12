@@ -6,6 +6,7 @@ import {
   type AuthService,
   type TotpEnrollment,
 } from './authService';
+import { CODE_VERIFIER_SUFFIX } from './sessionHint';
 
 /** Supabase error codes, grouped into the few the interface explains. */
 const ERROR_CODES: Readonly<Record<string, AccountErrorCode>> = {
@@ -78,7 +79,7 @@ export interface ProjectAccess {
 }
 
 /** What Supabase stores next to the session, by the ending of its storage name. */
-const SESSION_STORAGE_SUFFIXES = ['', '-code-verifier', '-user'];
+const SESSION_STORAGE_SUFFIXES = ['', CODE_VERIFIER_SUFFIX, '-user'];
 
 /** Forgets the session kept in this browser, without asking the server. */
 function forgetStoredSession(storageKey: string): void {

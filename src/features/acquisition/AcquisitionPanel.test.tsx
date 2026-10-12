@@ -27,13 +27,13 @@ import { join } from 'node:path';
 
 const text = es.acquisition;
 
-/** The panel is controlled: this harness keeps the source the way App does. */
+/** The panel is controlled: this harness keeps the source the way App does. It opens on the trial sources, which run on a fake clock. */
 function StatefulPanel({ createSource, createRecording }: {
   readonly createSource: CreateSimulatedSource;
   readonly createRecording?: (options: RecordedSourceOptions) => SignalSource;
 }) {
   const [source, setSource] = useState<SignalSource | null>(null);
-  return <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} createRecording={createRecording} />;
+  return <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} createRecording={createRecording} startInTrial />;
 }
 
 function renderWithFakeTime() {
@@ -86,15 +86,36 @@ describe('AcquisitionPanel', () => {
     expect(screen.getByTestId('heart-rate')).toHaveTextContent(es.common.noValue);
   });
 
-  it('offers the four sources, the five scenarios and the four speeds', () => {
+  it('offers the sources that measure the person, and the trial ones only when asked', async () => {
+    const user = userEvent.setup();
+    render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} bluetooth={{} as BluetoothAdapter} cameraAvailable />);
+    const options = (): (string | null)[] => screen.getAllByRole('option').map((option) => option.textContent);
+
+    expect(options()).toEqual([text.sources.ble, text.experimentalOption(text.sources.camera)]);
+    expect(screen.queryByTestId('trial-note')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: text.trial.enter }));
+    // The trial says what it is before anything is connected.
+    expect(screen.getByTestId('trial-note')).toHaveTextContent(text.trial.note);
+    expect(options().slice(0, 2)).toEqual([text.sources.simulator, text.sources.recording]);
+    expect(screen.getByRole('button', { name: text.connect.simulator })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: text.trial.leave }));
+    expect(options()).toEqual([text.sources.ble, text.experimentalOption(text.sources.camera)]);
+  });
+
+  it('opens on the camera where the browser has no Bluetooth', () => {
+    render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} bluetooth={null} cameraAvailable />);
+    expect(screen.getByRole('combobox', { name: text.sourceLabel })).toHaveValue('camera');
+  });
+
+  it('offers the two trial sources, the five scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
     expect(scenarios).toEqual([
       text.sources.simulator,
       text.sources.recording,
-      text.sources.ble,
-      text.experimentalOption(text.sources.camera),
       text.scenarios.rest,
       text.scenarios.activation,
       text.scenarios.progressive_relaxation,

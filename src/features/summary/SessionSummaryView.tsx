@@ -11,6 +11,7 @@ import { EDGE_SECONDS, summarizeSession } from '../records/summarizeSession';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { downloadText } from '../../shared/downloadText';
 import { PageHeading } from '../../shared/PageHeading';
+import { AutomaticSummary } from './AutomaticSummary';
 import { Sparkline } from '../../shared/Sparkline';
 import { StateTimeShare } from './StateTimeShare';
 
@@ -33,7 +34,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
   const ratingChange = describeRatingChange(summary.ratingChange, t);
   const figuresId = useId();
   const trendValues = record.samples.map((sample) => (sample.goodQuality ? sample.rmssd : null));
-  const { figures, pending } = t.summary;
+  const { figures } = t.summary;
 
   return (
     <div className="summary-page">
@@ -76,11 +77,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
 
       <StateTimeShare secondsByState={summary.secondsByState} />
 
-      <section className="summary-section" aria-label={pending.label}>
-        <p className="pending-note">
-          <strong>{pending.title}</strong> {pending.detail}
-        </p>
-      </section>
+      <AutomaticSummary record={record} />
 
       <div className="action-row summary-actions">
         <button

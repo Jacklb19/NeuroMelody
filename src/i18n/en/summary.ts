@@ -43,10 +43,22 @@ export const summary = {
     },
     footnote: 'Signal time. The state is an estimate from your pulse, not a clinical measurement.',
   },
-  pending: {
+  /** The session told in plain words by the language model (RF-15); always marked as generated automatically. */
+  automatic: {
     label: 'Plain-language summary',
-    title: 'Automatic summary pending.',
-    detail: 'The automatically generated plain-language text will be available once you connect your account.',
+    title: 'Your session in a few words',
+    generatedMark: 'Automatically generated text. It describes the figures; it is not an assessment.',
+    /** What travels, said before asking: asking is the consent. */
+    notice: 'To write it, a language model receives only figures of this session: minutes listened, pulse and variation at the start and at the end, time in each state and your two ratings. It does not receive your name, the date or your heartbeats.',
+    ask: 'I agree and want the summary',
+    askAgain: 'Ask for another',
+    working: 'Writing the summary…',
+    /** This deployment has no API to ask. */
+    unavailable: 'The automatic summary is not available in this version of the app. All the indicators of the session are above.',
+    /** Nobody is signed in; the link to sign in follows. */
+    needsAccount: 'The automatic summary needs an account. The session can stay on this device alone.',
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `The summary could not be written: ${reason} The indicators above do not change.`,
   },
   download: 'Download data (CSV)',
   viewHistory: 'View history',

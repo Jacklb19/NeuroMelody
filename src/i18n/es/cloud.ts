@@ -27,9 +27,13 @@ export const cloud = {
     not_found: 'la sesión ya no está en la nube.',
     invalid_request: 'una sesión no tiene un formato que el servicio acepte.',
     storage_unavailable: 'el servicio no responde ahora mismo.',
+    language_model_unavailable: 'el texto automático no está disponible ahora mismo.',
     network: 'no hay conexión.',
     unknown: 'ocurrió un error inesperado.',
   },
-  /** A session could not be deleted because the cloud did not confirm it; `reason` is one of `errors`. */
-  deleteFailed: (reason: string): string => `No se borró nada: ${reason} Inténtalo de nuevo cuando haya conexión.`,
+  /** Sessions already deleted from this device whose deletion has not reached the account yet (HU-09). */
+  pendingDeletions: (count: number): string =>
+    count === 1
+      ? 'Una sesión que borraste aquí todavía no se ha borrado de tu cuenta: se hará sola cuando haya conexión.'
+      : `${String(count)} sesiones que borraste aquí todavía no se han borrado de tu cuenta: se hará solo cuando haya conexión.`,
 };

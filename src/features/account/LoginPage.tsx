@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
-import { needsSecondFactor, useAuth } from './authContext';
+import { isCheckingSession, needsSecondFactor, useAuth } from './authContext';
 import { EmailField, PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
 import { FormError } from './FormError';
@@ -37,6 +37,15 @@ export function LoginPage(): React.JSX.Element {
   };
 
   if (state.kind === 'signed_in' && !needsSecondFactor(state.assurance)) return <Navigate to={ROUTES.app} replace />;
+
+  // Someone already signed in is about to leave this screen or be asked for the code: the form would only flash.
+  if (isCheckingSession(state)) {
+    return (
+      <AuthLayout title={copy.title} subtitle={auth.working}>
+        <Link to={ROUTES.app} className="auth-skip">{auth.withoutAccount}</Link>
+      </AuthLayout>
+    );
+  }
 
   if (state.kind === 'signed_in' && service !== null) {
     return (

@@ -78,6 +78,10 @@
   --trend-dot-ring: 2px;
   --progress-copy-max-width: 34ch;
   --progress-date-min-width: 9rem;
+  /* Printable report (ADR-33): width of the sheet on screen and of the hint beside the print button. */
+  --report-sheet-width: 52rem;
+  --report-hint-max-width: 44ch;
+  --plan-suggestion-text-min-width: 16rem;
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
@@ -120,6 +124,8 @@
   --landing-stagger: 90ms;
   /* One beat of the CSS fallback orb, matching the simulated heart (about 65 bpm). */
   --landing-beat: 920ms;
+  /* How long the screen that waits for a kept session stays empty before saying it is working. */
+  --session-check-delay: 600ms;
   --totp-qr-size: 12rem;
 
   /* Shared surface language of the whole app (ADR-30). */
@@ -407,6 +413,8 @@ input[type='range'] { width: 100%; min-width: 0; min-height: var(--control-heigh
 select { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control-height); padding: var(--space-2) var(--space-3); background: var(--color-paper); color: var(--color-text); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); }
 select:disabled { background: var(--color-surface); color: var(--color-text-muted); }
 .source-button { margin-bottom: var(--space-5); }
+.trial-switch { display: grid; justify-items: start; gap: var(--space-1); margin-bottom: var(--space-4); }
+.trial-switch .recording-note { margin-bottom: 0; }
 .recording-note { margin-bottom: var(--space-5); color: var(--color-text-secondary); font-size: var(--text-sm); }
 .connection-status, .signal-status { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-5); }
 .connection-status strong, .signal-status strong { color: var(--color-text); }
@@ -475,6 +483,10 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .state-legend li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); font-size: var(--text-sm); }
 .state-legend strong { font-variant-numeric: tabular-nums; }
 .state-swatch { width: var(--swatch-size); height: var(--swatch-size); border-radius: 50%; }
+/* Text written by the language model: set apart and always labelled as generated. */
+.generated-mark { font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--color-text-muted); }
+.narrative-text { max-width: var(--reading-max-width); margin-bottom: var(--space-3); font-family: var(--font-display); font-size: var(--text-xl); line-height: var(--line-height-base); }
+.automatic-summary .pending-note, .automatic-summary .generated-mark, .automatic-summary .quiet-notice { margin-bottom: var(--space-5); }
 .pending-note { font-size: var(--text-sm); color: var(--color-text-secondary); max-width: var(--reading-max-width); }
 .summary-actions { margin-top: var(--space-10); }
 .empty-state { padding: var(--space-10); background: var(--color-surface); border-radius: var(--border-radius); display: grid; gap: var(--space-6); justify-items: start; }
@@ -529,6 +541,13 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* Printing (the report, ADR-33): the content of the page alone, on plain paper. */
+@media print {
+  :root, body { background: none; }
+  .app-header, .skip-link, .stop-button, .screen-only { display: none; }
+  .app-shell { max-width: none; padding: 0; }
+  .app-main { padding: 0; }
 }
 @media (forced-colors: active) {
   .stop-symbol { background: ButtonText; }

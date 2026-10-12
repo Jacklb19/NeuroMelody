@@ -26,10 +26,14 @@ export const cloud = {
     session_conflict: 'a session already exists under another account.',
     not_found: 'the session is no longer in the cloud.',
     invalid_request: 'a session is not in a format the service accepts.',
+    language_model_unavailable: 'the automatic text is not available right now.',
     storage_unavailable: 'the service is not responding right now.',
     network: 'there is no connection.',
     unknown: 'an unexpected error occurred.',
   },
-  /** A session could not be deleted because the cloud did not confirm it; `reason` is one of `errors`. */
-  deleteFailed: (reason: string): string => `Nothing was deleted: ${reason} Try again when you are online.`,
+  /** Sessions already deleted from this device whose deletion has not reached the account yet (HU-09). */
+  pendingDeletions: (count: number): string =>
+    count === 1
+      ? 'One session you deleted here has not been deleted from your account yet: it will be once you are online.'
+      : `${String(count)} sessions you deleted here have not been deleted from your account yet: they will be once you are online.`,
 };

@@ -8,7 +8,7 @@ export function sample(second: number, overrides: Partial<SessionSample> = {}): 
   };
 }
 
-/** A finished 20-minute session with the given samples. */
+/** A finished 20-minute session, measured with a strap, with the given samples. */
 export function sessionRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
   return {
     id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -17,7 +17,7 @@ export function sessionRecord(overrides: Partial<SessionRecord> = {}): SessionRe
     plannedMinutes: 20,
     goals: [],
     listenedSeconds: 1200,
-    sourceKind: 'simulator',
+    sourceKind: 'ble',
     ratingBefore: 4,
     ratingAfter: 7,
     samples: [],

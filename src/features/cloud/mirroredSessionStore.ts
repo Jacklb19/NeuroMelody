@@ -1,16 +1,20 @@
 import type { SessionRecord } from '../records/sessionRecord';
 import type { SessionStore } from '../records/sessionStore';
 import type { CloudApi } from './cloudApi';
-import type { SyncMarks } from './syncSessions';
+import type { PendingDeletions, SyncMarks } from './syncSessions';
 
 interface MirrorOptions {
   readonly local: SessionStore;
   /** Marks of whoever is signed in now; they change with the account. */
   readonly marks: () => SyncMarks;
+  /** Deletions waiting for the cloud, of whoever is signed in now. */
+  readonly deletions: () => PendingDeletions;
   /** The API while syncing is on (account, two steps and consent); `null` otherwise. */
   readonly cloud: () => CloudApi | null;
   /** Told when a background upload fails, so the screen can say it; the session stays on the device. */
   readonly onUploadError: (cause: unknown) => void;
+  /** Told when a deletion starts or stops waiting for the cloud. */
+  readonly onPendingChange: () => void;
 }
 
 /**
@@ -20,11 +24,15 @@ interface MirrorOptions {
  * - Saving and rating write to the device first and never wait for the
  *   network: a session is never lost because the cloud was slow or down. The
  *   upload runs behind and the next sync retries it.
- * - Deleting does the opposite and deletes from the cloud first. If that
- *   fails, nothing is deleted and the person is told, because a session
- *   left in the cloud would come back on the next sync.
+ * - Deleting does not wait either (HU-09): the session leaves the device at
+ *   once. If it was ever sent, its deletion is written down before anything
+ *   else and stays queued until the cloud confirms it, now or on a later
+ *   sync, which delivers the queue before reading the cloud. So a session
+ *   deleted without a connection does not come back.
  */
-export function createMirroredSessionStore({ local, marks, cloud, onUploadError }: MirrorOptions): SessionStore {
+export function createMirroredSessionStore({
+  local, marks, deletions, cloud, onUploadError, onPendingChange,
+}: MirrorOptions): SessionStore {
   const upload = (record: SessionRecord): void => {
     const api = cloud();
     if (api === null) return;
@@ -32,11 +40,23 @@ export function createMirroredSessionStore({ local, marks, cloud, onUploadError 
   };
 
   const deleteEverywhere = async (id: string): Promise<void> => {
-    const api = cloud();
     // A session that was never sent has nothing to delete in the cloud.
-    if (api !== null && marks().has(id)) await api.deleteSession(id);
+    const sent = marks().has(id);
+    const queue = deletions();
+    // Queued first: closing the app right after this line still deletes it from the cloud later.
+    if (sent) queue.add(id);
     await local.delete(id);
     marks().remove(id);
+    const api = cloud();
+    if (sent && api !== null) {
+      try {
+        await api.deleteSession(id);
+        queue.remove(id);
+      } catch {
+        // No connection, or the cloud did not answer: it stays queued for the next sync.
+      }
+    }
+    if (sent) onPendingChange();
   };
 
   return {
@@ -53,10 +73,6 @@ export function createMirroredSessionStore({ local, marks, cloud, onUploadError 
     },
     delete: deleteEverywhere,
     async clear() {
-      if (cloud() === null) {
-        await local.clear();
-        return;
-      }
       for (const record of await local.list()) await deleteEverywhere(record.id);
     },
   };

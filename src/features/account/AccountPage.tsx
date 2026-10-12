@@ -5,7 +5,7 @@ import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
-import { ChevronRightIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
+import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import { useRecordFormatter } from '../records/useRecordFormatter';
@@ -223,6 +223,7 @@ function PreferencesSection(): React.JSX.Element {
       <div className="setting-list glass-card">
         <LinkRow to={ROUTES.privacy} icon={<ShieldIcon />} title={copy.rows.privacy.title} text={copy.rows.privacy.text} />
         <LinkRow to={ROUTES.history} icon={<HistoryIcon />} title={copy.rows.history.title} text={copy.rows.history.text} />
+        <LinkRow to={ROUTES.collect} icon={<HeartIcon />} title={copy.rows.collect.title} text={copy.rows.collect.text} />
       </div>
     </section>
   );

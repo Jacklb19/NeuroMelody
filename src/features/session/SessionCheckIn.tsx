@@ -10,6 +10,8 @@ interface SessionCheckInProps {
   readonly onRatingBeforeChange: (rating: number | null) => void;
   /** Id of the session just saved on the device, if any. */
   readonly savedId: string | null;
+  /** The session that just ended used a trial source, so it was not kept. */
+  readonly trialEnded: boolean;
   /** Why the session could not be saved, already in the interface language. */
   readonly saveError: string | null;
 }
@@ -23,6 +25,7 @@ export function SessionCheckIn({
   ratingBefore,
   onRatingBeforeChange,
   savedId,
+  trialEnded,
   saveError,
 }: SessionCheckInProps): React.JSX.Element | null {
   const { checkIn } = useMessages().session;
@@ -38,6 +41,13 @@ export function SessionCheckIn({
       <div className="session-saved" role="status">
         <p><strong>{checkIn.saved}</strong> {checkIn.savedDetail}</p>
         <Link to={summaryPath(savedId)} className="button button-primary">{checkIn.viewSummary}</Link>
+      </div>
+    );
+  }
+  if (trialEnded && !playing) {
+    return (
+      <div className="session-saved" role="status" data-testid="trial-ended">
+        <p><strong>{checkIn.trialEnded}</strong> {checkIn.trialEndedDetail}</p>
       </div>
     );
   }

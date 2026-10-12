@@ -7,7 +7,7 @@ import { SIMULATOR_SEED } from './config';
 import { describeSourceNotice } from './describeSourceError';
 import { DEFAULT_SCENARIO_ID, SCENARIO_IDS, type ScenarioId } from './simulator/scenarios';
 import { SimulatedSource, type SimulatedSourceOptions } from './simulator/SimulatedSource';
-import { DEFAULT_SOURCE_KIND, SOURCE_KIND_IDS, type SourceKind } from './sourceCatalog';
+import { FALLBACK_SOURCE_KIND, SOURCE_KIND_IDS, type SourceKind } from './sourceCatalog';
 import { SOURCE_TRAITS } from './sourceTraits';
 import { DEFAULT_SPEED, SPEEDS, type Speed } from './speedCatalog';
 import { MS_PER_SECOND } from '../../shared/time';
@@ -35,7 +35,7 @@ const createDefaultRecording = (options: RecordedSourceOptions): SignalSource =>
 const createDefaultBle: CreateBleSource = (options) => new BleSource(options);
 const createDefaultCamera: CreateCameraSource = () => new CameraSource();
 
-interface AcquisitionPanelProps {
+export interface AcquisitionPanelProps {
   /** Current source; the parent keeps it so it can be shared with the analysis. */
   readonly source: SignalSource | null;
   readonly onSourceChange: (source: SignalSource) => void;
@@ -48,13 +48,17 @@ interface AcquisitionPanelProps {
   readonly createCamera?: CreateCameraSource;
   /** Whether the browser exposes the camera API; injected by tests like the Bluetooth adapter. */
   readonly cameraAvailable?: boolean;
+  /** Opens on the sources that only try the app (simulator, sample recordings) instead of the real ones. */
+  readonly startInTrial?: boolean;
 }
 
 /**
- * Acquisition layer panel: picks the source (simulator, example recording,
- * Bluetooth strap or the experimental camera pulse), connects or disconnects,
- * and always shows the connection state (HU-01) with the latest reading
- * received.
+ * Acquisition layer panel: picks the source, connects or disconnects, and
+ * always shows the connection state (HU-01) with the latest reading
+ * received. It offers the sources that measure the person (Bluetooth strap
+ * and the experimental camera pulse); the simulator and the example
+ * recordings sit apart, in a trial mode that says nothing heard with them
+ * is kept.
  */
 export function AcquisitionPanel({
   source,
@@ -65,9 +69,21 @@ export function AcquisitionPanel({
   bluetooth = browserBluetooth(),
   createCamera = createDefaultCamera,
   cameraAvailable = cameraApiAvailable(),
+  startInTrial = false,
 }: AcquisitionPanelProps): React.JSX.Element {
   const t = useMessages();
-  const [kind, setKind] = useState<SourceKind>(DEFAULT_SOURCE_KIND);
+  /** Whether the browser lacks what a source needs (RNF-10). */
+  const unavailable = (id: SourceKind): boolean =>
+    (SOURCE_TRAITS[id].requiresBluetooth && bluetooth === null) || (SOURCE_TRAITS[id].requiresCamera && !cameraAvailable);
+  /** The sources of one mode, and the one it opens on: the first this browser can use. */
+  const sourcesOf = (trialMode: boolean): readonly SourceKind[] => SOURCE_KIND_IDS.filter((id) => SOURCE_TRAITS[id].trial === trialMode);
+  const firstOf = (trialMode: boolean): SourceKind => {
+    const offered = sourcesOf(trialMode);
+    return offered.find((id) => !unavailable(id)) ?? offered[0] ?? FALLBACK_SOURCE_KIND;
+  };
+  const [trial, setTrial] = useState(startInTrial);
+  const [kind, setKind] = useState<SourceKind>(() => firstOf(startInTrial));
+  const offered = sourcesOf(trial);
   const [recordId, setRecordId] = useState<RecordingId>(DEFAULT_RECORDING_ID);
   const [scenario, setScenario] = useState<ScenarioId>(DEFAULT_SCENARIO_ID);
   const [speed, setSpeed] = useState<Speed>(DEFAULT_SPEED);
@@ -97,9 +113,10 @@ export function AcquisitionPanel({
     void newSource.connect();
   };
 
-  /** Whether the browser lacks what a source needs (RNF-10). */
-  const unavailable = (id: SourceKind): boolean =>
-    (SOURCE_TRAITS[id].requiresBluetooth && bluetooth === null) || (SOURCE_TRAITS[id].requiresCamera && !cameraAvailable);
+  const toggleTrial = (): void => {
+    setTrial(!trial);
+    setKind(firstOf(!trial));
+  };
 
   // Keyed by the catalog, so a new kind cannot ship without a way to start it.
   const sourceFactories: Readonly<Record<SourceKind, () => SignalSource | null>> = {
@@ -138,9 +155,9 @@ export function AcquisitionPanel({
         <label>
           {t.acquisition.sourceLabel}
           <select value={kind} disabled={active} onChange={event => {
-            setKind(parseOption(SOURCE_KIND_IDS, event.target.value, DEFAULT_SOURCE_KIND));
+            setKind(parseOption(offered, event.target.value, firstOf(trial)));
           }}>
-            {SOURCE_KIND_IDS.map((id) => (
+            {offered.map((id) => (
               <option key={id} value={id} disabled={unavailable(id)}>
                 {SOURCE_TRAITS[id].experimental ? t.acquisition.experimentalOption(sourceNames[id]) : sourceNames[id]}
               </option>
@@ -189,6 +206,12 @@ export function AcquisitionPanel({
             ))}
           </select>
         </label>}
+      </div>
+      <div className="trial-switch">
+        {trial && <p className="recording-note" data-testid="trial-note">{t.acquisition.trial.note}</p>}
+        <button type="button" className="text-button" disabled={active} onClick={toggleTrial}>
+          {trial ? t.acquisition.trial.leave : t.acquisition.trial.enter}
+        </button>
       </div>
       {kind === 'recording' && <p className="recording-note">
         {t.acquisition.recordingNote}{' '}

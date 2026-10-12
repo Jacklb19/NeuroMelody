@@ -40,6 +40,10 @@
 .auth-card .totp-form .button { justify-self: stretch; }
 @keyframes auth-rise { from { opacity: 0; transform: translateY(var(--landing-reveal-shift)); } to { opacity: 1; transform: none; } }
 
+/* Screen held while a kept session is read: empty at first, so a quick answer shows nothing at all. */
+.session-check { min-height: 100vh; display: grid; place-content: center; color: var(--color-text-secondary); animation: session-check-appear var(--landing-rise-duration) var(--session-check-delay) both; }
+@keyframes session-check-appear { from { opacity: 0; } to { opacity: 1; } }
+
 /* Profile. */
 .profile-page { max-width: var(--reading-max-width); margin: 0 auto; display: grid; gap: var(--space-10); }
 .profile-challenge { gap: var(--space-4); }

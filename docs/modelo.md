@@ -53,6 +53,17 @@ Acierto equilibrado por persona: va del 34 % (S2) al 100 % (S13); 11 de 15 perso
 - **Sensor distinto:** se entrenó con un electrocardiograma de pecho. Con la cámara del celular, menos precisa, puede rendir peor.
 - **Solo tres entradas.** No usa LF/HF, porque la app tarda 2 minutos en tenerlo y no siempre lo tiene.
 
+## Versiones y reentrenamiento
+
+El modelo que trae la app es el de esta ficha. Desde el 12 oct 2026 existe además el camino para mejorarlo con datos de quienes usan la app, **todavía sin ninguna versión publicada por ese camino**:
+
+1. La persona hace la grabación guiada (`/collect`) y decide si la envía, con su permiso expreso y verificación en dos pasos.
+2. Un flujo programado entrena con WESAD y con esas grabaciones, dejando fuera a cada persona por turno.
+3. Un control de calidad decide si el resultado puede publicarse: al menos 5 personas de la app, no acertar menos en ellas que el modelo entrenado solo con WESAD, y no perder más de un punto en WESAD.
+4. Si pasa, una persona lo aprueba. Solo entonces la app lo descarga; si no, sigue con el que tiene.
+
+El modelo nunca se entrena ni se publica solo dentro de la app. Cuando se publique una versión por este camino, sus cifras y sus límites se escriben aquí, junto a las de esta.
+
 ## Cómo reproducirlo
 
 En `back/training/` (dependencias solo de entrenamiento: numpy, scipy, scikit-learn):

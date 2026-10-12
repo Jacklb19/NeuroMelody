@@ -5,6 +5,7 @@ import { QUERY_PARAMS } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import type { SignalSource } from '../acquisition/contract';
 import { AcquisitionPanel } from '../acquisition/AcquisitionPanel';
+import { isTrialSource } from '../acquisition/sourceTraits';
 import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
@@ -14,7 +15,8 @@ import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
-import { loadActivationModel } from '../adaptation/classifier/activationModel';
+import { loadLatestActivationModel } from '../adaptation/classifier/activationModel';
+import { useCloudSync } from '../cloud/cloudSyncContext';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
 import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
@@ -35,7 +37,8 @@ import './session.css';
  * Listening session at /session (docs/pantallas.md). The simple view comes
  * first: what is happening, the music controls and the session progress.
  * Signal figures and musical parameters stay one click away (ADR-24).
- * Every session that plays music is recorded on the device (RF-14).
+ * Every session that plays music with the person's own pulse is recorded
+ * on the device (RF-14); one made with a trial source is not, and says so.
  */
 export function SessionPage(): React.JSX.Element {
   const t = useMessages();
@@ -46,6 +49,7 @@ export function SessionPage(): React.JSX.Element {
   // Parsed once per URL value, so the handlers that depend on it stay stable.
   const goals = useMemo(() => readGoals(goalsParam), [goalsParam]);
   const store = useSessionStore();
+  const { api } = useCloudSync();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
   const [adaptation] = useState(() => new AdaptationSession());
@@ -56,6 +60,8 @@ export function SessionPage(): React.JSX.Element {
   const playing = engine !== null;
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // The session that just ended was a trial of the app, so nothing was kept.
+  const [trialEnded, setTrialEnded] = useState(false);
   // The cause is kept as is and translated when shown.
   const [saveFailure, setSaveFailure] = useState<{ readonly cause: unknown } | null>(null);
   const connection = useSignalSource(source).state;
@@ -71,7 +77,12 @@ export function SessionPage(): React.JSX.Element {
 
   const finishRecording = useCallback((): void => {
     const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current);
-    if (record === null || !worthKeeping(record)) return;
+    if (record === null) return;
+    if (isTrialSource(record.sourceKind)) {
+      setTrialEnded(true);
+      return;
+    }
+    if (!worthKeeping(record)) return;
     store.save(record).then(
       () => { setSavedId(record.id); },
       (error: unknown) => {
@@ -96,6 +107,7 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
       });
       setSavedId(null);
+      setTrialEnded(false);
       setSaveFailure(null);
     }
   }, [adaptation, recorder, durationMin, goals, finishRecording]);
@@ -128,13 +140,14 @@ export function SessionPage(): React.JSX.Element {
   }, []);
 
   // The trained classifier arrives a moment after the screen; until then, and if it fails, the rules estimate.
+  // With an account it is the latest published version; otherwise, or without a network, the one kept or shipped.
   useEffect(() => {
     let cancelled = false;
-    void loadActivationModel().then((model) => {
+    void loadLatestActivationModel(api === null ? {} : { published: () => api.currentClassifier() }).then((model) => {
       if (!cancelled && model !== null) adaptation.setModel(model);
     });
     return () => { cancelled = true; };
-  }, [adaptation]);
+  }, [adaptation, api]);
 
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);
@@ -167,6 +180,7 @@ export function SessionPage(): React.JSX.Element {
             ratingBefore={ratingBefore}
             onRatingBeforeChange={handleRatingBefore}
             savedId={savedId}
+            trialEnded={trialEnded}
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>

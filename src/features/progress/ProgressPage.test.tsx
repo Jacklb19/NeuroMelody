@@ -1,12 +1,13 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { ROUTES } from '../../config/routes';
+import { reportPath, ROUTES } from '../../config/routes';
 import { es } from '../../i18n/es';
 import { MemorySessionStore } from '../records/sessionStore';
 import { renderWithStore } from '../../test/renderWithStore';
 import { sample, sessionRecord } from '../../test/sessionRecords';
 import { ProgressPage } from './ProgressPage';
+import { DEFAULT_PROGRESS_RANGE } from './progressRangeCatalog';
 
 const { progress } = es;
 
@@ -52,5 +53,8 @@ describe('ProgressPage', () => {
     expect(rows).toHaveLength(3);
     expect(rows[1]).toHaveTextContent(es.common.withUnit(es.records.change('78', '68'), es.common.units.beatsPerMinute));
     expect(rows[2]).toHaveTextContent(es.records.noAnswer);
+
+    // The printable report opens on the sessions shown here.
+    expect(screen.getByRole('link', { name: progress.report.action })).toHaveAttribute('href', reportPath(DEFAULT_PROGRESS_RANGE));
   });
 });
