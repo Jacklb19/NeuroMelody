@@ -39,7 +39,7 @@ export const collection = {
     facts: [
       'The time between one heartbeat and the next, and which stage each one belongs to.',
       'A random code of this device, which does not say who you are. Neither your name nor your email is kept.',
-      'Everything stays on this device. It is never sent on its own: you export it and decide whom to give it to.',
+      'Everything stays on this device. Nothing is sent on its own: at the end you can export it or, if you want, send it to train the model. Both are your decision.',
       'You can delete each recording whenever you want, right here.',
     ],
     label: 'I agree to this recording being kept on this device so I can export it.',
@@ -70,7 +70,7 @@ export const collection = {
   },
   saved: {
     title: 'Recording saved',
-    text: 'Thank you. It is on this device. To be of use it has to be exported and handed to whoever trains the model; the model never changes by itself inside the app.',
+    text: 'Thank you. It is on this device. To be of use you can send it from the list below or export it. The model never changes by itself inside the app: it is trained elsewhere and a person approves each version.',
     export: 'Export my recordings',
     home: 'Back to the start',
     /** File name, e.g. "neuromelody-recordings-2026-10-12.json". */
@@ -80,6 +80,22 @@ export const collection = {
     title: 'It could not be saved',
     text: 'The recording was not saved on this device. You can try again.',
     retry: 'Start over',
+  },
+  /** Sending a recording to train the classifier: always the person's choice, one at a time, and reversible. */
+  share: {
+    offer: 'Send to train the model',
+    explanation: 'The heartbeats of this recording, the name of each stage and the random code of this device are sent. Not your name or your email. They are used only to train the app\'s model, and you can withdraw it whenever you want by deleting it here.',
+    accept: 'I agree and send it',
+    sending: 'Sending…',
+    sent: 'Sent to train the model',
+    confirmDeleteSent: 'Yes, delete it here and withdraw it',
+    /** Why it cannot be sent; keys mirror the availabilities that prevent it. */
+    needs: {
+      signed_out: 'Sending a recording to train the model needs an account with two-step verification.',
+      needs_second_factor: 'Sending a recording to train the model needs two-step verification, because these are your heartbeats.',
+    },
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `It could not be completed: ${reason} The recording is still on this device.`,
   },
   list: {
     title: 'Your recordings',

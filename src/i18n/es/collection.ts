@@ -39,7 +39,7 @@ export const collection = {
     facts: [
       'El tiempo entre un latido y el siguiente, y a qué tramo pertenece cada uno.',
       'Un código al azar de este dispositivo, que no dice quién eres. No se guarda tu nombre ni tu correo.',
-      'Todo queda en este dispositivo. No se envía solo: tú lo exportas y decides a quién dárselo.',
+      'Todo queda en este dispositivo. Nada se envía solo: al terminar puedes exportarla o, si quieres, enviarla para entrenar el modelo. Las dos cosas las decides tú.',
       'Puedes borrar cada grabación cuando quieras, aquí mismo.',
     ],
     label: 'Acepto que esta grabación se guarde en este dispositivo para poder exportarla.',
@@ -70,7 +70,7 @@ export const collection = {
   },
   saved: {
     title: 'Grabación guardada',
-    text: 'Gracias. Quedó en este dispositivo. Para que sirva hay que exportarla y entregarla a quien entrena el modelo; el modelo no cambia solo dentro de la app.',
+    text: 'Gracias. Quedó en este dispositivo. Para que sirva puedes enviarla desde la lista de abajo o exportarla. El modelo no cambia solo dentro de la app: se entrena aparte y una persona aprueba cada versión.',
     export: 'Exportar mis grabaciones',
     home: 'Volver al inicio',
     /** File name without extension, e.g. "neuromelody-grabaciones-2026-10-12". */
@@ -80,6 +80,22 @@ export const collection = {
     title: 'No se pudo guardar',
     text: 'La grabación no quedó guardada en este dispositivo. Puedes intentarlo de nuevo.',
     retry: 'Volver a empezar',
+  },
+  /** Sending a recording to train the classifier: always the person's choice, one at a time, and reversible. */
+  share: {
+    offer: 'Enviar para entrenar el modelo',
+    explanation: 'Se envían los latidos de esta grabación, el nombre de cada tramo y el código al azar de este dispositivo. No tu nombre ni tu correo. Se usan solo para entrenar el modelo de la app y puedes retirarla cuando quieras, borrándola aquí.',
+    accept: 'Acepto y la envío',
+    sending: 'Enviando…',
+    sent: 'Enviada para entrenar el modelo',
+    confirmDeleteSent: 'Sí, borrarla aquí y retirarla',
+    /** Why it cannot be sent; keys mirror the availabilities that prevent it. */
+    needs: {
+      signed_out: 'Para enviar una grabación al entrenamiento del modelo hace falta una cuenta con verificación en dos pasos.',
+      needs_second_factor: 'Para enviar una grabación al entrenamiento del modelo hace falta la verificación en dos pasos, porque son tus latidos.',
+    },
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `No se pudo completar: ${reason} La grabación sigue en este dispositivo.`,
   },
   list: {
     title: 'Tus grabaciones',

@@ -13,6 +13,7 @@ import { MS_PER_SECOND, SECONDS_PER_MINUTE } from '../../shared/time';
 import { AcquisitionPanel, type AcquisitionPanelProps } from '../acquisition/AcquisitionPanel';
 import type { SignalSource } from '../acquisition/contract';
 import { useSignalSource } from '../acquisition/useSignalSource';
+import type { CloudErrorCode } from '../cloud/cloudApi';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { uuidv7 } from '../records/uuidv7';
 import { useBreathingGuide } from '../session/breathing/useBreathingGuide';
@@ -35,6 +36,7 @@ import {
 import { useCollectionStore } from './collectionStore';
 import { participantCode, participantStorage } from './participant';
 import { StageRecorder } from './StageRecorder';
+import { useRecordingSharing, type RecordingSharing, type SharingAvailability } from './useRecordingSharing';
 import './collection.css';
 
 /** Where the person is in the guided recording. */
@@ -184,8 +186,11 @@ export function CollectionPage({ acquisition }: CollectionPageProps): React.JSX.
     );
   };
 
+  const sharing = useRecordingSharing();
+  // A recording that was sent leaves the cloud first: if that fails it stays everywhere and the list says why.
   const remove = (id: string): void => {
-    store.delete(id).then(refresh, refresh);
+    const withdrawn = sharing.sent.has(id) ? sharing.withdraw(id) : Promise.resolve();
+    withdrawn.then(() => store.delete(id)).then(refresh, refresh);
   };
 
   const connected = connection === 'connected';
@@ -265,7 +270,7 @@ export function CollectionPage({ acquisition }: CollectionPageProps): React.JSX.
       </div>
 
       {recordings !== null && recordings.length > 0 && !inProtocol && (
-        <SavedRecordings recordings={recordings} onExport={exportAll} onDelete={remove} />
+        <SavedRecordings recordings={recordings} sharing={sharing} onExport={exportAll} onDelete={remove} />
       )}
     </div>
   );
@@ -417,15 +422,27 @@ function SubtractionTask(): React.JSX.Element {
 
 interface SavedRecordingsProps {
   readonly recordings: readonly CollectionRecording[];
+  readonly sharing: RecordingSharing;
   readonly onExport: () => void;
   readonly onDelete: (id: string) => void;
 }
 
-function SavedRecordings({ recordings, onExport, onDelete }: SavedRecordingsProps): React.JSX.Element {
+/** Where what is missing to send a recording is solved. */
+const SHARING_NEXT_STEP: Readonly<Record<SharingAvailability, string | null>> = {
+  ready: null,
+  unavailable: null,
+  signed_out: ROUTES.login,
+  needs_second_factor: ROUTES.account,
+};
+
+function SavedRecordings({ recordings, sharing, onExport, onDelete }: SavedRecordingsProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.collection.list;
+  const share = t.collection.share;
   const format = useRecordFormatter();
   const titleId = useId();
+  const errors: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
+  const nextStep = SHARING_NEXT_STEP[sharing.availability];
   return (
     <section className="collection-list" aria-labelledby={titleId}>
       <div className="collection-list-heading">
@@ -433,17 +450,65 @@ function SavedRecordings({ recordings, onExport, onDelete }: SavedRecordingsProp
         <button type="button" className="pill-button pill-button-ghost" onClick={onExport}>{copy.exportAll(recordings.length)}</button>
       </div>
       <p className="secondary-text">{copy.about}</p>
+      {sharing.availability !== 'ready' && sharing.availability !== 'unavailable' && (
+        <p className="secondary-text">
+          {share.needs[sharing.availability]}
+          {nextStep !== null && <> <Link to={nextStep}>{t.cloud.actions[sharing.availability]}</Link></>}
+        </p>
+      )}
+      {sharing.error !== null && <p className="quiet-notice" role="alert">{share.failed(errors[sharing.error])}</p>}
       <ul>
-        {recordings.map((recording) => (
-          <li key={recording.id} className="glass-card">
-            <div>
-              <strong>{format.sessionDate(recording.recordedAt)}</strong>
-              <span className="secondary-text">{copy.detail(t.acquisition.sources[recording.sourceKind], beatCount(recording))}</span>
-            </div>
-            <ConfirmButton label={copy.delete} confirmLabel={copy.confirmDelete} onConfirm={() => { onDelete(recording.id); }} />
-          </li>
-        ))}
+        {recordings.map((recording) => {
+          const sent = sharing.sent.has(recording.id);
+          return (
+            <li key={recording.id} className="glass-card">
+              <div>
+                <strong>{format.sessionDate(recording.recordedAt)}</strong>
+                <span className="secondary-text">{copy.detail(t.acquisition.sources[recording.sourceKind], beatCount(recording))}</span>
+                {sent && <span className="collection-sent" data-testid="recording-sent">{share.sent}</span>}
+              </div>
+              <div className="collection-item-actions">
+                {sharing.availability === 'ready' && !sent && <ShareRecording onSend={() => sharing.send(recording)} />}
+                <ConfirmButton label={copy.delete} confirmLabel={sent ? share.confirmDeleteSent : copy.confirmDelete} onConfirm={() => { onDelete(recording.id); }} />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Sending one recording to train the classifier. It asks once more, saying
+ * what travels and that it can be undone: that second button is the consent.
+ */
+function ShareRecording({ onSend }: { readonly onSend: () => Promise<void> }): React.JSX.Element {
+  const copy = useMessages();
+  const share = copy.collection.share;
+  const [asking, setAsking] = useState(false);
+  const [sending, setSending] = useState(false);
+  if (!asking) {
+    return <button type="button" className="text-button" onClick={() => { setAsking(true); }}>{share.offer}</button>;
+  }
+  return (
+    <div className="collection-share" role="group" aria-label={share.offer}>
+      <p className="secondary-text">{share.explanation}</p>
+      <button
+        type="button"
+        className="pill-button pill-button-primary"
+        disabled={sending}
+        onClick={() => {
+          setSending(true);
+          void onSend().finally(() => {
+            setSending(false);
+            setAsking(false);
+          });
+        }}
+      >
+        {sending ? share.sending : share.accept}
+      </button>
+      <button type="button" className="text-button" disabled={sending} onClick={() => { setAsking(false); }}>{copy.common.cancel}</button>
+    </div>
   );
 }

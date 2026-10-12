@@ -3,6 +3,7 @@ import { DURATIONS_MIN, type DurationMin } from '../plan/plan';
 import type { GoalId } from '../plan/goalCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
 import type { NarrativeFigures } from '../summary/narrativeFigures';
+import type { CollectionRecording } from '../collection/collectionRecording';
 
 /**
  * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
@@ -74,6 +75,20 @@ export interface CloudApi {
    * figures to the language model.
    */
   summarizeSession(id: string, locale: Locale, figures: NarrativeFigures): Promise<SessionNarrative>;
+  /**
+   * Sends a guided recording to train the classifier (ADR-33). Calling it states the
+   * person's consent to send that recording. Sending it again changes nothing.
+   */
+  sendRecording(recording: CollectionRecording): Promise<void>;
+  /** Ids of the recordings the person has sent. */
+  listSentRecordings(): Promise<string[]>;
+  /** Withdrawing a recording the cloud no longer has is not an error: the result is the same. */
+  withdrawRecording(id: string): Promise<void>;
+  /**
+   * The file of the latest published classifier, not yet validated, or `null` when no
+   * version has been published. The model code checks every field before using it.
+   */
+  currentClassifier(): Promise<unknown>;
 }
 
 /** Paths of the API, relative to its base URL. */
@@ -81,6 +96,8 @@ const SESSIONS_PATH = '/v1/sessions';
 const ACCOUNT_PATH = '/v1/account';
 const PLAN_SUGGESTION_PATH = '/v1/plans/suggest';
 const SUMMARY_SUFFIX = '/summary';
+const RECORDINGS_PATH = '/v1/recordings';
+const CLASSIFIER_PATH = '/v1/models/classifier';
 const NOT_FOUND = 404;
 
 type Json = Readonly<Record<string, unknown>>;
@@ -156,6 +173,23 @@ function summaryFromWire(value: unknown): CloudSessionSummary | null {
   if (!isJson(value) || typeof value.id !== 'string') return null;
   const rating = value.rating_after;
   return { id: value.id, ratingAfter: typeof rating === 'number' ? rating : null };
+}
+
+/** A guided recording in the API's field names, with the consent that sending it states. */
+function recordingToWire(recording: CollectionRecording): Json {
+  return {
+    id: recording.id,
+    participant: recording.participant,
+    recorded_at: recording.recordedAt,
+    source_kind: recording.sourceKind,
+    segments: recording.segments.map((segment) => ({
+      label: segment.label,
+      planned_seconds: segment.plannedSeconds,
+      beat_times_ms: segment.beatTimesMs,
+      rr_ms: segment.rrMs,
+    })),
+    consent: true,
+  };
 }
 
 /** The figures of a summary in the API's field names. */
@@ -262,6 +296,26 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
       const plan = planFromWire(body);
       if (plan === null) throw new CloudError('unknown');
       return plan;
+    },
+    async sendRecording(recording) {
+      const response = await request('POST', RECORDINGS_PATH, recordingToWire(recording));
+      if (!response.ok) throw await failure(response);
+    },
+    async listSentRecordings() {
+      const body = await json(await request('GET', RECORDINGS_PATH));
+      if (!isJson(body) || !Array.isArray(body.recordings)) throw new CloudError('unknown');
+      return body.recordings.flatMap((item: unknown) => (isJson(item) && typeof item.id === 'string' ? [item.id] : []));
+    },
+    async withdrawRecording(id) {
+      const response = await request('DELETE', `${RECORDINGS_PATH}/${encodeURIComponent(id)}`);
+      if (!response.ok && response.status !== NOT_FOUND) throw await failure(response);
+    },
+    async currentClassifier() {
+      const response = await request('GET', CLASSIFIER_PATH);
+      if (response.status === NOT_FOUND) return null;
+      const body = await json(response);
+      if (!isJson(body) || !isJson(body.model)) throw new CloudError('unknown');
+      return body.model;
     },
     async summarizeSession(id, locale, figures) {
       const path = `${SESSIONS_PATH}/${encodeURIComponent(id)}${SUMMARY_SUFFIX}`;
