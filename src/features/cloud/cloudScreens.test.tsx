@@ -12,7 +12,7 @@ import { PrivacyPage } from '../privacy/PrivacyPage';
 import { MemorySessionStore, type SessionStore } from '../records/sessionStore';
 import { SessionStoreContext } from '../records/sessionStoreContext';
 import { sessionRecord } from '../../test/sessionRecords';
-import { CloudError, type CloudApi } from './cloudApi';
+import type { CloudApi } from './cloudApi';
 import { CloudSyncContext, type CloudSyncValue } from './cloudSyncContext';
 
 /** A signed-in person without two-step verification; `service` only answers what each screen asks. */
@@ -34,6 +34,7 @@ function cloud(overrides: Partial<CloudSyncValue> = {}): CloudSyncValue {
     status: 'synced',
     error: null,
     revision: 0,
+    pendingDeletions: 0,
     consentAt: null,
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
@@ -74,25 +75,18 @@ describe('screens that act on the cloud', () => {
     expect(signOut).toHaveBeenCalledOnce();
   });
 
-  it('keeps the session and says why when the cloud does not confirm a deletion', async () => {
+  it('deletes a session at once and says when its deletion is still on its way to the account', async () => {
     const user = userEvent.setup();
-    const local = new MemorySessionStore();
-    await local.save(sessionRecord());
-    const store: SessionStore = {
-      save: (record) => local.save(record),
-      get: (id) => local.get(id),
-      list: () => local.list(),
-      setRatingAfter: (id, rating) => local.setRatingAfter(id, rating),
-      delete: () => Promise.reject(new CloudError('network')),
-      clear: () => local.clear(),
-    };
-    renderScreen(<HistoryPage />, signedIn(), cloud(), store);
+    const store = new MemorySessionStore();
+    await store.save(sessionRecord());
+    renderScreen(<HistoryPage />, signedIn(), cloud({ status: 'failed', error: 'network', pendingDeletions: 1 }), store);
 
+    expect(screen.getByTestId('pending-deletions')).toHaveTextContent(es.cloud.pendingDeletions(1));
     await user.click(await screen.findByRole('button', { name: es.history.item.delete }));
     await user.click(screen.getByRole('button', { name: es.history.item.confirmDelete }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(es.cloud.deleteFailed(es.cloud.errors.network));
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(await screen.findByText(es.history.empty)).toBeVisible();
+    expect(await store.list()).toEqual([]);
   });
 
   it('records the consent of a signed-in person through the account, and says so when it cannot', async () => {

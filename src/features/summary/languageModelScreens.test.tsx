@@ -20,6 +20,7 @@ function cloud(status: CloudSyncStatus, api: Partial<CloudApi> | null): CloudSyn
     status,
     error: null,
     revision: 0,
+    pendingDeletions: 0,
     consentAt: null,
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),

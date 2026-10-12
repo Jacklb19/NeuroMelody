@@ -31,6 +31,9 @@ export const cloud = {
     network: 'there is no connection.',
     unknown: 'an unexpected error occurred.',
   },
-  /** A session could not be deleted because the cloud did not confirm it; `reason` is one of `errors`. */
-  deleteFailed: (reason: string): string => `Nothing was deleted: ${reason} Try again when you are online.`,
+  /** Sessions already deleted from this device whose deletion has not reached the account yet (HU-09). */
+  pendingDeletions: (count: number): string =>
+    count === 1
+      ? 'One session you deleted here has not been deleted from your account yet: it will be once you are online.'
+      : `${String(count)} sessions you deleted here have not been deleted from your account yet: they will be once you are online.`,
 };
