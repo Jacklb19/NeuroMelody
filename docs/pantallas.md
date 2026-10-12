@@ -54,10 +54,20 @@ De arriba abajo:
    - `SessionStage`: el momento en palabras sencillas, el estado estimado con «Confianza no calibrada · reglas provisionales» y los avisos de calidad y de permanencia («Se conserva el escalón hasta completar su duración mínima de 3 minutos»).
    - `PlaybackPanel`: iniciar, volumen y estado de la música.
    - `SessionProgress`: el progreso de la sesión como un pentagrama que se entinta, con el tiempo en texto.
-2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar la fuente (simulador, registro de ejemplo, banda Bluetooth o cámara del celular, esta última marcada como experimental, P-01), con su estado y la última lectura.
+2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar cómo se mide el pulso (banda Bluetooth o cámara del celular, esta última marcada como experimental, P-01), con su estado y la última lectura. Debajo, «No tengo cómo medir mi pulso: probar la app» pasa al **modo de prueba** (ver más abajo).
 3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
+
+## Modo de prueba (simulador y registros de ejemplo)
+
+El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.
+
+- **Entrar y salir:** un enlace bajo el selector de fuente, «No tengo cómo medir mi pulso: probar la app» y «Volver a medir mi pulso». No se puede cambiar con una fuente conectada. Al abrir, el panel ofrece solo banda y cámara, y elige la primera que el navegador pueda usar.
+- **Mientras está activo:** el selector ofrece simulador y registro de ejemplo (con escenario y velocidad), y una nota dice «Modo de prueba: este pulso no es el tuyo… lo que escuches así no se guarda».
+- **Al terminar una sesión de prueba:** no se guarda. En lugar de «Sesión guardada» aparece «Era una sesión de prueba y no se guardó», con la invitación a medir el pulso. No va al historial, al progreso, al informe ni a la nube.
+- **En `/collect`:** el protocolo se puede recorrer en modo de prueba, lo avisa antes de empezar y al final dice «Prueba terminada»: no guarda ni exporta nada.
+- **Sesiones de prueba anteriores a esta regla:** siguen en el historial, donde se pueden borrar, pero no cuentan en «Tu progreso» ni en el informe.
 
 ## Respiración guiada en `/session` (ADR-33)
 
@@ -113,7 +123,7 @@ Sin sesiones, o si todas son de prueba, invita a preparar una y no muestra hoja 
 
 Se llega desde el perfil («Ayuda a mejorar la app», en Preferencias). Es opcional y no cambia nada de las sesiones. Pide las advertencias de uso aceptadas, como `/session`.
 
-1. **Antes de empezar:** qué se va a hacer (tres tramos con su duración), qué se guarda, la casilla de consentimiento y, debajo, la fuente de señal (el mismo panel de `/session`). «Empezar la grabación» solo se activa con la casilla marcada y la fuente conectada. Con el simulador o un registro de ejemplo avisa de que esos latidos no enseñan nada al modelo.
+1. **Antes de empezar:** qué se va a hacer (tres tramos con su duración), qué se guarda, la casilla de consentimiento y, debajo, la fuente de señal (el mismo panel de `/session`). «Empezar la grabación» solo se activa con la casilla marcada y la fuente conectada. En modo de prueba avisa de que esos latidos no son de la persona y de que al final no se guarda nada.
 2. **Cada tramo** (reposo 5 min, respiración lenta 3 min, tarea de concentración 3 min): primero las instrucciones y «Empezar este tramo»; después la actividad (el orbe en reposo, el orbe con «Inhala/Exhala», o restar de 7 en 7 desde 1000 escribiendo cada resultado), el pentagrama de progreso y el tiempo que queda. El tiempo es tiempo de señal: si la señal se corta y vuelve a empezar, el tramo se repite. «Dejarlo por ahora» descarta todo.
 3. **Al terminar:** la grabación se guarda en el dispositivo (base propia, aparte del historial) y se puede exportar.
 4. **Tus grabaciones:** lista con fecha, fuente y número de latidos; «Exportar N grabaciones» descarga un archivo JSON y cada una se borra con confirmación.

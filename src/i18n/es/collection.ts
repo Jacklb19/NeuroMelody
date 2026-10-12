@@ -48,7 +48,12 @@ export const collection = {
   connectFirst: 'Primero conecta abajo cómo vas a medir tu pulso.',
   consentFirst: 'Marca la casilla para continuar.',
   /** Shown with the simulator or a sample recording. */
-  demoSource: 'Con el simulador o un registro de ejemplo puedes probar cómo funciona, pero esos latidos no son tuyos y no sirven para enseñar al modelo.',
+  demoSource: 'Estás en modo de prueba: puedes ver cómo funciona, pero esos latidos no son tuyos y al terminar no se guarda nada.',
+  trialDone: {
+    title: 'Prueba terminada',
+    text: 'Así es la grabación guiada. No se guardó nada, porque los latidos no eran tuyos. Cuando quieras hacerla de verdad, conecta la banda o la cámara.',
+    again: 'Volver al principio',
+  },
   stageCount: (current: number, total: number): string => `Tramo ${String(current)} de ${String(total)}`,
   startStage: 'Empezar este tramo',
   stopAnytime: 'Puedes parar cuando quieras.',

@@ -86,6 +86,8 @@ describe('recordings', () => {
       segments: recording().segments.map((segment) => ({ ...segment, beatTimesMs: [1600, 800] })),
     }))).toBe(false);
     expect(isCollectionRecording({ ...recording(), sourceKind: 'watch' })).toBe(false);
+    // Beats that are nobody's are not a recording to keep or export.
+    expect(isCollectionRecording(recording({ sourceKind: 'simulator' }))).toBe(false);
   });
 
   it('exports the recordings under the format and version the training code reads', () => {

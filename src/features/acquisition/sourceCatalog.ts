@@ -8,5 +8,5 @@ export const SOURCE_KIND_IDS = ['simulator', 'recording', 'ble', 'camera'] as co
 
 export type SourceKind = (typeof SOURCE_KIND_IDS)[number];
 
-/** Source selected when the session screen opens: it works in every browser. */
-export const DEFAULT_SOURCE_KIND: SourceKind = 'simulator';
+/** Source of last resort when nothing else can be chosen: it works in every browser. */
+export const FALLBACK_SOURCE_KIND: SourceKind = 'simulator';

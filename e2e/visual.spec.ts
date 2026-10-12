@@ -51,6 +51,7 @@ for (const width of [360, 768, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
     await page.screenshot({ path: testInfo.outputPath('session-empty.png'), fullPage: true });
+    await page.getByRole('button', { name: acquisition.trial.enter }).click();
     await page.getByRole('combobox', { name: acquisition.speedLabel, exact: true }).selectOption(String(SPEED));
     await page.getByRole('button', { name: acquisition.connect.simulator }).click();
     await page.getByRole('button', { name: playback.start }).click();
@@ -96,6 +97,7 @@ test('loading and error messages remain usable on a narrow screen', async ({ pag
   await page.goto(ROUTES.session);
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: acquisition.trial.enter }).click();
   await page.getByRole('combobox', { name: acquisition.sourceLabel, exact: true }).selectOption(RECORDING_SOURCE);
   await page.getByRole('button', { name: acquisition.connect.recording }).click();
   await expect(page.getByRole('combobox', { name: acquisition.recordingLabel, exact: true })).toBeDisabled();

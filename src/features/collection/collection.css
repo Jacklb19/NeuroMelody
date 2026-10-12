@@ -28,7 +28,7 @@
 
 /* The source panel stays on the page during the protocol, but steps back. */
 .collection-source { padding: var(--space-8); }
-.collection-source[data-quiet] .source-controls { display: none; }
+.collection-source[data-quiet] .source-controls, .collection-source[data-quiet] .trial-switch { display: none; }
 
 .collection-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-6); margin-bottom: var(--space-2); }
 .collection-list h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); margin-bottom: 0; }

@@ -96,6 +96,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto(ROUTES.session);
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: es.acquisition.trial.enter }).click();
   await page.getByLabel(es.acquisition.speedLabel).selectOption(String(SPEED));
 });
 

@@ -1,13 +1,15 @@
 import { SOURCE_KIND_IDS, type SourceKind } from '../acquisition/sourceCatalog';
+import { isTrialSource } from '../acquisition/sourceTraits';
 import { isUuid } from '../records/uuidv7';
 import { COLLECTION_STAGE_IDS, type CollectionStageId } from './collectionProtocol';
 
 /**
- * Sources that measure the person. The simulator and the sample recordings
- * let anyone try the protocol, but their beats teach the model nothing
- * about a person, and `back/training` leaves them out.
+ * Whether a source measures the person. The simulator and the sample
+ * recordings let anyone try the protocol, but their beats teach the model
+ * nothing about a person: such a recording is not kept, and
+ * `back/training` leaves out any that reaches it.
  */
-export const MEASURING_SOURCE_KINDS: readonly SourceKind[] = ['ble', 'camera'];
+export const isMeasuringSource = (kind: SourceKind): boolean => !isTrialSource(kind);
 
 /** One stage of the protocol: its label and the heartbeats recorded during it. */
 export interface CollectionSegment {
@@ -76,7 +78,7 @@ export function isCollectionRecording(value: unknown): value is CollectionRecord
     && typeof value.participant === 'string' && value.participant !== ''
     && isInstant(value.recordedAt)
     && isInstant(value.consentAt)
-    && SOURCE_KIND_IDS.some((kind) => kind === value.sourceKind)
+    && SOURCE_KIND_IDS.some((kind) => kind === value.sourceKind && isMeasuringSource(kind))
     && Array.isArray(value.segments)
     && value.segments.length === COLLECTION_STAGE_IDS.length
     && COLLECTION_STAGE_IDS.every((label, index) => isSegment((value.segments as unknown[])[index], label));

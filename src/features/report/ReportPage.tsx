@@ -17,7 +17,8 @@ import { MAX_RATING, MIN_RATING } from '../records/sessionRecord';
 import { EDGE_SECONDS } from '../records/summarizeSession';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { useSessionRecords } from '../records/useSessionRecords';
-import { AVERAGE_DECIMALS, measuredSessions, reportOf, type Report } from './report';
+import { measuredSessions } from '../records/retentionPolicy';
+import { AVERAGE_DECIMALS, reportOf, type Report } from './report';
 import './report.css';
 
 /**

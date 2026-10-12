@@ -5,6 +5,7 @@ import { QUERY_PARAMS } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import type { SignalSource } from '../acquisition/contract';
 import { AcquisitionPanel } from '../acquisition/AcquisitionPanel';
+import { isTrialSource } from '../acquisition/sourceTraits';
 import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
@@ -35,7 +36,8 @@ import './session.css';
  * Listening session at /session (docs/pantallas.md). The simple view comes
  * first: what is happening, the music controls and the session progress.
  * Signal figures and musical parameters stay one click away (ADR-24).
- * Every session that plays music is recorded on the device (RF-14).
+ * Every session that plays music with the person's own pulse is recorded
+ * on the device (RF-14); one made with a trial source is not, and says so.
  */
 export function SessionPage(): React.JSX.Element {
   const t = useMessages();
@@ -56,6 +58,8 @@ export function SessionPage(): React.JSX.Element {
   const playing = engine !== null;
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // The session that just ended was a trial of the app, so nothing was kept.
+  const [trialEnded, setTrialEnded] = useState(false);
   // The cause is kept as is and translated when shown.
   const [saveFailure, setSaveFailure] = useState<{ readonly cause: unknown } | null>(null);
   const connection = useSignalSource(source).state;
@@ -71,7 +75,12 @@ export function SessionPage(): React.JSX.Element {
 
   const finishRecording = useCallback((): void => {
     const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current);
-    if (record === null || !worthKeeping(record)) return;
+    if (record === null) return;
+    if (isTrialSource(record.sourceKind)) {
+      setTrialEnded(true);
+      return;
+    }
+    if (!worthKeeping(record)) return;
     store.save(record).then(
       () => { setSavedId(record.id); },
       (error: unknown) => {
@@ -96,6 +105,7 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
       });
       setSavedId(null);
+      setTrialEnded(false);
       setSaveFailure(null);
     }
   }, [adaptation, recorder, durationMin, goals, finishRecording]);
@@ -167,6 +177,7 @@ export function SessionPage(): React.JSX.Element {
             ratingBefore={ratingBefore}
             onRatingBeforeChange={handleRatingBefore}
             savedId={savedId}
+            trialEnded={trialEnded}
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>

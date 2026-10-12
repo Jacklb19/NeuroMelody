@@ -25,6 +25,7 @@ test(`plays for ${String(durationS)} seconds without underruns (RNF-01)`, async 
   await page.goto(sessionPath(MAX_DURATION_MIN));
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: es.acquisition.trial.enter }).click();
   await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
   await page.getByRole('button', { name: playback.start }).click();
   await expect(page.getByText(playback.states.playing, { exact: true })).toBeVisible();

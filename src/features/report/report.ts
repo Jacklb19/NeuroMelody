@@ -3,22 +3,6 @@ import { GOAL_IDS, type GoalId } from '../plan/goalCatalog';
 import { PROGRESS_METRIC_IDS, progressOf, type Pair, type Progress, type ProgressMetricId } from '../progress/progress';
 import type { SessionRecord } from '../records/sessionRecord';
 
-/**
- * Sources whose figures are not the person's: the simulator invents a pulse
- * and the sample recordings belong to somebody else. They are for trying the
- * app, so their sessions stay out of the report.
- */
-export const DEMO_SOURCE_KINDS: readonly SourceKind[] = ['simulator', 'recording'];
-
-/**
- * The sessions a report is made of: every one except those of
- * `DEMO_SOURCE_KINDS`. A session without any source measured nothing, but
- * the person did listen, so its time and its ratings count.
- */
-export function measuredSessions(records: readonly SessionRecord[]): readonly SessionRecord[] {
-  return records.filter((record) => record.sourceKind === null || !DEMO_SOURCE_KINDS.includes(record.sourceKind));
-}
-
 /** Decimals of each average: the self-rating moves within ten points, so tenths matter there. */
 export const AVERAGE_DECIMALS: Readonly<Record<ProgressMetricId, number>> = {
   heartRate: 0,
