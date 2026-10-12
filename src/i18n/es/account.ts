@@ -152,6 +152,8 @@ export const account = {
     added: 'Dispositivo añadido.',
     challengeTitle: 'Confirma que eres tú',
     challengeText: 'Escribe el código que muestra tu aplicación de autenticación.',
+    /** Way out of the code step: the app works without an account. */
+    signOutInstead: 'No tengo el código: cerrar sesión',
     invalidFormat: (digits: number): string => `Escribe los ${String(digits)} dígitos del código.`,
   },
 };

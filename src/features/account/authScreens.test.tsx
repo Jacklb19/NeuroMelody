@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AuthError } from '@supabase/supabase-js';
+import { AuthError, type SupabaseClient } from '@supabase/supabase-js';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { ROUTE_SEGMENTS, ROUTES } from '../../config/routes';
@@ -8,10 +8,14 @@ import { es } from '../../i18n/es';
 import { AuthProvider } from './AuthProvider';
 import { AccountError, type Assurance, type AuthService, type AuthUser } from './authService';
 import { LoginPage } from './LoginPage';
+import { sessionStorageKey } from './loadAuthService';
 import { RegisterPage } from './RegisterPage';
-import { googleEnabled, toAccountError } from './supabaseAuthService';
+import { RequireSecondStep } from './RequireSecondStep';
+import { createSupabaseAuthService, googleEnabled, toAccountError } from './supabaseAuthService';
 
 const copy = es.account;
+/** Typing without a pause between keys: these tests type whole addresses and passwords, and the default pause made them run out of time when the machine was busy. */
+const typing = (): ReturnType<typeof userEvent.setup> => userEvent.setup({ delay: null });
 const USER: AuthUser = { id: 'user-1', email: 'persona@example.test', name: null };
 const PASSWORD = 'una-contraseña-larga';
 
@@ -45,7 +49,7 @@ function renderAt(route: string, service: AuthService) {
         <Routes>
           <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
-          <Route path={ROUTE_SEGMENTS.app} element={<p>app</p>} />
+          <Route path={ROUTE_SEGMENTS.app} element={<RequireSecondStep><p>app</p></RequireSecondStep>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -54,7 +58,7 @@ function renderAt(route: string, service: AuthService) {
 
 describe('sign-in screens', () => {
   it('words a rejected password from the dictionary', async () => {
-    const user = userEvent.setup();
+    const user = typing();
     const signIn = vi.fn(() => Promise.reject(new AccountError('invalid_credentials')));
     renderAt(ROUTES.login, fakeService({ signIn }));
 
@@ -73,8 +77,27 @@ describe('sign-in screens', () => {
     expect(screen.queryByText('app')).not.toBeInTheDocument();
   });
 
-  it('creates the account only when both passwords match, then enters the app', async () => {
+  it('asks for the code when a sign-in lands straight in the app, and lets the person sign out instead', async () => {
+    // Signing in with Google returns to the app itself, past the sign-in screen.
     const user = userEvent.setup();
+    let signedIn = true;
+    const signOut = vi.fn(() => {
+      signedIn = false;
+      return Promise.resolve();
+    });
+    const service = fakeService({ signOut, currentUser: () => Promise.resolve(signedIn ? USER : null) }, USER, { current: 'aal1', next: 'aal2' });
+    renderAt(ROUTES.app, service);
+
+    expect(await screen.findByRole('heading', { name: copy.totp.challengeTitle })).toBeInTheDocument();
+    expect(screen.queryByText('app')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: copy.totp.signOutInstead }));
+    expect(signOut).toHaveBeenCalledOnce();
+    expect(await screen.findByRole('form', { name: copy.login.pageTitle })).toBeInTheDocument();
+  });
+
+  it('creates the account only when both passwords match, then enters the app', async () => {
+    const user = typing();
     const signUp = vi.fn(() => Promise.resolve('signed_in' as const));
     renderAt(ROUTES.register, fakeService({ signUp }));
 
@@ -110,6 +133,19 @@ describe('Supabase boundary', () => {
     expect(error.code).toBe('invalid_credentials');
     expect(error.message).not.toContain('Invalid login');
     expect(toAccountError(new AuthError('?', 500, 'something_new')).code).toBe('unknown');
+  });
+
+  it('signs out on this device even when Supabase cannot confirm it', async () => {
+    const url = 'https://project.supabase.co';
+    const storageKey = sessionStorageKey(url);
+    expect(storageKey).toBe('sb-project-auth-token');
+    window.localStorage.setItem(storageKey, '{"access_token":"stale"}');
+    // What Supabase answers when the session no longer exists on the server: it keeps the stored one.
+    const client = { auth: { signOut: () => Promise.resolve({ error: new AuthError('Auth session missing!', 400) }) } };
+    const service = createSupabaseAuthService(client as unknown as SupabaseClient, { url, anonKey: 'anon', storageKey });
+
+    await expect(service.signOut()).resolves.toBeUndefined();
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
   });
 
   it('reads Google as enabled only when the project settings say so', () => {

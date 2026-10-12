@@ -99,7 +99,8 @@ Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de 
 ## `/account` y `/privacy` (S6.2, ADR-29; las pantallas de acceso se rehicieron en ADR-30)
 
 - **Cuenta sin sesión:** pestañas «Entrar», «Crear cuenta» (confirmación por correo) y «Recuperar contraseña» (enlace que abre `/account?mode=recovery` con el formulario de contraseña nueva).
-- **Con sesión y un dispositivo verificado:** antes de mostrar nada se pide el código TOTP (aal1 → aal2).
+- **Con sesión y un dispositivo verificado:** antes de mostrar nada se pide el código TOTP (aal1 → aal2). Lo mismo ocurre al entrar en `/app`, que es adonde vuelve el inicio con Google: lleva a la pantalla del código. Quien no lo tenga a mano puede elegir «No tengo el código: cerrar sesión» y seguir sin cuenta.
+- **Cerrar sesión** siempre cierra la sesión en el dispositivo, aunque el servidor no pueda confirmarlo (por ejemplo, porque activar los dos pasos cerró las sesiones de los otros dispositivos).
 - **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» pide confirmación, borra la cuenta y todo lo que guarda en la nube, y cierra la sesión; las sesiones del dispositivo no se tocan.
 - **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización. Sin cuenta, la respuesta se queda en el dispositivo; con cuenta, se guarda en `profiles` y es la única que vale.
 
