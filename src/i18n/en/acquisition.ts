@@ -31,6 +31,12 @@ export const acquisition = {
   },
   /** Option of a source not yet validated against a strap, e.g. "Phone camera (experimental)". */
   experimentalOption: (name: string): string => `${name} (experimental)`,
+  /** The simulator and the sample recordings, apart from the sources that measure the person. */
+  trial: {
+    enter: 'I have no way to measure my pulse: try the app',
+    leave: 'Go back to measuring my pulse',
+    note: 'Trial mode: this pulse is not yours. It lets you get to know the app; what you listen to this way is not saved.',
+  },
   connect,
   disconnect: 'Disconnect',
   reconnectRemembered: 'Reconnect strap',

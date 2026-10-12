@@ -31,6 +31,12 @@ export const acquisition = {
   },
   /** Option of a source not yet validated against a strap, e.g. "Cámara del celular (experimental)". */
   experimentalOption: (name: string): string => `${name} (experimental)`,
+  /** The simulator and the sample recordings, apart from the sources that measure the person. */
+  trial: {
+    enter: 'No tengo cómo medir mi pulso: probar la app',
+    leave: 'Volver a medir mi pulso',
+    note: 'Modo de prueba: este pulso no es el tuyo. Sirve para conocer la app; lo que escuches así no se guarda.',
+  },
   connect,
   disconnect: 'Desconectar',
   reconnectRemembered: 'Reconectar banda',

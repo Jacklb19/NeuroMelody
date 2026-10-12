@@ -5,6 +5,7 @@ import { reportPath, ROUTES } from '../../config/routes';
 import { useFormatters, useMessages } from '../../i18n/messages';
 import { ArrowRightIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
+import { measuredSessions } from '../records/retentionPolicy';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { useSessionRecords } from '../records/useSessionRecords';
 import { BeforeAfterChart } from './BeforeAfterChart';
@@ -31,7 +32,9 @@ export function ProgressPage(): React.JSX.Element {
   const t = useMessages();
   const copy = t.progress;
   usePageTitle(copy.title);
-  const records = useSessionRecords();
+  const stored = useSessionRecords();
+  // Sessions made to try the app before they stopped being kept are nobody's pulse.
+  const records = useMemo(() => (stored === null ? null : measuredSessions(stored)), [stored]);
   const [range, setRange] = useState<ProgressRangeId>(DEFAULT_PROGRESS_RANGE);
   const progress = useMemo(() => progressOf(selectRange(records ?? [], range)), [records, range]);
 

@@ -18,6 +18,9 @@ export const session = {
     saved: 'Sesión guardada en este dispositivo.',
     savedDetail: 'Puedes revisarla y descargarla cuando quieras.',
     viewSummary: 'Ver resumen de la sesión',
+    /** After a session made with a trial source. */
+    trialEnded: 'Era una sesión de prueba y no se guardó.',
+    trialEndedDetail: 'Para guardar tus sesiones y ver tu progreso, mide tu pulso con una banda o con la cámara.',
     saveFailed: (reason: string): string => `No se pudo guardar la sesión en este dispositivo (${reason}).`,
   },
   /** Guided breathing under the orb (ADR-33): a pace to follow, never a promise of an effect. */

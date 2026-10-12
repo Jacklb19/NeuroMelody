@@ -13,6 +13,7 @@ test('requires warnings before starting and stops playback from the keyboard', a
   await expect(page.getByRole('button', { name: es.warnings.accept })).toBeDisabled();
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: es.acquisition.trial.enter }).click();
   await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
   await expect(page.getByTestId('received-beats')).not.toHaveText('0');
   await page.getByRole('button', { name: playback.start }).click();
@@ -20,5 +21,7 @@ test('requires warnings before starting and stops playback from the keyboard', a
   await expect(page.getByRole('button', { name: playback.stop, exact: true })).toBeInViewport();
   await page.keyboard.press(STOP_SHORTCUT_KEY);
   await expect(page.getByText(playback.states.stopped, { exact: true })).toBeVisible();
+  // The simulator only tries the app: the session says it was not kept.
+  await expect(page.getByTestId('trial-ended')).toBeVisible();
   expect(errors).toEqual([]);
 });

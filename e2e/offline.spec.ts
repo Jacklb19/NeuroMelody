@@ -26,6 +26,7 @@ test('loads the session, recording, signal worker and audio worklets offline', a
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: es.session.title, exact: true })).toBeVisible();
+  await page.getByRole('button', { name: acquisition.trial.enter }).click();
   await page.getByLabel(acquisition.sourceLabel).selectOption(SOURCE);
   await page.getByRole('combobox', { name: acquisition.recordingLabel, exact: true }).selectOption(RECORDING_ID);
   await page.getByLabel(acquisition.speedLabel).selectOption(String(SPEED));

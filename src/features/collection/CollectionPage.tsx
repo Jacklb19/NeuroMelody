@@ -10,7 +10,7 @@ import { downloadText } from '../../shared/downloadText';
 import { formatClock } from '../../shared/formatClock';
 import { PageHeading } from '../../shared/PageHeading';
 import { MS_PER_SECOND, SECONDS_PER_MINUTE } from '../../shared/time';
-import { AcquisitionPanel, type CreateSimulatedSource } from '../acquisition/AcquisitionPanel';
+import { AcquisitionPanel, type AcquisitionPanelProps } from '../acquisition/AcquisitionPanel';
 import type { SignalSource } from '../acquisition/contract';
 import { useSignalSource } from '../acquisition/useSignalSource';
 import { useRecordFormatter } from '../records/useRecordFormatter';
@@ -28,7 +28,7 @@ import {
 import {
   beatCount,
   buildCollectionExport,
-  MEASURING_SOURCE_KINDS,
+  isMeasuringSource,
   type CollectionRecording,
   type CollectionSegment,
 } from './collectionRecording';
@@ -44,6 +44,8 @@ type Step =
   | { readonly kind: 'ready'; readonly stage: number; readonly repeated: boolean }
   | { readonly kind: 'recording'; readonly stage: number; readonly elapsedMs: number }
   | { readonly kind: 'saved' }
+  /** The protocol was walked with a trial source: nothing was kept. */
+  | { readonly kind: 'trial_done' }
   | { readonly kind: 'save_failed' };
 
 const EXPORT_MIME_TYPE = 'application/json';
@@ -54,8 +56,8 @@ const TASK_STAGE: CollectionStageId = 'demanding_task';
 const minutesOf = (seconds: number): number => Math.round(seconds / SECONDS_PER_MINUTE);
 
 interface CollectionPageProps {
-  /** Lets tests inject a simulator on a fake clock. */
-  readonly createSource?: CreateSimulatedSource;
+  /** Lets tests inject sources on a fake clock and a Bluetooth adapter. */
+  readonly acquisition?: Pick<AcquisitionPanelProps, 'createSource' | 'createBle' | 'bluetooth' | 'startInTrial'>;
 }
 
 /**
@@ -64,7 +66,7 @@ interface CollectionPageProps {
  * label. It asks for explicit consent, keeps everything on the device and
  * lets the person export or delete it. The model is never trained here.
  */
-export function CollectionPage({ createSource }: CollectionPageProps): React.JSX.Element {
+export function CollectionPage({ acquisition }: CollectionPageProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.collection;
   usePageTitle(copy.pageTitle);
@@ -103,6 +105,11 @@ export function CollectionPage({ createSource }: CollectionPageProps): React.JSX
     const started = startedRef.current;
     const kind = sourceRef.current?.kind;
     if (started === null || kind === undefined) return;
+    if (!isMeasuringSource(kind)) {
+      // A trial of the protocol: those beats are nobody's, so there is nothing to keep.
+      setStep({ kind: 'trial_done' });
+      return;
+    }
     const recording: CollectionRecording = {
       id: uuidv7(),
       participant: participantCode(participantStorage()),
@@ -182,7 +189,7 @@ export function CollectionPage({ createSource }: CollectionPageProps): React.JSX
   };
 
   const connected = connection === 'connected';
-  const measuring = source !== null && MEASURING_SOURCE_KINDS.includes(source.kind);
+  const measuring = source !== null && isMeasuringSource(source.kind);
   const inProtocol = step.kind === 'ready' || step.kind === 'recording';
 
   return (
@@ -231,11 +238,17 @@ export function CollectionPage({ createSource }: CollectionPageProps): React.JSX
         <section className="glass-card collection-card" role="status" tabIndex={-1} ref={stepRef}>
           <h2>{copy.saved.title}</h2>
           <p>{copy.saved.text}</p>
-          {!measuring && <p className="quiet-notice">{copy.demoSource}</p>}
           <div className="collection-actions">
             <button type="button" className="pill-button pill-button-primary" onClick={exportAll}>{copy.saved.export}</button>
             <Link to={ROUTES.app} className="pill-button pill-button-ghost">{copy.saved.home}</Link>
           </div>
+        </section>
+      )}
+      {step.kind === 'trial_done' && (
+        <section className="glass-card collection-card" role="status" tabIndex={-1} ref={stepRef}>
+          <h2>{copy.trialDone.title}</h2>
+          <p>{copy.trialDone.text}</p>
+          <button type="button" className="pill-button pill-button-ghost" onClick={cancel}>{copy.trialDone.again}</button>
         </section>
       )}
       {step.kind === 'save_failed' && (
@@ -248,7 +261,7 @@ export function CollectionPage({ createSource }: CollectionPageProps): React.JSX
 
       {/* Stays mounted through the whole protocol: unmounting it would disconnect the source. */}
       <div className="glass-card collection-source" data-quiet={inProtocol ? '' : undefined}>
-        <AcquisitionPanel source={source} onSourceChange={setSource} createSource={createSource} />
+        <AcquisitionPanel source={source} onSourceChange={setSource} {...acquisition} />
       </div>
 
       {recordings !== null && recordings.length > 0 && !inProtocol && (

@@ -48,7 +48,12 @@ export const collection = {
   connectFirst: 'First connect below how you will measure your pulse.',
   consentFirst: 'Tick the box to continue.',
   /** Shown with the simulator or a sample recording. */
-  demoSource: 'With the simulator or a sample recording you can try how it works, but those heartbeats are not yours and cannot teach the model.',
+  demoSource: 'You are in trial mode: you can see how it works, but those heartbeats are not yours and nothing is saved at the end.',
+  trialDone: {
+    title: 'Trial finished',
+    text: 'This is the guided recording. Nothing was saved, because the heartbeats were not yours. When you want to do it for real, connect the strap or the camera.',
+    again: 'Back to the beginning',
+  },
   stageCount: (current: number, total: number): string => `Stage ${String(current)} of ${String(total)}`,
   startStage: 'Start this stage',
   stopAnytime: 'You can stop whenever you want.',
