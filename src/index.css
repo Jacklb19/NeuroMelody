@@ -78,6 +78,9 @@
   --trend-dot-ring: 2px;
   --progress-copy-max-width: 34ch;
   --progress-date-min-width: 9rem;
+  /* Printable report (ADR-33): width of the sheet on screen and of the hint beside the print button. */
+  --report-sheet-width: 52rem;
+  --report-hint-max-width: 44ch;
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
@@ -531,6 +534,13 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* Printing (the report, ADR-33): the content of the page alone, on plain paper. */
+@media print {
+  :root, body { background: none; }
+  .app-header, .skip-link, .stop-button, .screen-only { display: none; }
+  .app-shell { max-width: none; padding: 0; }
+  .app-main { padding: 0; }
 }
 @media (forced-colors: active) {
   .stop-symbol { background: ButtonText; }

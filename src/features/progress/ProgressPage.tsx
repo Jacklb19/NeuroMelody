@@ -1,8 +1,9 @@
 import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
-import { ROUTES } from '../../config/routes';
+import { reportPath, ROUTES } from '../../config/routes';
 import { useFormatters, useMessages } from '../../i18n/messages';
+import { ArrowRightIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { useSessionRecords } from '../records/useSessionRecords';
@@ -55,6 +56,7 @@ export function ProgressPage(): React.JSX.Element {
             {PROGRESS_METRIC_IDS.map((metric) => <MetricCard key={metric} metric={metric} progress={progress} />)}
           </div>
           <DataTable progress={progress} />
+          <ReportInvite range={range} />
           <p className="progress-notice">{copy.notice}</p>
         </>
       )}
@@ -147,5 +149,20 @@ function DataTable({ progress }: { readonly progress: Progress }): React.JSX.Ele
         </table>
       </div>
     </details>
+  );
+}
+
+/** The same sessions as a sheet to print and share (ADR-33); it opens on the range chosen here. */
+function ReportInvite({ range }: { readonly range: ProgressRangeId }): React.JSX.Element {
+  const copy = useMessages().progress.report;
+  const titleId = useId();
+  return (
+    <section aria-labelledby={titleId} className="glass-card progress-invite report-invite">
+      <div>
+        <h2 id={titleId}>{copy.title}</h2>
+        <p className="secondary-text">{copy.text}</p>
+      </div>
+      <Link to={reportPath(range)} className="pill-button pill-button-primary">{copy.action} <ArrowRightIcon /></Link>
+    </section>
   );
 }

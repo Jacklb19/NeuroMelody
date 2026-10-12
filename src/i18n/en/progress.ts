@@ -76,5 +76,11 @@ export const progress = {
     caption: 'Values at the start and at the end of each session',
     session: 'Session',
   },
+  /** Way into the printable report, which covers the same sessions. */
+  report: {
+    title: 'Share it with whoever accompanies you',
+    text: 'Prepare a sheet with this summary to print or save as a PDF.',
+    action: 'Prepare the report',
+  },
   notice: common.nonClinicalIndicators,
 };

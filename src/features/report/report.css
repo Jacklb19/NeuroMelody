@@ -1,0 +1,61 @@
+/* Printable report (ADR-33). On screen the sheet is a preview on ivory paper; printed, it is the whole page. Values come from index.css tokens. */
+.report-page { padding-bottom: var(--space-12); }
+.report-controls { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-6) var(--space-10); margin-bottom: var(--space-10); }
+.report-controls .range-picker { margin-bottom: 0; }
+.report-print { display: grid; gap: var(--space-3); justify-items: start; max-width: var(--report-hint-max-width); font-size: var(--text-sm); }
+
+.report-page .report-sheet { max-width: var(--report-sheet-width); margin: 0 auto; padding: var(--space-12) var(--space-10); background: var(--color-paper); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--border-radius); box-shadow: var(--card-shadow); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+.report-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2) var(--space-6); padding-bottom: var(--space-6); margin-bottom: var(--space-8); border-bottom: var(--border-width) solid var(--color-border); }
+.report-brand { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: var(--text-lg); }
+.report-brand .brand-mark { color: var(--color-accent); }
+.report-prepared { font-size: var(--text-sm); color: var(--color-text-secondary); text-align: right; }
+.report-header h2 { grid-column: 1 / -1; margin: var(--space-5) 0 0; font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-stage); line-height: var(--heading-line-height); letter-spacing: var(--tracking-heading); text-wrap: balance; }
+.report-period { grid-column: 1 / -1; font-size: var(--text-lg); color: var(--color-text-secondary); }
+
+.report-totals { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: var(--space-6) var(--space-12); }
+.report-totals dt, .report-averages dt { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-1); }
+.report-totals dd { font-family: var(--font-display); font-size: var(--text-metric); line-height: var(--heading-line-height); }
+.report-totals .report-goals { font-family: var(--font-base); font-size: var(--text-base); line-height: inherit; }
+.report-goals ul { list-style: none; display: grid; gap: var(--space-1); }
+
+.report-section { margin-top: var(--space-8); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); break-inside: avoid; }
+.report-section h3, .report-notes h3 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); line-height: var(--heading-line-height); margin-bottom: var(--space-2); }
+.report-metric { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; gap: var(--space-10); }
+.report-explanation { margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.report-averages { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-8); margin-bottom: var(--space-4); }
+.report-averages dd { font-family: var(--font-display); font-size: var(--text-xl); line-height: var(--heading-line-height); font-variant-numeric: tabular-nums; }
+
+.report-table-scroll { overflow-x: auto; }
+.report-sheet table { width: 100%; margin-top: var(--space-4); border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.report-sheet th, .report-sheet td { padding: var(--space-3) var(--space-5) var(--space-3) 0; text-align: left; vertical-align: top; border-bottom: var(--border-width) solid var(--color-border-subtle); }
+.report-sheet thead th { font-weight: var(--font-weight-normal); color: var(--color-text-secondary); }
+.report-sheet tbody th { font-weight: var(--font-weight-strong); min-width: var(--progress-date-min-width); }
+.report-sheet td { white-space: nowrap; }
+
+.report-notes { margin-top: var(--space-10); padding: var(--space-6); background: var(--color-surface); border-radius: var(--border-radius); font-size: var(--text-sm); color: var(--color-text-secondary); break-inside: avoid; }
+.report-notes h3 { font-size: var(--text-lg); color: var(--color-text); margin-bottom: var(--space-3); }
+.report-notes ul { display: grid; gap: var(--space-2); padding-left: var(--space-5); }
+
+@media (max-width: 900px) {
+  .report-page .report-sheet { padding: var(--space-8) var(--space-5); }
+  .report-header { grid-template-columns: minmax(0, 1fr); }
+  .report-prepared { text-align: left; }
+  .report-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .report-totals > div:last-child { grid-column: 1 / -1; }
+  .report-metric { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+}
+
+/* The printed page: the sheet alone, without its frame, with the text and the chart side by side again. */
+@media print {
+  .report-page { padding: 0; }
+  .report-page .report-sheet { max-width: none; margin: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+  .report-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .report-prepared { text-align: right; }
+  .report-totals { grid-template-columns: auto auto minmax(0, 1fr); }
+  .report-totals > div:last-child { grid-column: auto; }
+  .report-metric { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-8); }
+  .report-table-scroll { overflow: visible; }
+  .report-sheet td { white-space: normal; }
+  .report-sheet tr { break-inside: avoid; }
+  .report-sheet .trend-readout, .report-sheet .trend-crosshair { display: none; }
+}
