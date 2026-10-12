@@ -36,6 +36,10 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
     deleteAccount: () => Promise.resolve(),
     suggestPlan: () => Promise.reject(new CloudError('language_model_unavailable')),
     summarizeSession: () => Promise.reject(new CloudError('language_model_unavailable')),
+    sendRecording: () => Promise.resolve(),
+    listSentRecordings: () => Promise.resolve([]),
+    withdrawRecording: () => Promise.resolve(),
+    currentClassifier: () => Promise.resolve(null),
   };
 }
 

@@ -119,9 +119,84 @@ export function predictActivation(model: ActivationModel, reading: Indicators, b
   return { state, confidence: (exponentials[best] ?? 0) / total };
 }
 
+/** Where the app keeps the latest published model it downloaded, so it is still there without a network. */
+export const PUBLISHED_MODEL_STORAGE_KEY = 'neuromelody.classifier';
+
+/** Longest wait for the published model before the session goes on with what it has. */
+export const PUBLISHED_MODEL_TIMEOUT_MS = 4000;
+
+type ModelStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+/** The browser's storage, or `null` where it is blocked. */
+function browserModelStorage(): ModelStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function remembered(storage: ModelStorage | null): ActivationModel | null {
+  try {
+    return parseActivationModel(JSON.parse(storage?.getItem(PUBLISHED_MODEL_STORAGE_KEY) ?? 'null'));
+  } catch {
+    return null;
+  }
+}
+
+interface LatestModelOptions {
+  /**
+   * Asks for the file of the latest published model: `null` when none has been
+   * published. Omitted when nobody is signed in or there is no API to ask.
+   */
+  readonly published?: () => Promise<unknown>;
+  readonly storage?: ModelStorage | null;
+  readonly fetchModel?: typeof fetch;
+  readonly timeoutMs?: number;
+}
+
 /**
- * Downloads and validates the model. Any failure (offline before the first
- * visit, a damaged file) resolves to `null`, and the app keeps its rules.
+ * The model the session runs with: the latest version a person published
+ * (ADR-33), if it can be had and is valid; otherwise the last one this
+ * device downloaded; otherwise the one the app ships with. It never waits
+ * long and never fails: a published file that does not validate is ignored
+ * whole, exactly like a damaged bundled one. The model is only ever read
+ * here; it is trained and published elsewhere, by people.
+ */
+export async function loadLatestActivationModel({
+  published, storage = browserModelStorage(), fetchModel = fetch, timeoutMs = PUBLISHED_MODEL_TIMEOUT_MS,
+}: LatestModelOptions = {}): Promise<ActivationModel | null> {
+  if (published !== undefined) {
+    const unanswered = Symbol('unanswered');
+    const answer = await Promise.race([
+      published().catch(() => unanswered),
+      new Promise<typeof unanswered>((resolve) => { setTimeout(() => { resolve(unanswered); }, timeoutMs); }),
+    ]);
+    if (answer === null) {
+      // No version is published any more (it was withdrawn): the one kept here goes too.
+      try {
+        storage?.removeItem(PUBLISHED_MODEL_STORAGE_KEY);
+      } catch {
+        // Nothing kept, nothing to forget.
+      }
+    } else if (answer !== unanswered) {
+      const model = parseActivationModel(answer);
+      if (model !== null) {
+        try {
+          storage?.setItem(PUBLISHED_MODEL_STORAGE_KEY, JSON.stringify(answer));
+        } catch {
+          // Without storage it is simply asked for again next time.
+        }
+        return model;
+      }
+    }
+  }
+  return remembered(storage) ?? loadActivationModel(fetchModel);
+}
+
+/**
+ * Downloads and validates the model the app ships with. Any failure (offline
+ * before the first visit, a damaged file) resolves to `null`, and the app keeps its rules.
  */
 export async function loadActivationModel(fetchModel: typeof fetch = fetch): Promise<ActivationModel | null> {
   try {

@@ -18,7 +18,7 @@ export const privacy = {
     },
     cloud: {
       title: 'In the cloud, only with your consent',
-      text: 'With an account and two-step verification turned on, you can sync the aggregated indicators of your sessions. The raw signal is never sent. The data is stored in Supabase with access limited to your account.',
+      text: 'With an account and two-step verification turned on, you can sync the aggregated indicators of your sessions. The signal of your sessions is never sent. The data is stored in Supabase with access limited to your account.',
     },
     summary: {
       title: 'Automatic summary',
@@ -26,7 +26,7 @@ export const privacy = {
     },
     collection: {
       title: 'Guided recordings',
-      text: 'If you choose to make a guided recording to improve the model, the intervals between your heartbeats and the name of each stage are kept on this device, with a random code that does not say who you are. They are never sent on their own: you export them and decide whom to give them to, and you can delete them whenever you want.',
+      text: 'If you choose to make a guided recording to improve the model, the intervals between your heartbeats and the name of each stage are kept on this device, with a random code that does not say who you are. They are never sent on their own. You decide, one by one, whether to export them or send them to train the model of the app; sending them asks for your explicit permission and two-step verification, because they are your heartbeats, and you can withdraw or delete them whenever you want.',
     },
     rights: {
       title: 'Your rights',
