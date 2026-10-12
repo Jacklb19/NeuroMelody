@@ -13,7 +13,7 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | `/` | Portada | Página pública (ADR-28): qué es NeuroMelody, cómo funciona su lazo, fuentes de señal, privacidad y tecnología, con escena 3D animada y acceso a la app. Diseño propio, fuera del `Layout` de la app. | — | — | Portada | No | `/app`, `/plan`, `/account`, `/privacy`, `/diagnostics` |
 | `/app` | Inicio de la app | Punto de entrada de la app: iniciar una sesión de escucha y acceder al plan, al historial, al progreso y a la cuenta. | — | — | S3 (antes en `/`) | No | `/warnings` (si no se aceptaron), `/plan`, `/session`, `/history`, `/progress`, `/account`, `/privacy` |
 | `/warnings` | Advertencias de uso | Presentar el carácter no clínico de la aplicación y registrar la aceptación explícita antes de la primera sesión. | — | RF-17 | S3 | No (se guarda en el dispositivo y se sincroniza en `profiles` si hay cuenta) | `/plan`, `/session`, `/privacy` |
-| `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. En S6 se suma la propuesta del modelo de lenguaje. | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | No para el plan manual; sí para pedir la propuesta al modelo | `/session`, `/` |
+| `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. Con cuenta, el modelo de lenguaje puede proponer la duración (bloque 15). | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | No para el plan manual; sí para pedir la propuesta al modelo | `/session`, `/` |
 | `/session` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | No | `/summary/:id` (al terminar), `/` |
 | `/summary/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | No para los indicadores locales; sí para el texto del modelo y la sincronización | `/history`, `/` |
 | `/history` | Historial | Revisar sesiones anteriores y borrarlas; lleva a la evolución entre sesiones. | HU-10 | RF-14, RF-16 | S6 | No para el historial guardado en el dispositivo, que también se puede borrar; sí, con segundo factor (aal2), para lo sincronizado en la nube | `/summary/:id`, `/progress`, `/` |
@@ -76,7 +76,7 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
-- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. El texto del modelo de lenguaje aparece como «Resumen automático pendiente» hasta S6.4.
+- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, una tarjeta que lleva a «Tu progreso» y borrado de una sesión o de todo el historial, siempre con confirmación.
 - Sin cuenta, todo vive en IndexedDB. Con cuenta, verificación en dos pasos y consentimiento, las sesiones se sincronizan con la nube (ver «Sincronización»). El estado lo estima el clasificador entrenado, con las reglas como respaldo (ADR-32).
 
@@ -118,6 +118,13 @@ Se llega desde el perfil («Ayuda a mejorar la app», en Preferencias). Es opcio
 
 Qué se guarda: los intervalos entre latidos de cada tramo con su etiqueta, la fuente, la fecha, el instante del consentimiento y un código al azar del dispositivo (agrupa las grabaciones de una persona sin decir quién es). Nada se envía: la persona exporta el archivo y decide a quién dárselo. El reentrenamiento se hace fuera de la app, en `back/training` (ver su README); el modelo nunca se reentrena solo.
 
+## Modelo de lenguaje en `/plan` y `/summary/:id` (RF-13, RF-15, ADR-08)
+
+No añade pantallas. El modelo nunca participa en la música: solo propone y redacta, y todo lo que escribe se muestra con la marca «Texto generado automáticamente».
+
+- **`/plan`, bajo las duraciones:** el botón «Proponme una duración» y, a su lado, qué se envía (solo los objetivos marcados y la hora). Sin objetivos marcados está desactivado y lo dice. La respuesta aparece debajo: «Propuesta: N minutos», una frase y «Usar esta duración»; la duración no cambia hasta que la persona lo pulsa. Sin cuenta, una línea invita a entrar; en un despliegue sin API no aparece nada. Si el modelo no responde, lo dice y el plan manual sigue igual.
+- **`/summary/:id`, última sección, «Tu sesión en pocas palabras»:** explica qué recibe el modelo (minutos, pulso y variación al empezar y al terminar, tiempo en cada estado y las dos valoraciones; nunca el nombre, la fecha ni los latidos) y ofrece «Acepto y quiero el resumen»: pedirlo es el consentimiento. El texto queda guardado en el dispositivo, así que se pide una sola vez («Pedir otro» lo rehace). Necesita lo mismo que la sincronización (cuenta, dos pasos y consentimiento), porque se escribe a partir de la sesión guardada en la cuenta; si falta algo, dice qué y enlaza a dónde se resuelve. Si la sesión aún no está en la cuenta, lo explica.
+
 ## Rediseño de la app (ADR-30)
 
 - **Portada (`/`):** sin sección de tecnología ni enlace al código; lenguaje para todo público. Secciones: cabecera con la escena 3D y el trazo del pulso en vivo, qué es, cómo funciona, para qué sirve (los objetivos del plan), cómo medir el pulso, privacidad y cierre. Los botones llevan a `/register` e `/login`.
@@ -146,4 +153,4 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 
 ## Funciones todavía no activas
 
-Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Groq pendiente conserva plan manual/resumen de indicadores con «Resumen automático pendiente». Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).
+Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Sin el modelo de lenguaje (sin cuenta, sin API o si no responde) se conservan el plan manual y el resumen de indicadores, y la pantalla dice qué falta. Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).
