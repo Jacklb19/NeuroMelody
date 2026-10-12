@@ -81,6 +81,7 @@
   /* Printable report (ADR-33): width of the sheet on screen and of the hint beside the print button. */
   --report-sheet-width: 52rem;
   --report-hint-max-width: 44ch;
+  --plan-suggestion-text-min-width: 16rem;
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
@@ -480,6 +481,10 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .state-legend li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); font-size: var(--text-sm); }
 .state-legend strong { font-variant-numeric: tabular-nums; }
 .state-swatch { width: var(--swatch-size); height: var(--swatch-size); border-radius: 50%; }
+/* Text written by the language model: set apart and always labelled as generated. */
+.generated-mark { font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--color-text-muted); }
+.narrative-text { max-width: var(--reading-max-width); margin-bottom: var(--space-3); font-family: var(--font-display); font-size: var(--text-xl); line-height: var(--line-height-base); }
+.automatic-summary .pending-note, .automatic-summary .generated-mark, .automatic-summary .quiet-notice { margin-bottom: var(--space-5); }
 .pending-note { font-size: var(--text-sm); color: var(--color-text-secondary); max-width: var(--reading-max-width); }
 .summary-actions { margin-top: var(--space-10); }
 .empty-state { padding: var(--space-10); background: var(--color-surface); border-radius: var(--border-radius); display: grid; gap: var(--space-6); justify-items: start; }

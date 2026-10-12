@@ -20,6 +20,23 @@ export const plan = {
       pause: 'Tomar una pausa para mí',
     },
   },
+  /** Length proposed by the language model (RF-13); the person decides. */
+  suggestion: {
+    ask: 'Proponme una duración',
+    /** What travels, said next to the button. */
+    notice: 'Un modelo de lenguaje recibe solo los objetivos que marcaste y la hora que es. Tú decides si usas lo que proponga.',
+    needsGoal: 'Marca al menos un objetivo para pedir una propuesta.',
+    signedOut: 'Con una cuenta, la app puede proponerte la duración según lo que buscas.',
+    signIn: 'Entrar',
+    working: 'Pensando la propuesta…',
+    /** The proposed length, in the words of `minutes`. */
+    proposal: (duration: string): string => `Propuesta: ${duration}`,
+    generatedMark: 'Texto generado automáticamente.',
+    accept: 'Usar esta duración',
+    accepted: 'Es la duración que tienes elegida.',
+    /** `reason` is one of the cloud error sentences. */
+    failed: (reason: string): string => `No se pudo pedir la propuesta: ${reason} Puedes elegir tú la duración.`,
+  },
   summaryLabel: 'Tu sesión',
   noGoals: 'Sin intención elegida',
   calibrationNote: (level: string, minutes: number): string =>
