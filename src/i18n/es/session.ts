@@ -20,6 +20,16 @@ export const session = {
     viewSummary: 'Ver resumen de la sesión',
     saveFailed: (reason: string): string => `No se pudo guardar la sesión en este dispositivo (${reason}).`,
   },
+  /** Guided breathing under the orb (ADR-33): a pace to follow, never a promise of an effect. */
+  breathing: {
+    toggle: 'Respirar con la música',
+    /** Keys mirror `BreathPhase`. */
+    phases: {
+      inhale: 'Inhala',
+      exhale: 'Exhala',
+    },
+    hint: 'Sin forzar. Si te incomoda, vuelve a tu ritmo.',
+  },
   progress: {
     label: 'Progreso de la sesión',
     valueText: (elapsedMinutes: number, plannedMinutes: number): string =>

@@ -67,6 +67,7 @@
   --segment-gap: 2px;
   --stage-text-max-width: 30ch;
   --stage-detail-max-width: 48ch;
+  --breath-hint-max-width: 28ch;
   --progress-duration: 1s;
   --waveform-height: 6rem;
   --control-height: 48px;
@@ -127,6 +128,10 @@
   --orb-breath: 5.5s;
   --orb-spin: 60s;
   --orb-tone-duration: 1.6s;
+  /* Guided breathing (ADR-33): size of the orb at the end of breathing out and of breathing in, and how fast it follows. */
+  --orb-guided-min: 0.8;
+  --orb-guided-max: 1.1;
+  --orb-guided-settle: 300ms;
   --avatar-size: 2.75rem;
   --avatar-size-large: 5rem;
   --auth-card-width: 27rem;

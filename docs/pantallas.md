@@ -34,6 +34,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `SignalPanel` (`src/features/signal/`) | S2 | `/session`, detalles técnicos |
 | `MusicalStatePanel` (`src/features/adaptation/`) | S4 | `/session`, detalles técnicos |
 | `SessionCheckIn` (`src/features/session/`) | S6.1 | `/session`, escenario de escucha: valoración antes de empezar y enlace al resumen al detener |
+| `BreathingGuide` (`src/features/session/breathing/`) | Bloque 10 (ADR-33) | `/session`, escenario de escucha, bajo el orbe: botón para activar la respiración guiada y la palabra que la acompaña |
 | `SessionSummaryPage` (`src/features/summary/`) | S6.1 | `/summary/:id` |
 | `HistoryPage` (`src/features/history/`) | S6.1 | `/history` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
@@ -51,6 +52,17 @@ De arriba abajo:
 3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
+
+## Respiración guiada en `/session` (ADR-33)
+
+Vive en el escenario de escucha, bajo el orbe. No añade ruta ni pantalla.
+
+- **Activarla:** un botón en píldora «Respirar con la música», que la persona enciende y apaga cuando quiere. Empieza encendida solo si en el plan eligió «Acompañar una respiración lenta»; en cualquier otro caso empieza apagada.
+- **Qué hace:** el orbe crece al inhalar y se recoge al exhalar, y debajo se lee «Inhala» o «Exhala». El orbe sigue latiendo con el pulso mientras guía la respiración.
+- **Ritmo:** se cuenta en tiempos de la música (inhalar 4, exhalar 6), así que la respiración se hace más lenta cuando la música baja el paso. Sin música sonando usa el tempo con el que empieza toda sesión. Sigue el tempo de la música, no el golpe exacto de cada compás: el motor de audio no se toca.
+- **Reducir movimiento:** el orbe queda quieto y la palabra sola marca el cambio.
+- **Lectores de pantalla:** la palabra se anuncia al cambiar, porque es la función que la persona activó.
+- **Límites:** no cambia la música ni el estado estimado, no se guarda con la sesión y no promete ningún efecto.
 
 ## Objetivos del plan (HU-07, ADR-27)
 
