@@ -74,7 +74,7 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 
 - **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. El texto del modelo de lenguaje aparece como «Resumen automático pendiente» hasta S6.4.
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, una tarjeta que lleva a «Tu progreso» y borrado de una sesión o de todo el historial, siempre con confirmación.
-- Sin cuenta: todo vive en IndexedDB. La sincronización con la nube llega en S6.2, con segundo factor. Estimador de entrega: reglas R-05, sin ONNX (limitación RF-07, ADR-14).
+- Sin cuenta, todo vive en IndexedDB. Con cuenta, verificación en dos pasos y consentimiento, las sesiones se sincronizan con la nube (ver «Sincronización»). El estado lo estima el clasificador entrenado, con las reglas como respaldo (ADR-32).
 
 ## `/progress`, «Tu progreso» (ADR-33, solo en el dispositivo)
 
@@ -100,9 +100,19 @@ Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de 
 
 - **Cuenta sin sesión:** pestañas «Entrar», «Crear cuenta» (confirmación por correo) y «Recuperar contraseña» (enlace que abre `/account?mode=recovery` con el formulario de contraseña nueva).
 - **Con sesión y un dispositivo verificado:** antes de mostrar nada se pide el código TOTP (aal1 → aal2).
-- **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» queda deshabilitado con su motivo hasta que exista la API.
-- **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización, guardada en el dispositivo hasta que la API la lleve a `profiles`.
+- **Con sesión:** correo, estado del segundo factor, dispositivos de autenticación (añadir con QR o clave, quitar con confirmación; se recomienda un segundo dispositivo como recuperación), salir y enlace a privacidad. «Borrar la cuenta» pide confirmación, borra la cuenta y todo lo que guarda en la nube, y cierra la sesión; las sesiones del dispositivo no se tocan.
+- **Privacidad:** qué se guarda y dónde, cámara, nube, resumen automático y derechos (Ley 1581); casilla de consentimiento de sincronización. Sin cuenta, la respuesta se queda en el dispositivo; con cuenta, se guarda en `profiles` y es la única que vale.
 
-## Funciones todavía no activas — propuesta S5–S7
+## Sincronización de sesiones (RF-14, ADR-34)
+
+No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la sesión pasó la verificación en dos pasos y la persona dio su consentimiento en `/privacy`.
+
+- **Historial:** bajo el título, una línea dice dónde están las sesiones: solo en el dispositivo (con el enlace a lo que falta: entrar, activar los dos pasos o dar el consentimiento), sincronizando, o en el dispositivo y en la cuenta. Si falla, lo dice con el motivo y ofrece «Reintentar».
+- **Qué hace:** sube las sesiones del dispositivo que la nube no tiene, baja las que solo tiene la nube y las guarda en el dispositivo, e iguala la valoración final. Historial, resumen y «Tu progreso» siguen leyendo del dispositivo.
+- **Guardar:** al terminar una sesión se guarda primero en el dispositivo y se envía después; si el envío falla, no se pierde nada y se reintenta en la siguiente sincronización.
+- **Borrar:** con la sincronización activa, una sesión se borra primero de la nube. Si la nube no lo confirma, no se borra nada y se explica por qué. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
+- **Sin conexión:** la app sigue funcionando en el dispositivo; la cola de envíos pendientes llega con el bloque 16.
+
+## Funciones todavía no activas
 
 Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Groq pendiente conserva plan manual/resumen de indicadores con «Resumen automático pendiente». Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).
