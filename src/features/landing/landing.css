@@ -121,7 +121,7 @@
 .footer-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-4) var(--space-10); }
 .footer-brand { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-text); }
 .footer-brand .brand-mark { color: var(--color-accent); }
-.footer-meta { display: flex; align-items: center; gap: var(--space-6); white-space: nowrap; }
+.footer-meta { display: flex; align-items: center; gap: var(--space-6); white-space: nowrap; overflow-wrap: anywhere; }
 .landing-footer a { color: var(--color-text-secondary); }
 
 /* Scroll reveal: only hidden once the script is ready to show it again. */
