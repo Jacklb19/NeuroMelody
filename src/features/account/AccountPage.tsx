@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { Link, Navigate } from 'react-router';
-import { PreferenceSelects } from '../../app/preferences/PreferenceControls';
+import { PreferencePickers } from '../../app/preferences/PreferenceControls';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
@@ -218,7 +218,7 @@ function PreferencesSection(): React.JSX.Element {
   return (
     <section aria-labelledby={titleId} className="profile-section">
       <h2>{copy.sections.appearance}</h2>
-      <div className="setting-list glass-card appearance-card"><PreferenceSelects /></div>
+      <div className="setting-list glass-card appearance-card"><PreferencePickers /></div>
       <h2 id={titleId}>{copy.sections.preferences}</h2>
       <div className="setting-list glass-card">
         <LinkRow to={ROUTES.privacy} icon={<ShieldIcon />} title={copy.rows.privacy.title} text={copy.rows.privacy.text} />

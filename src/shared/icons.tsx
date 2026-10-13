@@ -57,6 +57,12 @@ export const SparkIcon = (props: IconProps): React.JSX.Element => (
 export const LeafIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M5 19c0-8 5-13 14-14 0 9-4.500 14-12 14" /><path d="M5 19c2.500-4.500 5.500-7.500 9-9.500" /></Icon>
 );
+export const MonitorIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><rect x="3" y="4.500" width="18" height="12" rx="2" /><path d="M9 20h6M12 16.500V20" /></Icon>
+);
+export const GlobeIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.500 2.500 3.800 5.500 3.800 9s-1.300 6.500-3.800 9c-2.500-2.500-3.800-5.500-3.800-9S9.500 5.500 12 3z" /></Icon>
+);
 export const MoonIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M19.500 14.500A8 8 0 0 1 9.500 4.500a8 8 0 1 0 10 10z" /></Icon>
 );

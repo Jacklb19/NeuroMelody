@@ -3,9 +3,17 @@
 .icon-button { display: inline-grid; place-items: center; width: var(--avatar-size); height: var(--avatar-size); padding: 0; background: transparent; color: var(--color-text-secondary); border: var(--border-width) solid var(--color-border-subtle); border-radius: 50%; cursor: pointer; transition: color var(--motion-duration), border-color var(--motion-duration); }
 .icon-button:hover { color: var(--color-accent); border-color: var(--color-accent); }
 .language-button { font-size: var(--text-xs); font-weight: var(--font-weight-strong); letter-spacing: var(--tracking-label); }
-.preference-selects { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4) var(--space-6); padding: var(--space-4) 0; }
-.preference-selects label { font-weight: var(--font-weight-strong); }
+/* Profile: one row per preference, every option visible as a segment of a pill. */
+.preference-row { flex-wrap: wrap; }
+.preference-name { flex: 1; font-weight: var(--font-weight-strong); }
+.segmented { display: inline-flex; gap: var(--space-1); padding: var(--space-1); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-pill); }
+.segment { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control-height); padding: 0 var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: var(--font-weight-strong); white-space: nowrap; cursor: pointer; transition: background var(--motion-duration), color var(--motion-duration); }
+/* The radio button covers its segment, invisible: it takes the click and the keyboard focus. */
+.segment input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.segment:hover { color: var(--color-text); }
+.segment:has(input:checked) { background: var(--color-accent); color: var(--color-button-text); box-shadow: var(--glow-accent); }
+.segment:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 @media (max-width: 600px) {
-  .preference-selects { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
-  .preference-selects select { margin-bottom: var(--space-3); }
+  .segmented { display: flex; width: 100%; }
+  .segment { flex: 1; padding: 0 var(--space-2); }
 }
