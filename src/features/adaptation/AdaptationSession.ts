@@ -1,8 +1,14 @@
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
-import { AdaptationEngine, type AdaptationSnapshot, type TransitionTiming } from './AdaptationEngine';
+import {
+  AdaptationEngine,
+  DEFAULT_GUIDANCE_RANGE,
+  type AdaptationSnapshot,
+  type GuidanceRange,
+  type TransitionTiming,
+} from './AdaptationEngine';
 import type { ActivationModel } from './classifier/activationModel';
-import { CALIBRATION_LEVEL, type LevelId } from '../audio/engine/levels';
+import type { LevelId } from '../audio/engine/levels';
 
 export interface SessionSnapshot extends AdaptationSnapshot {
   readonly tempoBpm: number | null;
@@ -10,12 +16,20 @@ export interface SessionSnapshot extends AdaptationSnapshot {
 
 /** Binds guidance to the existing audio engine; no musical timers or extra worker. */
 export class AdaptationSession {
+  readonly #range: GuidanceRange;
   #model: ActivationModel | null = null;
-  #guidance = new AdaptationEngine();
+  #guidance: AdaptationEngine;
   #audio: AudioEngine | null = null;
   #lastTiming: TransitionTiming | null = null;
-  #snapshot: SessionSnapshot = { ...this.#guidance.snapshot, tempoBpm: null };
+  #snapshot: SessionSnapshot;
   readonly #listeners = new Set<() => void>();
+
+  /** `range` is the stretch of the ladder the program of the session allows (ADR-38). */
+  constructor(range: GuidanceRange = DEFAULT_GUIDANCE_RANGE) {
+    this.#range = range;
+    this.#guidance = new AdaptationEngine(null, range);
+    this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: null };
+  }
 
   getSnapshot = (): SessionSnapshot => this.#snapshot;
   subscribe = (listener: () => void): (() => void) => {
@@ -38,11 +52,12 @@ export class AdaptationSession {
   };
 
   reset = (): void => {
-    this.#guidance = new AdaptationEngine(this.#model);
+    this.#guidance = new AdaptationEngine(this.#model, this.#range);
     this.#lastTiming = null;
     if (this.#audio !== null) {
-      if (this.#audio.level !== CALIBRATION_LEVEL) this.#audio.applyLevel(CALIBRATION_LEVEL);
-      this.#guidance.start(this.#audio.audioTime, CALIBRATION_LEVEL);
+      const { startLevel } = this.#range;
+      if (this.#audio.level !== startLevel) this.#audio.applyLevel(startLevel);
+      this.#guidance.start(this.#audio.audioTime, startLevel);
     }
     this.#publish();
   };

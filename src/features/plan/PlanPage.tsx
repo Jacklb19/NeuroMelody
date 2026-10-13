@@ -6,16 +6,17 @@ import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import { PlayIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
-import { CALIBRATION_LEVEL } from '../audio/engine/levels';
-import { GOAL_IDS, normalizeGoals, readGoals, type GoalId } from './goalCatalog';
+import { GOAL_IDS, readGoals, type GoalId } from './goalCatalog';
 import { GoalIcon } from './GoalIcon';
 import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
 import { PlanSuggestionCard } from './PlanSuggestionCard';
+import { programFor } from './programCatalog';
 import './plan.css';
 
 /**
  * Session plan (HU-07, RF-18): what the person is after and how long they
- * have, with the session they are about to start always in view. A link
+ * have, with the session they are about to start always in view. The goal
+ * is a single choice, because it decides what the music does (ADR-38). A link
  * from the start screen can arrive with a goal already chosen. With an
  * account, the language model can propose the length (RF-13); the person
  * always decides.
@@ -25,13 +26,18 @@ export function PlanPage(): React.JSX.Element {
   usePageTitle(t.plan.pageTitle);
   const [params] = useSearchParams();
   const [duration, setDuration] = useState<DurationMin>(DEFAULT_DURATION_MIN);
-  const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)));
+  // One goal at most: a link that carries several keeps its first one.
+  const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)).slice(0, 1));
+  const program = programFor(goals);
+  const programTexts: Readonly<Record<GoalId, string>> = t.plan.goals.programs;
+  const [goal] = goals;
   const goalsHintId = useId();
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const navigate = useNavigate();
 
+  // Checking a goal replaces the previous one; unchecking it leaves the session without a goal.
   const toggleGoal = (id: GoalId, chosen: boolean): void => {
-    setGoals((current) => normalizeGoals(chosen ? [...current, id] : current.filter((goal) => goal !== id)));
+    setGoals(chosen ? [id] : []);
   };
 
   return (
@@ -99,8 +105,9 @@ export function PlanPage(): React.JSX.Element {
               {goals.map((id) => <li key={id}><GoalIcon goal={id} /> {goalNames[id]}</li>)}
             </ul>
           )}
+          <p className="plan-program">{goal === undefined ? t.plan.goals.defaultProgram : programTexts[goal]}</p>
           <p className="plan-note">
-            {t.plan.calibrationNote(t.audio.levels[CALIBRATION_LEVEL], CALIBRATION_MIN)}
+            {t.plan.calibrationNote(t.audio.levels[program.startLevel], CALIBRATION_MIN)}
           </p>
           <button
             type="button"

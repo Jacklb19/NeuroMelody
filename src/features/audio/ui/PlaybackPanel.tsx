@@ -11,7 +11,7 @@ import {
   VOLUME_STEP_DB,
 } from '../engine/AudioEngine';
 import type { AudioEngineErrorCode, AudioEngineErrorParams } from '../engine/AudioEngineError';
-import { CALIBRATION_LEVEL } from '../engine/levels';
+import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
   CONTINUOUS_WARNING_PERIOD_S,
@@ -24,6 +24,8 @@ import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAu
 
 interface PlaybackPanelProps {
   readonly durationMin: number;
+  /** Level the music starts at: the one the program of the session asks for (ADR-38). */
+  readonly initialLevel?: LevelId;
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
@@ -64,6 +66,7 @@ function describeFailure(failure: AudioStartFailure, t: Messages): string {
  */
 export function PlaybackPanel({
   durationMin,
+  initialLevel = CALIBRATION_LEVEL,
   factory,
   generateSeed = randomSeed,
   onEngineChange,
@@ -102,7 +105,7 @@ export function PlaybackPanel({
     const engine = await control.start(
       {
         seed: generateSeed(),
-        initialLevel: CALIBRATION_LEVEL,
+        initialLevel,
         outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
       },
       volumeDb,

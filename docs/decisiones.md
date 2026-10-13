@@ -281,6 +281,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Hay latidos en la nube por primera vez (antes solo indicadores agregados), siempre por decisión expresa de la persona; `/privacy` lo explica. La clave de servicio de Supabase está también en los secretos de GitHub. `model_versions` guarda el archivo del modelo en una columna en lugar de una ruta de almacenamiento. |
 | Consecuencias | El modelo nunca se entrena ni se publica solo dentro de la app. Sin cuenta, la app usa el modelo que trae. La caché de latidos de WESAD vive en una tabla privada (`training_assets`), no en el repositorio. Cada versión publicada debe llevar sus cifras y límites a `modelo.md`. Requiere una migración (`20261012000000_training_recordings.sql`) y una preparación única en Supabase y GitHub, descrita en `back/training/README.md`. |
 
+## ADR-38. La intención decide qué hace la música: programas de sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 1 a 6 de la propuesta P-06). Este ADR cubre el paso 1; los demás se añaden al implementarse. |
+| Contexto | Los objetivos del plan (ADR-27) no cambiaban nada de la música: solo «Acompañar una respiración lenta» encendía la respiración guiada. Toda sesión empezaba en Intermedio y bajaba a la meta, eligiera lo que eligiera la persona. |
+| Decisión | Cada objetivo tiene un **programa** (`src/features/plan/programCatalog.ts`) con tres valores: el nivel en que empieza la música, el nivel más calmado al que llega y si la respiración guiada empieza encendida. Relajarme: de Intermedio a la meta. Descansar antes de dormir: igual, con respiración. Recuperar la calma después de una actividad: empieza en Activación alta y baja dos escalones. Acompañar una respiración lenta: empieza ya en la meta, con respiración. Tomar una pausa: se queda en Intermedio. Sin objetivo, la sesión es la de siempre. El objetivo pasa a ser **uno solo**; un enlace con varios se lee por el primero. |
+| Desviación | Modifica ADR-12 en dos puntos: la calibración ocurre en el nivel inicial del programa, no siempre en Intermedio, y el avance se detiene en el nivel más calmado del programa. Todo lo demás de ADR-12 sigue igual: histéresis de 3, permanencia de 3 minutos, un escalón por vez, retroceso inmediato por Alta y rampas graduales. Modifica ADR-27: el objetivo deja de ser múltiple. |
+| Consecuencias | El plan dice con una frase qué hará la música con la intención elegida. Las sesiones guardadas con varios objetivos siguen leyéndose igual. El modelo de lenguaje recibe un objetivo como mucho. La duración no forma parte del programa: la sigue eligiendo la persona, con la propuesta del modelo si la pide. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

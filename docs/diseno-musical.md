@@ -27,6 +27,18 @@ El motor nunca salta más de un escalón en una transición, y toda transición 
 
 Prioridades aprobadas el 5 oct 2026: FC ±10 % y RMSSD ∓20 % respecto a la base, sin probabilidad calibrada, histéresis de 3 también para Incierta. RNF-02: Alta <2 s desde aceptación; avance <2 s desde elegibilidad tras permanencia y calidad/estimaciones vigentes. Pruebas registran ambos intervalos (programación menos aceptación y menos elegibilidad). La interfaz indica que conserva el escalón hasta completar su duración; véase ADR-12. No se modifica la especificación.
 
+### Programas (ADR-38)
+
+Lo que la persona busca decide en qué escalón empieza la música y cuál es el más calmado al que llega. Las reglas de arriba se aplican igual dentro de ese tramo: la calibración ocurre en el escalón inicial y el avance se detiene en el más calmado.
+
+| Objetivo | Empieza en | Llega hasta | Respiración guiada |
+|---|---|---|---|
+| Relajarme, o ninguno | Intermedio | Meta | Apagada |
+| Descansar antes de dormir | Intermedio | Meta | Encendida |
+| Recuperar la calma después de una actividad | Activación alta | Meta | Apagada |
+| Acompañar una respiración lenta | Meta | Meta | Encendida |
+| Tomar una pausa para mí | Intermedio | Intermedio | Apagada |
+
 ## Niveles musicales (valores iniciales)
 
 | Nivel | Tempo | Modo | Capas | Brillo | Reverberación |

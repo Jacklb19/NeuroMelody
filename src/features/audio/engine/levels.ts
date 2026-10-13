@@ -49,8 +49,11 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
   },
 };
 
-/** Every session starts here and stays here while calibrating (ADR-12). */
+/** A session starts here, and stays here while calibrating, unless its program says otherwise (ADR-12, ADR-38). */
 export const CALIBRATION_LEVEL: LevelId = 'intermediate';
+
+/** The calmest level: where the guidance leads unless a program stops earlier (ADR-38). */
+export const TARGET_LEVEL: LevelId = 'target';
 
 /** One step closer to the target; `null` at the target. */
 export function nextLevel(id: LevelId): LevelId | null {

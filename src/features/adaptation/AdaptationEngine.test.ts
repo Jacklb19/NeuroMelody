@@ -150,3 +150,36 @@ describe('closed loop with reproducible signal processing', () => {
     expect(states.has(scenario === 'progressive_activation' ? 'high' : 'low')).toBe(true);
   });
 });
+
+describe('guidance range of a program (ADR-38)', () => {
+  it('starts at the first level of its range', () => {
+    expect(new AdaptationEngine(null, { startLevel: 'high', calmestLevel: 'target' }).snapshot.level).toBe('high');
+  });
+
+  it('never advances past the calmest level of its range, and still steps back on High', () => {
+    const engine = new AdaptationEngine(null, { startLevel: 'intermediate', calmestLevel: 'intermediate' });
+    engine.start(0, 'intermediate');
+    for (let ms = 60_000; ms <= 180_000; ms += 5000) engine.process(reading(ms), ms / 1000, true);
+    let ms = 180_000;
+    // Calm readings long after the dwell: there is no calmer level to go to.
+    for (let n = 0; n < 4; n++) {
+      ms += 5000;
+      expect(engine.process(reading(ms), 400 + n, true)).toBeNull();
+    }
+    expect(engine.snapshot.waitingForDwell).toBe(false);
+    // Three High readings: one step back towards activation.
+    const up: (string | null)[] = [];
+    for (let n = 0; n < 3; n++) {
+      ms += 5000;
+      up.push(engine.process(reading(ms, 120, 30), 410 + n, true));
+    }
+    expect(up).toEqual([null, null, 'high']);
+    // Calm again after the dwell: back down to the calmest level, and no further.
+    const down: (string | null)[] = [];
+    for (let n = 0; n < 6; n++) {
+      ms += 5000;
+      down.push(engine.process(reading(ms), 700 + n, true));
+    }
+    expect(down.filter((step) => step !== null)).toEqual(['intermediate']);
+  });
+});
