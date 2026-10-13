@@ -10,6 +10,35 @@ export const session = {
   dimmer: {
     restore: 'Pantalla atenuada para dormir. Toca para verla.',
   },
+  /** Short path before the music starts (ADR-42). */
+  steps: {
+    label: 'Antes de empezar',
+    measure: 'Mide tu pulso',
+    feeling: 'Di cómo te sientes, si quieres',
+    start: 'Inicia la música',
+    /** Mark of a finished step, and the same for a screen reader. */
+    doneMark: '✓',
+    done: 'hecho',
+  },
+  /** The pulse source panel, which folds away while the music plays; `states` says whether it is measuring. */
+  source: {
+    title: 'Cómo se mide tu pulso',
+    states: { connected: 'Midiendo', pending: 'Falta conectarlo' },
+  },
+  /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
+  journey: {
+    label: 'Recorrido de la música',
+    levels: { high: 'Con movimiento', intermediate: 'A paso medio', target: 'En calma', sleep: 'Para dormir' },
+  },
+  /** What the music did, shown when the session ends (ADR-42). */
+  recap: {
+    title: 'Lo que hizo la música',
+    tempo: (from: string, to: string): string => `Empezó a ${from} pulsos por minuto y terminó a ${to}.`,
+    steadyTempo: (tempo: string): string => `Se mantuvo a ${tempo} pulsos por minuto.`,
+    noSteps: 'No cambió de paso durante la sesión.',
+    calmerStep: (minute: number, level: string): string => `Minuto ${String(minute)}: bajó a «${level}».`,
+    livelierStep: (minute: number, level: string): string => `Minuto ${String(minute)}: volvió a «${level}» para acompañarte.`,
+  },
   technicalDetails: {
     title: 'Detalles técnicos',
     hint: 'Gráfica de la señal, índices y parámetros musicales',
@@ -52,6 +81,13 @@ export const session = {
   stage: {
     eyebrow: 'Ahora',
     estimatedState: 'Estado estimado:',
+    /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
+    pace: (tempo: number, personal: boolean): string =>
+      `La música va a ${String(tempo)} pulsos por minuto${personal ? ', ajustada a tu pulso' : ''}.`,
+    help: {
+      summary: '¿Qué significa?',
+      text: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que el pulso subió y la variación entre latidos bajó: la música vuelve un paso para acompañarte. «Baja» es lo contrario, e «Incierta», que no cambió lo bastante: en ambos casos la música sigue bajando poco a poco. Es una estimación para guiar la música; no mide el dolor ni es un diagnóstico.',
+    },
     /** Shown while the rules estimate the state, because the trained model could not be loaded. */
     confidence: common.provisionalEstimate,
     /** Shown with the trained model before it has an estimate to be confident about. */

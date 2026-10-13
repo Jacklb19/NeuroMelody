@@ -9,17 +9,26 @@ export const home = {
   },
   /** Greeting for someone whose name is known, e.g. "Buenas tardes, Ana". */
   greetingWithName: (greeting: string, name: string): string => `${greeting}, ${name}`,
-  question: '¿Qué te vendría bien ahora?',
+  question: '¿Qué necesitas ahora?',
   start: {
-    eyebrow: 'Tu próxima sesión',
-    title: (minutes: number): string => `${String(minutes)} minutos de música a tu ritmo`,
-    text: 'Ponte cómodo, conecta tu pulso y deja que la música te acompañe.',
-    action: 'Empezar ahora',
-    customize: 'Personalizar sesión',
+    eyebrow: 'Nueva sesión',
+    title: 'Prepara tu sesión en tres pasos',
+    text: 'Elige qué buscas, cuánto tiempo tienes y con qué ambiente. La música parte de tu pulso y te acompaña desde ahí.',
+    action: 'Preparar mi sesión',
+    /** Starts a session like the last one: same goal and length, and the ambience kept on the device. */
+    repeat: 'Repetir la última',
   },
   goals: {
-    title: 'Empieza con una intención',
-    hint: 'Elige una y ajusta la duración a tu gusto.',
+    title: 'O empieza por lo que buscas',
+    hint: 'Cada intención cambia cómo empieza la música y hasta dónde baja.',
+    /** What the music does with each goal, in a few words; keys mirror `GoalId`. */
+    taglines: {
+      relax: 'De paso medio a la calma',
+      rest_before_sleep: 'Baja hasta lo más lento y se apaga sola',
+      calm_after_activity: 'Empieza movida y baja contigo',
+      slow_breathing: 'Calmada desde el inicio, con respiración guiada',
+      pause: 'Ligera y estable, para un rato corto',
+    },
   },
   activity: {
     title: 'Tu actividad',
@@ -38,8 +47,8 @@ export const home = {
   first: {
     title: 'Tu primera sesión, en tres pasos',
     steps: {
-      connect: { title: 'Conecta tu pulso', text: 'Con una banda, con la cámara o con un pulso de ejemplo.' },
-      listen: { title: 'Inicia la música', text: 'Empieza suave mientras aprende tu ritmo de hoy.' },
+      connect: { title: 'Prepara y conecta tu pulso', text: 'Elige qué buscas y mide tu pulso con una banda, con la cámara o con un pulso de ejemplo.' },
+      listen: { title: 'Inicia la música', text: 'Empieza cerca de tu pulso mientras aprende tu ritmo de hoy.' },
       rest: { title: 'Déjate llevar', text: 'No tienes que hacer nada más.' },
     },
   },

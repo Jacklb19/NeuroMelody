@@ -9,8 +9,7 @@ export const app = {
   /** Labels of the main navigation; keys mirror `NAVIGATION_ITEMS`. */
   navigation: {
     home: 'Home',
-    plan: 'Plan',
-    session: 'Session',
+    plan: 'New session',
     history: 'History',
   },
   /** Accessible name of the avatar that opens the profile. */

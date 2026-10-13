@@ -5,6 +5,7 @@ import type { AdaptationSession } from '../adaptation/AdaptationSession';
 import { MIN_LEVEL_DURATION_S } from '../adaptation/rules';
 import { SECONDS_PER_MINUTE } from '../../shared/time';
 import { describeListening, type ListeningNarrativeId } from './listeningNarrative';
+import { SessionJourney } from './SessionJourney';
 
 interface NarrativeText {
   readonly title: string;
@@ -20,9 +21,10 @@ interface SessionStageProps {
 const PERCENT = 100;
 
 /**
- * Simple view of the session (ADR-24): the moment in plain words, the
- * estimated state with its uncalibrated confidence, and the notices that
- * explain why the music holds still. Technical figures live elsewhere.
+ * Simple view of the session (ADR-24, ADR-42): the moment in plain words,
+ * the steps the music can take with the current one marked, its pace, the
+ * estimated state with what it means, and the notices that explain why the
+ * music holds still. Technical figures live elsewhere.
  */
 export function SessionStage({ session, connection, playing }: SessionStageProps): React.JSX.Element {
   const t = useMessages();
@@ -50,6 +52,17 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
       <h2 id={titleId} className="stage-title">{narrative.title}</h2>
       <p className="stage-detail">{narrative.detail}</p>
 
+      {playing && (
+        <div className="music-now">
+          <SessionJourney range={session.range} level={snapshot.level} />
+          {snapshot.tempoBpm !== null && (
+            <p className="music-pace">
+              {t.session.stage.pace(Math.round(snapshot.tempoBpm), snapshot.tempoOffsetBpm !== 0)}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="estimated-state">
         <p role="status">
           {t.session.stage.estimatedState}{' '}
@@ -58,6 +71,10 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
           </strong>
         </p>
         <p className="confidence-note" data-testid="estimate-note">{estimateNote}</p>
+        <details className="state-help">
+          <summary>{t.session.stage.help.summary}</summary>
+          <p>{t.session.stage.help.text}</p>
+        </details>
       </div>
 
       {connected && playing && !snapshot.qualityGood && (

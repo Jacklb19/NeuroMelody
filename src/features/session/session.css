@@ -41,7 +41,33 @@
 .listening-stage .check-in { border-top: 0; padding-top: 0; }
 .rating-option { background: var(--color-background); }
 
-/* Source and technical details as cards under the stage. */
+/* Before the music: the short path of steps (ADR-42). */
+.session-steps { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-8); margin-bottom: var(--space-6); }
+.session-step { display: flex; align-items: center; gap: var(--space-3); color: var(--color-text-secondary); }
+.step-mark { display: inline-grid; place-items: center; width: var(--icon-badge-size); height: var(--icon-badge-size); flex-shrink: 0; border: var(--border-width) solid var(--color-border); border-radius: 50%; font-weight: var(--font-weight-strong); font-variant-numeric: tabular-nums; }
+.session-step.done { color: var(--color-text); }
+.session-step.done .step-mark { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-button-text); }
+
+/* While it plays: the steps the music can take and its pace. */
+.music-now { margin-bottom: var(--space-6); }
+.session-journey { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.journey-step { padding: var(--space-1) var(--space-4); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.journey-step + .journey-step { position: relative; margin-left: var(--space-4); }
+.journey-step + .journey-step::before { content: ''; position: absolute; right: 100%; top: 50%; width: var(--space-4); margin-right: var(--space-2); border-top: var(--border-width) solid var(--color-border); }
+.journey-step[aria-current='step'] { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-button-text); font-weight: var(--font-weight-strong); }
+.music-pace { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.state-help { flex-basis: 100%; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.state-help summary { cursor: pointer; width: fit-content; text-decoration: underline; text-underline-offset: var(--space-1); }
+.state-help p { margin-top: var(--space-2); max-width: var(--stage-detail-max-width); }
+
+/* After it ends: what the music did. */
+.session-recap { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.session-recap h3 { font-size: var(--text-base); color: var(--color-text); margin-bottom: var(--space-2); }
+.session-recap ul { list-style: none; margin-top: var(--space-2); display: grid; gap: var(--space-1); }
+
+/* Source and technical details as cards around the stage. */
+.session-page .source-details { margin-top: 0; margin-bottom: var(--space-6); }
+.session-page .source-details .acquisition-panel { margin-top: 0; padding: 0 0 var(--space-8); background: none; border: 0; border-radius: 0; }
 .session-page .acquisition-panel { margin-top: var(--space-8); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
 .session-page .technical-details { margin-top: var(--space-6); padding: 0 var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
 .session-page .signal-chart { border-radius: var(--border-radius); }
@@ -53,6 +79,9 @@
   .listening-stage .stage-main { text-align: center; padding-bottom: 0; }
   .listening-stage .stage-title, .listening-stage .stage-detail { margin-left: auto; margin-right: auto; }
   .listening-stage .session-stage .estimated-state { justify-content: center; }
+  .session-journey { justify-content: center; }
+  .state-help summary { margin-inline: auto; }
+  .state-help p { margin-inline: auto; }
   .listening-stage .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: var(--space-5); }
   .listening-stage .play-button { grid-column: 1 / -1; justify-self: center; margin: 0; }
   .session-page .acquisition-panel, .session-page .technical-details { padding-left: var(--space-5); padding-right: var(--space-5); }

@@ -318,6 +318,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Añade un nivel y un modo a los tres de ADR-12 y `diseno-musical.md`, y exceptúa a este programa del aviso de fin de plan de ADR-16 (el límite de nivel de salida y la duración máxima de 60 minutos se mantienen). |
 | Consecuencias | La app no detecta el sueño ni lo afirma: el final depende del tiempo del plan. El tempo de este nivel no lo mueve el pulso (ADR-39). La cámara no sirve acostado: para dormir conviene la banda o, sin sensor, el modo de prueba. |
 
+## ADR-42. Recorrido guiado, sesión que se explica y alcance más amplio
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 3, 4 y 7 de P-06; el 7, con la condición de añadir usos sin quitar el dolor crónico). |
+| Contexto | Se podía iniciar una sesión desde el inicio sin elegir nada; el plan parecía opcional; la pantalla de sesión juntaba paneles sin orden y no decía qué hacía la música ni qué era el «estado estimado». |
+| Decisión | (1) **Recorrido:** Inicio → Preparar (`/plan`: intención, duración y ambiente) → Sesión → Cierre. El inicio lleva a preparar la sesión; solo «Repetir la última» va directo, con la intención y la duración de la última sesión. La navegación pasa a ser Inicio, Nueva sesión e Historial: la sesión no tiene entrada propia. (2) **Antes de la música**, la sesión muestra tres pasos con su estado: medir el pulso, decir cómo te sientes (opcional) e iniciar la música. El panel de la fuente de señal va primero y se pliega solo cuando la música suena con el pulso conectado; la persona puede abrirlo cuando quiera. (3) **Mientras suena**, el escenario muestra el recorrido de la música (los escalones de su programa en palabras llanas: Con movimiento, A paso medio, En calma, Para dormir, con el actual marcado), a cuántos pulsos por minuto va y si está ajustada al pulso, y «¿Qué significa?» junto al estado estimado. (4) **Al terminar**, «Lo que hizo la música»: el ritmo al que empezó y terminó y cada cambio de escalón con su minuto. No se guarda: vive hasta salir de la pantalla. (5) **Alcance:** la portada dice que NeuroMelody nació para acompañar a personas con dolor crónico y que sirve también para calmarse, descansar antes de dormir, respirar más despacio o tomar una pausa. |
+| Desviación | Cambia `pantallas.md` (navegación, inicio y organización de `/session`, ADR-24). Amplía el alcance descrito en la especificación sin retirar el dolor crónico. Las advertencias y el lenguaje no clínico no cambian. |
+| Consecuencias | Los detalles técnicos y sus nombres (Alta, Baja, Incierta; Activación alta, Intermedio…) se conservan para RF-12; la vista sencilla usa los nombres llanos. La ruta `/session` sigue aceptando enlaces directos. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

@@ -31,6 +31,8 @@ import { SessionStage } from './SessionStage';
 import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
+import { SessionRecap } from './SessionRecap';
+import { SessionSteps } from './SessionSteps';
 import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
 import './session.css';
@@ -65,6 +67,10 @@ export function SessionPage(): React.JSX.Element {
   const [engine, setEngine] = useState<AudioEngine | null>(null);
   const playing = engine !== null;
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
+  // Before the first note the screen is a short path of steps; afterwards it is the listening space.
+  const [everPlayed, setEverPlayed] = useState(false);
+  // The person's own choice to open or close the source panel; `null` lets it follow the session.
+  const [sourceToggled, setSourceToggled] = useState<boolean | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The session that just ended was a trial of the app, so nothing was kept.
   const [trialEnded, setTrialEnded] = useState(false);
@@ -104,6 +110,7 @@ export function SessionPage(): React.JSX.Element {
       finishRecording();
       return;
     }
+    setEverPlayed(true);
     if (!recorder.active) {
       sessionStartElapsedRef.current = elapsedRef.current;
       recorder.start({
@@ -158,6 +165,9 @@ export function SessionPage(): React.JSX.Element {
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);
 
+  // Once the music plays with the pulse connected, how it is measured steps out of the way.
+  const sourceOpen = sourceToggled ?? !(playing && connection === 'connected');
+
   return (
     <div className="session-page">
       <SleepDimmer active={program.quietEnding && playing} />
@@ -169,6 +179,24 @@ export function SessionPage(): React.JSX.Element {
           </ul>
         )}
       </PageHeading>
+
+      {!everPlayed && <SessionSteps measuring={connection === 'connected'} rated={ratingBefore !== null} />}
+
+      <details
+        className="technical-details source-details"
+        open={sourceOpen}
+        onToggle={(event) => {
+          // React setting `open` also fires this event: only a change the person made is kept.
+          const { open } = event.currentTarget;
+          if (open !== sourceOpen) setSourceToggled(open);
+        }}
+      >
+        <summary>
+          <span className="summary-title">{t.session.source.title}</span>
+          <span className="summary-hint">{t.session.source.states[connection === 'connected' ? 'connected' : 'pending']}</span>
+        </summary>
+        <AcquisitionPanel source={source} onSourceChange={handleSourceChange} />
+      </details>
 
       <div className="listening-stage">
         <div className="orb-column">
@@ -190,12 +218,11 @@ export function SessionPage(): React.JSX.Element {
             trialEnded={trialEnded}
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
+          <SessionRecap session={adaptation} playing={playing} />
         </div>
         <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
-
-      <AcquisitionPanel source={source} onSourceChange={handleSourceChange} />
 
       <details className="technical-details">
         <summary>

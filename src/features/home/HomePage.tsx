@@ -1,23 +1,24 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
-import { planPath, ROUTES, summaryPath } from '../../config/routes';
+import { planPath, ROUTES, sessionPath, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import { ArrowRightIcon, PlayIcon } from '../../shared/icons';
 import { useAuth } from '../account/authContext';
 import { GOAL_IDS, type GoalId } from '../plan/goalCatalog';
 import { GoalIcon } from '../plan/GoalIcon';
-import { DEFAULT_DURATION_MIN } from '../plan/plan';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { dayPartAt, FIRST_SESSION_STEP_IDS, firstName } from './greeting';
 import './home.css';
 
 /**
- * Start screen of the app (ADR-30): a greeting, the next session one tap
- * away, the goals as shortcuts into the plan, and the person's activity on
- * this device, or how a first session goes when there is none yet.
+ * Start screen of the app (ADR-30, ADR-42): a greeting, the way into
+ * preparing a session, the goals as shortcuts into that preparation, and the
+ * person's activity on this device, or how a first session goes when there is
+ * none yet. A session is always prepared first; only repeating the last one
+ * goes straight to it.
  */
 export function HomePage(): React.JSX.Element {
   const t = useMessages();
@@ -32,6 +33,7 @@ export function HomePage(): React.JSX.Element {
   const name = state.kind === 'signed_in' ? firstName(state.user.name) : null;
   const greeting = name === null ? copy.greetings[dayPart] : copy.greetingWithName(copy.greetings[dayPart], name);
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
+  const goalTaglines: Readonly<Record<GoalId, string>> = copy.goals.taglines;
   const totals = sessionTotals(records ?? []);
 
   return (
@@ -44,13 +46,20 @@ export function HomePage(): React.JSX.Element {
       <section className="start-card glass-card paper" aria-labelledby={ids.start}>
         <div className="start-copy">
           <p className="eyebrow">{copy.start.eyebrow}</p>
-          <h2 id={ids.start}>{copy.start.title(DEFAULT_DURATION_MIN)}</h2>
+          <h2 id={ids.start}>{copy.start.title}</h2>
           <p>{copy.start.text}</p>
           <div className="start-actions">
-            <Link to={ROUTES.session} className="pill-button pill-button-primary pill-button-large">
+            <Link to={ROUTES.plan} className="pill-button pill-button-primary pill-button-large">
               <PlayIcon /> {copy.start.action}
             </Link>
-            <Link to={ROUTES.plan} className="pill-button pill-button-ghost pill-button-large">{copy.start.customize}</Link>
+            {totals.last !== null && (
+              <Link
+                to={sessionPath(totals.last.plannedMinutes, totals.last.goals)}
+                className="pill-button pill-button-ghost pill-button-large"
+              >
+                {copy.start.repeat}
+              </Link>
+            )}
           </div>
         </div>
         <BreathingOrb className="start-orb" />
@@ -65,6 +74,7 @@ export function HomePage(): React.JSX.Element {
               <Link to={planPath([goal])} className="glass-card goal-shortcut">
                 <span className="icon-badge"><GoalIcon goal={goal} /></span>
                 <span>{goalNames[goal]}</span>
+                <span className="goal-tagline">{goalTaglines[goal]}</span>
               </Link>
             </li>
           ))}
