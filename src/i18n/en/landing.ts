@@ -36,7 +36,7 @@ export const landing = {
     eyebrow: 'What it is',
     title: 'Your pulse becomes music',
     body:
-      'Made to keep company with people who live with chronic pain, NeuroMelody listens to your heart and composes music that moves along with you. It does not replace your care team: it simply listens and keeps you company.',
+      'NeuroMelody was made to keep company with people who live with chronic pain, and it also helps you calm down, rest before sleep, breathe more slowly or take a break. It listens to your heart and composes music that moves along with you. It does not replace your care team: it simply listens and keeps you company.',
     /** Text alternative of the drawing that turns a heartbeat trace into notes on a staff. */
     drawingLabel: 'A heartbeat trace that turns into notes on a music staff.',
     /** Keys mirror `LANDING_HIGHLIGHT_IDS`. */

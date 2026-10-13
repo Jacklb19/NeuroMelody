@@ -36,7 +36,7 @@ export const landing = {
     eyebrow: 'Qué es',
     title: 'Tu pulso se convierte en música',
     body:
-      'Pensada para acompañar a personas que conviven con dolor crónico, NeuroMelody escucha tu corazón y compone para ti una música que se mueve contigo. No reemplaza a tu equipo de cuidado: solo escucha y acompaña.',
+      'NeuroMelody nació para acompañar a personas que conviven con dolor crónico, y sirve también para calmarte, descansar antes de dormir, respirar más despacio o tomar una pausa. Escucha tu corazón y compone para ti una música que se mueve contigo. No reemplaza a tu equipo de cuidado: solo escucha y acompaña.',
     /** Text alternative of the drawing that turns a heartbeat trace into notes on a staff. */
     drawingLabel: 'Un trazo de latidos que se transforma en notas sobre un pentagrama.',
     /** Keys mirror `LANDING_HIGHLIGHT_IDS`. */

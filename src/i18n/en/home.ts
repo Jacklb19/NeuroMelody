@@ -9,17 +9,26 @@ export const home = {
   },
   /** Greeting for someone whose name is known, e.g. "Good afternoon, Ana". */
   greetingWithName: (greeting: string, name: string): string => `${greeting}, ${name}`,
-  question: 'What would feel good right now?',
+  question: 'What do you need right now?',
   start: {
-    eyebrow: 'Your next session',
-    title: (minutes: number): string => `${String(minutes)} minutes of music at your pace`,
-    text: 'Get comfortable, connect your pulse and let the music keep you company.',
-    action: 'Start now',
-    customize: 'Customize session',
+    eyebrow: 'New session',
+    title: 'Set up your session in three steps',
+    text: 'Choose what you are after, how long you have and which ambience. The music starts from your pulse and keeps you company from there.',
+    action: 'Set up my session',
+    /** Starts a session like the last one: same goal and length, and the ambience kept on the device. */
+    repeat: 'Repeat the last one',
   },
   goals: {
-    title: 'Start with an intention',
-    hint: 'Pick one and set the length to your liking.',
+    title: 'Or start from what you are after',
+    hint: 'Each intention changes how the music starts and how far it comes down.',
+    /** What the music does with each goal, in a few words; keys mirror `GoalId`. */
+    taglines: {
+      relax: 'From a middle pace down to calm',
+      rest_before_sleep: 'Comes down to its slowest and fades out by itself',
+      calm_after_activity: 'Starts lively and comes down with you',
+      slow_breathing: 'Calm from the start, with guided breathing',
+      pause: 'Light and steady, for a short while',
+    },
   },
   activity: {
     title: 'Your activity',

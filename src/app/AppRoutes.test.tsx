@@ -60,14 +60,15 @@ describe('routes', () => {
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
-  it('the app home starts a session and opens the plan; the profile sits apart from the navigation', () => {
+  it('the app home leads into preparing a session; the profile sits apart from the navigation', () => {
     renderWith(ROUTES.app);
-    expect(screen.getByRole('heading', { level: 2, name: es.home.start.title(DEFAULT_DURATION_MIN) })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: es.home.start.title })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: es.app.mainNavigation });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
     const labels = es.app.navigation;
-    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history]);
-    expect(screen.getByRole('link', { name: es.home.start.customize })).toHaveAttribute('href', ROUTES.plan);
+    // A session is not an entry of the navigation: it is reached by preparing it (ADR-42).
+    expect(links).toEqual([labels.home, labels.plan, labels.history]);
+    expect(screen.getByRole('link', { name: es.home.start.action })).toHaveAttribute('href', ROUTES.plan);
     expect(screen.getByRole('link', { name: es.app.profile })).toHaveAttribute('href', ROUTES.account);
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
@@ -135,7 +136,7 @@ describe('routes', () => {
 });
 
 describe('two-step verification on the way into the app', () => {
-  const homeTitle = es.home.start.title(DEFAULT_DURATION_MIN);
+  const homeTitle = es.home.start.title;
   const appIsHidden = (): void => {
     expect(screen.queryByRole('heading', { level: 2, name: homeTitle })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: es.app.mainNavigation })).not.toBeInTheDocument();

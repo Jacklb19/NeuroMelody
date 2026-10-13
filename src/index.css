@@ -311,6 +311,8 @@ strong { font-weight: var(--font-weight-strong); }
 p, dt, dd, label { overflow-wrap: anywhere; }
 .secondary-text, .panel-footnote { color: var(--color-text-secondary); }
 .panel-footnote { font-size: var(--text-sm); margin-top: var(--space-4); }
+/* Text for screen readers only. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip-link { position: fixed; left: var(--space-4); top: calc(-1 * var(--space-24)); padding: var(--space-3) var(--space-4); background: var(--color-button-background); color: var(--color-button-text); z-index: var(--stop-layer); border-radius: var(--border-radius); }
 .skip-link:focus { top: var(--space-2); }
 .app-header { display: flex; align-items: center; gap: var(--space-8); padding: var(--space-5) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }

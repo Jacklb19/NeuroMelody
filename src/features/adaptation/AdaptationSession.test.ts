@@ -143,3 +143,26 @@ it('moves the starting tempo to the pulse with a gradual ramp and leaves the tar
   expect(audio.level).toBe('target');
   expect(tempo.last('linear')?.value).toBe(59);
 });
+
+it('keeps what the music did and hands it over when the music stops (ADR-42)', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'intermediate', outputThroughAudioElement: false });
+  await audio.start();
+  const session = new AdaptationSession();
+  session.setAudio(audio);
+  for (let ms = 60_000; ms <= 180_000; ms += 5000) session.receive(reading(ms));
+  env.context.currentTime = 200;
+  for (let ms = 185_000; ms <= 195_000; ms += 5000) session.receive(reading(ms));
+  expect(audio.level).toBe('target');
+  // While the music plays there is no finished story to tell.
+  expect(session.getSnapshot().recap).toBeNull();
+  session.setAudio(null);
+  expect(session.getSnapshot().recap).toEqual({
+    startTempoBpm: 66,
+    endTempoBpm: 66,
+    steps: [{ atS: 200, level: 'target', calmer: true }],
+  });
+  // A new start begins a new story.
+  session.setAudio(audio);
+  expect(session.getSnapshot().recap).toBeNull();
+});
