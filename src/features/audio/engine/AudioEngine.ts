@@ -143,6 +143,7 @@ export class AudioEngine {
     high: LEVELS.high.tempo,
     intermediate: LEVELS.intermediate.tempo,
     target: LEVELS.target.tempo,
+    sleep: LEVELS.sleep.tempo,
   };
 
   private constructor(
@@ -374,15 +375,16 @@ export class AudioEngine {
    * (end of session without an answer). It happens even when the tab is in
    * the background.
    *
+   * @param fadeS Length of the fade; a session for falling asleep takes a much longer one.
    * @returns the instant (audio clock) at which the fade ends.
    */
-  scheduleFinalFade(inSeconds: number): number {
+  scheduleFinalFade(inSeconds: number, fadeS: number = FINAL_FADE_S): number {
     // Only schedules ahead: it does not cancel the start fade if it is still running.
     const startTime = this.#context.currentTime + Math.max(0, inSeconds);
     const envelope = this.#nodes.envelope.gain;
     envelope.setValueAtTime(1, startTime);
-    envelope.linearRampToValueAtTime(0, startTime + FINAL_FADE_S);
-    return startTime + FINAL_FADE_S;
+    envelope.linearRampToValueAtTime(0, startTime + fadeS);
+    return startTime + fadeS;
   }
 
   /** Cancels a scheduled final fade and returns to full level over 2 s. */

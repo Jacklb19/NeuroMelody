@@ -22,9 +22,9 @@ describe('session music theory', () => {
     expect(degreeNote(pentatonic, 7, 50)).toBe(66); // F#
   });
 
-  it('recognizes only the three modes', () => {
-    expect([0, 1, 2].every(isMode)).toBe(true);
-    expect(isMode(3)).toBe(false);
+  it('recognizes only the modes of the catalogue', () => {
+    expect(Object.values(MODE).every(isMode)).toBe(true);
+    expect(isMode(Object.values(MODE).length)).toBe(false);
     expect(isMode(-1)).toBe(false);
   });
 

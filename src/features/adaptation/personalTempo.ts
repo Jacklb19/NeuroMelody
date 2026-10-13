@@ -36,7 +36,8 @@ export function personalTempo(level: LevelId, range: GuidanceRange, offsetBpm: n
   const index = LEVEL_IDS.indexOf(level);
   const start = LEVEL_IDS.indexOf(range.startLevel);
   const target = LEVEL_IDS.indexOf(TARGET_LEVEL);
-  const share = index <= start ? 1 : (target - index) / (target - start);
+  // Nothing past the target is moved either: the level for falling asleep keeps its own tempo.
+  const share = index <= start ? 1 : Math.max(0, (target - index) / (target - start));
   return LEVELS[level].tempo + offsetBpm * share;
 }
 
@@ -46,5 +47,6 @@ export function personalTempos(range: GuidanceRange, offsetBpm: number): Record<
     high: personalTempo('high', range, offsetBpm),
     intermediate: personalTempo('intermediate', range, offsetBpm),
     target: personalTempo('target', range, offsetBpm),
+    sleep: personalTempo('sleep', range, offsetBpm),
   };
 }

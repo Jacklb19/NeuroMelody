@@ -5,12 +5,14 @@ export const audio = {
     high: 'High activation',
     intermediate: 'Intermediate',
     target: 'Low activation (goal)',
+    sleep: 'For sleep',
   },
   /** Names of the musical modes; keys mirror the names in `MODE`. */
   modes: {
     majorPentatonic: 'Major pentatonic',
     lydian: 'Lydian',
     dronePentatonic: 'Drone with pentatonic',
+    deepDrone: 'Deep drone',
   },
   /** Playback panel of the session screen. */
   playback: {

@@ -31,6 +31,7 @@ import { SessionStage } from './SessionStage';
 import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
+import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
 import './session.css';
 
@@ -159,6 +160,7 @@ export function SessionPage(): React.JSX.Element {
 
   return (
     <div className="session-page">
+      <SleepDimmer active={program.quietEnding && playing} />
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
         {goals.length > 0 && (
@@ -189,7 +191,7 @@ export function SessionPage(): React.JSX.Element {
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>
-        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
 

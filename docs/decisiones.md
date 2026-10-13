@@ -309,6 +309,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | La persona elige en el plan un ambiente de un catálogo (`src/features/audio/core/ambienceCatalog.ts`): solo música (por defecto), lluvia, mar o viento. Los tres se sintetizan con ruido filtrado en el AudioWorklet (`core/ambience.ts`), sin archivos de audio y sin reservar memoria en `process()`. Salen por una segunda salida del sintetizador y se unen antes del volumen: no pasan por el filtro de brillo ni por la reverberación de la música, y sí por el control de volumen, la detención y el límite de salida (ADR-16). El ambiente es el mismo durante toda la sesión. La elección viaja en la dirección de la sesión (`ambience`) y se recuerda en el dispositivo, junto al tema y el idioma; no se guarda con la sesión ni se envía a ningún sitio. |
 | Consecuencias | Una sesión iniciada desde el inicio, sin pasar por el plan, usa el último ambiente elegido. La herramienta de muestras renderiza la meta con cada ambiente. Un ambiente nuevo es una entrada del catálogo, su sonido, su icono y su nombre en los dos idiomas. |
 
+## ADR-41. Programa para dormir: un escalón más, final silencioso y pantalla atenuada
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 5 de P-06). |
+| Decisión | (1) **Un cuarto nivel, «Para dormir»**, un escalón más allá de la meta: 50 por minuto, modo «bordón profundo» (las mismas notas de la pentatónica, díadas graves que duran un ciclo entero de 16 pulsos y tardan cinco segundos en entrar, sin campanas ni notas pulsadas), filtro en 1,2 kHz y reverberación 0,55. Solo lo alcanza el programa del objetivo «Descansar antes de dormir»; los demás siguen deteniéndose en la meta. Se llega con las mismas reglas de ADR-12: tres minutos de permanencia, un escalón por vez, y Alta aceptada hace retroceder. (2) **Final silencioso:** en ese programa no se abre el aviso de fin de plan; la música se apaga sola en un fundido de dos minutos que termina justo cuando acaba el plan, programado en el reloj de audio. (3) **Pantalla atenuada:** tras 20 segundos sin tocar la pantalla ni el teclado, una capa oscura cubre la página; cualquier toque la quita. El botón «Detener» queda por encima de la capa, siempre visible. |
+| Desviación | Añade un nivel y un modo a los tres de ADR-12 y `diseno-musical.md`, y exceptúa a este programa del aviso de fin de plan de ADR-16 (el límite de nivel de salida y la duración máxima de 60 minutos se mantienen). |
+| Consecuencias | La app no detecta el sueño ni lo afirma: el final depende del tiempo del plan. El tempo de este nivel no lo mueve el pulso (ADR-39). La cámara no sirve acostado: para dormir conviene la banda o, sin sensor, el modo de prueba. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

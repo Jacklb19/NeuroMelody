@@ -183,3 +183,17 @@ describe('guidance range of a program (ADR-38)', () => {
     expect(down.filter((step) => step !== null)).toEqual(['intermediate']);
   });
 });
+
+it('goes one step past the target only when the range of the program reaches the level for sleep (ADR-41)', () => {
+  const descent = (calmestLevel: 'target' | 'sleep'): (string | null)[] => {
+    const engine = new AdaptationEngine(null, { startLevel: 'intermediate', calmestLevel });
+    engine.start(0, 'intermediate');
+    for (let ms = 60_000; ms <= 180_000; ms += 5000) engine.process(reading(ms), ms / 1000, true);
+    const steps: (string | null)[] = [];
+    // One calm reading every 100 s of audio: each dwell of three minutes passes between steps.
+    for (let n = 1; n <= 12; n++) steps.push(engine.process(reading(180_000 + n * 5000), 180 + n * 100, true));
+    return steps.filter((step) => step !== null);
+  };
+  expect(descent('target')).toEqual(['target']);
+  expect(descent('sleep')).toEqual(['target', 'sleep']);
+});

@@ -87,7 +87,7 @@ describe('synthesizer processor', () => {
     }
     expect(SYNTHESIZER_DESCRIPTORS.map((d) => [d.name, d.minValue, d.maxValue])).toEqual([
       ['tempo', 40, 120],
-      ['mode', MODE.majorPentatonic, MODE.dronePentatonic],
+      ['mode', MODE.majorPentatonic, MODE.deepDrone],
       ['layers', MIN_LAYERS, LAYER_COUNT],
     ]);
   });

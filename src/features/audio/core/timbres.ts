@@ -77,6 +77,20 @@ export const DYAD_TIMBRE: Timbre = {
   ratio: 1,
 };
 
+/** Dyads of the level for falling asleep: they take five seconds to arrive and seven to leave. */
+export const SLEEP_PAD_TIMBRE: Timbre = {
+  amplitude: 0.07,
+  attackS: 5,
+  decayS: 6,
+  sustain: 0.75,
+  releaseS: 7,
+  detuneHz: 0.2,
+  width: 0.7,
+  brightness: 0.85,
+  body: 0.3,
+  ratio: 1,
+};
+
 /** Melody notes: a soft struck tone, close to an electric piano. */
 export const MELODY_TIMBRE: Timbre = {
   amplitude: 0.1,
