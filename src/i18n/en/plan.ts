@@ -8,10 +8,20 @@ export const plan = {
   minutes: (minutes: number): string => `${String(minutes)} minutes`,
   /** Unit printed under the figure of each duration option. */
   minutesUnit: 'min',
-  /** Optional goals (HU-07); `names` keys mirror `GoalId`. */
+  /** Optional goal (HU-07, ADR-38); `names` and `programs` keys mirror `GoalId`. */
   goals: {
     legend: 'What are you looking for today?',
-    hint: 'Optional. You can pick more than one.',
+    hint: 'Optional. Pick one: it changes how the music starts and how far it comes down.',
+    /** What the music does in a session with each goal (`programCatalog.ts`). */
+    programs: {
+      relax: 'The music starts at a middle pace and slowly comes down to its calmest point.',
+      rest_before_sleep: 'It starts at a middle pace, comes down to its calmest point and offers slow breathing from the start.',
+      calm_after_activity: 'It starts with more movement, close to how you arrive, and comes down with you in two steps.',
+      slow_breathing: 'It starts at its calmest point and sets a slow breath.',
+      pause: 'It stays at a middle pace, light and steady, without coming all the way down: for a short break.',
+    },
+    /** The same, for a session with no goal. */
+    defaultProgram: 'The music starts at a middle pace and slowly comes down to its calmest point.',
     names: {
       relax: 'Relax',
       rest_before_sleep: 'Rest before sleep',

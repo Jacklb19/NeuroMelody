@@ -1,4 +1,4 @@
-import { CALIBRATION_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
+import { CALIBRATION_LEVEL, TARGET_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import type { ActivationState } from './activationStates';
 import { predictActivation, type ActivationModel } from './classifier/activationModel';
@@ -37,6 +37,17 @@ export interface AdaptationSnapshot {
 
 export type EstimatorKind = 'model' | 'rules';
 
+/** The stretch of the ladder a session moves in (ADR-38). */
+export interface GuidanceRange {
+  /** Level the music starts at and holds while the baseline is taken. */
+  readonly startLevel: LevelId;
+  /** Calmest level the guidance advances to; it never goes past it. */
+  readonly calmestLevel: LevelId;
+}
+
+/** The whole ladder from the calibration level: the range of a session without a program. */
+export const DEFAULT_GUIDANCE_RANGE: GuidanceRange = { startLevel: CALIBRATION_LEVEL, calmestLevel: TARGET_LEVEL };
+
 /** Provisional, uncalibrated rules (ADR-12); the fallback when the trained model is unavailable. */
 export function estimateState(hr: number, rmssd: number, baseHr: number, baseRmssd: number): ActivationState {
   const hrRatio = hr / baseHr;
@@ -68,15 +79,18 @@ export class AdaptationEngine {
   #consecutive = 0;
   #accepted: ActivationState | null = null;
   #recent: ActivationState[] = [];
-  #level: LevelId = CALIBRATION_LEVEL;
+  readonly #calmestLevel: LevelId;
+  #level: LevelId;
   #levelStartS = 0;
   #audioTimeS = 0;
   #acceptedAtS = 0;
   #criteriaReadyS: number | null = null;
   #lastTransition: TransitionTiming | null = null;
 
-  constructor(model: ActivationModel | null = null) {
+  constructor(model: ActivationModel | null = null, range: GuidanceRange = DEFAULT_GUIDANCE_RANGE) {
     this.#model = model;
+    this.#level = range.startLevel;
+    this.#calmestLevel = range.calmestLevel;
   }
 
   /** Swaps the estimator, for example when the model finishes loading mid-session. */
@@ -89,7 +103,7 @@ export class AdaptationEngine {
       baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
       estimator: this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
-        this.#accepted !== 'high' && nextLevel(this.#level) !== null &&
+        this.#accepted !== 'high' && this.#calmerLevel() !== null &&
         this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
       lastTransition: this.#lastTransition };
   }
@@ -170,8 +184,13 @@ export class AdaptationEngine {
     if (!playing || this.#criteriaReadyS === null || !this.#qualityGood) return null;
     const eligibleAtS = Math.max(this.#levelStartS + MIN_LEVEL_DURATION_S, this.#criteriaReadyS);
     if (audioTime < eligibleAtS) return null;
-    const next = nextLevel(this.#level);
+    const next = this.#calmerLevel();
     return next === null ? null : this.#transition(next, 'advance', eligibleAtS, audioTime);
+  }
+
+  /** The next step towards calm, or `null` once the calmest level of the session is reached. */
+  #calmerLevel(): LevelId | null {
+    return this.#level === this.#calmestLevel ? null : nextLevel(this.#level);
   }
 
   /** The model's estimate when it can give one; the rules otherwise. */

@@ -101,3 +101,16 @@ it('checks eligibility on source pulses between five-second index publications',
   session.pulse();
   expect(audio.level).toBe('target');
 });
+
+it('starts over at the first level of its program when the signal restarts (ADR-38)', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'high', outputThroughAudioElement: false });
+  await audio.start();
+  const session = new AdaptationSession({ startLevel: 'high', calmestLevel: 'target' });
+  expect(session.getSnapshot().level).toBe('high');
+  session.setAudio(audio);
+  audio.applyLevel('intermediate');
+  session.reset();
+  expect(audio.level).toBe('high');
+  expect(session.getSnapshot().level).toBe('high');
+});

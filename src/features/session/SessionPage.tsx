@@ -11,6 +11,7 @@ import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
+import { programFor } from '../plan/programCatalog';
 import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
@@ -30,7 +31,6 @@ import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
 import { BreathingGuide } from './breathing/BreathingGuide';
-import { BREATHING_GOAL } from './breathing/breathingPattern';
 import './session.css';
 
 /**
@@ -48,11 +48,13 @@ export function SessionPage(): React.JSX.Element {
   const goalsParam = params.get(QUERY_PARAMS.goals);
   // Parsed once per URL value, so the handlers that depend on it stay stable.
   const goals = useMemo(() => readGoals(goalsParam), [goalsParam]);
+  // What the person is after decides where the music starts and how calm it gets (ADR-38).
+  const program = useMemo(() => programFor(goals), [goals]);
   const store = useSessionStore();
   const { api } = useCloudSync();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
-  const [adaptation] = useState(() => new AdaptationSession());
+  const [adaptation] = useState(() => new AdaptationSession(program));
   const [recorder] = useState(() => new SessionRecorder());
   const [elapsedS, setElapsedS] = useState(0);
   // The engine while the music plays; the breathing guide follows its tempo.
@@ -171,7 +173,7 @@ export function SessionPage(): React.JSX.Element {
             progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
             orbRef={orbRef}
           />
-          <BreathingGuide startActive={goals.includes(BREATHING_GOAL)} engine={engine} orbRef={orbRef} />
+          <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
           <SessionStage session={adaptation} connection={connection} playing={playing} />
@@ -184,7 +186,7 @@ export function SessionPage(): React.JSX.Element {
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>
-        <PlaybackPanel durationMin={durationMin} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
 
