@@ -84,6 +84,8 @@ Vive en el escenario de escucha, bajo el orbe. No añade ruta ni pantalla.
 
 En `/plan`, antes de la duración, un grupo de casillas opcionales con los objetivos del catálogo (`goalCatalog.ts`): Relajarme, Descansar antes de dormir, Recuperar la calma después de una actividad, Acompañar una respiración lenta y Tomar una pausa para mí. Viajan a `/session` en el parámetro `goals`, se guardan con la sesión y aparecen en el resumen y en el historial («Sin objetivos elegidos» si no hay).
 
+Desde ADR-38 se elige **uno solo** (marcar otro reemplaza al anterior; desmarcarlo deja la sesión sin objetivo) y ese objetivo decide el programa de la sesión: en qué nivel empieza la música, hasta dónde baja y si la respiración guiada empieza encendida. La tarjeta «Tu sesión» lo cuenta con una frase bajo el objetivo y nombra el nivel de los primeros minutos.
+
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
 - **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
