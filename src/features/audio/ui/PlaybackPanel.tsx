@@ -11,6 +11,7 @@ import {
   VOLUME_STEP_DB,
 } from '../engine/AudioEngine';
 import type { AudioEngineErrorCode, AudioEngineErrorParams } from '../engine/AudioEngineError';
+import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
 import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
@@ -26,6 +27,8 @@ interface PlaybackPanelProps {
   readonly durationMin: number;
   /** Level the music starts at: the one the program of the session asks for (ADR-38). */
   readonly initialLevel?: LevelId;
+  /** Ambience under the music, chosen before the session (ADR-40). */
+  readonly ambience?: AmbienceId;
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
@@ -67,6 +70,7 @@ function describeFailure(failure: AudioStartFailure, t: Messages): string {
 export function PlaybackPanel({
   durationMin,
   initialLevel = CALIBRATION_LEVEL,
+  ambience = DEFAULT_AMBIENCE_ID,
   factory,
   generateSeed = randomSeed,
   onEngineChange,
@@ -106,6 +110,7 @@ export function PlaybackPanel({
       {
         seed: generateSeed(),
         initialLevel,
+        ambience,
         outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
       },
       volumeDb,

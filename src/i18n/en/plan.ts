@@ -47,6 +47,14 @@ export const plan = {
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `The suggestion could not be requested: ${reason} You can choose the length yourself.`,
   },
+  /** Ambience under the music (ADR-40); `names` keys mirror `AmbienceId`. */
+  ambience: {
+    legend: 'What ambience?',
+    hint: 'It plays in the background, under the music. The app remembers your choice on this device.',
+    names: { none: 'Music only', rain: 'Rain', sea: 'Sea', wind: 'Wind' },
+    /** Line of the session card, with the name of the ambience in lower case. */
+    with: (ambience: string): string => `With ${ambience.toLowerCase()} in the background`,
+  },
   summaryLabel: 'Your session',
   noGoals: 'No intention chosen',
   calibrationNote: (level: string, minutes: number): string =>

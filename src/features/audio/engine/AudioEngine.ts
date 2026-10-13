@@ -1,4 +1,5 @@
 import { MS_PER_SECOND } from '../../../shared/time';
+import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
 import { dbToGain, gainToDb } from '../core/decibels';
 import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
@@ -6,6 +7,8 @@ import {
   MAX_TEMPO_BPM,
   MIN_TEMPO_BPM,
   SYNTHESIZER_NAME,
+  SYNTHESIZER_OUTPUT,
+  SYNTHESIZER_OUTPUT_COUNT,
   type ParamName,
   type ClipperOptions,
   type SynthesizerOptions,
@@ -62,6 +65,8 @@ export interface AudioFactory {
 export interface EngineOptions {
   readonly seed: number;
   readonly initialLevel: LevelId;
+  /** Ambience under the music (ADR-40); music alone when omitted. */
+  readonly ambience?: AmbienceId;
   /**
    * Media Session fallback: the output goes through an `<audio>` element.
    * With it, `playbackStats` no longer measures what is actually heard.
@@ -122,6 +127,8 @@ function hold(param: AudioParam, t: number): number {
  *
  * synthesizer → low-pass (brightness) → dry + reverb → volume →
  * session envelope → limiter → clipper (−1 dBFS) → output
+ *
+ * The ambience leaves the synthesizer on a second output and joins at the volume.
  */
 export class AudioEngine {
   readonly #context: AudioContext;
@@ -166,11 +173,12 @@ export class AudioEngine {
       seed: options.seed,
       initialMode: level.mode,
       initialLayers: level.layers,
+      ambience: options.ambience ?? DEFAULT_AMBIENCE_ID,
     };
     const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [OUTPUT_CHANNELS],
+      numberOfOutputs: SYNTHESIZER_OUTPUT_COUNT,
+      outputChannelCount: [OUTPUT_CHANNELS, OUTPUT_CHANNELS],
       processorOptions: synthesizerOptions,
     });
     getParam(synthesizer, 'tempo').value = level.tempo;
@@ -212,7 +220,10 @@ export class AudioEngine {
       processorOptions: clipperOptions,
     });
 
-    synthesizer.connect(filter);
+    synthesizer.connect(filter, SYNTHESIZER_OUTPUT.music);
+    // The ambience skips the brightness filter and the reverb, and joins before the
+    // volume: the volume control, the stop and the output limits apply to it too.
+    synthesizer.connect(volume, SYNTHESIZER_OUTPUT.ambience);
     filter.connect(volume);
     filter.connect(reverb);
     reverb.connect(wet);

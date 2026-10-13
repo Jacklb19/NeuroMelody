@@ -72,6 +72,12 @@ export const SunIcon = (props: IconProps): React.JSX.Element => (
 export const SunsetIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.600 9.600l1.800 1.800M18.400 9.600l-1.800 1.800" /></Icon>
 );
+export const SeaIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /></Icon>
+);
+export const RainIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M7 15.500a4 4 0 0 1 .500-8 5.500 5.500 0 0 1 10.500 1.500 3.300 3.300 0 0 1-.500 6.500" /><path d="M9 18l-1 2.500M13 18l-1 2.500M17 18l-1 2.500" /></Icon>
+);
 export const WindIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M3 9h10.500a2.500 2.500 0 1 0-2.500-2.500M3 14h14.500a2.500 2.500 0 1 1-2.500 2.500M3 11.500h6" /></Icon>
 );

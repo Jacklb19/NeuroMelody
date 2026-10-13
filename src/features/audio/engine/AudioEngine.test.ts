@@ -70,8 +70,10 @@ describe('AudioEngine.create', () => {
       seed: 7,
       initialMode: MODE.lydian,
       initialLayers: 2,
+      ambience: 'none',
     });
-    expect(synthesizer.options.outputChannelCount).toEqual([2]);
+    // Two stereo outputs: the music and the ambience (ADR-40).
+    expect(synthesizer.options.outputChannelCount).toEqual([2, 2]);
     expect([param('tempo').value, param('mode').value, param('layers').value]).toEqual([66, MODE.lydian, 2]);
     expect(filter.type).toBe('lowpass');
     expect(filter.frequency.value).toBe(3500);

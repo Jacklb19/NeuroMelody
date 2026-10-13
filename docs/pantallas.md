@@ -86,6 +86,10 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 
 Desde ADR-38 se elige **uno solo** (marcar otro reemplaza al anterior; desmarcarlo deja la sesión sin objetivo) y ese objetivo decide el programa de la sesión: en qué nivel empieza la música, hasta dónde baja y si la respiración guiada empieza encendida. La tarjeta «Tu sesión» lo cuenta con una frase bajo el objetivo y nombra el nivel de los primeros minutos.
 
+## Ambiente de la sesión (ADR-40)
+
+En `/plan`, después de la duración: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.
+
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
 - **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
