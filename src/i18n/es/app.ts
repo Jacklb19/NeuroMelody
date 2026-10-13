@@ -20,7 +20,7 @@ export const app = {
     theme: {
       label: 'Tema',
       /** Keys mirror `ThemePreference`. */
-      options: { system: 'Como el sistema', light: 'Claro', dark: 'Oscuro' },
+      options: { system: 'Sistema', light: 'Claro', dark: 'Oscuro' },
       /** Name of the header button, by the theme it switches to. */
       switchTo: { light: 'Cambiar a tema claro', dark: 'Cambiar a tema oscuro' },
     },
