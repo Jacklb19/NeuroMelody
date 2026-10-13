@@ -3,13 +3,15 @@ import { dbToGain, gainToDb } from '../core/decibels';
 import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
   CLIPPER_NAME,
+  MAX_TEMPO_BPM,
+  MIN_TEMPO_BPM,
   SYNTHESIZER_NAME,
   type ParamName,
   type ClipperOptions,
   type SynthesizerOptions,
 } from '../worklet/workletContract';
 import { readPlaybackStats, type PlaybackStatistics } from './playbackStats';
-import { LEVELS, type LevelId } from './levels';
+import { LEVEL_IDS, LEVELS, type LevelId } from './levels';
 import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 import { AudioEngineError } from './AudioEngineError';
@@ -129,6 +131,12 @@ export class AudioEngine {
   readonly #audioElement: HTMLAudioElement | null;
   #state: EngineState = 'ready';
   #level: LevelId;
+  /** Tempo of each level in this session: the catalogue's until the person's pulse moves them (ADR-39). */
+  #tempos: Readonly<Record<LevelId, number>> = {
+    high: LEVELS.high.tempo,
+    intermediate: LEVELS.intermediate.tempo,
+    target: LEVELS.target.tempo,
+  };
 
   private constructor(
     context: AudioContext,
@@ -279,10 +287,7 @@ export class AudioEngine {
     const t = this.#context.currentTime;
     const { synthesizer, filter, wet } = this.#nodes;
 
-    const tempo = getParam(synthesizer, 'tempo');
-    const from = hold(tempo, t);
-    const duration = tempoRampDurationS(from, level.tempo);
-    tempo.linearRampToValueAtTime(level.tempo, t + duration);
+    const duration = this.#rampTempo(this.#tempos[id]);
 
     hold(getParam(synthesizer, 'mode'), t);
     getParam(synthesizer, 'mode').setValueAtTime(level.mode, t);
@@ -295,6 +300,31 @@ export class AudioEngine {
     wet.gain.linearRampToValueAtTime(level.reverb, t + TIMBRE_RAMP_DURATION_S);
 
     this.#level = id;
+    return duration;
+  }
+
+  /**
+   * Replaces the tempo of every level for this session and leads the current
+   * one to its new value with the same gradual ramp as a level change.
+   */
+  setTempos(tempos: Readonly<Record<LevelId, number>>): void {
+    for (const id of LEVEL_IDS) {
+      const tempo = tempos[id];
+      if (!Number.isFinite(tempo) || tempo < MIN_TEMPO_BPM || tempo > MAX_TEMPO_BPM) {
+        throw new RangeError(`Tempo out of range for ${id}: ${String(tempo)}`);
+      }
+    }
+    this.#tempos = { ...tempos };
+    this.#rampTempo(this.#tempos[this.#level]);
+  }
+
+  /** Ramps the tempo from its current value over max(20 s, |ΔBPM| × 2 s) and returns that duration. */
+  #rampTempo(to: number): number {
+    const t = this.#context.currentTime;
+    const tempo = getParam(this.#nodes.synthesizer, 'tempo');
+    const from = hold(tempo, t);
+    const duration = tempoRampDurationS(from, to);
+    tempo.linearRampToValueAtTime(to, t + duration);
     return duration;
   }
 

@@ -39,6 +39,10 @@ Lo que la persona busca decide en qué escalón empieza la música y cuál es el
 | Acompañar una respiración lenta | Meta | Meta | Encendida |
 | Tomar una pausa para mí | Intermedio | Intermedio | Apagada |
 
+### El tempo parte del pulso (ADR-39)
+
+El tempo del escalón inicial se mueve al pulso de la persona (hasta +14 y −5 por minuto respecto al de la tabla), con una rampa gradual, a las tres primeras lecturas buenas y otra vez al terminar la calibración. Desde ahí la música baja hacia los 59 de la meta, que no cambian. Ejemplo con pulso de 76 y sesión desde Intermedio: Activación alta 86, Intermedio 76, Meta 59.
+
 ## Niveles musicales (valores iniciales)
 
 | Nivel | Tempo | Modo | Capas | Brillo | Reverberación |
