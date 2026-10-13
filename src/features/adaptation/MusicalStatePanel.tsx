@@ -21,7 +21,7 @@ export function MusicalStatePanel({ session }: { readonly session: AdaptationSes
     <dl className="music-metrics">
       <div className="music-level"><dt>{copy.level}</dt><dd data-testid="music-level">{t.audio.levels[state.level]}</dd></div>
       <div className="tempo-metric"><dt>{copy.currentTempo}</dt><dd>{state.tempoBpm === null ? t.common.noValue : bpm(state.tempoBpm)}</dd></div>
-      <div><dt>{copy.targetTempo}</dt><dd>{bpm(level.tempo)}</dd></div>
+      <div><dt>{copy.targetTempo}</dt><dd>{bpm(state.levelTempoBpm)}</dd></div>
       <div><dt>{copy.scheduledMode}</dt><dd>{t.audio.modes[modeName(level.mode)]}</dd></div>
       <div><dt>{copy.scheduledLayers}</dt><dd>{level.layers}</dd></div>
     </dl>

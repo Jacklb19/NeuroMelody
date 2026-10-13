@@ -291,6 +291,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Modifica ADR-12 en dos puntos: la calibración ocurre en el nivel inicial del programa, no siempre en Intermedio, y el avance se detiene en el nivel más calmado del programa. Todo lo demás de ADR-12 sigue igual: histéresis de 3, permanencia de 3 minutos, un escalón por vez, retroceso inmediato por Alta y rampas graduales. Modifica ADR-27: el objetivo deja de ser múltiple. |
 | Consecuencias | El plan dice con una frase qué hará la música con la intención elegida. Las sesiones guardadas con varios objetivos siguen leyéndose igual. El modelo de lenguaje recibe un objetivo como mucho. La duración no forma parte del programa: la sigue eligiendo la persona, con la propuesta del modelo si la pide. |
 
+## ADR-39. La música parte del pulso de la persona
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 2 de P-06). |
+| Contexto | El tempo de cada nivel era fijo (76, 66 y 59 por minuto) para todo el mundo. El principio iso pide empezar donde está la persona y guiarla desde ahí; con un tempo igual para todos, «se adapta a ti» era solo el cambio de escalón. |
+| Decisión | El tempo del nivel en que empieza la sesión se mueve al pulso medido, como mucho 14 por minuto hacia arriba y 5 hacia abajo (`src/features/adaptation/personalTempo.ts`). Los niveles más activos reciben el mismo desplazamiento, los intermedios hacia la calma una parte proporcional, y la meta conserva sus 59. Se ajusta dos veces: con las tres primeras lecturas de buena calidad, para que la música encuentre pronto a la persona, y al terminar la calibración, con la referencia completa. Cada ajuste es una rampa gradual con la regla de siempre: máx(20 s, \|ΔBPM\| × 2 s). Una sesión que empieza en la meta no se mueve. |
+| Desviación | Modifica la tabla de niveles de `diseno-musical.md`: 76 y 66 pasan a ser los valores de partida cuando aún no hay pulso. No cambia ADR-12 (histéresis, permanencias, un escalón por vez) ni RNF-03 (ninguna rampa de tempo de menos de 20 s). |
+| Consecuencias | La respiración guiada, que cuenta en tiempos de la música, empieza más cerca del ritmo de la persona. Los detalles técnicos muestran el tempo de la sesión, no el del catálogo. Si la señal se reinicia, los tempos vuelven a los del catálogo hasta tener pulso de nuevo. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

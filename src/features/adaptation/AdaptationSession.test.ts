@@ -5,8 +5,10 @@ import { AdaptationSession } from './AdaptationSession';
 import { FADE_DURATION_S, tempoRampDurationS } from '../audio/engine/ramps';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 
-function reading(timeMs: number, high = false): IndicesResult {
-  return { timeMs, meanHr: high ? 120 : 100, rmssd: high ? 30 : 50, sdnn: 50,
+// The resting pulse equals the tempo of the starting level, so the pulse does not move the tempos
+// (ADR-39) and the ramps below are the ones of the level changes alone.
+function reading(timeMs: number, high = false, restingHr = 66): IndicesResult {
+  return { timeMs, meanHr: high ? restingHr * 1.2 : restingHr, rmssd: high ? 30 : 50, sdnn: 50,
     nnDurationMs: timeMs, coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null, quality: 'good' };
 }
 
@@ -113,4 +115,31 @@ it('starts over at the first level of its program when the signal restarts (ADR-
   session.reset();
   expect(audio.level).toBe('high');
   expect(session.getSnapshot().level).toBe('high');
+});
+
+it('moves the starting tempo to the pulse with a gradual ramp and leaves the target tempo alone (ADR-39)', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'intermediate', outputThroughAudioElement: false });
+  await audio.start();
+  const tempo = env.worklets[0]?.parameters.get('tempo');
+  if (tempo === undefined) throw new Error('Missing tempo');
+  const session = new AdaptationSession();
+  session.setAudio(audio);
+  // Two readings are not enough to trust the pulse.
+  session.receive(reading(5000, false, 74));
+  session.receive(reading(10_000, false, 74));
+  expect(tempo.last('linear')).toBeUndefined();
+  env.context.currentTime = 15;
+  session.receive(reading(15_000, false, 74));
+  expect(tempo.last('linear')).toEqual({ kind: 'linear', time: 15 + tempoRampDurationS(66, 74), value: 74 });
+  expect(session.getSnapshot().levelTempoBpm).toBe(74);
+  // A pulse far above the level moves it only as far as allowed, and the step to the target still ends at 59.
+  const fast = new AdaptationSession();
+  fast.setAudio(audio);
+  for (let ms = 5000; ms <= 180_000; ms += 5000) fast.receive(reading(ms, false, 110));
+  expect(fast.getSnapshot().levelTempoBpm).toBe(66 + 14);
+  env.context.currentTime += 200;
+  for (let ms = 185_000; ms <= 195_000; ms += 5000) fast.receive(reading(ms, false, 110));
+  expect(audio.level).toBe('target');
+  expect(tempo.last('linear')?.value).toBe(59);
 });

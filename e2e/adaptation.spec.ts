@@ -3,7 +3,8 @@ import { expect, test, type TestInfo } from '@playwright/test';
 import { ROUTES } from '../src/config/routes';
 import type { ScenarioId } from '../src/features/acquisition/simulator/scenarios';
 import type { Speed } from '../src/features/acquisition/speedCatalog';
-import { AdaptationEngine } from '../src/features/adaptation/AdaptationEngine';
+import { AdaptationEngine, DEFAULT_GUIDANCE_RANGE } from '../src/features/adaptation/AdaptationEngine';
+import { PERSONAL_TEMPO_MAX_RISE_BPM, personalTempo } from '../src/features/adaptation/personalTempo';
 import { parseActivationModel } from '../src/features/adaptation/classifier/activationModel';
 import {
   CALIBRATION_MS,
@@ -32,9 +33,12 @@ const SPEED: Speed = 10;
 const RISING_SCENARIO: ScenarioId = 'progressive_activation';
 /** Bound of both adaptation latencies: from acceptance or from eligibility (RNF-02, ADR-12). */
 const MAX_LATENCY_MS = 2000;
-/** Slowest and fastest level tempos: only ramps within this range are tempo ramps. */
+/**
+ * Slowest and fastest tempos a session can reach: only ramps within this range are tempo ramps.
+ * The pulse may raise the tempos above the catalogue's, never below the target's (ADR-39).
+ */
 const TEMPOS = LEVEL_IDS.map(id => LEVELS[id].tempo);
-const TEMPO_RANGE = { min: Math.min(...TEMPOS), max: Math.max(...TEMPOS) };
+const TEMPO_RANGE = { min: Math.min(...TEMPOS), max: Math.max(...TEMPOS) + PERSONAL_TEMPO_MAX_RISE_BPM };
 /** Signal time of the estimate that accepts a steady state: the first comes when calibration ends. */
 const ACCEPTANCE_SIGNAL_MS = CALIBRATION_MS + (HYSTERESIS_ESTIMATES - 1) * COMPUTE_PERIOD_MS;
 
@@ -122,11 +126,13 @@ test('rising activation closes the loop with native AudioParam ramps and latency
     if (replay.snapshot.state === 'high') { acceptedAt = signal.receivedAt; break; }
   }
   expect(acceptedAt).not.toBeNull();
-  const high = evidence.ramps.find(r => r.to === LEVELS.high.tempo);
+  // The tempo of the step back is the one of this session: the catalogue's, moved by the simulated pulse.
+  const highTempo = personalTempo('high', DEFAULT_GUIDANCE_RANGE, replay.snapshot.tempoOffsetBpm);
+  const high = evidence.ramps.find(r => r.to === highTempo);
   expect(high).toBeDefined();
   if (high === undefined || acceptedAt === null) throw new Error('Missing native transition evidence');
   expect(high.end - high.start).toBeGreaterThanOrEqual(MIN_TEMPO_RAMP_S);
-  expect(high.end - high.start).toBeCloseTo(Math.max(MIN_TEMPO_RAMP_S, Math.abs(LEVELS.high.tempo - high.from) * SECONDS_PER_BPM), 5);
+  expect(high.end - high.start).toBeCloseTo(Math.max(MIN_TEMPO_RAMP_S, Math.abs(highTempo - high.from) * SECONDS_PER_BPM), 5);
   expect(high.requestedAt - acceptedAt).toBeGreaterThanOrEqual(0);
   expect(high.requestedAt - acceptedAt).toBeLessThan(MAX_LATENCY_MS);
   await attachEvidence(testInfo, 'native-adaptation.json', { ...evidence, sinceAcceptanceMs: high.requestedAt - acceptedAt,
