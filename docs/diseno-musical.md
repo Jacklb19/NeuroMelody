@@ -34,7 +34,7 @@ Lo que la persona busca decide en qué escalón empieza la música y cuál es el
 | Objetivo | Empieza en | Llega hasta | Respiración guiada |
 |---|---|---|---|
 | Relajarme, o ninguno | Intermedio | Meta | Apagada |
-| Descansar antes de dormir | Intermedio | Meta | Encendida |
+| Descansar antes de dormir | Intermedio | Para dormir (ADR-41) | Encendida |
 | Recuperar la calma después de una actividad | Activación alta | Meta | Apagada |
 | Acompañar una respiración lenta | Meta | Meta | Encendida |
 | Tomar una pausa para mí | Intermedio | Intermedio | Apagada |
@@ -42,6 +42,10 @@ Lo que la persona busca decide en qué escalón empieza la música y cuál es el
 ### El tempo parte del pulso (ADR-39)
 
 El tempo del escalón inicial se mueve al pulso de la persona (hasta +14 y −5 por minuto respecto al de la tabla), con una rampa gradual, a las tres primeras lecturas buenas y otra vez al terminar la calibración. Desde ahí la música baja hacia los 59 de la meta, que no cambian. Ejemplo con pulso de 76 y sesión desde Intermedio: Activación alta 86, Intermedio 76, Meta 59.
+
+### Nivel «Para dormir» (ADR-41)
+
+Un cuarto escalón, más allá de la meta, que solo alcanza el programa para dormir: 50 por minuto, bordón profundo (díadas graves de la pentatónica, un ciclo de 16 pulsos cada una, cinco segundos de entrada; nada pulsado encima), filtro en 1,2 kHz y reverberación 0,55. Esa sesión no avisa al terminar: se apaga sola en dos minutos, justo al final del plan.
 
 ## Niveles musicales (valores iniciales)
 

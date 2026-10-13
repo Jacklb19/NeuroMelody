@@ -8,6 +8,16 @@ import { SECONDS_PER_MINUTE } from '../../../shared/time';
 export const RESPONSE_WAIT_S = 120;
 export const CONTINUOUS_WARNING_PERIOD_S = 60 * SECONDS_PER_MINUTE;
 /**
+ * A session with a quiet ending (ADR-41) asks nothing: the music fades out
+ * over this long and is silent exactly when the plan ends.
+ */
+export const QUIET_FADE_S = 2 * SECONDS_PER_MINUTE;
+
+/** Instant at which the fade of a quiet ending starts, in seconds of playback. */
+export function quietFadeStartS(planDurationS: number): number {
+  return Math.max(0, planDurationS - QUIET_FADE_S);
+}
+/**
  * How often the interface reads the audio clock to open a warning, close the
  * session after the fade and report the listening time. Nothing audible
  * depends on it: the fade is already scheduled on the audio clock.

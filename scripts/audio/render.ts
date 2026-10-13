@@ -60,6 +60,7 @@ const SCENES: readonly Scene[] = [
     durationS: 100,
     change: { atS: 15, to: 'target' },
   },
+  { file: '8-para-dormir', title: 'Nivel para dormir (un escalón más allá de la meta)', start: 'sleep', durationS: 45 },
   { file: '5-meta-con-lluvia', title: 'Meta con lluvia de fondo', start: 'target', durationS: 45, ambience: 'rain' },
   { file: '6-meta-con-mar', title: 'Meta con mar de fondo', start: 'target', durationS: 45, ambience: 'sea' },
   { file: '7-meta-con-viento', title: 'Meta con viento de fondo', start: 'target', durationS: 45, ambience: 'wind' },

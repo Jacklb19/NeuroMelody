@@ -27,8 +27,8 @@ describe('personal tempo', () => {
   });
 
   it('gives the whole offset to the start level and above, a share below, and none to the target', () => {
-    expect(personalTempos(DEFAULT_GUIDANCE_RANGE, 10)).toEqual({ high: 86, intermediate: 76, target: 59 });
-    expect(personalTempos(FROM_HIGH, 10)).toEqual({ high: 86, intermediate: 71, target: 59 });
+    expect(personalTempos(DEFAULT_GUIDANCE_RANGE, 10)).toEqual({ high: 86, intermediate: 76, target: 59, sleep: 50 });
+    expect(personalTempos(FROM_HIGH, 10)).toEqual({ high: 86, intermediate: 71, target: 59, sleep: 50 });
     expect(personalTempo('intermediate', { startLevel: 'intermediate', calmestLevel: 'intermediate' }, -4)).toBe(62);
   });
 
@@ -36,7 +36,9 @@ describe('personal tempo', () => {
     for (const offset of [-PERSONAL_TEMPO_MAX_FALL_BPM, PERSONAL_TEMPO_MAX_RISE_BPM]) {
       const tempos = LEVEL_IDS.map((level) => personalTempo(level, range, offset));
       expect([...tempos].sort((a, b) => b - a)).toEqual(tempos);
-      expect(Math.min(...tempos)).toBeGreaterThanOrEqual(Math.max(MIN_TEMPO_BPM, LEVELS.target.tempo));
+      // The pulse never pushes a level below the catalogue's slowest tempo.
+      expect(Math.min(...tempos)).toBe(LEVELS.sleep.tempo);
+      expect(Math.min(...tempos)).toBeGreaterThanOrEqual(MIN_TEMPO_BPM);
       expect(Math.max(...tempos)).toBeLessThanOrEqual(MAX_TEMPO_BPM);
     }
   });

@@ -75,7 +75,7 @@ describe('BankComposer', () => {
   it.each(MODES)('mode %i holds a chord of its catalog on every chord change, starting at the first beat', (mode) => {
     const { chords, beatsPerChord } = ARRANGEMENTS[mode];
     const recorder = run(mode, 5, LONG_RUN_TICKS, true, false);
-    expect(recorder.chords).toHaveLength(LONG_RUN_TICKS / TICKS_PER_BEAT / beatsPerChord);
+    expect(recorder.chords).toHaveLength(Math.ceil(LONG_RUN_TICKS / TICKS_PER_BEAT / beatsPerChord));
     for (const chord of recorder.chords) {
       expect(chords).toContain(chord);
     }

@@ -11,6 +11,11 @@ import type { GoalId } from './goalCatalog';
 export interface SessionProgram extends GuidanceRange {
   /** Whether the guided breathing starts on; the person can always switch it. */
   readonly breathing: boolean;
+  /**
+   * Whether the session ends by itself: the music fades out as the plan ends,
+   * with no warning to answer, and the screen dims while nobody touches it (ADR-41).
+   */
+  readonly quietEnding: boolean;
 }
 
 /** The session of someone who chose nothing: the one every session had before programs existed. */
@@ -18,19 +23,20 @@ export const DEFAULT_PROGRAM: SessionProgram = {
   startLevel: CALIBRATION_LEVEL,
   calmestLevel: TARGET_LEVEL,
   breathing: false,
+  quietEnding: false,
 };
 
 export const PROGRAMS: Readonly<Record<GoalId, SessionProgram>> = {
   // From a middle pace down to the calmest music.
   relax: DEFAULT_PROGRAM,
-  // The same descent, with slow breathing from the start.
-  rest_before_sleep: { startLevel: CALIBRATION_LEVEL, calmestLevel: TARGET_LEVEL, breathing: true },
+  // To fall asleep: one step past the target, slow breathing, and an ending nobody has to attend.
+  rest_before_sleep: { startLevel: CALIBRATION_LEVEL, calmestLevel: 'sleep', breathing: true, quietEnding: true },
   // Meets the person where an activity left them, then comes down two steps.
-  calm_after_activity: { startLevel: 'high', calmestLevel: TARGET_LEVEL, breathing: false },
+  calm_after_activity: { startLevel: 'high', calmestLevel: TARGET_LEVEL, breathing: false, quietEnding: false },
   // Slow breathing needs a slow pulse to count on: the calmest music from the first minute.
-  slow_breathing: { startLevel: TARGET_LEVEL, calmestLevel: TARGET_LEVEL, breathing: true },
+  slow_breathing: { startLevel: TARGET_LEVEL, calmestLevel: TARGET_LEVEL, breathing: true, quietEnding: false },
   // A short break stays light and steady instead of sinking into deep calm.
-  pause: { startLevel: CALIBRATION_LEVEL, calmestLevel: CALIBRATION_LEVEL, breathing: false },
+  pause: { startLevel: CALIBRATION_LEVEL, calmestLevel: CALIBRATION_LEVEL, breathing: false, quietEnding: false },
 };
 
 /**

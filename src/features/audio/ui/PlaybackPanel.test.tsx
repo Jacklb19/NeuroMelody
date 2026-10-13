@@ -7,16 +7,21 @@ import { createFakeAudioEnvironment, type FakeParam } from '../../../test/fakeAu
 import { dbToGain } from '../core/decibels';
 import { MODE } from '../core/theory';
 import { DEFAULT_VOLUME_DB, type AudioFactory } from '../engine/AudioEngine';
-import { CLOCK_CHECK_INTERVAL_MS, CONTINUOUS_WARNING_PERIOD_S, RESPONSE_WAIT_S } from '../session/durationWarnings';
+import {
+  CLOCK_CHECK_INTERVAL_MS,
+  CONTINUOUS_WARNING_PERIOD_S,
+  QUIET_FADE_S,
+  RESPONSE_WAIT_S,
+} from '../session/durationWarnings';
 import { PlaybackPanel } from './PlaybackPanel';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 
 const copy = es.audio.playback;
 
-function setup(durationMin = 10) {
+function setup(durationMin = 10, quietEnding = false) {
   const env = createFakeAudioEnvironment();
   const view = render(
-    <PlaybackPanel durationMin={durationMin} factory={env.factory} generateSeed={() => 42} />,
+    <PlaybackPanel durationMin={durationMin} quietEnding={quietEnding} factory={env.factory} generateSeed={() => 42} />,
   );
   const gains = () =>
     env.context.nodes.filter((n) => n.kind === 'gain') as unknown as { gain: FakeParam }[];
@@ -168,6 +173,24 @@ describe('PlaybackPanel', () => {
 
     expect(state()).toContain(copy.finished);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('a quiet ending fades out as the plan ends and never asks anything (ADR-41)', async () => {
+    const { env, envelope } = setup(10, true);
+    await start();
+    // 10 min plan: silent exactly at 600 s, after a fade of two minutes.
+    expect(envelope()?.events.slice(-2)).toEqual([
+      { kind: 'set', value: 1, time: 600 - QUIET_FADE_S },
+      { kind: 'linear', value: 0, time: 600 },
+    ]);
+    env.context.currentTime = 599;
+    advanceOneCheck();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(state()).toContain(copy.states.playing);
+    env.context.currentTime = 600;
+    advanceOneCheck();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(state()).toContain(copy.finished);
   });
 
   it('finishing from the warning stops the session', async () => {

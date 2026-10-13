@@ -15,7 +15,7 @@ export const plan = {
     /** What the music does in a session with each goal (`programCatalog.ts`). */
     programs: {
       relax: 'The music starts at a middle pace and slowly comes down to its calmest point.',
-      rest_before_sleep: 'It starts at a middle pace, comes down to its calmest point and offers slow breathing from the start.',
+      rest_before_sleep: 'It starts at a middle pace and comes down slower and darker than any other, with slow breathing. At the end it fades out by itself, with no notices, and the screen dims.',
       calm_after_activity: 'It starts with more movement, close to how you arrive, and comes down with you in two steps.',
       slow_breathing: 'It starts at its calmest point and sets a slow breath.',
       pause: 'It stays at a middle pace, light and steady, without coming all the way down: for a short break.',

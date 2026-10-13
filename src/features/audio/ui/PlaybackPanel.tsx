@@ -16,8 +16,10 @@ import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
   CONTINUOUS_WARNING_PERIOD_S,
+  QUIET_FADE_S,
   RESPONSE_WAIT_S,
   fadeStartS,
+  quietFadeStartS,
   warningInstantS,
 } from '../session/durationWarnings';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
@@ -29,6 +31,8 @@ interface PlaybackPanelProps {
   readonly initialLevel?: LevelId;
   /** Ambience under the music, chosen before the session (ADR-40). */
   readonly ambience?: AmbienceId;
+  /** Ends by fading out when the plan does, with no warning to answer (ADR-41). */
+  readonly quietEnding?: boolean;
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
@@ -71,6 +75,7 @@ export function PlaybackPanel({
   durationMin,
   initialLevel = CALIBRATION_LEVEL,
   ambience = DEFAULT_AMBIENCE_ID,
+  quietEnding = false,
   factory,
   generateSeed = randomSeed,
   onEngineChange,
@@ -99,10 +104,15 @@ export function PlaybackPanel({
       if (startTime === null) {
         return;
       }
+      if (quietEnding) {
+        const startsAt = startTime + quietFadeStartS(planDurationS);
+        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, QUIET_FADE_S);
+        return;
+      }
       const startsAt = startTime + fadeStartS(planDurationS, warningIndexRef.current);
       fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime);
     },
-    [planDurationS],
+    [planDurationS, quietEnding],
   );
 
   const start = async (): Promise<void> => {
@@ -159,7 +169,8 @@ export function PlaybackPanel({
         return;
       }
       onElapsedChange?.(engine.audioTime - startTime);
-      if (engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
+      // A quiet ending never opens a warning: nobody should have to answer it half asleep.
+      if (!quietEnding && engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
         setWarning(warningIndexRef.current);
       }
       const end = fadeEndRef.current;
@@ -171,7 +182,7 @@ export function PlaybackPanel({
     return () => {
       clearInterval(id);
     };
-  }, [state, getEngine, planDurationS, stopNow, onElapsedChange]);
+  }, [state, getEngine, planDurationS, quietEnding, stopNow, onElapsedChange]);
 
   // Escape key: stops the music unless a dialog is open.
   useEffect(() => {

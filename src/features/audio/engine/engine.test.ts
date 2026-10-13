@@ -41,6 +41,8 @@ describe('music levels', () => {
       [76, 0, 3, 6000, 0.25],
       [66, 1, 2, 3500, 0.35],
       [59, 2, 2, 2000, 0.5],
+      // One step past the target, for the program to fall asleep (ADR-41).
+      [50, 3, 2, 1200, 0.55],
     ]);
     expect(CALIBRATION_LEVEL).toBe('intermediate');
   });
@@ -58,8 +60,8 @@ describe('music levels', () => {
   });
 
   it('climbs the ladder one adjacent step at a time', () => {
-    expect(LEVEL_IDS.map(nextLevel)).toEqual(['intermediate', 'target', null]);
-    expect(LEVEL_IDS.map(previousLevel)).toEqual([null, 'high', 'intermediate']);
+    expect(LEVEL_IDS.map(nextLevel)).toEqual(['intermediate', 'target', 'sleep', null]);
+    expect(LEVEL_IDS.map(previousLevel)).toEqual([null, 'high', 'intermediate', 'target']);
   });
 });
 

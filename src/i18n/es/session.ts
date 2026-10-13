@@ -6,6 +6,10 @@ export const session = {
   eyebrow: 'Tu espacio de escucha',
   /** Planned duration under the heading. */
   plan: (minutes: number): string => `Plan: ${String(minutes)} minutos.`,
+  /** Dark layer of a session for falling asleep (ADR-41): the text of the button that removes it. */
+  dimmer: {
+    restore: 'Pantalla atenuada para dormir. Toca para verla.',
+  },
   technicalDetails: {
     title: 'Detalles técnicos',
     hint: 'Gráfica de la señal, índices y parámetros musicales',

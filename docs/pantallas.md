@@ -86,6 +86,10 @@ En `/plan`, antes de la duración, un grupo de casillas opcionales con los objet
 
 Desde ADR-38 se elige **uno solo** (marcar otro reemplaza al anterior; desmarcarlo deja la sesión sin objetivo) y ese objetivo decide el programa de la sesión: en qué nivel empieza la música, hasta dónde baja y si la respiración guiada empieza encendida. La tarjeta «Tu sesión» lo cuenta con una frase bajo el objetivo y nombra el nivel de los primeros minutos.
 
+## Sesión para dormir (ADR-41)
+
+Con el objetivo «Descansar antes de dormir», `/session` cambia en dos cosas. Tras 20 segundos sin tocar la pantalla, una capa oscura la cubre con el texto «Pantalla atenuada para dormir. Toca para verla.»; cualquier toque o tecla la quita, y «Detener» sigue visible encima. Al acabar el plan no hay aviso: la música se apaga sola y la sesión queda terminada.
+
 ## Ambiente de la sesión (ADR-40)
 
 En `/plan`, después de la duración: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.

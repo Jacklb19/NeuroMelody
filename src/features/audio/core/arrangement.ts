@@ -8,7 +8,7 @@
  * so the chords sit above it, from A3 to C#5.
  */
 import { MODE, type Mode } from './theory';
-import { DYAD_TIMBRE, PAD_TIMBRE, SLOW_PAD_TIMBRE, type Timbre } from './timbres';
+import { DYAD_TIMBRE, PAD_TIMBRE, SLEEP_PAD_TIMBRE, SLOW_PAD_TIMBRE, type Timbre } from './timbres';
 
 /** What plays above the chords of a mode, inside the harmony layer. */
 export const FIGURE = {
@@ -91,6 +91,23 @@ export const ARRANGEMENTS: Readonly<Record<Mode, Arrangement>> = {
     ],
     pad: DYAD_TIMBRE,
     figure: FIGURE.chimes,
+  },
+  // For falling asleep: the lower dyads, a whole cycle each, and nothing struck above them.
+  [MODE.deepDrone]: {
+    beatsPerChord: 16,
+    chords: [
+      [7, 14], // A–E
+      [12, 19], // D–A
+      [7, 12], // A–D
+      [9, 16], // B–F#
+    ],
+    progressions: [
+      [0, 1, 0, 3],
+      [0, 2, 3, 1],
+      [0, 3, 0, 2],
+    ],
+    pad: SLEEP_PAD_TIMBRE,
+    figure: FIGURE.none,
   },
 };
 
