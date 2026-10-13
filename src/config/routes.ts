@@ -51,6 +51,8 @@ export const ROUTES = {
 export const QUERY_PARAMS = {
   duration: 'duration',
   goals: 'goals',
+  /** Ambience under the music: an id of the ambience catalog. */
+  ambience: 'ambience',
   /** Which sessions the report covers: an id of the progress range catalog. */
   range: 'range',
 } as const;
@@ -85,9 +87,10 @@ export function planPath(goals: readonly string[] = []): string {
   return query === '' ? ROUTES.plan : `${ROUTES.plan}?${query}`;
 }
 
-/** The session screen with the planned duration and, when chosen, its goals. */
-export function sessionPath(durationMin: number, goals: readonly string[] = []): string {
+/** The session screen with the planned duration and, when chosen, its goals and its ambience. */
+export function sessionPath(durationMin: number, goals: readonly string[] = [], ambience?: string): string {
   const params = planParams(goals);
   params.set(QUERY_PARAMS.duration, String(durationMin));
+  if (ambience !== undefined) params.set(QUERY_PARAMS.ambience, ambience);
   return `${ROUTES.session}?${params.toString()}`;
 }

@@ -301,6 +301,14 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Modifica la tabla de niveles de `diseno-musical.md`: 76 y 66 pasan a ser los valores de partida cuando aún no hay pulso. No cambia ADR-12 (histéresis, permanencias, un escalón por vez) ni RNF-03 (ninguna rampa de tempo de menos de 20 s). |
 | Consecuencias | La respiración guiada, que cuenta en tiempos de la música, empieza más cerca del ritmo de la persona. Los detalles técnicos muestran el tempo de la sesión, no el del catálogo. Si la señal se reinicia, los tempos vuelven a los del catálogo hasta tener pulso de nuevo. |
 
+## ADR-40. Ambientes bajo la música: lluvia, mar y viento
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 6 de P-06; concreta el «paisaje sonoro» de ADR-33). |
+| Decisión | La persona elige en el plan un ambiente de un catálogo (`src/features/audio/core/ambienceCatalog.ts`): solo música (por defecto), lluvia, mar o viento. Los tres se sintetizan con ruido filtrado en el AudioWorklet (`core/ambience.ts`), sin archivos de audio y sin reservar memoria en `process()`. Salen por una segunda salida del sintetizador y se unen antes del volumen: no pasan por el filtro de brillo ni por la reverberación de la música, y sí por el control de volumen, la detención y el límite de salida (ADR-16). El ambiente es el mismo durante toda la sesión. La elección viaja en la dirección de la sesión (`ambience`) y se recuerda en el dispositivo, junto al tema y el idioma; no se guarda con la sesión ni se envía a ningún sitio. |
+| Consecuencias | Una sesión iniciada desde el inicio, sin pasar por el plan, usa el último ambiente elegido. La herramienta de muestras renderiza la meta con cada ambiente. Un ambiente nuevo es una entrada del catálogo, su sonido, su icono y su nombre en los dos idiomas. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

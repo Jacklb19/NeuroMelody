@@ -5,12 +5,15 @@
  *   node scripts/audio/renderSamples.ts <label>
  *
  * The files follow the session graph of AudioEngine (low-pass, reverb, volume
- * and clipper) with the level values of the product. The limiter is not
+ * and clipper) with the level values of the product; an ambience joins at the
+ * volume, as in the engine. The limiter is not
  * rebuilt: the report says when a file would have reached its threshold.
  */
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRandom } from '../../src/features/acquisition/simulator/prng.ts';
+import { Ambience } from '../../src/features/audio/core/ambience.ts';
+import type { AmbienceId } from '../../src/features/audio/core/ambienceCatalog.ts';
 import { dbToGain, gainToDb } from '../../src/features/audio/core/decibels.ts';
 import { softClipBlock } from '../../src/features/audio/core/softClip.ts';
 import { SynthesisCore } from '../../src/features/audio/core/SynthesisCore.ts';
@@ -42,6 +45,8 @@ interface Scene {
   readonly durationS: number;
   /** A level change scheduled like AudioEngine.applyLevel does. */
   readonly change?: { readonly atS: number; readonly to: LevelId };
+  /** Ambience under the music; music alone when omitted. */
+  readonly ambience?: AmbienceId;
 }
 
 const SCENES: readonly Scene[] = [
@@ -55,6 +60,9 @@ const SCENES: readonly Scene[] = [
     durationS: 100,
     change: { atS: 15, to: 'target' },
   },
+  { file: '5-meta-con-lluvia', title: 'Meta con lluvia de fondo', start: 'target', durationS: 45, ambience: 'rain' },
+  { file: '6-meta-con-mar', title: 'Meta con mar de fondo', start: 'target', durationS: 45, ambience: 'sea' },
+  { file: '7-meta-con-viento', title: 'Meta con viento de fondo', start: 'target', durationS: 45, ambience: 'wind' },
 ];
 
 const PAGE_TEXT = {
@@ -109,6 +117,14 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
   }
   const coreSpeed = scene.durationS / ((performance.now() - startedAt) / 1000);
 
+  const ambience = [new Float32Array(length), new Float32Array(length)] as const;
+  if (scene.ambience !== undefined) {
+    const source = new Ambience(SAMPLE_RATE, SAMPLE_SEED, scene.ambience);
+    for (let offset = 0; offset < length; offset += BLOCK) {
+      source.process(ambience[0].subarray(offset, offset + BLOCK), ambience[1].subarray(offset, offset + BLOCK));
+    }
+  }
+
   // Brightness follows an exponential ramp and the reverb mix a linear one (AudioEngine.applyLevel).
   const cutoffAt = (timeS: number): number =>
     start.brightnessHz *
@@ -132,7 +148,8 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
       const timeS = n / SAMPLE_RATE;
       const mix = ramp(start.reverb, end.reverb, changeS, TIMBRE_RAMP_DURATION_S, timeS);
       const envelope = Math.min(1, timeS / SESSION_FADE_IN_S) * ramp(1, 0, fadeOutStartS, FADE_OUT_S, timeS);
-      output[n] = ((filtered[n] ?? 0) + (wet[n] ?? 0) * normalization * mix) * volume * envelope;
+      const music = (filtered[n] ?? 0) + (wet[n] ?? 0) * normalization * mix;
+      output[n] = (music + ((ambience[side] ?? ambience[0])[n] ?? 0)) * volume * envelope;
     }
     return output;
   });

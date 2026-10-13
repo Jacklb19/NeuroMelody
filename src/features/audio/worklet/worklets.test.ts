@@ -44,7 +44,7 @@ function create(name: string, processorOptions: unknown) {
 }
 
 describe('synthesizer processor', () => {
-  const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2 };
+  const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none' };
   const params: BlockParams = {
     tempo: new Float32Array([66]),
     mode: new Float32Array([MODE.lydian]),
@@ -143,19 +143,22 @@ describe('clipper processor', () => {
 
 describe('options validation', () => {
   it('accepts valid options', () => {
-    expect(readSynthesizerOptions({ seed: 3, initialMode: 2, initialLayers: 3 })).toEqual({
+    expect(readSynthesizerOptions({ seed: 3, initialMode: 2, initialLayers: 3, ambience: 'rain' })).toEqual({
       seed: 3,
       initialMode: 2,
       initialLayers: 3,
+      ambience: 'rain',
     });
     expect(readClipperOptions({ telemetry: null })).toEqual({ telemetry: null });
   });
 
   it.each([
-    { seed: 1.5, initialMode: 1, initialLayers: 2 },
-    { seed: 1, initialMode: 1, initialLayers: 0 },
-    { seed: 1, initialMode: 1, initialLayers: 4 },
-    { seed: '1', initialMode: 1, initialLayers: 2 },
+    { seed: 1.5, initialMode: 1, initialLayers: 2, ambience: 'none' },
+    { seed: 1, initialMode: 1, initialLayers: 0, ambience: 'none' },
+    { seed: 1, initialMode: 1, initialLayers: 4, ambience: 'none' },
+    { seed: '1', initialMode: 1, initialLayers: 2, ambience: 'none' },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'thunder' },
+    { seed: 1, initialMode: 1, initialLayers: 2 },
   ])('rejects synthesizer options %o', (options) => {
     expect(() => readSynthesizerOptions(options)).toThrow(TypeError);
   });

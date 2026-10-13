@@ -1,14 +1,17 @@
 /**
- * AudioWorklet processor that synthesizes the music (RF-08). A thin adapter
- * over SynthesisCore: it reads the block AudioParams and hands it the left and
- * right channels. It does not allocate in `process()`.
+ * AudioWorklet processor that synthesizes the music (RF-08) and, on a second
+ * output, the ambience of the session (ADR-40). A thin adapter over
+ * SynthesisCore and Ambience: it reads the block AudioParams and hands them
+ * the left and right channels. It does not allocate in `process()`.
  */
+import { Ambience } from '../core/ambience';
 import { SynthesisCore } from '../core/SynthesisCore';
 import { scope, paramValue, type BlockParams } from './workletScope';
 import {
   SYNTHESIZER_DEFAULTS,
   SYNTHESIZER_DESCRIPTORS,
   SYNTHESIZER_NAME,
+  SYNTHESIZER_OUTPUT,
   readSynthesizerOptions,
 } from './workletContract';
 
@@ -18,16 +21,23 @@ class SynthesizerProcessor extends scope.AudioWorkletProcessor {
   }
 
   readonly #core: SynthesisCore;
+  readonly #ambience: Ambience;
 
   constructor(options: AudioWorkletNodeOptions) {
     super();
-    const { seed, initialMode, initialLayers } = readSynthesizerOptions(options.processorOptions);
+    const { seed, initialMode, initialLayers, ambience } = readSynthesizerOptions(options.processorOptions);
+    this.#ambience = new Ambience(scope.sampleRate, seed, ambience);
     this.#core = new SynthesisCore(scope.sampleRate, seed, initialMode);
     this.#core.setInitialLayers(initialLayers);
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][], params: BlockParams): boolean {
-    const output = outputs[0];
+    const ambience = outputs[SYNTHESIZER_OUTPUT.ambience];
+    const ambienceLeft = ambience?.[0];
+    if (ambienceLeft !== undefined) {
+      this.#ambience.process(ambienceLeft, ambience?.[1] ?? ambienceLeft);
+    }
+    const output = outputs[SYNTHESIZER_OUTPUT.music];
     const left = output?.[0];
     if (output === undefined || left === undefined) {
       return true;

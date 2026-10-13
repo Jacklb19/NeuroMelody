@@ -12,6 +12,7 @@ import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
 import { programFor } from '../plan/programCatalog';
+import { readAmbience } from '../plan/ambiencePreference';
 import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
@@ -50,6 +51,8 @@ export function SessionPage(): React.JSX.Element {
   const goals = useMemo(() => readGoals(goalsParam), [goalsParam]);
   // What the person is after decides where the music starts and how calm it gets (ADR-38).
   const program = useMemo(() => programFor(goals), [goals]);
+  // Read once: the ambience of a session does not change under the person's ears.
+  const [ambience] = useState(() => readAmbience(params.get(QUERY_PARAMS.ambience)));
   const store = useSessionStore();
   const { api } = useCloudSync();
   // Acquisition creates the shared source; signal analysis consumes it.
@@ -186,7 +189,7 @@ export function SessionPage(): React.JSX.Element {
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
           />
         </div>
-        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
 
