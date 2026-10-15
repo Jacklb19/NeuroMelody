@@ -14,6 +14,7 @@ import { plan } from './plan';
 import { privacy } from './privacy';
 import { progress } from './progress';
 import { records } from './records';
+import { reminders } from './reminders';
 import { report } from './report';
 import { session } from './session';
 import { signal } from './signal';
@@ -45,5 +46,6 @@ export const es = {
   cloud,
   diagnostics,
   account,
+  reminders,
   privacy,
 };

@@ -96,6 +96,14 @@ Desde ADR-38 se elige **uno solo** (marcar otro reemplaza al anterior; desmarcar
 
 Con el objetivo «Descansar antes de dormir», `/session` cambia en dos cosas. Tras 20 segundos sin tocar la pantalla, una capa oscura la cubre con el texto «Pantalla atenuada para dormir. Toca para verla.»; cualquier toque o tecla la quita, y «Detener» sigue visible encima. Al acabar el plan no hay aviso: la música se apaga sola y la sesión queda terminada.
 
+## Recordatorio en el perfil (ADR-33, 6; ADR-43)
+
+En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Privacidad y datos». No añade ruta.
+
+- **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
+- **Qué hace:** «Añadir a mi calendario» descarga un archivo de calendario (`.ics`) con una cita que se repite esos días a esa hora, con aviso y el enlace a la app. Al abrirlo, el calendario del teléfono o del ordenador lo añade y es el que avisa.
+- **Por qué así:** una página web no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones. La tarjeta lo explica en una línea. Sin días marcados, el botón queda desactivado y lo dice.
+
 ## Ambiente de la sesión (ADR-40)
 
 En `/plan`, después de la duración: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.

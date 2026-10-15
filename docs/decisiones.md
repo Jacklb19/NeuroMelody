@@ -328,6 +328,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Cambia `pantallas.md` (navegación, inicio y organización de `/session`, ADR-24). Amplía el alcance descrito en la especificación sin retirar el dolor crónico. Las advertencias y el lenguaje no clínico no cambian. |
 | Consecuencias | Los detalles técnicos y sus nombres (Alta, Baja, Incierta; Activación alta, Intermedio…) se conservan para RF-12; la vista sencilla usa los nombres llanos. La ruta `/session` sigue aceptando enlaces directos. |
 
+## ADR-43. Recordatorio por el calendario de la persona
+
+| Campo | Contenido |
+|---|---|
+| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 18 por pedido del usuario («sigue programando lo que falte»); pendiente de su visto bueno. |
+| Contexto | ADR-33 (6) pide recordatorios «donde el navegador lo permita». Una página no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones (Web Push necesita claves y un envío programado; los trabajos programados de Vercel Hobby son diarios y no por persona), y las alarmas locales del navegador no existen de forma estable. |
+| Decisión | En el perfil, la persona elige la hora y los días; la app genera un archivo de calendario (iCalendar, RFC 5545) con una cita que se repite esos días a esa hora local, con aviso al empezar y el enlace a la app. El calendario del teléfono o del ordenador es quien avisa. La elección se guarda en el dispositivo (\`neuromelody.reminder\`); nada viaja a un servidor. Por defecto: 21:00, todos los días. |
+| Consecuencias | Funciona en cualquier sistema con calendario y sin permisos de notificación. Cambiar la hora exige descargar el archivo otra vez (el calendario sustituye la cita por su identificador, si lo admite). Si más adelante hay notificaciones push, este archivo sigue siendo la opción sin cuenta. Además, los controles nativos (campo de hora, listas) siguen ahora el tema claro u oscuro (\`color-scheme\`). |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
