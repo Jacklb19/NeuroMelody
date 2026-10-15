@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { act } from 'react';
@@ -48,6 +48,9 @@ function renderWith(route: string, accepted = false, account: AccountSetup = {})
   return { registry };
 }
 
+/** The first load of a screen file in the test environment transforms all its modules: give it time. */
+const LAZY_SCREEN = { timeout: 15_000 };
+
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('routes', () => {
@@ -91,14 +94,15 @@ describe('routes', () => {
     await user.click(button);
 
     expect(registry.isAccepted()).toBe(true);
+    // The session screen arrives as its own file: the route changes once it has loaded.
+    expect(await screen.findByRole('heading', { level: 1, name: es.session.title }, LAZY_SCREEN)).toBeInTheDocument();
     expect(currentPath()).toBe(sessionPath(30));
-    expect(screen.getByRole('heading', { level: 1, name: es.session.title })).toBeInTheDocument();
     expect(screen.getByText(es.session.plan(30))).toBeInTheDocument();
   });
 
-  it('with the warnings accepted it goes straight to the session and its panels', () => {
+  it('with the warnings accepted it goes straight to the session and its panels', async () => {
     renderWith(ROUTES.session, true);
-    expect(screen.getByText(es.session.plan(DEFAULT_DURATION_MIN))).toBeInTheDocument();
+    expect(await screen.findByText(es.session.plan(DEFAULT_DURATION_MIN), undefined, LAZY_SCREEN)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: es.session.narrative.noSource.title })).toBeVisible();
     expect(screen.getByRole('progressbar', { name: es.session.progress.label })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: es.acquisition.title })).toBeInTheDocument();
@@ -116,12 +120,14 @@ describe('routes', () => {
     expect(screen.getByText(es.plan.minutes(45), { selector: 'strong' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: es.plan.continueToSession }));
     // The plan always names the ambience it shows, so the session cannot fall back to a stored one.
-    expect(currentPath()).toBe(sessionPath(45, [], DEFAULT_AMBIENCE_ID));
+    await waitFor(() => {
+      expect(currentPath()).toBe(sessionPath(45, [], DEFAULT_AMBIENCE_ID));
+    }, LAZY_SCREEN);
   });
 
-  it('diagnostics stays reachable through its route', () => {
+  it('diagnostics stays reachable through its route', async () => {
     renderWith(ROUTES.diagnostics);
-    expect(screen.getByRole('heading', { level: 1, name: es.diagnostics.pageTitle })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: es.diagnostics.pageTitle }, LAZY_SCREEN)).toBeInTheDocument();
   });
 
   it('an unknown route goes back home', () => {
