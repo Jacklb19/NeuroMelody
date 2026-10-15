@@ -60,6 +60,14 @@ export interface AudioFactory {
   createTelemetryBuffer(): SharedArrayBuffer | null;
   createAudioElement(): HTMLAudioElement;
   wait(ms: number): Promise<void>;
+  /**
+   * Opens the audio output ahead of the first start. Opening it can block the
+   * page for a fifth of a second; done while the session screen loads, the
+   * press on "start" no longer waits for it (RNF-04).
+   */
+  prewarm?(): void;
+  /** Closes an output opened by `prewarm` that no session used. */
+  release?(): void;
 }
 
 export interface EngineOptions {
@@ -165,6 +173,9 @@ export class AudioEngine {
   /** Creates the context, loads the worklet modules and builds the graph (silent). */
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
+    // An output opened ahead of time may already be running (some browsers allow it without a gesture):
+    // it is paused while the graph is built, so the audio thread never renders a half-built chain.
+    if (context.state === 'running') await context.suspend();
     for (const moduleUrl of factory.modules) {
       await context.audioWorklet.addModule(moduleUrl);
     }
@@ -186,6 +197,8 @@ export class AudioEngine {
     getParam(synthesizer, 'mode').value = level.mode;
     getParam(synthesizer, 'layers').value = level.layers;
 
+    // Each heavy step runs in its own task, so none of them holds the page for long (RNF-04).
+    await factory.wait(0);
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.value = BRIGHTNESS_FILTER_Q;
@@ -196,6 +209,7 @@ export class AudioEngine {
     const response = context.createBuffer(OUTPUT_CHANNELS, left.length, context.sampleRate);
     response.copyToChannel(left, 0);
     response.copyToChannel(right, 1);
+    await factory.wait(0);
     reverb.buffer = response;
 
     const wet = context.createGain();

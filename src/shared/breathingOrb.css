@@ -16,6 +16,8 @@
 .orb-ring { border: var(--border-width) solid color-mix(in srgb, var(--orb-colour) 55%, transparent); }
 .orb-ring-outer { inset: 0; animation: orb-spin var(--orb-spin) linear infinite; border-style: dashed; opacity: 0.5; }
 .orb-ring-inner { inset: 11%; opacity: 0.7; }
+/* Each moving part keeps its own layer: its breath and its spin are only moved, never redrawn, which halves the GPU work of a session (RNF-05). */
+.orb-core, .orb-glow, .orb-ring-outer { will-change: transform, scale; }
 /*
  * Guided breath: the orb's own breath stops and its size follows the fullness set from the session.
  * `scale` leaves `transform` free, so the orb still beats; the short transition smooths switching the guide on and off.

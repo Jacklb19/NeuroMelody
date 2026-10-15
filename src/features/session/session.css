@@ -17,7 +17,7 @@
 .session-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .session-ring circle { fill: none; stroke-width: calc(var(--ring-width) * 0.25); }
 .session-ring-track { stroke: var(--color-border-subtle); }
-.session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; transition: stroke-dashoffset var(--progress-duration) linear; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
+.session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
 .session-orb-figure { font-size: calc(var(--ring-size) * 0.82); }
 
 /* Guided breathing (ADR-33): the word under the orb and the switch that turns it on. */
