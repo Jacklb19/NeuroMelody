@@ -14,7 +14,7 @@ Qué es: música que se compone en el navegador y se adapta al pulso. Nació par
 
 ## 2. Preparar la sesión (2 min) · Inicio → «Preparar mi sesión»
 
-- Elegir «Recuperar la calma después de una actividad» y leer la frase de la tarjeta «Tu sesión»: la intención decide en qué escalón empieza la música y hasta dónde baja.
+- Tocar varias intenciones y leer cómo cambia la frase de la tarjeta «Tu sesión»: la intención decide en qué escalón empieza la música y hasta dónde baja. Dejar elegida «Relajarme» (empieza a paso medio, así se ve la música volver un escalón en el paso 3).
 - Duración 10 minutos y ambiente «Lluvia».
 - Con cuenta: «Proponme una duración» muestra el modelo de lenguaje, marcado como texto generado.
 
@@ -23,9 +23,9 @@ Qué es: música que se compone en el navegador y se adapta al pulso. Nació par
 - Los tres pasos de arriba: medir el pulso, cómo te sientes, iniciar.
 - «No tengo cómo medir mi pulso: probar la app» → Simulador, escenario «Activación creciente», velocidad ×10. Conectar.
 - Valorar cómo te sientes e «Iniciar música».
-- Mostrar el recorrido de la música (Con movimiento → A paso medio → En calma), el ritmo «ajustado a tu pulso» y «¿Qué significa?» junto al estado estimado.
+- Mostrar el recorrido de la música (A paso medio → En calma), el ritmo «ajustado a tu pulso» y «¿Qué significa?» junto al estado estimado.
 - Abrir «Detalles técnicos»: señal, índices (RMSSD, LF/HF) y parámetros musicales.
-- Con la velocidad ×10, la calibración termina en unos 20 s y el escenario hace subir la activación: la música vuelve un escalón en menos de 2 s, con una rampa de al menos 20 s.
+- Con la velocidad ×10, la calibración termina en unos 20 s y el escenario hace subir la activación: cuando el estado pasa a «Alta», la música vuelve un escalón («Con movimiento» aparece en el recorrido) en menos de 2 s, con una rampa de al menos 20 s.
 
 ## 4. El cierre (1 min)
 
