@@ -38,13 +38,32 @@ async function defaultFactory(): Promise<AudioFactory> {
 }
 
 /**
- * Audio engine lifecycle for a component. The context is created on the
- * first start, which always follows a user interaction.
+ * Audio engine lifecycle for a component. The audio output is opened while
+ * the component mounts, ahead of the first start, and the music starts on a
+ * user interaction.
  */
 export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const engineRef = useRef<AudioEngine | null>(null);
   const [state, setState] = useState<AudioState>('idle');
   const [error, setError] = useState<AudioStartFailure | null>(null);
+
+  // Opens the output once the screen has drawn, and closes it if no session used it.
+  useEffect(() => {
+    let chosen: AudioFactory | null = null;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (factory === undefined ? defaultFactory() : Promise.resolve(factory)).then((ready) => {
+        if (cancelled) return;
+        chosen = ready;
+        ready.prewarm?.();
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      chosen?.release?.();
+    };
+  }, [factory]);
 
   const start = useCallback(
     async (options: EngineOptions, volumeDb: number): Promise<AudioEngine | null> => {

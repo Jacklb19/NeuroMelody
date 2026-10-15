@@ -30,6 +30,8 @@ export const DEFAULT_IMPULSE_RESPONSE: ImpulseResponseOptions = {
 
 /** Ln(1000): a 60 dB drop in amplitude. */
 const DECAY_60_DB = Math.log(1000);
+/** Samples between two updates of the colour of the tail (under a millisecond at 48 kHz). */
+const COEFFICIENT_PERIOD = 32;
 
 /**
  * Stereo impulse response generated in code, with no external files: noise
@@ -49,19 +51,29 @@ export function generateImpulseResponse(
     new Float32Array(length),
   ];
 
+  // The decay is a constant factor per sample; it is applied by multiplying, not recomputed.
+  const decayPerSample = Math.exp(-DECAY_60_DB / (options.rt60S * sampleRate));
   channels.forEach((channel, index) => {
     const random = createRandom(options.seed + index);
     let filtered = 0;
+    let decay = 1;
+    let pole = 0;
+    let gain = 0;
     for (let i = preDelay; i < length; i++) {
       const t = (i - preDelay) / sampleRate;
-      const cutoff = options.startCutoffHz * (options.endCutoffHz / options.startCutoffHz) ** (t / tailS);
-      // One-pole low-pass. Its output shrinks as the cutoff falls, so it is
-      // scaled back: the level follows the decay and only the colour changes.
-      const pole = 1 - Math.exp((-2 * Math.PI * cutoff) / sampleRate);
+      // The cutoff moves slowly: its filter coefficient is refreshed every few samples,
+      // which keeps this off the main thread's list of long tasks on a slow phone.
+      if ((i - preDelay) % COEFFICIENT_PERIOD === 0) {
+        const cutoff = options.startCutoffHz * (options.endCutoffHz / options.startCutoffHz) ** (t / tailS);
+        pole = 1 - Math.exp((-2 * Math.PI * cutoff) / sampleRate);
+        // One-pole low-pass. Its output shrinks as the cutoff falls, so it is
+        // scaled back: the level follows the decay and only the colour changes.
+        gain = 1 / Math.sqrt(pole / (2 - pole));
+      }
       filtered += pole * (random() * 2 - 1 - filtered);
-      const decay = Math.exp((-DECAY_60_DB * t) / options.rt60S);
       const onset = Math.min(1, t / options.onsetS);
-      channel[i] = (filtered / Math.sqrt(pole / (2 - pole))) * decay * onset;
+      channel[i] = filtered * gain * decay * onset;
+      decay *= decayPerSample;
     }
   });
   return channels;

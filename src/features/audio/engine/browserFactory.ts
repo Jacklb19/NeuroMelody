@@ -12,9 +12,27 @@ export const SAMPLE_RATE = 48_000;
 /** Long listening sessions favour stable playback over low latency. */
 const LATENCY_HINT: AudioContextLatencyCategory = 'playback';
 
+/** An output opened ahead of time and not yet handed to an engine. */
+let warm: AudioContext | null = null;
+
+function openContext(): AudioContext {
+  return new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: LATENCY_HINT });
+}
+
 export const browserFactory: AudioFactory = {
-  createAudioContext: () =>
-    new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: LATENCY_HINT }),
+  createAudioContext: () => {
+    const ready = warm;
+    warm = null;
+    return ready !== null && ready.state !== 'closed' ? ready : openContext();
+  },
+  // Created without a user gesture it stays suspended and silent; the start resumes it.
+  prewarm: () => {
+    warm ??= openContext();
+  },
+  release: () => {
+    void warm?.close();
+    warm = null;
+  },
   modules: [synthesizerUrl, clipperUrl],
   createWorkletNode: (context, name, options) => new AudioWorkletNode(context, name, options),
   // SharedArrayBuffer only exists with cross-origin isolation (COOP and COEP).

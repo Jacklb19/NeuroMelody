@@ -180,7 +180,8 @@ describe('AudioEngine in use', () => {
     env.context.currentTime = 30;
     await engine.stop();
     expect(envelope?.gain.last('linear')).toEqual({ kind: 'linear', value: 0, time: 30 + STOP_RAMP_S });
-    expect(env.waits).toEqual([60]);
+    // Creating the engine yields twice (zero waits) to keep its steps short; only the stop waits for real.
+    expect(env.waits.filter((ms) => ms > 0)).toEqual([60]);
     expect(env.context.state).toBe('suspended');
     expect(engine.state).toBe('stopped');
   });
@@ -188,7 +189,7 @@ describe('AudioEngine in use', () => {
   it('stop does nothing when not playing', async () => {
     const { engine, env } = await createEngine();
     await engine.stop();
-    expect(env.waits).toEqual([]);
+    expect(env.waits.filter((ms) => ms > 0)).toEqual([]);
   });
 
   it('schedules and cancels the final fade on the audio clock', async () => {
