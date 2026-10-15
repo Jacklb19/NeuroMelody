@@ -73,7 +73,7 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 
 | RNF | Estado (15 oct 2026) |
 |---|---|
-| RNF-01 | 60 s sin subdesbordamientos en cada cambio del motor; 30 min con el motor del bloque 17 (ver `PROGRESS.md`). |
+| RNF-01 | 60 s sin subdesbordamientos en cada cambio del motor y 30 min sin ninguno con el motor de los bloques 17 a 19 (15 oct). |
 | RNF-02 | Menos de 2 s desde la aceptación (E2E `adaptation.spec.ts`). |
 | RNF-03 | Ninguna rampa de tempo menor de 20 s, también la del ajuste al pulso (ADR-39). |
 | RNF-04 | Sin tareas largas desde que se conecta el pulso hasta detener la música; una sola al cargar la pantalla (ADR-44). |
