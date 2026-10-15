@@ -180,6 +180,8 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
  * contrast tests read.
  */
 :root, [data-theme='light'] .paper, .night {
+  /* Native controls (time field, lists) draw with the colours of the palette around them. */
+  color-scheme: dark;
   --color-text: #eef1e8;
   --color-text-secondary: #a9b8ad;
   --color-text-muted: #8a9a8f;
@@ -229,6 +231,7 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --orb-shade: #17382c;
 }
 [data-theme='light'], .paper {
+  color-scheme: light;
   --color-text: #263a32;
   --color-text-secondary: #526158;
   --color-text-muted: #626c63;

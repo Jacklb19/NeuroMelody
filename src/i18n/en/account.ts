@@ -107,6 +107,7 @@ export const account = {
     },
     sections: {
       appearance: 'Appearance and language',
+      reminder: 'Reminder',
       security: 'Security',
       preferences: 'Privacy and data',
       session: 'Session',

@@ -68,7 +68,15 @@
 .setting-link { display: block; color: inherit; text-decoration: none; }
 .setting-link:hover { color: var(--color-accent); }
 .setting-link .setting-row > .icon:last-child { color: var(--color-text-muted); }
-.appearance-card { margin-bottom: var(--space-10); }
+.appearance-card, .reminder-card { margin-bottom: var(--space-10); }
+.reminder-time { min-height: var(--control-height); padding: 0 var(--space-4); background: transparent; color: var(--color-text); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-pill); font: inherit; font-variant-numeric: tabular-nums; }
+.reminder-days .segment { min-width: var(--control-height); padding: 0 var(--space-3); }
+.reminder-action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) 0; }
+.reminder-action p { flex: 1 1 20rem; margin: 0; }
+@media (max-width: 600px) {
+  /* Seven days share the width of a phone: the buttons shrink instead of overflowing. */
+  .reminder-days .segment { min-width: 0; padding: 0; }
+}
 .setting-panel { padding: var(--space-6) 0; }
 .setting-panel .account-section { margin-bottom: 0; }
 .setting-list .form-error { margin: var(--space-3) 0; }
