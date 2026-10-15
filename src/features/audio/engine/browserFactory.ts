@@ -27,7 +27,11 @@ export const browserFactory: AudioFactory = {
   },
   // Created without a user gesture it stays suspended and silent; the start resumes it.
   prewarm: () => {
-    warm ??= openContext();
+    try {
+      warm ??= openContext();
+    } catch {
+      // A browser that refuses Web Audio says so when the person presses start, with its own message.
+    }
   },
   release: () => {
     void warm?.close();
