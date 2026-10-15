@@ -173,6 +173,9 @@ export class AudioEngine {
   /** Creates the context, loads the worklet modules and builds the graph (silent). */
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
+    // An output opened ahead of time may already be running (some browsers allow it without a gesture):
+    // it is paused while the graph is built, so the audio thread never renders a half-built chain.
+    if (context.state === 'running') await context.suspend();
     for (const moduleUrl of factory.modules) {
       await context.audioWorklet.addModule(moduleUrl);
     }
