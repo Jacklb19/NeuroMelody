@@ -337,6 +337,17 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | En el perfil, la persona elige la hora y los días; la app genera un archivo de calendario (iCalendar, RFC 5545) con una cita que se repite esos días a esa hora local, con aviso al empezar y el enlace a la app. El calendario del teléfono o del ordenador es quien avisa. La elección se guarda en el dispositivo (\`neuromelody.reminder\`); nada viaja a un servidor. Por defecto: 21:00, todos los días. |
 | Consecuencias | Funciona en cualquier sistema con calendario y sin permisos de notificación. Cambiar la hora exige descargar el archivo otra vez (el calendario sustituye la cita por su identificador, si lo admite). Si más adelante hay notificaciones push, este archivo sigue siendo la opción sin cuenta. Además, los controles nativos (campo de hora, listas) siguen ahora el tema claro u oscuro (\`color-scheme\`). |
 
+## ADR-44. Rendimiento y accesibilidad medidos (bloque 19)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 19 por pedido del usuario; pendiente de su visto bueno y de la prueba en un celular de gama media. |
+| Medición | En Chrome, sobre la versión de producción con los servicios apagados, con el simulador: tareas largas del hilo principal (más de 50 ms), CPU de cada proceso del navegador por fase y árbol de accesibilidad de 14 pantallas. Equipo: portátil AMD Ryzen 7 8845HS con pantalla de 130 Hz. |
+| Hallazgos | (1) Al pulsar «Iniciar música» había dos tareas largas: abrir la salida de audio (110–200 ms, del navegador) y preparar la reverberación (40 ms más el resto de la cadena). (2) Con la música sonando el navegador gastaba ≈ 120 % de un núcleo: la barra de progreso y el anillo se animaban con una transición de 1 s renovada cada segundo, lo que rehacía el diseño en cada fotograma, y el orbe se redibujaba en vez de solo moverse. El audio en sí costaba poco. (3) Accesibilidad: ningún control sin nombre, un solo título principal por pantalla y ningún salto de nivel de títulos en las 14 pantallas. |
+| Decisión | (1) La salida de audio se abre al cargar la pantalla de sesión (silenciosa y en pausa hasta que la persona pulsa iniciar) y se cierra si nadie la usa; la preparación del motor cede el turno entre pasos y la respuesta al impulso se calcula tres veces más rápido. (2) La barra y el anillo de progreso se redibujan una vez por segundo, sin transición (avanzan menos de un píxel por segundo); las partes animadas del orbe tienen su propia capa (\`will-change\`). (3) Las pantallas menos visitadas (sesión, resumen, historial, progreso, informe, grabación, perfil, privacidad y diagnóstico) se cargan al abrirlas; el trabajador de servicio las guarda igual para usarlas sin conexión. |
+| Resultado | Ninguna tarea larga desde que se conecta el pulso hasta que se detiene la música (46 s con los detalles técnicos abiertos); la única queda al cargar la pantalla, antes de tocar nada. Con la música sonando: proceso gráfico de 73 % a 19–24 % de un núcleo y página de 48 % a 31–33 %. Paquete principal de 545 kB a 321 kB (de 168 kB a 100 kB comprimido). |
+| Pendiente | RNF-05 pide 35 % de un núcleo en un equipo de gama media: aquí la suma es ≈ 50 % con una pantalla de 130 Hz (la mitad de los fotogramas en una de 60 Hz), pero falta medirlo en un celular. La prueba manual con lector de pantalla sigue pendiente. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
