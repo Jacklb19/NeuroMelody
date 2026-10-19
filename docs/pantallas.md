@@ -67,7 +67,7 @@ Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 
 
 ### `/session` en diapositivas (ADR-47, 18 oct 2026)
 
-Sustituye la organización de arriba. La sesión es un recorrido de tres diapositivas que se deslizan con una animación suave (sin animación con «reducir movimiento»):
+Sustituye la organización de arriba. La sesión es un recorrido de tres diapositivas con un desvanecido de 240 ms entre ellas, sin desplazamientos ni entradas escalonadas (ajuste pedido el 19 oct tras probarlas en el celular; sin animación con «reducir movimiento»):
 
 1. **Tu pulso:** el panel de la fuente de señal, con el modo de prueba. Al conectarse, la diapositiva pasa sola a la siguiente. «Seguir sin medir mi pulso» permite avanzar igualmente (la música suena pero no se adapta).
 2. **Cómo llegas:** el pulso en vivo, que late con cada latido, el resumen de lo elegido (intención, sonido y ambiente) y la autovaloración opcional. «Iniciar música» empieza la sesión y lleva a la siguiente.
@@ -111,8 +111,8 @@ Con el objetivo «Descansar antes de dormir», `/session` cambia en dos cosas. T
 En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Privacidad y datos». No añade ruta.
 
 - **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
-- **Qué hace:** «Añadir a mi calendario» descarga un archivo de calendario (`.ics`) con una cita que se repite esos días a esa hora, con aviso y el enlace a la app. Al abrirlo, el calendario del teléfono o del ordenador lo añade y es el que avisa.
-- **Por qué así:** una página web no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones. La tarjeta lo explica en una línea. Sin días marcados, el botón queda desactivado y lo dice.
+- **Acción principal (ajuste del 19 oct):** «Abrir Google Calendar» abre un borrador con la hora, días, zona horaria y enlace a la app. La persona revisa repetición y aviso y pulsa Guardar allí. No se solicita acceso al calendario ni se comprueba el guardado; cada apertura es un borrador nuevo, así que los cambios de uno ya guardado se hacen en el calendario.
+- **Alternativa:** «Descargar para otro calendario» entrega el archivo `.ics`, con repetición y aviso al inicio. La descarga se nombra explícitamente. Sin días marcados, ambas acciones quedan desactivadas y se explica el motivo.
 
 ## Sonido de la sesión (ADR-46)
 
@@ -139,6 +139,21 @@ Se llega desde «Tu actividad» en el inicio y desde la tarjeta del historial; n
 5. **Aviso** de que son indicadores descriptivos.
 
 Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de que la evolución aparece a partir de la segunda. Cuando haya sincronización (bloque 12), las sesiones de la nube entran por la misma lista.
+
+## Bloque 23: observaciones locales y preparación personal (ADR-48)
+
+Desarrollo autorizado e implementado en local el 19 oct. El plan está en `plan-bloque-23.md`, la decisión en ADR-48 y el contrato opcional de la API en `contrato-progress-summary.md`.
+
+| Pantalla | Panel o cambio | Ubicación y comportamiento |
+|---|---|---|
+| `/progress` | «Lo que te funciona» | Después de los totales, antes de las gráficas. Comparaciones con conteos, explicación del método y estado de datos insuficientes; responde al selector existente. |
+| `/progress` | Explicación opcional del modelo | Dentro del panel anterior, debajo de las observaciones locales. Explicación de los datos enviados, consentimiento de la petición y marca de texto generado. |
+| `/plan` | «Para ti» | Encima de las elecciones. Propone sonido, ambiente y duración cuando hay datos suficientes, con un motivo por campo y «Usar esta propuesta»; se puede cambiar todo. |
+| `/summary/:id` | Nota opcional | Junto a la valoración final. Hasta 200 caracteres guardables, editables y eliminables; solo en el dispositivo. |
+| `/app` | «Tengo 3 minutos» | Acción secundaria en la tarjeta de preparar la sesión, con lo último conocido. Lleva a las mismas diapositivas, conserva las advertencias y no inicia música automáticamente. |
+| `/session` | Guía de cámara | En «Tu pulso», junto al control de cámara: contacto, búsqueda de latidos, recepción y pérdida. Indicación de apoyar sin apretar; no mide presión. |
+
+No se añaden rutas de pantalla. La sesión rápida es una excepción aprobada de 3 minutos y explica que puede terminar antes de disponer de una estimación adaptada; la calibración no se acorta. La explicación del progreso requiere aceptación explícita y cuenta; el modelo solo elige frases verificadas, sin alterar cifras. Los estados sin datos y de fallo conservan el recorrido manual.
 
 ## `/report`, informe para compartir (ADR-33, solo en el dispositivo)
 
@@ -203,6 +218,12 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 - **Guardar:** al terminar una sesión se guarda primero en el dispositivo y se envía después; si el envío falla, no se pierde nada y se reintenta en la siguiente sincronización.
 - **Borrar:** una sesión se borra del dispositivo al instante, con o sin conexión. Si ya estaba en la cuenta, su borrado queda anotado en una cola (por cuenta, en el dispositivo) hasta que la nube lo confirme; la siguiente sincronización entrega la cola antes de leer la nube, así que una sesión borrada sin conexión no vuelve a aparecer. Mientras quede algún borrado en camino, la línea del historial lo dice. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
 - **Sin conexión (HU-09, bloque 16):** la sesión completa funciona sin red. Lo que se guardó, valoró o borró sin conexión sale solo cuando la conexión vuelve (el navegador avisa y la app sincroniza), y también al abrir el historial o con «Reintentar». Reenviar no duplica nada: cada sesión viaja con el id que le dio el dispositivo.
+
+## Diagnóstico de audio al bloquear (P-08, aprobado el 19 oct)
+
+En `/diagnostics`, después de las capacidades y antes del prototipo de cámara, un panel de prueba de audio de hasta 3 minutos, con advertencias de uso si faltan. Permite elegir sonido, ambiente y salida actual o alternativa; muestra el último estado real del contexto, reloj, latencias, contadores disponibles y lecturas. Detener sigue fijo y Esc funciona; la prueba se apaga sola. La descarga del registro es explícita y local; no guarda una sesión ni transmite datos. Un contador no disponible se declara sin medición; en la salida alternativa advierte que no mide el último tramo audible. Detalle y limitaciones en `plan-audio-bloqueo.md`.
+
+En `/session`, una interrupción del contexto deja de mostrarse como «Sonando»: se explica y permite iniciar de nuevo o detener. La música no se reinicia por un cambio de visibilidad. La salida alternativa no se activa en las sesiones normales.
 
 ## Funciones todavía no activas
 
