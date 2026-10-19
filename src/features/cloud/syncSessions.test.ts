@@ -5,6 +5,7 @@ import { sample, sessionRecord } from '../../test/sessionRecords';
 import { CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
 import { createMirroredSessionStore } from './mirroredSessionStore';
 import { narrativeFigures } from '../summary/narrativeFigures';
+import { createSessionContext } from '../records/sessionContext';
 import {
   createPendingDeletions,
   createSyncMarks,
@@ -36,6 +37,7 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
     deleteAccount: () => Promise.resolve(),
     suggestPlan: () => Promise.reject(new CloudError('language_model_unavailable')),
     summarizeSession: () => Promise.reject(new CloudError('language_model_unavailable')),
+    summarizeProgress: () => Promise.reject(new CloudError('language_model_unavailable')),
     sendRecording: () => Promise.resolve(),
     listSentRecordings: () => Promise.resolve([]),
     withdrawRecording: () => Promise.resolve(),
@@ -63,6 +65,14 @@ function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> & 
 }
 
 describe('syncSessions', () => {
+  it('preserves local context and notes when a remote rating arrives', async () => {
+    const context = createSessionContext('piano', 'rain');
+    const record = sessionRecord({ context, note: 'local only', ratingAfter: null });
+    const store = await storeWith(record);
+    const api = fakeCloud([sessionRecord({ ratingAfter: 9 })]);
+    await syncSessions({ api, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions() });
+    expect(await store.get(record.id)).toMatchObject({ context, note: 'local only', ratingAfter: 9 });
+  });
   it('uploads what only the device has and downloads what only the cloud has', async () => {
     const mine = sessionRecord({ id: ID_A, samples: [sample(5)] });
     const theirs = sessionRecord({ id: ID_B, startedAt: '2026-10-08T10:00:00.000Z', endedAt: '2026-10-08T10:20:00.000Z' });
@@ -126,6 +136,15 @@ describe('mirrored session store', () => {
     });
     return { local, marks, deletions, storage, store, onUploadError, onPendingChange };
   };
+
+  it('keeps note edits local without starting an upload', async () => {
+    const api = fakeCloud();
+    const saveSession = vi.spyOn(api, 'saveSession');
+    const { local, store } = await setup(api);
+    await store.setNote(ID_A, 'A private note');
+    expect((await local.get(ID_A))?.note).toBe('A private note');
+    expect(saveSession).not.toHaveBeenCalled();
+  });
 
   it('keeps the session on the device when the upload fails, and reports it', async () => {
     const api: CloudApi = { ...fakeCloud(), saveSession: () => Promise.reject(new CloudError('network')) };
@@ -209,7 +228,7 @@ describe('mirrored session store', () => {
 describe('cloud API client', () => {
   const record = sessionRecord({ id: ID_A, goals: ['relax'], samples: [sample(5, { lfHfRatio: null, estimatedState: null })] });
 
-  it('sends the session with the token and reads back the same record', async () => {
+  it('sends only cloud fields with the token and reads back the public record', async () => {
     let sent: { url: string; init: RequestInit } | null = null;
     const api = createCloudApi({
       baseUrl: 'https://api.example.test',
@@ -220,13 +239,16 @@ describe('cloud API client', () => {
       },
     });
 
-    await api.saveSession(record);
+    await api.saveSession({ ...record, context: createSessionContext('piano', 'rain'), note: 'local note', music: { startTempoBpm: 70, endTempoBpm: 60, steps: [] } });
 
     expect(sent).not.toBeNull();
     const { url, init } = sent as unknown as { url: string; init: RequestInit };
     expect(url).toBe('https://api.example.test/v1/sessions');
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer token-1');
     const wire: unknown = JSON.parse(typeof init.body === 'string' ? init.body : '');
+    expect(wire).not.toHaveProperty('context');
+    expect(wire).not.toHaveProperty('note');
+    expect(wire).not.toHaveProperty('music');
     // The API answers instants with another notation; the record must come back identical.
     expect(fromWire({ ...(wire as object), started_at: '2026-10-07T10:00:00+00:00' })).toEqual(record);
   });

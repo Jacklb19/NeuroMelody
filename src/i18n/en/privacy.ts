@@ -10,7 +10,7 @@ export const privacy = {
       title: 'On your device',
       /** `seconds` is how often a session stores its indicators. */
       text: (seconds: number): string =>
-        `The signal is analyzed in the browser. Sessions (indicators every ${String(seconds)} seconds, ratings and goals) are saved on this device and you can delete them from the history.`,
+        `The signal is analyzed in the browser. Sessions (indicators every ${String(seconds)} seconds, ratings and goals) are saved on this device and you can delete them from the history. New sessions also store the sound, ambience and local date and hour at the start to calculate history observations. That context, the music recap and your optional notes stay on this device only; they are not synced.`,
     },
     camera: {
       title: 'Camera',
@@ -22,7 +22,7 @@ export const privacy = {
     },
     summary: {
       title: 'Automatic summary',
-      text: 'If you ask for it, a language model receives only aggregated figures from the session to write a summary in plain words, marked as automatically generated.',
+      text: 'If you ask for it, a language model receives only aggregated figures from the session to write a summary in plain words, marked as automatically generated. You can also agree to send up to three visible progress comparisons, with only their options, counts and medians. In that case the model selects reviewed explanatory sentences and the figures are preserved. It receives no notes, dates, session identifiers, images or signal.',
     },
     collection: {
       title: 'Guided recordings',

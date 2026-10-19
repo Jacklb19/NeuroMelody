@@ -7,12 +7,14 @@ import { MS_PER_SECOND } from '../../shared/time';
 import type { GoalId } from '../plan/goalCatalog';
 import type { SessionRecord, SessionSample } from './sessionRecord';
 import { uuidv7 } from './uuidv7';
+import type { SessionContext } from './sessionContext';
 
 export interface SessionStart {
   readonly plannedMinutes: number;
   readonly goals: readonly GoalId[];
   readonly sourceKind: SourceKind | null;
   readonly ratingBefore: number | null;
+  readonly context?: SessionContext;
 }
 
 interface ActiveSession extends SessionStart {
@@ -99,6 +101,7 @@ export class SessionRecorder {
       ratingAfter: null,
       samples: session.samples,
       ...(music === null ? {} : { music }),
+      ...(session.context === undefined ? {} : { context: session.context }),
     };
   }
 }

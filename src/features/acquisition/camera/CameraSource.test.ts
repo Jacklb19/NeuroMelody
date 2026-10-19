@@ -66,6 +66,48 @@ function matchesReference(detected: readonly number[], expected: readonly number
 }
 
 describe('CameraSource', () => {
+  it('publishes stable guidance before the first heartbeat and on loss, return and disconnect', async () => {
+    const { camera, source, notifications } = await connectedSource();
+    const states: string[] = [source.guidance];
+    const unsubscribe = source.subscribeGuidance(() => { states.push(source.guidance); });
+    const frames = syntheticPpg(12, 1, CAMERA_START_MS).frames;
+    camera.emit(frames.filter((frame) => frame.timeMs < CAMERA_START_MS + 1000));
+    expect(source.guidance).toBe('searching');
+    expect(notifications).toEqual([]);
+    camera.emit(frames.filter((frame) => frame.timeMs >= CAMERA_START_MS + 1000));
+    expect(source.guidance).toBe('receiving');
+    const lostAt = (frames.at(-1)?.timeMs ?? 0) + 1;
+    camera.emit(uncoveredFrames(lostAt, 1000));
+    expect(source.guidance).toBe('lost');
+    camera.emit(syntheticPpg(12, 2, lostAt + 1000).frames);
+    expect(source.guidance).toBe('receiving');
+    await source.disconnect();
+    expect(source.guidance).toBe('inactive');
+    expect(states).toEqual(['cover', 'searching', 'receiving', 'lost', 'searching', 'receiving', 'inactive']);
+    unsubscribe();
+  });
+
+  it('does not announce brief uncovered frames as a contact loss', async () => {
+    const { camera, source } = await connectedSource();
+    const frames = syntheticPpg(12, 1, CAMERA_START_MS).frames;
+    camera.emit(frames);
+    const nextAt = (frames.at(-1)?.timeMs ?? 0) + 1;
+    camera.emit(uncoveredFrames(nextAt, 100));
+    expect(source.guidance).toBe('receiving');
+  });
+
+  it('keeps a disconnection made by a guidance observer and emits no later reading', async () => {
+    const { camera, source } = await connectedSource();
+    const onNotification = vi.fn(() => { expect(source.state).toBe('connected'); });
+    source.subscribe({ onNotification });
+    source.subscribeGuidance(() => {
+      if (source.guidance === 'receiving') void source.disconnect();
+    });
+    camera.emit(syntheticPpg(12, 1, CAMERA_START_MS).frames);
+    expect(source.state).toBe('disconnected');
+    expect(source.guidance).toBe('inactive');
+    expect(camera.stop).toHaveBeenCalledOnce();
+  });
   it('requests the camera within the gesture and goes through connecting to connected', async () => {
     const camera = createFakeCamera();
     const source = new CameraSource({ start: camera.start });

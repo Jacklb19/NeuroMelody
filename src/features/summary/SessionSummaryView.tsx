@@ -14,6 +14,7 @@ import { PageHeading } from '../../shared/PageHeading';
 import { AutomaticSummary } from './AutomaticSummary';
 import { Sparkline } from '../../shared/Sparkline';
 import { StateTimeShare } from './StateTimeShare';
+import { SessionNote } from './SessionNote';
 import { MusicRecapView } from '../session/MusicRecapView';
 
 interface SessionSummaryViewProps {
@@ -45,6 +46,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       </PageHeading>
 
       {record.ratingAfter === null && <AfterRating record={record} onSaved={onRecordChange} />}
+      <SessionNote key={record.id} record={record} onSaved={onRecordChange} />
 
       <section aria-labelledby={figuresId} className="summary-section">
         <h2 id={figuresId}>{figures.title}</h2>

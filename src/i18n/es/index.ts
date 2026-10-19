@@ -20,12 +20,14 @@ import { session } from './session';
 import { signal } from './signal';
 import { summary } from './summary';
 import { warnings } from './warnings';
+import { insights } from './insights';
 
 /**
  * Spanish dictionary, one module per area. Its shape is the `Messages` type:
  * any other language must provide the same keys and functions.
  */
 export const es = {
+  insights,
   common,
   app,
   landing,

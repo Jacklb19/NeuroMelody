@@ -6,6 +6,10 @@ import { MS_PER_MINUTE } from '../../shared/time';
 export const DURATIONS_MIN = [10, 15, 20, 30, 45, 60] as const;
 
 export type DurationMin = (typeof DURATIONS_MIN)[number];
+/** The quick entry is a separate exception; manual and generated plans retain their catalog. */
+export const QUICK_DURATION_MIN = 3;
+export const SESSION_DURATIONS_MIN = [QUICK_DURATION_MIN, ...DURATIONS_MIN] as const;
+export type SessionDurationMin = (typeof SESSION_DURATIONS_MIN)[number];
 
 /** Default plan: 20 minutes (also the offline plan from S6). */
 export const DEFAULT_DURATION_MIN: DurationMin = 20;
@@ -27,6 +31,6 @@ export const CALIBRATION_MIN = CALIBRATION_MS / MS_PER_MINUTE;
  * parsed as a number first so numerically equal spellings (`30.0`, ` 30`)
  * still select their plan.
  */
-export function readDuration(value: string | null): DurationMin {
-  return parseOption(DURATIONS_MIN, value === null ? null : Number(value), DEFAULT_DURATION_MIN);
+export function readDuration(value: string | null): SessionDurationMin {
+  return parseOption(SESSION_DURATIONS_MIN, value === null ? null : Number(value), DEFAULT_DURATION_MIN);
 }

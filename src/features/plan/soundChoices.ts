@@ -6,10 +6,20 @@ import {
 import { parseOption } from '../../shared/parseOption';
 import { AMBIENCE_IDS, DEFAULT_AMBIENCE_ID, type AmbienceId } from '../audio/core/ambienceCatalog';
 import { DEFAULT_INSTRUMENT_ID, INSTRUMENT_IDS, type InstrumentId } from '../audio/core/instrumentCatalog';
+import { readGoals, type GoalId } from './goalCatalog';
 
 /** Where the last choices are kept on the device, next to the theme and the language. */
 export const AMBIENCE_STORAGE_KEY = 'neuromelody.ambience';
 export const INSTRUMENT_STORAGE_KEY = 'neuromelody.instrument';
+export const GOALS_STORAGE_KEY = 'neuromelody.goals';
+
+export function readLastGoals(storage: PreferenceStorage | null = browserStorage()): readonly GoalId[] {
+  return readGoals(stored(storage, GOALS_STORAGE_KEY)).slice(0, 1);
+}
+
+export function rememberGoals(goals: readonly GoalId[], storage: PreferenceStorage | null = browserStorage()): void {
+  writePreference(storage, GOALS_STORAGE_KEY, goals.join(','));
+}
 
 function stored(storage: PreferenceStorage | null, key: string): string | null {
   try {
