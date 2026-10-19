@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { QUERY_PARAMS } from '../../config/routes';
@@ -8,7 +8,7 @@ import { AcquisitionPanel } from '../acquisition/AcquisitionPanel';
 import { isTrialSource } from '../acquisition/sourceTraits';
 import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
-import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
+import { PlaybackPanel, type PlaybackHandle } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
 import { programFor } from '../plan/programCatalog';
@@ -32,7 +32,9 @@ import { SessionProgress } from './SessionProgress';
 import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
 import { SessionRecap } from './SessionRecap';
-import { SessionSteps } from './SessionSteps';
+import { ArrivalSlide } from './ArrivalSlide';
+import { SessionStepper } from './SessionStepper';
+import { AUTO_ADVANCE_MS, SLIDE_IDS, useSlides, type SlideId } from './sessionSlides';
 import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
 import './session.css';
@@ -70,14 +72,22 @@ export function SessionPage(): React.JSX.Element {
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   // Before the first note the screen is a short path of steps; afterwards it is the listening space.
   const [everPlayed, setEverPlayed] = useState(false);
-  // The person's own choice to open or close the source panel; `null` lets it follow the session.
-  const [sourceToggled, setSourceToggled] = useState<boolean | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The session that just ended was a trial of the app, so nothing was kept.
   const [trialEnded, setTrialEnded] = useState(false);
   // The cause is kept as is and translated when shown.
   const [saveFailure, setSaveFailure] = useState<{ readonly cause: unknown } | null>(null);
-  const connection = useSignalSource(source).state;
+  const reading = useSignalSource(source);
+  const connection = reading.state;
+  const { slide, goTo } = useSlides('pulse');
+  const playbackRef = useRef<PlaybackHandle | null>(null);
+  const pulseTitleId = useId();
+  const arrivalTitleId = useId();
+  const listeningTitleId = useId();
+  const slideIds = useMemo(
+    () => ({ pulse: pulseTitleId, arrival: arrivalTitleId, listening: listeningTitleId }),
+    [pulseTitleId, arrivalTitleId, listeningTitleId],
+  );
 
   // Refs let the handlers below stay stable: SignalPanel restarts its Worker
   // whenever a callback it receives changes identity.
@@ -113,6 +123,8 @@ export function SessionPage(): React.JSX.Element {
       return;
     }
     setEverPlayed(true);
+    // However the music started, the listening slide is where it is followed.
+    goTo('listening');
     if (!recorder.active) {
       sessionStartElapsedRef.current = elapsedRef.current;
       recorder.start({
@@ -125,7 +137,7 @@ export function SessionPage(): React.JSX.Element {
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, finishRecording]);
+  }, [adaptation, recorder, durationMin, goals, finishRecording, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -167,8 +179,31 @@ export function SessionPage(): React.JSX.Element {
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);
 
-  // Once the music plays with the pulse connected, how it is measured steps out of the way.
-  const sourceOpen = sourceToggled ?? !(playing && connection === 'connected');
+  // The first time the pulse connects, the next slide comes in on its own, after a moment to read it.
+  const connectedOnce = useRef(false);
+  useEffect(() => {
+    if (connection !== 'connected' || connectedOnce.current) return undefined;
+    connectedOnce.current = true;
+    if (slide !== 'pulse') return undefined;
+    const timer = setTimeout(() => { goTo('arrival'); }, AUTO_ADVANCE_MS);
+    return () => { clearTimeout(timer); };
+  }, [connection, slide, goTo]);
+
+  // After a slide change the focus goes to its title, so the keyboard and screen readers follow.
+  const firstSlide = useRef(true);
+  useEffect(() => {
+    if (firstSlide.current) {
+      firstSlide.current = false;
+      return;
+    }
+    document.getElementById(slideIds[slide])?.focus();
+  }, [slide, slideIds]);
+
+  const done = new Set<SlideId>();
+  if (connection === 'connected') done.add('pulse');
+  if (everPlayed) done.add('arrival');
+  const reachable = new Set<SlideId>(SLIDE_IDS.filter((id) => id !== 'listening' || everPlayed || playing || slide === 'listening'));
+  const slideNames: Readonly<Record<SlideId, string>> = t.session.slides.names;
 
   return (
     <div className="session-page">
@@ -182,24 +217,44 @@ export function SessionPage(): React.JSX.Element {
         )}
       </PageHeading>
 
-      {!everPlayed && <SessionSteps measuring={connection === 'connected'} rated={ratingBefore !== null} />}
+      <SessionStepper current={slide} done={done} reachable={reachable} onSelect={goTo} />
 
-      <details
-        className="technical-details source-details"
-        open={sourceOpen}
-        onToggle={(event) => {
-          // React setting `open` also fires this event: only a change the person made is kept.
-          const { open } = event.currentTarget;
-          if (open !== sourceOpen) setSourceToggled(open);
-        }}
-      >
-        <summary>
-          <span className="summary-title">{t.session.source.title}</span>
-          <span className="summary-hint">{t.session.source.states[connection === 'connected' ? 'connected' : 'pending']}</span>
-        </summary>
-        <AcquisitionPanel source={source} onSourceChange={handleSourceChange} />
-      </details>
+      {/* Every slide stays mounted while away: the source keeps measuring and the music keeps playing,
+          and the Stop button and the plan warnings stay in sight on every slide (session.css). */}
+      <div className="session-slides">
+        <section className={slide === 'pulse' ? 'session-slide' : 'session-slide is-away'} aria-labelledby={slideIds.pulse}>
+          <h2 id={slideIds.pulse} className="slide-title" tabIndex={-1}>{slideNames.pulse}</h2>
+          <p className="slide-lead">{t.session.slides.leads.pulse}</p>
+          <AcquisitionPanel source={source} onSourceChange={handleSourceChange} />
+          <div className="slide-actions">
+            <button type="button" className="pill-button pill-button-ghost" onClick={() => { goTo('arrival'); }}>
+              {connection === 'connected' ? t.session.slides.next : t.session.slides.withoutPulse}
+            </button>
+          </div>
+        </section>
 
+        <section className={slide === 'arrival' ? 'session-slide' : 'session-slide is-away'} aria-labelledby={slideIds.arrival}>
+          <h2 id={slideIds.arrival} className="slide-title" tabIndex={-1}>{slideNames.arrival}</h2>
+          <p className="slide-lead">{t.session.slides.leads.arrival}</p>
+          <ArrivalSlide
+            reading={reading}
+            goals={goals}
+            instrument={instrument}
+            ambience={ambience}
+            rating={ratingBefore}
+            onRatingChange={handleRatingBefore}
+            onMeasure={() => { goTo('pulse'); }}
+            onStart={() => {
+              // Started inside the click, as browsers require. The listening slide comes in at once,
+              // so a start the browser refuses is explained where the controls are.
+              goTo('listening');
+              playbackRef.current?.start();
+            }}
+          />
+        </section>
+
+        <section className={slide === 'listening' ? 'session-slide' : 'session-slide is-away'} aria-labelledby={slideIds.listening}>
+          <h2 id={slideIds.listening} className="visually-hidden" tabIndex={-1}>{slideNames.listening}</h2>
       <div className="listening-stage">
         <div className="orb-column">
           <SessionOrb
@@ -219,11 +274,14 @@ export function SessionPage(): React.JSX.Element {
             savedId={savedId}
             trialEnded={trialEnded}
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
+            askRating={false}
           />
           <SessionRecap session={adaptation} playing={playing} />
         </div>
-        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} instrument={instrument} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel ref={playbackRef} durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} instrument={instrument} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
+      </div>
+        </section>
       </div>
 
       <details className="technical-details">

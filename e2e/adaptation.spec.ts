@@ -109,8 +109,9 @@ test('rising activation closes the loop with native AudioParam ramps and latency
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.getByLabel(es.acquisition.scenarioLabel).selectOption(RISING_SCENARIO);
-  await page.getByRole('button', { name: playback.start }).click();
+  // The session asks for the pulse first, then starts the music on its next slide (ADR-47).
   await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
+  await page.getByRole('button', { name: playback.start }).click();
   await expect(page.getByTestId('activation-state')).toHaveText(es.adaptation.states.high, { timeout: 115_000 });
   await expect(page.getByTestId('music-level')).toHaveText(es.audio.levels.high);
   const evidence = await page.evaluate(() => (window as unknown as EvidenceWindow).adaptationEvidence);
@@ -144,8 +145,9 @@ test('rising activation closes the loop with native AudioParam ramps and latency
 
 test('Uncertain advances only after three real minutes on the native audio clock', async ({ page }, testInfo) => {
   test.setTimeout(220_000);
-  await page.getByRole('button', { name: playback.start }).click();
+  // The session asks for the pulse first, then starts the music on its next slide (ADR-47).
   await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
+  await page.getByRole('button', { name: playback.start }).click();
   await expect(page.getByTestId('activation-state')).toHaveText(es.adaptation.states.uncertain, { timeout: 30_000 });
   await expect(page.getByTestId('dwell-notice')).toBeVisible();
   await expect(page.getByTestId('music-level')).toHaveText(es.audio.levels.intermediate);

@@ -10,20 +10,26 @@ export const session = {
   dimmer: {
     restore: 'Pantalla atenuada para dormir. Toca para verla.',
   },
-  /** Short path before the music starts (ADR-42). */
-  steps: {
-    label: 'Antes de empezar',
-    measure: 'Mide tu pulso',
-    feeling: 'Di cómo te sientes, si quieres',
-    start: 'Inicia la música',
+  /** The session as three slides (ADR-47); `names` and `leads` keys mirror `SlideId`. */
+  slides: {
+    label: 'Pasos de la sesión',
+    names: { pulse: 'Tu pulso', arrival: 'Cómo llegas', listening: 'Escuchando' },
+    leads: {
+      pulse: 'Elige cómo medir tu pulso y conéctalo. Cuando llegue, pasamos al siguiente paso.',
+      arrival: 'Así estás ahora. Si quieres, di cómo te sientes antes de empezar.',
+    },
+    next: 'Continuar',
+    withoutPulse: 'Seguir sin medir mi pulso',
     /** Mark of a finished step, and the same for a screen reader. */
     doneMark: '✓',
     done: 'hecho',
   },
-  /** The pulse source panel, which folds away while the music plays; `states` says whether it is measuring. */
-  source: {
-    title: 'Cómo se mide tu pulso',
-    states: { connected: 'Midiendo', pending: 'Falta conectarlo' },
+  /** Second slide: the pulse now and what was chosen. */
+  arrival: {
+    pulseLabel: 'Tu pulso ahora',
+    noPulse: 'Sin el pulso conectado la música suena, pero no se adapta a ti.',
+    measure: 'Conectar mi pulso',
+    choicesLabel: 'Lo que elegiste para esta sesión',
   },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {

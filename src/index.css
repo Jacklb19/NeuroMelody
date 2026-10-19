@@ -95,6 +95,11 @@
   --dimmer-fade: 1.5s;
   --stop-reserve: 6rem;
   --motion-duration: 160ms;
+  /* Slides of the session (ADR-47): how long and how far a slide moves, and its curve. */
+  --slide-duration: 480ms;
+  --slide-distance: 3rem;
+  --slide-easing: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --slide-stagger: 70ms;
 
   /* Landing page (ADR-28): a night forest around the beating staff, then the app's paper. */
   --landing-night: #0c1a15;
