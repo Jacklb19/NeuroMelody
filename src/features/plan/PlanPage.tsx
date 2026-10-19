@@ -8,7 +8,9 @@ import { PlayIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
 import { AMBIENCE_IDS, DEFAULT_AMBIENCE_ID, type AmbienceId } from '../audio/core/ambienceCatalog';
 import { AmbienceIcon } from './AmbienceIcon';
-import { readAmbience, rememberAmbience } from './ambiencePreference';
+import { INSTRUMENT_IDS, type InstrumentId } from '../audio/core/instrumentCatalog';
+import { InstrumentIcon } from './InstrumentIcon';
+import { readAmbience, readInstrument, rememberAmbience, rememberInstrument } from './soundChoices';
 import { GOAL_IDS, readGoals, type GoalId } from './goalCatalog';
 import { GoalIcon } from './GoalIcon';
 import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
@@ -38,6 +40,10 @@ export function PlanPage(): React.JSX.Element {
   const [ambience, setAmbience] = useState<AmbienceId>(() => readAmbience(params.get(QUERY_PARAMS.ambience)));
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
   const ambienceHintId = useId();
+  // Starts at the last instrument chosen on this device.
+  const [instrument, setInstrument] = useState<InstrumentId>(() => readInstrument(params.get(QUERY_PARAMS.instrument)));
+  const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
+  const instrumentHintId = useId();
   const goalsHintId = useId();
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const navigate = useNavigate();
@@ -100,6 +106,29 @@ export function PlanPage(): React.JSX.Element {
             <PlanSuggestionCard goals={goals} duration={duration} onAccept={setDuration} />
           </fieldset>
 
+          <fieldset className="plan-fieldset" aria-describedby={instrumentHintId}>
+            <legend>{t.plan.instrument.legend}</legend>
+            <p id={instrumentHintId} className="secondary-text">{t.plan.instrument.hint}</p>
+            <div className="ambience-options" style={{ '--option-count': INSTRUMENT_IDS.length } as React.CSSProperties}>
+              {INSTRUMENT_IDS.map((id) => (
+                <label key={id} className="choice-card ambience-option">
+                  <input
+                    type="radio"
+                    name={QUERY_PARAMS.instrument}
+                    value={id}
+                    checked={instrument === id}
+                    onChange={() => {
+                      setInstrument(id);
+                      rememberInstrument(id);
+                    }}
+                  />
+                  <span className="icon-badge"><InstrumentIcon instrument={id} /></span>
+                  <span>{instrumentNames[id]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           <fieldset className="plan-fieldset" aria-describedby={ambienceHintId}>
             <legend>{t.plan.ambience.legend}</legend>
             <p id={ambienceHintId} className="secondary-text">{t.plan.ambience.hint}</p>
@@ -135,6 +164,7 @@ export function PlanPage(): React.JSX.Element {
               {goals.map((id) => <li key={id}><GoalIcon goal={id} /> {goalNames[id]}</li>)}
             </ul>
           )}
+          <p className="plan-ambience"><InstrumentIcon instrument={instrument} /> {t.plan.instrument.chosen(instrumentNames[instrument])}</p>
           {ambience !== DEFAULT_AMBIENCE_ID && (
             <p className="plan-ambience"><AmbienceIcon ambience={ambience} /> {t.plan.ambience.with(ambienceNames[ambience])}</p>
           )}
@@ -146,7 +176,7 @@ export function PlanPage(): React.JSX.Element {
             type="button"
             className="pill-button pill-button-primary pill-button-large pill-button-block"
             onClick={() => {
-              void navigate(sessionPath(duration, goals, ambience));
+              void navigate(sessionPath(duration, goals, ambience, instrument));
             }}
           >
             <PlayIcon /> {t.plan.continueToSession}

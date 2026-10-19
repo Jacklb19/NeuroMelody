@@ -25,9 +25,9 @@ class SynthesizerProcessor extends scope.AudioWorkletProcessor {
 
   constructor(options: AudioWorkletNodeOptions) {
     super();
-    const { seed, initialMode, initialLayers, ambience } = readSynthesizerOptions(options.processorOptions);
+    const { seed, initialMode, initialLayers, ambience, instrument } = readSynthesizerOptions(options.processorOptions);
     this.#ambience = new Ambience(scope.sampleRate, seed, ambience);
-    this.#core = new SynthesisCore(scope.sampleRate, seed, initialMode);
+    this.#core = new SynthesisCore(scope.sampleRate, seed, initialMode, instrument);
     this.#core.setInitialLayers(initialLayers);
   }
 

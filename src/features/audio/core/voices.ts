@@ -17,6 +17,8 @@ const STATE_WAITING = 3;
 const CHORD_PANS = [-0.5, 0.2, -0.15, 0.5] as const;
 /** The notes of a chord enter this far apart, from the lowest up, like a slowly rolled chord. */
 const CHORD_ROLL_S = 0.045;
+/** A struck chord is rolled a little wider, as a hand plays it on a piano or strikes a row of bowls. */
+const STRUCK_ROLL_S = 0.07;
 
 /** Where the composer sends the notes it decides; the voice pool sounds them. */
 export interface NoteSink {
@@ -45,6 +47,11 @@ export interface NoteSink {
   holdChord(notes: readonly number[], baseMidi: number, timbre: Timbre, layer: number, bank: number): void;
   /** Lets go of every held note of a bank. */
   releaseChord(bank: number): void;
+  /**
+   * Strikes the notes of a chord, rolled from the lowest up; they ring and
+   * fade on their own, like a piano or a bowl (ADR-46).
+   */
+  strikeChord(notes: readonly number[], baseMidi: number, timbre: Timbre, velocity: number, layer: number, bank: number): void;
 }
 
 /**
@@ -156,6 +163,13 @@ export class VoicePool implements NoteSink {
       if (!this.#holds(midi, bank)) {
         this.#start(midi, timbre, CHORD_PANS[i % CHORD_PANS.length] ?? 0, 1, i * CHORD_ROLL_S, layer, bank, true);
       }
+    }
+  }
+
+  strikeChord(notes: readonly number[], baseMidi: number, timbre: Timbre, velocity: number, layer: number, bank: number): void {
+    for (let i = 0; i < notes.length; i++) {
+      const pan = CHORD_PANS[i % CHORD_PANS.length] ?? 0;
+      this.#start(baseMidi + (notes[i] ?? 0), timbre, pan, velocity, i * STRUCK_ROLL_S, layer, bank, false);
     }
   }
 

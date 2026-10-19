@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { createRandom } from '../../src/features/acquisition/simulator/prng.ts';
 import { Ambience } from '../../src/features/audio/core/ambience.ts';
 import type { AmbienceId } from '../../src/features/audio/core/ambienceCatalog.ts';
+import type { InstrumentId } from '../../src/features/audio/core/instrumentCatalog.ts';
 import { dbToGain, gainToDb } from '../../src/features/audio/core/decibels.ts';
 import { softClipBlock } from '../../src/features/audio/core/softClip.ts';
 import { SynthesisCore } from '../../src/features/audio/core/SynthesisCore.ts';
@@ -47,6 +48,8 @@ interface Scene {
   readonly change?: { readonly atS: number; readonly to: LevelId };
   /** Ambience under the music; music alone when omitted. */
   readonly ambience?: AmbienceId;
+  /** Instrument of the session; the warm sound when omitted. */
+  readonly instrument?: InstrumentId;
 }
 
 const SCENES: readonly Scene[] = [
@@ -61,6 +64,10 @@ const SCENES: readonly Scene[] = [
     change: { atS: 15, to: 'target' },
   },
   { file: '8-para-dormir', title: 'Nivel para dormir (un escalón más allá de la meta)', start: 'sleep', durationS: 45 },
+  { file: '9-intermedio-piano', title: 'Intermedio con piano', start: 'intermediate', durationS: 45, instrument: 'piano' },
+  { file: '10-activacion-alta-piano', title: 'Activación alta con piano', start: 'high', durationS: 45, instrument: 'piano' },
+  { file: '11-intermedio-cuencos', title: 'Intermedio con cuencos', start: 'intermediate', durationS: 45, instrument: 'bowls' },
+  { file: '12-meta-cuencos', title: 'Meta con cuencos', start: 'target', durationS: 45, instrument: 'bowls' },
   { file: '5-meta-con-lluvia', title: 'Meta con lluvia de fondo', start: 'target', durationS: 45, ambience: 'rain' },
   { file: '6-meta-con-mar', title: 'Meta con mar de fondo', start: 'target', durationS: 45, ambience: 'sea' },
   { file: '7-meta-con-viento', title: 'Meta con viento de fondo', start: 'target', durationS: 45, ambience: 'wind' },
@@ -96,7 +103,7 @@ function renderScene(scene: Scene): { left: Float32Array; right: Float32Array; r
   const changeS = scene.change?.atS ?? 0;
   const length = Math.floor((scene.durationS * SAMPLE_RATE) / BLOCK) * BLOCK;
 
-  const core = new SynthesisCore(SAMPLE_RATE, SAMPLE_SEED, start.mode);
+  const core = new SynthesisCore(SAMPLE_RATE, SAMPLE_SEED, start.mode, scene.instrument);
   core.setInitialLayers(start.layers);
   const dry = [new Float32Array(length), new Float32Array(length)] as const;
   const blockLeft = new Float32Array(BLOCK);

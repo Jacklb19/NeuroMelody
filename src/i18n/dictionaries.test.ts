@@ -33,8 +33,8 @@ const SAME_IN_BOTH = new Set([
   'common.units.decibels',
   'common.units.tempo',
   'plan.minutesUnit',
-  // "Plan" is the same word.
-  'app.navigation.plan',
+  // "Piano" is the same word.
+  'plan.instrument.names.piano',
   // Each language is named in itself, whatever the interface is in.
   'app.settings.language.names.es',
   'app.settings.language.names.en',

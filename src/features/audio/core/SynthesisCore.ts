@@ -2,6 +2,8 @@ import { createRandom } from '../../acquisition/simulator/prng';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
 import { FADE_DURATION_S } from '../engine/ramps';
 import { BankComposer, TICKS_PER_BEAT } from './composer';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from './instrumentCatalog';
+import { INSTRUMENTS } from './instruments';
 import { BANK_COUNT, LAYER, LAYER_COUNT, MIN_LAYERS } from './layers';
 import { sine } from './oscillator';
 import { MIDI_DRONE, isMode, midiFrequency, type Mode } from './theory';
@@ -96,7 +98,8 @@ export class SynthesisCore {
    * thread (AudioEngine) and reaches the worklet as processor options, so the
    * core holds no default of its own that could drift from it.
    */
-  constructor(sampleRate: number, seed: number, initialMode: Mode) {
+  constructor(sampleRate: number, seed: number, initialMode: Mode, instrumentId: InstrumentId = DEFAULT_INSTRUMENT_ID) {
+    const instrument = INSTRUMENTS[instrumentId];
     this.#fs = sampleRate;
     this.#fadeStep = 1 / (FADE_DURATION_S * sampleRate);
     this.#currentMode = initialMode;
@@ -114,14 +117,14 @@ export class SynthesisCore {
     this.#voices = new VoicePool(sampleRate, this.#layerGain, this.#bankLevel);
     this.#composers = Array.from(
       { length: BANK_COUNT },
-      (_, bank) => new BankComposer(bank, initialMode, random, colour, this.#voices),
+      (_, bank) => new BankComposer(bank, initialMode, random, colour, this.#voices, instrument),
     );
 
     DRONE_PARTIALS.forEach((partial, p) => {
       const frequency = midiFrequency(MIDI_DRONE + partial.semitones);
       this.#droneIncrementA[p] = (frequency - partial.beatHz / 2) / sampleRate;
       this.#droneIncrementB[p] = (frequency + partial.beatHz / 2) / sampleRate;
-      const level = DRONE_AMPLITUDE * partial.gain;
+      const level = DRONE_AMPLITUDE * partial.gain * instrument.droneGain;
       this.#droneGainALeft[p] = level * panGain(-partial.width, false);
       this.#droneGainARight[p] = level * panGain(-partial.width, true);
       this.#droneGainBLeft[p] = level * panGain(partial.width, false);

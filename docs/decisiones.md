@@ -356,6 +356,14 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | El relato de la música (ritmo al empezar y al terminar, y cada cambio de escalón con su minuto) se guarda con la sesión en el dispositivo y aparece en su resumen. Reemplaza el «no se guarda» de ADR-42. |
 | Consecuencias | Solo vive en el dispositivo: la copia de la sesión en la nube no lo lleva (el contrato de la API no cambia), así que una sesión traída de otro dispositivo no lo muestra. Las sesiones anteriores tampoco lo tienen. |
 
+## ADR-46. Instrumentos: cálido, piano y cuencos
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). Los valores de cada timbre son del agente y se ajustan con la escucha del usuario. |
+| Decisión | En el plan se elige el sonido de la música (`src/features/audio/core/instrumentCatalog.ts`): **cálido** (el de siempre: colchón y teclas suaves), **piano** o **cuencos**. Las notas, los escalones y la guía son los mismos; cambia cómo suena cada parte (`instruments.ts`: colchón, díadas, melodía, notas del acorde y campanas) y cómo se tocan los acordes. En el sonido cálido se sostienen; en piano y cuencos se pulsan, escalonados como una mano, y se vuelven a pulsar más suave cada 4 pulsos (piano) u 8 (cuencos) mientras dura el acorde. Los cuencos tienen armónicos que no son múltiplos de la nota (razón 2,76) y un vaivén lento entre los oídos. El bordón suena algo más bajo con piano y cuencos. Todo en el AudioWorklet, sin archivos de audio. La elección viaja en la dirección de la sesión (`instrument`) y se recuerda en el dispositivo, como el ambiente. |
+| Consecuencias | El nivel percibido de cada instrumento quedó dentro de ±2 dB del sonido cálido (medido con la herramienta de muestras). Un instrumento nuevo es una entrada del catálogo, su juego de timbres, su icono y su nombre en los dos idiomas. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

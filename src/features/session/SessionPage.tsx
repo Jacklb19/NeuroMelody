@@ -12,7 +12,7 @@ import { PlaybackPanel } from '../audio/ui/PlaybackPanel';
 import { readDuration } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
 import { programFor } from '../plan/programCatalog';
-import { readAmbience } from '../plan/ambiencePreference';
+import { readAmbience, readInstrument } from '../plan/soundChoices';
 import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
@@ -56,6 +56,7 @@ export function SessionPage(): React.JSX.Element {
   const program = useMemo(() => programFor(goals), [goals]);
   // Read once: the ambience of a session does not change under the person's ears.
   const [ambience] = useState(() => readAmbience(params.get(QUERY_PARAMS.ambience)));
+  const [instrument] = useState(() => readInstrument(params.get(QUERY_PARAMS.instrument)));
   const store = useSessionStore();
   const { api } = useCloudSync();
   // Acquisition creates the shared source; signal analysis consumes it.
@@ -221,7 +222,7 @@ export function SessionPage(): React.JSX.Element {
           />
           <SessionRecap session={adaptation} playing={playing} />
         </div>
-        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} instrument={instrument} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
 

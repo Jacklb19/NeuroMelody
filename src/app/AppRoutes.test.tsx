@@ -6,6 +6,7 @@ import { afterEach, describe, it, expect, vi } from 'vitest';
 import { APP_NAME } from '../config/app';
 import { ROUTES, sessionPath } from '../config/routes';
 import { DEFAULT_AMBIENCE_ID } from '../features/audio/core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID } from '../features/audio/core/instrumentCatalog';
 import { es } from '../i18n/es';
 import { WarningsContext } from '../features/warnings/warningsContext';
 import { WarningsRegistry } from '../features/warnings/warningsRegistry';
@@ -119,9 +120,9 @@ describe('routes', () => {
     await user.click(screen.getByRole('radio', { name: es.plan.minutes(45) }));
     expect(screen.getByText(es.plan.minutes(45), { selector: 'strong' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: es.plan.continueToSession }));
-    // The plan always names the ambience it shows, so the session cannot fall back to a stored one.
+    // The plan always names the ambience and the instrument it shows, so the session cannot fall back to stored ones.
     await waitFor(() => {
-      expect(currentPath()).toBe(sessionPath(45, [], DEFAULT_AMBIENCE_ID));
+      expect(currentPath()).toBe(sessionPath(45, [], DEFAULT_AMBIENCE_ID, DEFAULT_INSTRUMENT_ID));
     }, LAZY_SCREEN);
   });
 

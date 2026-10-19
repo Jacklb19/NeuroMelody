@@ -4,6 +4,7 @@
  * from the worklet scope, so both sides can use it.
  */
 import { isAmbienceId, type AmbienceId } from '../core/ambienceCatalog';
+import { isInstrumentId, type InstrumentId } from '../core/instrumentCatalog';
 import { LAYER_COUNT, MIN_LAYERS } from '../core/SynthesisCore';
 import { MODE, isMode, type Mode } from '../core/theory';
 import { CALIBRATION_LEVEL, LEVELS } from '../engine/levels';
@@ -82,6 +83,8 @@ export interface SynthesizerOptions {
   readonly initialLayers: number;
   /** Ambience under the music for the whole session. */
   readonly ambience: AmbienceId;
+  /** Instrument the music is played with for the whole session (ADR-46). */
+  readonly instrument: InstrumentId;
 }
 
 export interface ClipperOptions {
@@ -106,7 +109,8 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     typeof value.initialLayers !== 'number' ||
     value.initialLayers < MIN_LAYERS ||
     value.initialLayers > LAYER_COUNT ||
-    !isAmbienceId(value.ambience)
+    !isAmbienceId(value.ambience) ||
+    !isInstrumentId(value.instrument)
   ) {
     throw new TypeError('Invalid synthesizer options.');
   }
@@ -115,6 +119,7 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     initialMode: value.initialMode,
     initialLayers: value.initialLayers,
     ambience: value.ambience,
+    instrument: value.instrument,
   };
 }
 

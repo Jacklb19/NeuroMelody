@@ -2,7 +2,7 @@ import type { RandomSource } from '../../acquisition/simulator/prng';
 import { ARRANGEMENTS, CHIME_LOOPS, FIGURE, type Arrangement } from './arrangement';
 import { LAYER } from './layers';
 import { MIDI_TONIC, SCALES, SEMITONES_PER_OCTAVE, degreeNote, type Mode } from './theory';
-import { BROKEN_CHORD_TIMBRE, CHIME_TIMBRE, MELODY_TIMBRE } from './timbres';
+import { INSTRUMENTS, type Instrument } from './instruments';
 import type { NoteSink } from './voices';
 
 /** The sequencer counts half beats, the shortest note the melody plays. */
@@ -87,6 +87,7 @@ export class BankComposer {
   readonly #random: RandomSource;
   readonly #colour: RandomSource;
   readonly #sink: NoteSink;
+  readonly #instrument: Instrument;
 
   #mode: Mode;
   #arrangement: Arrangement;
@@ -114,8 +115,17 @@ export class BankComposer {
   #density = 1;
   #lift = 0.5;
 
-  constructor(bank: number, mode: Mode, random: RandomSource, colour: RandomSource, sink: NoteSink) {
+  /** `instrument` decides how every part sounds and how the chords are played (ADR-46). */
+  constructor(
+    bank: number,
+    mode: Mode,
+    random: RandomSource,
+    colour: RandomSource,
+    sink: NoteSink,
+    instrument: Instrument = INSTRUMENTS.warm,
+  ) {
     this.#bank = bank;
+    this.#instrument = instrument;
     this.#random = random;
     this.#colour = colour;
     this.#sink = sink;
@@ -173,8 +183,17 @@ export class BankComposer {
     if (!harmony) {
       this.#letChordGo();
     } else {
-      if (startsChord) {
-        this.#sink.holdChord(this.#chord, MIDI_TONIC, this.#arrangement.pad, LAYER.harmony, this.#bank);
+      const pad = this.#instrument.timbres[this.#arrangement.padRole];
+      if (this.#instrument.struckChords) {
+        // A struck chord fades on its own: it is struck again, softer, while it lasts.
+        const { restrikeBeats } = this.#instrument;
+        if (startsChord) {
+          this.#sink.strikeChord(this.#chord, MIDI_TONIC, pad, 1, LAYER.harmony, this.#bank);
+        } else if (onBeat && restrikeBeats > 0 && beat % restrikeBeats === 0) {
+          this.#sink.strikeChord(this.#chord, MIDI_TONIC, pad, this.#instrument.restrikeVelocity, LAYER.harmony, this.#bank);
+        }
+      } else if (startsChord) {
+        this.#sink.holdChord(this.#chord, MIDI_TONIC, pad, LAYER.harmony, this.#bank);
         this.#holding = true;
       }
       if (this.#arrangement.figure === FIGURE.brokenChord) {
@@ -228,7 +247,7 @@ export class BankComposer {
     const note = raised > BROKEN_CHORD_TOP ? own : raised;
     this.#sink.strike(
       MIDI_TONIC + note,
-      BROKEN_CHORD_TIMBRE,
+      this.#instrument.timbres.brokenChord,
       (this.#colour() * 2 - 1) * BROKEN_CHORD_PAN_RANGE,
       BROKEN_CHORD_MIN_VELOCITY + this.#colour() * (1 - BROKEN_CHORD_MIN_VELOCITY),
       this.#colour() * HUMAN_DELAY_S,
@@ -252,7 +271,7 @@ export class BankComposer {
       }
       this.#sink.strike(
         MIDI_TONIC + (loop?.semitones ?? 0),
-        CHIME_TIMBRE,
+        this.#instrument.timbres.chime,
         (this.#colour() * 2 - 1) * CHIME_PAN_RANGE,
         CHIME_MIN_VELOCITY + this.#colour() * (1 - CHIME_MIN_VELOCITY),
         this.#colour() * CHIME_DELAY_S,
@@ -298,7 +317,7 @@ export class BankComposer {
     const arch = Math.sin((Math.PI * (index + 0.5)) / this.#motifLength);
     this.#sink.strike(
       degreeNote(scale, degree, MELODY_BASE_MIDI),
-      MELODY_TIMBRE,
+      this.#instrument.timbres.melody,
       (this.#colour() * 2 - 1) * MELODY_PAN_RANGE,
       (PHRASE_VELOCITY_EDGE + (1 - PHRASE_VELOCITY_EDGE) * arch) * (1 - this.#colour() * HUMAN_VELOCITY_RANGE),
       this.#colour() * HUMAN_DELAY_S,

@@ -71,6 +71,7 @@ describe('AudioEngine.create', () => {
       initialMode: MODE.lydian,
       initialLayers: 2,
       ambience: 'none',
+      instrument: 'warm',
     });
     // Two stereo outputs: the music and the ambience (ADR-40).
     expect(synthesizer.options.outputChannelCount).toEqual([2, 2]);
