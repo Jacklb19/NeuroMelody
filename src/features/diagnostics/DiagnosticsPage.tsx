@@ -6,6 +6,7 @@ import { checkCapabilities } from './checkCapabilities';
 import type { EnvironmentCapabilities } from './diagnostics.types';
 import { PageHeading } from '../../shared/PageHeading';
 import { CameraPulsePanel } from './CameraPulsePanel';
+import { AudioDiagnosticPanel } from './AudioDiagnosticPanel';
 
 export function DiagnosticsPage(): React.JSX.Element {
   const t = useMessages();
@@ -64,6 +65,7 @@ export function DiagnosticsPage(): React.JSX.Element {
         </ul>
       </section>
 
+      <AudioDiagnosticPanel />
       <CameraPulsePanel />
 
       <section className="recheck-section">

@@ -91,19 +91,22 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
   const [torchOn, setTorchOn] = useState(false);
   const [reading, setReading] = useState<Reading>(EMPTY_READING);
   const captureRef = useRef<CameraCapture | null>(null);
+  const generationRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const titleId = useId();
 
   const stop = (): void => {
+    generationRef.current++;
     captureRef.current?.stop();
     captureRef.current = null;
     setStatus('idle');
   };
 
   // Releases the camera when leaving the page.
-  useEffect(() => () => { captureRef.current?.stop(); }, []);
+  useEffect(() => () => { generationRef.current++; captureRef.current?.stop(); }, []);
 
   const begin = (): void => {
+    const generation = ++generationRef.current;
     const detector = new PulseDetector();
     const palette = readWaveformPalette();
     let intervals: number[] = [];
@@ -112,6 +115,7 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
     let secondStartMs: number | null = null;
 
     const onFrame = (sample: FrameSample): void => {
+      if (generation !== generationRef.current) return;
       const beats = detector.push(sample);
       drawWaveform(canvasRef.current, detector, palette);
       frames++;
@@ -135,11 +139,13 @@ export function CameraPulsePanel({ start = startCameraCapture }: { readonly star
     setReading(EMPTY_READING);
     start(onFrame).then(
       (capture) => {
+        if (generation !== generationRef.current) { capture.stop(); return; }
         captureRef.current = capture;
         setTorchOn(capture.torchOn);
         setStatus('running');
       },
       (cause: unknown) => {
+        if (generation !== generationRef.current) return;
         setStatus('idle');
         setError(describeCameraError(cause, text.errors));
       },
