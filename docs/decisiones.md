@@ -364,6 +364,15 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Decisión | En el plan se elige el sonido de la música (`src/features/audio/core/instrumentCatalog.ts`): **cálido** (el de siempre: colchón y teclas suaves), **piano** o **cuencos**. Las notas, los escalones y la guía son los mismos; cambia cómo suena cada parte (`instruments.ts`: colchón, díadas, melodía, notas del acorde y campanas) y cómo se tocan los acordes. En el sonido cálido se sostienen; en piano y cuencos se pulsan, escalonados como una mano, y se vuelven a pulsar más suave cada 4 pulsos (piano) u 8 (cuencos) mientras dura el acorde. Los cuencos tienen armónicos que no son múltiplos de la nota (razón 2,76) y un vaivén lento entre los oídos. El bordón suena algo más bajo con piano y cuencos. Todo en el AudioWorklet, sin archivos de audio. La elección viaja en la dirección de la sesión (`instrument`) y se recuerda en el dispositivo, como el ambiente. |
 | Consecuencias | El nivel percibido de cada instrumento quedó dentro de ±2 dB del sonido cálido (medido con la herramienta de muestras). Un instrumento nuevo es una entrada del catálogo, su juego de timbres, su icono y su nombre en los dos idiomas. |
 
+## ADR-47. La sesión en diapositivas
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario (lo propuso él: «que fueran como unos slides, con animación súper fluida»). Los detalles de interacción son del agente. |
+| Contexto | Aun con los pasos de ADR-42, la pantalla de sesión mostraba a la vez la fuente, la valoración, el escenario y los controles: se leía como una lista de paneles. |
+| Decisión | \`/session\` es un recorrido de tres diapositivas: **Tu pulso** (la fuente y el modo de prueba), **Cómo llegas** (el pulso en vivo, lo elegido y la valoración, con «Iniciar música») y **Escuchando** (el escenario de siempre). Al conectarse el pulso, la segunda llega sola tras 0,7 s; «Seguir sin medir mi pulso» permite avanzar igualmente. Un indicador de pasos arriba marca el actual y deja volver atrás, también con la música sonando. Las diapositivas se deslizan con una transición de vista del navegador (\`document.startViewTransition\`, 480 ms) y sus partes entran escalonadas; con «reducir movimiento» o sin soporte, el cambio es inmediato. Todas siguen montadas aunque estén ocultas, así que la fuente sigue midiendo y la música sigue sonando al cambiar de diapositiva. Al cambiar, el foco va al título de la nueva. Los detalles técnicos quedan debajo, plegados. |
+| Consecuencias | Las pruebas E2E conectan el pulso antes de iniciar la música. En navegadores sin transiciones de vista (Firefox, hoy) se ve el cambio sin animación. «Detener» y Esc siguen disponibles en todo momento. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

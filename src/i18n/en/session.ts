@@ -10,20 +10,26 @@ export const session = {
   dimmer: {
     restore: 'Screen dimmed for sleep. Tap to see it.',
   },
-  /** Short path before the music starts (ADR-42). */
-  steps: {
-    label: 'Before you start',
-    measure: 'Measure your pulse',
-    feeling: 'Say how you feel, if you like',
-    start: 'Start the music',
+  /** The session as three slides (ADR-47); `names` and `leads` keys mirror `SlideId`. */
+  slides: {
+    label: 'Session steps',
+    names: { pulse: 'Your pulse', arrival: 'How you arrive', listening: 'Listening' },
+    leads: {
+      pulse: 'Choose how to measure your pulse and connect it. Once it arrives, we move on.',
+      arrival: 'This is how you are right now. If you like, say how you feel before starting.',
+    },
+    next: 'Continue',
+    withoutPulse: 'Continue without measuring my pulse',
     /** Mark of a finished step, and the same for a screen reader. */
     doneMark: '✓',
     done: 'done',
   },
-  /** The pulse source panel, which folds away while the music plays; `states` says whether it is measuring. */
-  source: {
-    title: 'How your pulse is measured',
-    states: { connected: 'Measuring', pending: 'Not connected yet' },
+  /** Second slide: the pulse now and what was chosen. */
+  arrival: {
+    pulseLabel: 'Your pulse now',
+    noPulse: 'Without your pulse connected the music plays, but it does not adapt to you.',
+    measure: 'Connect my pulse',
+    choicesLabel: 'What you chose for this session',
   },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {

@@ -65,6 +65,16 @@ Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 
 - **Inicio (`/app`):** la tarjeta principal lleva a preparar la sesión («Preparar mi sesión») y, si ya hay sesiones, ofrece «Repetir la última». Debajo, las cinco intenciones con una línea que dice qué hace la música con cada una.
 - **`/session`, de arriba abajo:** (1) antes de la primera nota, los tres pasos «Antes de empezar» con su estado; (2) «Cómo se mide tu pulso», plegable, con el panel de la fuente dentro: abierto al llegar, se pliega solo cuando la música suena con el pulso conectado; (3) el escenario de escucha, que mientras suena añade el recorrido de la música, su ritmo y «¿Qué significa?» junto al estado estimado, y al terminar «Lo que hizo la música»; (4) los detalles técnicos, plegados.
 
+### `/session` en diapositivas (ADR-47, 18 oct 2026)
+
+Sustituye la organización de arriba. La sesión es un recorrido de tres diapositivas que se deslizan con una animación suave (sin animación con «reducir movimiento»):
+
+1. **Tu pulso:** el panel de la fuente de señal, con el modo de prueba. Al conectarse, la diapositiva pasa sola a la siguiente. «Seguir sin medir mi pulso» permite avanzar igualmente (la música suena pero no se adapta).
+2. **Cómo llegas:** el pulso en vivo, que late con cada latido, el resumen de lo elegido (intención, sonido y ambiente) y la autovaloración opcional. «Iniciar música» empieza la sesión y lleva a la siguiente.
+3. **Escuchando:** el escenario de siempre (orbe, frase, recorrido de la música, estado estimado, controles y progreso) y, al terminar, el aviso de guardado y «Lo que hizo la música».
+
+Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página.
+
 ## Modo de prueba (simulador y registros de ejemplo)
 
 El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.

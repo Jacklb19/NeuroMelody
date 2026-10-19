@@ -104,8 +104,10 @@ describe('routes', () => {
   it('with the warnings accepted it goes straight to the session and its panels', async () => {
     renderWith(ROUTES.session, true);
     expect(await screen.findByText(es.session.plan(DEFAULT_DURATION_MIN), undefined, LAZY_SCREEN)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: es.session.narrative.noSource.title })).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: es.session.progress.label })).toBeInTheDocument();
+    // The session opens on its first slide, the pulse; the listening slide waits for the music (ADR-47).
+    expect(screen.getByRole('heading', { level: 2, name: es.session.slides.names.pulse })).toBeVisible();
+    expect(screen.getByRole('button', { name: es.session.slides.names.listening })).toBeDisabled();
+    expect(screen.getByRole('progressbar', { name: es.session.progress.label, hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: es.acquisition.title })).toBeInTheDocument();
     // Signal figures stay folded under the technical details (ADR-24).
     expect(screen.getByText(es.session.technicalDetails.title)).toBeVisible();

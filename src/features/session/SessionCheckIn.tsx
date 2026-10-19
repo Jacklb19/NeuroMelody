@@ -14,6 +14,8 @@ interface SessionCheckInProps {
   readonly trialEnded: boolean;
   /** Why the session could not be saved, already in the interface language. */
   readonly saveError: string | null;
+  /** Whether it asks how the person feels before starting; the slides ask it on their own (ADR-47). */
+  readonly askRating?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function SessionCheckIn({
   savedId,
   trialEnded,
   saveError,
+  askRating = true,
 }: SessionCheckInProps): React.JSX.Element | null {
   const { checkIn } = useMessages().session;
   if (saveError !== null) {
@@ -55,6 +58,9 @@ export function SessionCheckIn({
     return ratingBefore === null ? null : (
       <p className="check-in-note">{checkIn.ratingBefore(ratingBefore, MAX_RATING)}</p>
     );
+  }
+  if (!askRating) {
+    return null;
   }
   return (
     <div className="check-in">

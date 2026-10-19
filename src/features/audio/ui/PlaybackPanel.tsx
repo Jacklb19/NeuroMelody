@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { APP_NAME } from '../../../config/app';
 import { useMessages, type Messages } from '../../../i18n/messages';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
@@ -26,7 +26,14 @@ import {
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
 
+/** What the session screen can ask of the panel from outside it (ADR-47). */
+export interface PlaybackHandle {
+  /** Starts the music, as the panel's own button does; call it inside a click. */
+  start(): void;
+}
+
 interface PlaybackPanelProps {
+  readonly ref?: Ref<PlaybackHandle>;
   readonly durationMin: number;
   /** Level the music starts at: the one the program of the session asks for (ADR-38). */
   readonly initialLevel?: LevelId;
@@ -75,6 +82,7 @@ function describeFailure(failure: AudioStartFailure, t: Messages): string {
  *   clock at start: it happens even when the tab is in the background.
  */
 export function PlaybackPanel({
+  ref,
   durationMin,
   initialLevel = CALIBRATION_LEVEL,
   ambience = DEFAULT_AMBIENCE_ID,
@@ -138,6 +146,12 @@ export function PlaybackPanel({
     scheduleFade(engine);
     onEngineChange?.(engine);
   };
+
+  useImperativeHandle(ref, () => ({
+    start: () => {
+      void start();
+    },
+  }));
 
   const stopNow = useCallback((): void => {
     setWarning(null);
