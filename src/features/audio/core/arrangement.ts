@@ -8,7 +8,7 @@
  * so the chords sit above it, from A3 to C#5.
  */
 import { MODE, type Mode } from './theory';
-import { DYAD_TIMBRE, PAD_TIMBRE, SLEEP_PAD_TIMBRE, SLOW_PAD_TIMBRE, type Timbre } from './timbres';
+import type { TimbreRole } from './instruments';
 
 /** What plays above the chords of a mode, inside the harmony layer. */
 export const FIGURE = {
@@ -29,7 +29,8 @@ export interface Arrangement {
   readonly chords: readonly (readonly number[])[];
   /** Orders in which the chords are played, as indexes into `chords`. One is drawn each time the previous ends. */
   readonly progressions: readonly (readonly number[])[];
-  readonly pad: Timbre;
+  /** Part the chords belong to: the instrument of the session decides how it sounds (ADR-46). */
+  readonly padRole: TimbreRole;
   readonly figure: Figure;
 }
 
@@ -51,7 +52,7 @@ export const ARRANGEMENTS: Readonly<Record<Mode, Arrangement>> = {
       [5, 1, 4, 2],
       [0, 5, 2, 3],
     ],
-    pad: PAD_TIMBRE,
+    padRole: 'pad',
     figure: FIGURE.none,
   },
   // Intermediate: wider chords that last 8 beats, with the raised fourth (G#) that makes lydian float.
@@ -70,7 +71,7 @@ export const ARRANGEMENTS: Readonly<Record<Mode, Arrangement>> = {
       [0, 4, 1, 2],
       [0, 1, 3, 4],
     ],
-    pad: SLOW_PAD_TIMBRE,
+    padRole: 'slowPad',
     figure: FIGURE.brokenChord,
   },
   // Target: open fifths and fourths over the drone, 8 beats each.
@@ -89,7 +90,7 @@ export const ARRANGEMENTS: Readonly<Record<Mode, Arrangement>> = {
       [0, 2, 3, 1],
       [0, 1, 0, 3],
     ],
-    pad: DYAD_TIMBRE,
+    padRole: 'dyad',
     figure: FIGURE.chimes,
   },
   // For falling asleep: the lower dyads, a whole cycle each, and nothing struck above them.
@@ -106,7 +107,7 @@ export const ARRANGEMENTS: Readonly<Record<Mode, Arrangement>> = {
       [0, 2, 3, 1],
       [0, 3, 0, 2],
     ],
-    pad: SLEEP_PAD_TIMBRE,
+    padRole: 'sleepPad',
     figure: FIGURE.none,
   },
 };

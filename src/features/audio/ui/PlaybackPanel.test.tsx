@@ -79,7 +79,7 @@ describe('PlaybackPanel', () => {
     await start();
 
     const synthesizer = env.worklets[0];
-    expect(synthesizer?.options.processorOptions).toEqual({ seed: 42, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none' });
+    expect(synthesizer?.options.processorOptions).toEqual({ seed: 42, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none', instrument: 'warm' });
     expect(DEFAULT_VOLUME_DB).toBe(-12);
     expect(volume()?.value).toBeCloseTo(dbToGain(DEFAULT_VOLUME_DB), 10);
     expect(stopButton()).toBeEnabled();

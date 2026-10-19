@@ -12,6 +12,7 @@ import {
 } from '../engine/AudioEngine';
 import type { AudioEngineErrorCode, AudioEngineErrorParams } from '../engine/AudioEngineError';
 import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from '../core/instrumentCatalog';
 import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
@@ -31,6 +32,8 @@ interface PlaybackPanelProps {
   readonly initialLevel?: LevelId;
   /** Ambience under the music, chosen before the session (ADR-40). */
   readonly ambience?: AmbienceId;
+  /** Instrument of the music, chosen before the session (ADR-46). */
+  readonly instrument?: InstrumentId;
   /** Ends by fading out when the plan does, with no warning to answer (ADR-41). */
   readonly quietEnding?: boolean;
   /** Injectable to test without a browser. */
@@ -75,6 +78,7 @@ export function PlaybackPanel({
   durationMin,
   initialLevel = CALIBRATION_LEVEL,
   ambience = DEFAULT_AMBIENCE_ID,
+  instrument = DEFAULT_INSTRUMENT_ID,
   quietEnding = false,
   factory,
   generateSeed = randomSeed,
@@ -121,6 +125,7 @@ export function PlaybackPanel({
         seed: generateSeed(),
         initialLevel,
         ambience,
+        instrument,
         outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
       },
       volumeDb,

@@ -1,5 +1,6 @@
 import { MS_PER_SECOND } from '../../../shared/time';
 import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from '../core/instrumentCatalog';
 import { dbToGain, gainToDb } from '../core/decibels';
 import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
@@ -75,6 +76,8 @@ export interface EngineOptions {
   readonly initialLevel: LevelId;
   /** Ambience under the music (ADR-40); music alone when omitted. */
   readonly ambience?: AmbienceId;
+  /** Instrument the music is played with (ADR-46); the warm sound when omitted. */
+  readonly instrument?: InstrumentId;
   /**
    * Media Session fallback: the output goes through an `<audio>` element.
    * With it, `playbackStats` no longer measures what is actually heard.
@@ -186,6 +189,7 @@ export class AudioEngine {
       initialMode: level.mode,
       initialLayers: level.layers,
       ambience: options.ambience ?? DEFAULT_AMBIENCE_ID,
+      instrument: options.instrument ?? DEFAULT_INSTRUMENT_ID,
     };
     const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,

@@ -104,9 +104,13 @@ En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Pr
 - **Qué hace:** «Añadir a mi calendario» descarga un archivo de calendario (`.ics`) con una cita que se repite esos días a esa hora, con aviso y el enlace a la app. Al abrirlo, el calendario del teléfono o del ordenador lo añade y es el que avisa.
 - **Por qué así:** una página web no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones. La tarjeta lo explica en una línea. Sin días marcados, el botón queda desactivado y lo dice.
 
+## Sonido de la sesión (ADR-46)
+
+En `/plan`, después de la duración y antes del ambiente: «¿Con qué sonido?», tres tarjetas con icono (Cálido, Piano, Cuencos). Empieza en el último elegido en el dispositivo; la tarjeta «Tu sesión» dice «Sonido: …» y la elección viaja a `/session` en el parámetro `instrument`.
+
 ## Ambiente de la sesión (ADR-40)
 
-En `/plan`, después de la duración: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.
+En `/plan`, después del sonido: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.
 
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 

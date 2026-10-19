@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRandom } from '../../acquisition/simulator/prng';
 import { ARRANGEMENTS } from './arrangement';
 import { BankComposer, TICKS_PER_BEAT } from './composer';
+import { INSTRUMENTS } from './instruments';
 import { LAYER } from './layers';
 import { MIDI_TONIC, MODE, SCALES, SEMITONES_PER_OCTAVE, type Mode } from './theory';
 import type { NoteSink } from './voices';
@@ -36,6 +37,10 @@ class Recorder implements NoteSink {
   releaseChord(): void {
     this.releases++;
   }
+  strikeChord(notes: readonly number[]): void {
+    this.struckChords.push(notes);
+  }
+  readonly struckChords: (readonly number[])[] = [];
 }
 
 /** Slow moods of the session the composer is given on every tick; the middle of their ranges. */
@@ -99,5 +104,22 @@ describe('BankComposer', () => {
     expect(recorder.releases).toBe(1);
     expect(recorder.chords).toHaveLength(1);
     expect(recorder.strikes).toHaveLength(0);
+  });
+});
+
+describe('BankComposer with a struck instrument (ADR-46)', () => {
+  it('strikes each chord when it starts and again every few beats, and never holds one', () => {
+    const recorder = new Recorder();
+    const { restrikeBeats } = INSTRUMENTS.piano;
+    const composer = new BankComposer(0, MODE.majorPentatonic, createRandom(4), createRandom(5), recorder, INSTRUMENTS.piano);
+    const beats = 64;
+    for (let tick = 0; tick < beats * TICKS_PER_BEAT; tick++) {
+      composer.onTick(tick, true, false, DENSITY, LIFT);
+    }
+    expect(recorder.chords).toHaveLength(0);
+    expect(recorder.struckChords).toHaveLength(beats / Math.min(restrikeBeats, ARRANGEMENTS[MODE.majorPentatonic].beatsPerChord));
+    for (const chord of recorder.struckChords) {
+      expect(ARRANGEMENTS[MODE.majorPentatonic].chords).toContain(chord);
+    }
   });
 });

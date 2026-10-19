@@ -2,7 +2,7 @@
 export const plan = {
   pageTitle: 'Prepara tu sesión',
   eyebrow: 'Antes de escuchar',
-  introduction: 'Dos decisiones y listo. Puedes cambiarlas la próxima vez.',
+  introduction: 'Elige lo que buscas, el tiempo y cómo quieres que suene. Puedes cambiarlo la próxima vez.',
   durationLegend: '¿Cuánto tiempo tienes?',
   /** A duration in words, e.g. "20 minutos": name of each option and the chosen plan. */
   minutes: (minutes: number): string => `${String(minutes)} minutos`,
@@ -46,6 +46,14 @@ export const plan = {
     accepted: 'Es la duración que tienes elegida.',
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `No se pudo pedir la propuesta: ${reason} Puedes elegir tú la duración.`,
+  },
+  /** Instrument of the music (ADR-46); `names` keys mirror `InstrumentId`. */
+  instrument: {
+    legend: '¿Con qué sonido?',
+    hint: 'Las mismas notas, tocadas con otro instrumento. La app recuerda tu elección en este dispositivo.',
+    names: { warm: 'Cálido', piano: 'Piano', bowls: 'Cuencos' },
+    /** Line of the session card. */
+    chosen: (instrument: string): string => `Sonido: ${instrument}`,
   },
   /** Ambience under the music (ADR-40); `names` keys mirror `AmbienceId`. */
   ambience: {
