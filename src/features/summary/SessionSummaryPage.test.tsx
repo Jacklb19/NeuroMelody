@@ -13,9 +13,9 @@ const RECORD = sessionRecord({
   samples: [80, 78, 76, 70, 68, 66].map((meanHr, i) => sample((i + 1) * 5, { meanHr, estimatedState: 'low' })),
 });
 
-async function renderSummary(id: string = RECORD.id): Promise<MemorySessionStore> {
+async function renderSummary(id: string = RECORD.id, record = RECORD): Promise<MemorySessionStore> {
   const store = new MemorySessionStore();
-  await store.save(RECORD);
+  await store.save(record);
   renderWithStore(summaryPath(id), `/${ROUTE_SEGMENTS.summary}`, <SessionSummaryPage />, store);
   return store;
 }
@@ -50,5 +50,19 @@ describe('SessionSummaryPage', () => {
     expect(await screen.findByText(es.records.change('4', '8'))).toBeVisible();
     expect(screen.getByText(es.summary.ratingChange.more(4))).toBeVisible();
     expect((await store.get(RECORD.id))?.ratingAfter).toBe(8);
+  });
+
+  it('tells what the music did when the session kept it (ADR-42)', async () => {
+    const music = { startTempoBpm: 72, endTempoBpm: 59, steps: [{ atS: 200, level: 'target' as const, calmer: true }] };
+    await renderSummary(RECORD.id, { ...RECORD, music });
+    expect(await screen.findByRole('heading', { level: 2, name: es.session.recap.title })).toBeVisible();
+    expect(screen.getByText(es.session.recap.tempo('72', '59'))).toBeVisible();
+    expect(screen.getByText(es.session.recap.calmerStep(4, es.session.journey.levels.target))).toBeVisible();
+  });
+
+  it('says nothing about the music for a session that did not keep it', async () => {
+    await renderSummary();
+    await screen.findByTestId('summary-heart-rate');
+    expect(screen.queryByRole('heading', { name: es.session.recap.title })).not.toBeInTheDocument();
   });
 });

@@ -110,7 +110,7 @@ En `/plan`, después de la duración: «¿Con qué ambiente?», cuatro tarjetas 
 
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
-- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
+- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Desde ADR-45, tras el tiempo en cada estado, «Lo que hizo la música» si la sesión lo guardó. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, una tarjeta que lleva a «Tu progreso» y borrado de una sesión o de todo el historial, siempre con confirmación.
 - Sin cuenta, todo vive en IndexedDB. Con cuenta, verificación en dos pasos y consentimiento, las sesiones se sincronizan con la nube (ver «Sincronización»). El estado lo estima el clasificador entrenado, con las reglas como respaldo (ADR-32).
 

@@ -88,7 +88,8 @@ export function SessionPage(): React.JSX.Element {
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
 
   const finishRecording = useCallback((): void => {
-    const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current);
+    // The adaptation has just been handed the end of the music, so its story is complete.
+    const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current, adaptation.getSnapshot().recap);
     if (record === null) return;
     if (isTrialSource(record.sourceKind)) {
       setTrialEnded(true);
@@ -101,7 +102,7 @@ export function SessionPage(): React.JSX.Element {
         setSaveFailure({ cause: error });
       },
     );
-  }, [recorder, store]);
+  }, [adaptation, recorder, store]);
 
   const handleEngineChange = useCallback((next: AudioEngine | null): void => {
     adaptation.setAudio(next);

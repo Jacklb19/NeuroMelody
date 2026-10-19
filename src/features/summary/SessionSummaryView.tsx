@@ -14,6 +14,7 @@ import { PageHeading } from '../../shared/PageHeading';
 import { AutomaticSummary } from './AutomaticSummary';
 import { Sparkline } from '../../shared/Sparkline';
 import { StateTimeShare } from './StateTimeShare';
+import { MusicRecapView } from '../session/MusicRecapView';
 
 interface SessionSummaryViewProps {
   readonly record: SessionRecord;
@@ -33,6 +34,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
   const summary = summarizeSession(record);
   const ratingChange = describeRatingChange(summary.ratingChange, t);
   const figuresId = useId();
+  const musicId = useId();
   const trendValues = record.samples.map((sample) => (sample.goodQuality ? sample.rmssd : null));
   const { figures } = t.summary;
 
@@ -76,6 +78,12 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       </section>
 
       <StateTimeShare secondsByState={summary.secondsByState} />
+
+      {record.music !== undefined && record.music.startTempoBpm !== null && (
+        <section aria-labelledby={musicId} className="summary-section summary-music">
+          <MusicRecapView recap={record.music} titleId={musicId} headingLevel={2} />
+        </section>
+      )}
 
       <AutomaticSummary record={record} />
 
