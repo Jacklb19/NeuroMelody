@@ -74,6 +74,17 @@ describe('PlaybackPanel', () => {
     expect(state()).toBe(`${copy.statusLabel} ${copy.states.idle}`);
   });
 
+  it('keeps Stop available when the browser interrupts playback', async () => {
+    const { env } = setup();
+    await start();
+    act(() => { env.context.state = 'interrupted'; env.context.dispatchEvent(new Event('statechange')); });
+    expect(state()).toContain(copy.states.interrupted);
+    expect(screen.getByText(copy.interruptionHint)).toBeInTheDocument();
+    expect(stopButton()).toBeEnabled();
+    fireEvent.click(stopButton());
+    expect(state()).toContain(copy.states.stopped);
+  });
+
   it('starts at the calibration level at −12 dB and schedules the final fade on the audio clock', async () => {
     const { env, envelope, volume } = setup(10);
     await start();

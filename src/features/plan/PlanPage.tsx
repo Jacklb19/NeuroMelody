@@ -16,6 +16,8 @@ import { GoalIcon } from './GoalIcon';
 import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
 import { PlanSuggestionCard } from './PlanSuggestionCard';
 import { programFor } from './programCatalog';
+import { parseOption } from '../../shared/parseOption';
+import { PersonalPlanCard } from './PersonalPlanCard';
 import './plan.css';
 
 /**
@@ -30,7 +32,7 @@ export function PlanPage(): React.JSX.Element {
   const t = useMessages();
   usePageTitle(t.plan.pageTitle);
   const [params] = useSearchParams();
-  const [duration, setDuration] = useState<DurationMin>(DEFAULT_DURATION_MIN);
+  const [duration, setDuration] = useState<DurationMin>(() => parseOption(DURATIONS_MIN, Number(params.get(QUERY_PARAMS.duration)), DEFAULT_DURATION_MIN));
   // One goal at most: a link that carries several keeps its first one.
   const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)).slice(0, 1));
   const program = programFor(goals);
@@ -61,6 +63,11 @@ export function PlanPage(): React.JSX.Element {
 
       <div className="plan-layout">
         <div className="plan-choices">
+          <PersonalPlanCard key={goals.join(',')} goals={goals} onAccept={(choices) => {
+            if (choices.duration !== undefined) setDuration(choices.duration);
+            if (choices.instrument !== undefined) { setInstrument(choices.instrument); rememberInstrument(choices.instrument); }
+            if (choices.ambience !== undefined) { setAmbience(choices.ambience); rememberAmbience(choices.ambience); }
+          }} />
           <fieldset className="plan-fieldset" aria-describedby={goalsHintId}>
             <legend>{t.plan.goals.legend}</legend>
             <p id={goalsHintId} className="secondary-text">{t.plan.goals.hint}</p>

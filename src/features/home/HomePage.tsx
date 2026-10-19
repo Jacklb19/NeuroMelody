@@ -8,6 +8,8 @@ import { ArrowRightIcon, PlayIcon } from '../../shared/icons';
 import { useAuth } from '../account/authContext';
 import { GOAL_IDS, type GoalId } from '../plan/goalCatalog';
 import { GoalIcon } from '../plan/GoalIcon';
+import { QUICK_DURATION_MIN } from '../plan/plan';
+import { readAmbience, readInstrument, readLastGoals } from '../plan/soundChoices';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { dayPartAt, FIRST_SESSION_STEP_IDS, firstName } from './greeting';
@@ -52,15 +54,19 @@ export function HomePage(): React.JSX.Element {
             <Link to={ROUTES.plan} className="pill-button pill-button-primary pill-button-large">
               <PlayIcon /> {copy.start.action}
             </Link>
+            <Link to={sessionPath(QUICK_DURATION_MIN, readLastGoals(), readAmbience(null), readInstrument(null))} className="pill-button pill-button-ghost pill-button-large">
+              {t.insights.quick.action}
+            </Link>
             {totals.last !== null && (
               <Link
-                to={sessionPath(totals.last.plannedMinutes, totals.last.goals)}
+                to={sessionPath(totals.last.plannedMinutes, totals.last.goals, totals.last.context?.ambience, totals.last.context?.instrument)}
                 className="pill-button pill-button-ghost pill-button-large"
               >
                 {copy.start.repeat}
               </Link>
             )}
           </div>
+          <p className="secondary-text">{t.insights.quick.hint}</p>
         </div>
         <BreathingOrb className="start-orb" />
       </section>

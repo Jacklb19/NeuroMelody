@@ -98,6 +98,22 @@ export interface EngineStats extends PlaybackStatistics {
   readonly measuringRealOutput: boolean;
 }
 
+/** A local diagnostic reading; unsupported browser measurements stay null. */
+export interface EngineDiagnostic {
+  readonly contextState: AudioContextState;
+  readonly engineState: EngineState;
+  readonly audioTimeS: number;
+  readonly sampleRateHz: number;
+  readonly baseLatencyS: number | null;
+  readonly outputLatencyS: number | null;
+  readonly outputThroughAudioElement: boolean;
+  readonly playback: EngineStats | null;
+}
+
+function finiteMeasurement(value: number | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 interface Nodes {
   readonly synthesizer: AudioWorkletNode;
   readonly filter: BiquadFilterNode;
@@ -176,6 +192,15 @@ export class AudioEngine {
   /** Creates the context, loads the worklet modules and builds the graph (silent). */
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
+    try {
+      return await AudioEngine.#buildGraph(context, factory, options);
+    } catch (cause) {
+      if (context.state !== 'closed') await context.close();
+      throw cause;
+    }
+  }
+
+  static async #buildGraph(context: AudioContext, factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     // An output opened ahead of time may already be running (some browsers allow it without a gesture):
     // it is paused while the graph is built, so the audio thread never renders a half-built chain.
     if (context.state === 'running') await context.suspend();
@@ -272,7 +297,7 @@ export class AudioEngine {
   }
 
   get state(): EngineState {
-    return this.#state;
+    return this.#context.state === 'closed' ? 'closed' : this.#state;
   }
 
   get level(): LevelId {
@@ -282,6 +307,31 @@ export class AudioEngine {
   /** Audio clock time, in seconds: the reference for all timing. */
   get audioTime(): number {
     return this.#context.currentTime;
+  }
+
+  /** The browser may interrupt the context independently of the session's own state. */
+  get contextState(): AudioContextState {
+    return this.#context.state;
+  }
+
+  /** Observes system interruptions without keeping the context alive after disposal. */
+  subscribeContextState(listener: () => void): () => void {
+    this.#context.addEventListener('statechange', listener);
+    return () => { this.#context.removeEventListener('statechange', listener); };
+  }
+
+  /** Reads browser counters on demand, on the main thread, without signal or account data. */
+  diagnostic(): EngineDiagnostic {
+    return {
+      contextState: this.contextState,
+      engineState: this.#state,
+      audioTimeS: this.audioTime,
+      sampleRateHz: this.#context.sampleRate,
+      baseLatencyS: finiteMeasurement(this.#context.baseLatency),
+      outputLatencyS: finiteMeasurement(this.#context.outputLatency),
+      outputThroughAudioElement: this.outputThroughAudioElement,
+      playback: this.stats(),
+    };
   }
 
   get volumeDb(): number {
@@ -378,12 +428,21 @@ export class AudioEngine {
     const t = this.#context.currentTime;
     const envelope = this.#nodes.envelope.gain;
     hold(envelope, t);
+    // A suspended clock cannot render a fade. Silence it now so a later system
+    // resume cannot play the beginning of that fade after the person pressed Stop.
+    if (this.#context.state !== 'running') {
+      envelope.setValueAtTime(0, t);
+      this.#state = 'stopped';
+      this.#audioElement?.pause();
+      if (this.#context.state !== 'closed') await this.#context.suspend();
+      return;
+    }
     envelope.linearRampToValueAtTime(0, t + STOP_RAMP_S);
     this.#state = 'stopped';
     // The ramp already silences on the audio thread; the wait only avoids cutting it short.
     await this.#factory.wait(STOP_RAMP_S * MS_PER_SECOND + STOP_WAIT_MARGIN_MS);
     // Leaving the page closes the context during the ramp; it is already silent.
-    if (this.#context.state === 'closed') return;
+    if (this.contextState === 'closed') return;
     this.#audioElement?.pause();
     await this.#context.suspend();
   }
@@ -430,6 +489,6 @@ export class AudioEngine {
   async close(): Promise<void> {
     this.#audioElement?.pause();
     this.#state = 'closed';
-    await this.#context.close();
+    if (this.#context.state !== 'closed') await this.#context.close();
   }
 }

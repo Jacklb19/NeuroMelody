@@ -7,7 +7,8 @@ import { ArrowRightIcon } from '../../shared/icons';
 import { PageHeading } from '../../shared/PageHeading';
 import { measuredSessions } from '../records/retentionPolicy';
 import { useRecordFormatter } from '../records/useRecordFormatter';
-import { useSessionRecords } from '../records/useSessionRecords';
+import { useSessionHistory } from '../records/useSessionRecords';
+import { storeErrorMessage } from '../records/storeErrorMessage';
 import { BeforeAfterChart } from './BeforeAfterChart';
 import {
   axisOf,
@@ -22,6 +23,8 @@ import { DEFAULT_PROGRESS_RANGE, type ProgressRangeId } from './progressRangeCat
 import { RangePicker } from './RangePicker';
 import { useProgressFormatter } from './useProgressFormatter';
 import './progress.css';
+import { historyInsights } from './historyInsights';
+import { HistoryInsightsPanel } from './HistoryInsightsPanel';
 
 /**
  * Evolution across the sessions saved on this device (ADR-33): the pulse,
@@ -32,11 +35,12 @@ export function ProgressPage(): React.JSX.Element {
   const t = useMessages();
   const copy = t.progress;
   usePageTitle(copy.title);
-  const stored = useSessionRecords();
+  const { records: stored, failure } = useSessionHistory();
   // Sessions made to try the app before they stopped being kept are nobody's pulse.
   const records = useMemo(() => (stored === null ? null : measuredSessions(stored)), [stored]);
   const [range, setRange] = useState<ProgressRangeId>(DEFAULT_PROGRESS_RANGE);
   const progress = useMemo(() => progressOf(selectRange(records ?? [], range)), [records, range]);
+  const insights = useMemo(() => historyInsights(records ?? [], range), [records, range]);
 
   return (
     <div className="progress-page">
@@ -44,7 +48,8 @@ export function ProgressPage(): React.JSX.Element {
         <p>{copy.introduction}</p>
       </PageHeading>
       {records === null && <p className="secondary-text">{copy.loading}</p>}
-      {records !== null && records.length === 0 && (
+      {failure !== null && <p role="alert" className="quiet-notice">{t.records.readFailed(storeErrorMessage(failure.cause, t))}</p>}
+      {failure === null && records !== null && records.length === 0 && (
         <div className="empty-state">
           <p>{copy.empty}</p>
           <Link to={ROUTES.plan} className="button button-primary">{copy.planSession}</Link>
@@ -54,6 +59,7 @@ export function ProgressPage(): React.JSX.Element {
         <>
           <RangePicker value={range} onChange={setRange} />
           <Totals progress={progress} />
+          <HistoryInsightsPanel insights={insights} records={records} range={range} />
           {progress.sessions === 1 && <p className="progress-note">{copy.single}</p>}
           <div className="progress-cards">
             {PROGRESS_METRIC_IDS.map((metric) => <MetricCard key={metric} metric={metric} progress={progress} />)}

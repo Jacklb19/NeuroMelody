@@ -4,6 +4,7 @@ import type { GoalId } from '../plan/goalCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
 import type { NarrativeFigures } from '../summary/narrativeFigures';
 import type { CollectionRecording } from '../collection/collectionRecording';
+import { progressNarrativeFromWire, type ProgressNarrative, type ProgressObservation } from '../progress/progressNarrative';
 
 /**
  * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
@@ -75,6 +76,8 @@ export interface CloudApi {
    * figures to the language model.
    */
   summarizeSession(id: string, locale: Locale, figures: NarrativeFigures): Promise<SessionNarrative>;
+  /** Explicit consent to send only browser-computed comparisons for reviewed wording (ADR-48). */
+  summarizeProgress(locale: Locale, observations: readonly ProgressObservation[]): Promise<ProgressNarrative>;
   /**
    * Sends a guided recording to train the classifier (ADR-33). Calling it states the
    * person's consent to send that recording. Sending it again changes nothing.
@@ -98,6 +101,7 @@ const PLAN_SUGGESTION_PATH = '/v1/plans/suggest';
 const SUMMARY_SUFFIX = '/summary';
 const RECORDINGS_PATH = '/v1/recordings';
 const CLASSIFIER_PATH = '/v1/models/classifier';
+const PROGRESS_SUMMARY_PATH = '/v1/progress/summary';
 const NOT_FOUND = 404;
 
 type Json = Readonly<Record<string, unknown>>;
@@ -322,6 +326,12 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
       const body = { consent: true, locale, figures: figuresToWire(figures) };
       const narrative = narrativeFromWire(await json(await request('POST', path, body)));
       if (narrative === null) throw new CloudError('unknown');
+      return narrative;
+    },
+    async summarizeProgress(locale, observations) {
+      const body = await json(await request('POST', PROGRESS_SUMMARY_PATH, { consent: true, locale, observations }));
+      const narrative = progressNarrativeFromWire(body, observations);
+      if (narrative === null) throw new CloudError('language_model_unavailable');
       return narrative;
     },
   };

@@ -22,7 +22,9 @@ El lazo de control se cierra íntegramente en el dispositivo; la API solo aporta
 
 Antes de cada sesión la persona elige qué busca (relajarse, dormir, recuperar la calma, respirar o una pausa), cuánto tiempo y si quiere lluvia, mar o viento de fondo; esa intención decide en qué escalón empieza la música y hasta dónde baja, y el tempo parte de su propio pulso. En el perfil puede crear un recordatorio para su calendario.
 
-El modelo de lenguaje nunca participa en el lazo de control: solo propone el plan inicial y redacta el resumen final, marcado siempre como texto generado automáticamente. Las decisiones técnicas están en [`docs/decisiones.md`](docs/decisiones.md) y la especificación completa en [`docs/definicion-proyecto.md`](docs/definicion-proyecto.md).
+«Tu progreso» también compara elecciones del historial local con mínimos de datos, sin atribuirles efectos. «Para ti» permite aceptar opciones respaldadas por las valoraciones, cada una por separado. Hay notas privadas en el resumen y una entrada de 3 minutos desde Inicio; esa sesión rápida conserva la calibración normal y puede acabar antes de una estimación adaptada.
+
+El modelo de lenguaje nunca participa en el lazo de control: propone el plan inicial y redacta el resumen final, marcado siempre como texto generado automáticamente. Con cuenta y consentimiento también puede elegir una explicación del progreso entre frases verificadas, manteniendo las cifras calculadas en el dispositivo. Las decisiones técnicas están en [`docs/decisiones.md`](docs/decisiones.md) y la especificación completa en [`docs/definicion-proyecto.md`](docs/definicion-proyecto.md).
 
 ## Requisitos
 

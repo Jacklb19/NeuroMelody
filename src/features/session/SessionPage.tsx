@@ -9,10 +9,10 @@ import { isTrialSource } from '../acquisition/sourceTraits';
 import { useSignalSource } from '../acquisition/useSignalSource';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import { PlaybackPanel, type PlaybackHandle } from '../audio/ui/PlaybackPanel';
-import { readDuration } from '../plan/plan';
+import { readDuration, QUICK_DURATION_MIN } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
 import { programFor } from '../plan/programCatalog';
-import { readAmbience, readInstrument } from '../plan/soundChoices';
+import { readAmbience, readInstrument, rememberAmbience, rememberInstrument, rememberGoals } from '../plan/soundChoices';
 import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
@@ -22,6 +22,7 @@ import { useCloudSync } from '../cloud/cloudSyncContext';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
 import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
+import { createSessionContext } from '../records/sessionContext';
 import { useSessionStore } from '../records/sessionStoreContext';
 import { storeErrorMessage } from '../records/storeErrorMessage';
 import type { OrbHandle } from '../../shared/BreathingOrb';
@@ -126,18 +127,22 @@ export function SessionPage(): React.JSX.Element {
     // However the music started, the listening slide is where it is followed.
     goTo('listening');
     if (!recorder.active) {
+      rememberGoals(goals);
+      rememberInstrument(instrument);
+      rememberAmbience(ambience);
       sessionStartElapsedRef.current = elapsedRef.current;
       recorder.start({
         plannedMinutes: durationMin,
         goals,
         sourceKind: sourceRef.current?.kind ?? null,
         ratingBefore: ratingBeforeRef.current,
+        context: createSessionContext(instrument, ambience),
       });
       setSavedId(null);
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, finishRecording, goTo]);
+  }, [adaptation, recorder, durationMin, goals, instrument, ambience, finishRecording, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -210,6 +215,7 @@ export function SessionPage(): React.JSX.Element {
       <SleepDimmer active={program.quietEnding && playing} />
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
+        {durationMin === QUICK_DURATION_MIN && <p>{t.insights.quick.calibration}</p>}
         {goals.length > 0 && (
           <ul className="session-goals" aria-label={t.records.goalsLabel}>
             {goals.map((goal) => <li key={goal}><GoalIcon goal={goal} /> {goalNames[goal]}</li>)}

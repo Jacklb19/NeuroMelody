@@ -66,6 +66,7 @@ export function createMirroredSessionStore({
     },
     get: (id) => local.get(id),
     list: () => local.list(),
+    setNote: (id, note) => local.setNote(id, note),
     async setRatingAfter(id, rating) {
       const updated = await local.setRatingAfter(id, rating);
       upload(updated);

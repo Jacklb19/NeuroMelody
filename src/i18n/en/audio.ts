@@ -27,10 +27,12 @@ export const audio = {
       idle: 'Ready to start',
       loading: 'Preparing the audio…',
       playing: 'Playing',
+      interrupted: 'Audio interrupted by the browser',
       stopped: 'Stopped',
       error: 'The audio could not be started',
     },
     finished: 'The session ended',
+    interruptionHint: 'The browser interrupted the audio. You can press Start music to resume or Stop to finish.',
     /** `detail` explains the failure: an engine error or `browserRefused`. */
     unavailable: (detail: string): string => `Audio is not available in this browser (${detail}).`,
     browserRefused: 'the browser did not allow it to start',

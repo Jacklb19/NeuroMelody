@@ -1,11 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_REMINDER, buildCalendar, firstOccurrence, parseReminder, type Reminder } from './reminder';
+import { DEFAULT_REMINDER, REMINDER_EVENT_MINUTES, buildCalendar, buildGoogleCalendarUrl, firstOccurrence, parseReminder, type Reminder } from './reminder';
 
 const TEXT = { title: 'Sesión, de música; ya', description: 'Línea uno', alarm: 'Es la hora' };
 // A Wednesday at 22:10 local time.
 const WEDNESDAY_EVENING = new Date(2026, 9, 14, 22, 10);
 
 describe('session reminder', () => {
+  it('opens a calendar draft with escaped details, local recurrence and the next occurrence', () => {
+    const reminder: Reminder = { time: '21:00', days: ['MO', 'FR'] };
+    const appUrl = 'https://example.test/app';
+    const url = new URL(buildGoogleCalendarUrl(reminder, TEXT, appUrl, WEDNESDAY_EVENING, 'America/Bogota'));
+    expect(url.origin).toBe('https://calendar.google.com');
+    expect(url.searchParams.get('action')).toBe('TEMPLATE');
+    expect(url.searchParams.get('text')).toBe(TEXT.title);
+    expect(url.searchParams.get('details')).toBe(`${TEXT.description}\n${appUrl}`);
+    expect(url.searchParams.get('recur')).toBe('RRULE:FREQ=WEEKLY;BYDAY=MO,FR');
+    expect(url.searchParams.get('ctz')).toBe('America/Bogota');
+    const start = firstOccurrence(reminder, WEDNESDAY_EVENING);
+    const end = new Date(start.getTime() + REMINDER_EVENT_MINUTES * 60_000);
+    const calendarInstant = (date: Date): string => date.toISOString().replace(/[-:]/g, '').replace('.000', '');
+    expect(url.searchParams.get('dates')).toBe(`${calendarInstant(start)}/${calendarInstant(end)}`);
+    expect([...url.searchParams.keys()].sort()).toEqual(['action', 'ctz', 'dates', 'details', 'recur', 'text']);
+  });
+
   it('starts on the next chosen day at the chosen time, today included if it has not passed', () => {
     const weekdays: Reminder = { time: '21:00', days: ['MO', 'TU', 'WE', 'TH', 'FR'] };
     // 21:00 on Wednesday has passed, so the first one is Thursday.

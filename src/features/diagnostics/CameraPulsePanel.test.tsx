@@ -52,4 +52,16 @@ describe('CameraPulsePanel', () => {
     const errors: Readonly<Record<string, string>> = text.errors;
     for (const code of CAMERA_FAILURES) expect(errors[code]?.trim()).toBeTruthy();
   });
+
+  it('releases a camera that finishes opening after the panel unmounts', async () => {
+    const stop = vi.fn();
+    let opened: ((capture: { torchOn: boolean; stop: () => void }) => void) | undefined;
+    const pending = new Promise<{ torchOn: boolean; stop: () => void }>(resolve => { opened = resolve; });
+    const user = userEvent.setup();
+    const { unmount } = render(<CameraPulsePanel start={() => pending} />);
+    await user.click(screen.getByRole('button', { name: text.start }));
+    unmount();
+    await act(async () => { opened?.({ torchOn: true, stop }); await pending; });
+    expect(stop).toHaveBeenCalledOnce();
+  });
 });

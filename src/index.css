@@ -95,11 +95,9 @@
   --dimmer-fade: 1.5s;
   --stop-reserve: 6rem;
   --motion-duration: 160ms;
-  /* Slides of the session (ADR-47): how long and how far a slide moves, and its curve. */
-  --slide-duration: 480ms;
-  --slide-distance: 3rem;
-  --slide-easing: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --slide-stagger: 70ms;
+  /* Slides of the session (ADR-47): a single crossfade between steps. */
+  --slide-duration: 240ms;
+  --slide-easing: ease-in-out;
 
   /* Landing page (ADR-28): a night forest around the beating staff, then the app's paper. */
   --landing-night: #0c1a15;
@@ -291,7 +289,7 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
 .pill-button-large { min-height: var(--stop-height); padding: 0 var(--space-8); font-size: var(--text-base); }
 .pill-button-primary { background: var(--color-accent); color: var(--color-button-text); box-shadow: var(--glow-accent); }
 .pill-button-primary:hover:not(:disabled) { background: var(--color-button-hover); color: var(--color-button-text); transform: translateY(-1px); }
-.pill-button-primary:disabled { background: var(--color-surface); color: var(--color-text-muted); border-color: var(--color-border-subtle); box-shadow: none; }
+.pill-button-primary:disabled, .pill-button-primary[aria-disabled='true'] { background: var(--color-surface); color: var(--color-text-muted); border-color: var(--color-border-subtle); box-shadow: none; cursor: default; }
 .pill-button-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
 .pill-button-ghost:hover:not(:disabled) { background: var(--color-paper); color: var(--color-text); }
 .pill-button-block { width: 100%; }
@@ -479,6 +477,20 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .rating-option:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 .summary-page, .history-page { padding-bottom: var(--space-12); }
 .summary-section, .state-share { margin-top: var(--space-10); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); }
+.history-insights, .personal-plan { display: grid; gap: var(--space-4); padding: var(--space-6); min-width: 0; }
+.history-insights { margin-bottom: var(--space-8); }
+.history-insights h2, .personal-plan h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); }
+.insight-observations, .personal-plan ul { display: grid; gap: var(--space-5); padding-left: var(--space-5); }
+.insight-observations h3 { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-2); }
+.history-insights .progress-data { margin-top: var(--space-3); min-width: 0; }
+.history-insights .progress-data > p { margin-block: var(--space-4); }
+.session-note { display: grid; gap: var(--space-3); }
+.session-note label { display: grid; gap: var(--space-3); }
+.session-note textarea { width: 100%; min-height: var(--control-height); padding: var(--space-3); color: var(--color-text); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); font: inherit; resize: vertical; }
+.camera-guidance { display: grid; gap: var(--space-3); margin-block: var(--space-4); }
+.automatic-insights { display: grid; gap: var(--space-4); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); }
+.automatic-insights > div { display: grid; gap: var(--space-3); }
+.automatic-insights ul { display: grid; gap: var(--space-3); padding-left: var(--space-5); }
 .after-rating { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-8); background: var(--color-surface); border-radius: var(--border-radius); }
 .after-rating .self-rating { width: 100%; }
 .summary-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8) var(--space-10); font-variant-numeric: tabular-nums; }

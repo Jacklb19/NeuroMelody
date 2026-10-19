@@ -23,6 +23,7 @@ import {
 import { BleSource, type BleSourceOptions } from './ble/BleSource';
 import { browserBluetooth, type BluetoothAdapter } from './ble/webBluetooth';
 import { CameraSource } from './camera/CameraSource';
+import { CameraGuidance } from './camera/CameraGuidance';
 import { cameraApiAvailable } from './camera/cameraCapture';
 
 export type CreateSimulatedSource = (options: SimulatedSourceOptions) => SignalSource;
@@ -229,6 +230,7 @@ export function AcquisitionPanel({
       {kind === 'camera' && <p className="recording-note">
         {t.acquisition.cameraNote}
       </p>}
+      {kind === 'camera' && <CameraGuidance source={source} />}
 
       <div className="action-row source-button">
         <button

@@ -41,7 +41,7 @@
 .listening-stage .check-in { border-top: 0; padding-top: 0; }
 .rating-option { background: var(--color-background); }
 
-/* The session as slides (ADR-47): the steps on top, one slide at a time, sliding in. */
+/* The session as slides (ADR-47): the steps on top, one slide at a time, fading in. */
 .session-stepper ol { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-bottom: var(--space-6); }
 .stepper-step { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1); background: none; border: 0; border-radius: var(--radius-pill); color: var(--color-text-secondary); font: inherit; cursor: pointer; transition: color var(--motion-duration); }
 .stepper-step:disabled { cursor: default; opacity: 0.55; }
@@ -60,31 +60,19 @@
 .session-slide.is-away .stop-button, .session-slide.is-away dialog { visibility: visible; }
 /* A plan warning that opens while another slide is in front floats above the Stop button, where it can be answered. */
 .session-slide.is-away .duration-dialog { position: fixed; inset-inline: var(--space-4); bottom: var(--stop-reserve); z-index: var(--stop-layer); width: auto; max-width: var(--auth-card-width); margin: 0 auto; box-shadow: var(--card-shadow); }
-/* The Stop button keeps its place while the slides move. */
+/* The Stop button keeps its place while the slides change. */
 .session-page .stop-button { view-transition-name: stop-button; }
 .slide-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); }
 .slide-title:focus { outline: none; }
 .slide-lead { color: var(--color-text-secondary); max-width: var(--stage-detail-max-width); }
 .slide-actions { display: flex; justify-content: flex-end; }
-/* Each part of a slide rises in a little after the previous one. */
-.session-slide:not(.is-away) > * { animation: slide-rise var(--slide-duration) var(--slide-easing) backwards; }
-/* The listening stage holds the fixed Stop button: a moving parent would carry it, so the stage only fades in. */
-.session-slide:not(.is-away) > .listening-stage { animation-name: slide-fade; }
-.session-slide:not(.is-away) > :nth-child(2) { animation-delay: var(--slide-stagger); }
-.session-slide:not(.is-away) > :nth-child(3) { animation-delay: calc(var(--slide-stagger) * 2); }
-.session-slide:not(.is-away) > :nth-child(n + 4) { animation-delay: calc(var(--slide-stagger) * 3); }
-@keyframes slide-fade { from { opacity: 0; } }
-@keyframes slide-rise { from { opacity: 0; transform: translateY(calc(var(--slide-distance) / 3)); } }
-/* Only the slides move between steps; the rest of the page changes in place. */
+/* Crossfade the complete slide once; its contents do not move or enter in stages. */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-::view-transition-old(session-slide) { animation: slide-out var(--slide-duration) var(--slide-easing) both; }
-::view-transition-new(session-slide) { animation: slide-in var(--slide-duration) var(--slide-easing) both; }
-:root[data-slide-direction='backwards']::view-transition-old(session-slide) { animation-name: slide-out-backwards; }
-:root[data-slide-direction='backwards']::view-transition-new(session-slide) { animation-name: slide-in-backwards; }
-@keyframes slide-in { from { opacity: 0; transform: translateX(var(--slide-distance)); } }
-@keyframes slide-out { to { opacity: 0; transform: translateX(calc(-1 * var(--slide-distance))); } }
-@keyframes slide-in-backwards { from { opacity: 0; transform: translateX(calc(-1 * var(--slide-distance))); } }
-@keyframes slide-out-backwards { to { opacity: 0; transform: translateX(var(--slide-distance)); } }
+::view-transition-group(session-slide) { animation: none; }
+::view-transition-old(session-slide) { animation: slide-fade-out var(--slide-duration) var(--slide-easing) both; }
+::view-transition-new(session-slide) { animation: slide-fade-in var(--slide-duration) var(--slide-easing) both; }
+@keyframes slide-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-fade-out { from { opacity: 1; } to { opacity: 0; } }
 
 /* Second slide: the pulse now, beating, and what was chosen. */
 .arrival { display: grid; gap: var(--space-6); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
