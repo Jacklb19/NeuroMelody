@@ -8,6 +8,7 @@ import {
   REMINDER_STORAGE_KEY,
   WEEKDAY_IDS,
   buildCalendar,
+  buildGoogleCalendarUrl,
   isValidTime,
   normalizeDays,
   parseReminder,
@@ -29,8 +30,8 @@ function storedReminder(): Reminder {
 
 /**
  * Session reminder in the profile (ADR-43): the time and the days, kept on
- * the device, and a calendar file that the person's own calendar turns into
- * an alarm. Nothing is sent anywhere.
+ * the device, with a draft to review in Google Calendar and a file for other
+ * calendars. Opening Google shares only the event details, never session data.
  */
 export function ReminderCard(): React.JSX.Element {
   const t = useMessages();
@@ -61,6 +62,8 @@ export function ReminderCard(): React.JSX.Element {
   };
 
   const ready = reminder.days.length > 0;
+  const googleCalendarUrl = ready ? buildGoogleCalendarUrl(reminder, copy.calendar,
+    new URL(ROUTES.app, window.location.origin).toString(), new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone) : undefined;
   return (
     <div className="setting-list glass-card reminder-card">
       <div className="setting-row preference-row">
@@ -95,15 +98,31 @@ export function ReminderCard(): React.JSX.Element {
       </div>
       <div className="reminder-action">
         <p id={ids.note} className="secondary-text">{ready ? copy.explanation : copy.noDays}</p>
-        <button
-          type="button"
-          className="pill-button pill-button-primary"
-          disabled={!ready}
-          aria-describedby={ids.note}
-          onClick={download}
-        >
-          {copy.download}
-        </button>
+        <div className="action-row">
+          <a
+            href={googleCalendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill-button pill-button-primary"
+            aria-disabled={!ready}
+            aria-describedby={ids.note}
+            onClick={event => {
+              if (!ready) { event.preventDefault(); return; }
+              // Resolve the next occurrence at the click, even after an overnight open tab.
+              event.currentTarget.href = buildGoogleCalendarUrl(reminder, copy.calendar,
+                new URL(ROUTES.app, window.location.origin).toString(), new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
+            }}
+          >{copy.openGoogle}</a>
+          <button
+            type="button"
+            className="pill-button pill-button-ghost"
+            disabled={!ready}
+            aria-describedby={ids.note}
+            onClick={download}
+          >
+            {copy.download}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import type { MusicRecap } from '../adaptation/AdaptationSession';
 import { LEVEL_IDS } from '../audio/engine/levels';
 import { isGoalId, type GoalId } from '../plan/goalCatalog';
 import { isUuid } from './uuidv7';
+import { isSessionContext, isSessionNote, type SessionContext } from './sessionContext';
 
 /**
  * One sample of a session per published index set (every `COMPUTE_PERIOD_S`
@@ -42,6 +43,9 @@ export interface SessionRecord {
    * session does not carry it, so sessions brought from the cloud have none.
    */
   readonly music?: MusicRecap;
+  /** Local-only context and optional personal note (ADR-48). */
+  readonly context?: SessionContext;
+  readonly note?: string;
 }
 
 /** Bounds of the optional self-rating scale (ADR-23); every check and text about the range reads them. */
@@ -110,5 +114,7 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && isRating(value.ratingBefore)
     && isRating(value.ratingAfter)
     && Array.isArray(value.samples) && value.samples.every(isSample)
-    && (value.music === undefined || isMusicRecap(value.music));
+    && (value.music === undefined || isMusicRecap(value.music))
+    && (value.context === undefined || isSessionContext(value.context))
+    && (value.note === undefined || isSessionNote(value.note));
 }

@@ -9,6 +9,12 @@ import {
   type StartCameraCapture,
 } from './cameraCapture';
 import { PulseDetector, type FrameSample } from './pulseDetector';
+import { MAX_RR_MS } from '../../signal/processing/thresholds';
+
+export const CAMERA_GUIDANCE_IDS = ['inactive', 'cover', 'searching', 'receiving', 'lost'] as const;
+export type CameraGuidanceState = (typeof CAMERA_GUIDANCE_IDS)[number];
+/** Contact flicker must settle before a screen reader announces a new instruction. */
+export const CAMERA_GUIDANCE_SETTLE_MS = 400;
 
 export interface CameraSourceOptions {
   /** Opens the camera; tests inject a fake capture that emits synthetic frames. */
@@ -62,6 +68,12 @@ export class CameraSource implements SignalSource {
   #contactHasBeat = false;
   /** Incremented on every connect/disconnect to drop frames and captures of an old connection. */
   #generation = 0;
+  #guidance: CameraGuidanceState = 'inactive';
+  readonly #guidanceListeners = new Set<() => void>();
+  #candidate: CameraGuidanceState = 'inactive';
+  #candidateSinceMs = 0;
+  #hadContact = false;
+  #lastBeatMs: number | null = null;
 
   constructor(options: CameraSourceOptions = {}) {
     this.#start = options.start ?? startCameraCapture;
@@ -69,6 +81,20 @@ export class CameraSource implements SignalSource {
 
   get state(): ConnectionState {
     return this.#channel.state;
+  }
+
+  get guidance(): CameraGuidanceState { return this.#guidance; }
+
+  /** Guidance is separate from physiological notifications, including before any heartbeat. */
+  subscribeGuidance(listener: () => void): () => void {
+    this.#guidanceListeners.add(listener);
+    return () => { this.#guidanceListeners.delete(listener); };
+  }
+
+  #setGuidance(state: CameraGuidanceState): void {
+    if (state === this.#guidance) return;
+    this.#guidance = state;
+    for (const listener of this.#guidanceListeners) listener();
   }
 
   subscribe(observer: SourceObserver): () => void {
@@ -98,6 +124,7 @@ export class CameraSource implements SignalSource {
           if (generation !== this.#generation) return;
           // The capture already released the camera; nothing is left to stop.
           this.#capture = null;
+          this.#setGuidance('inactive');
           this.#channel.changeState('error');
           this.#channel.emitError(error);
         },
@@ -109,8 +136,10 @@ export class CameraSource implements SignalSource {
       }
       this.#capture = capture;
       this.#channel.changeState('connected');
+      if (generation === this.#generation) this.#setGuidance('cover');
     } catch (cause) {
       if (generation !== this.#generation) return;
+      this.#setGuidance('inactive');
       this.#channel.changeState('error');
       this.#channel.emitError(toCameraError(cause));
     }
@@ -121,6 +150,7 @@ export class CameraSource implements SignalSource {
     const capture = this.#capture;
     this.#capture = null;
     capture?.stop();
+    this.#setGuidance('inactive');
     this.#channel.changeState('disconnected');
     return Promise.resolve();
   }
@@ -134,6 +164,10 @@ export class CameraSource implements SignalSource {
     this.#recentRr = [];
     this.#heartRate = null;
     this.#contactHasBeat = false;
+    this.#hadContact = false;
+    this.#lastBeatMs = null;
+    this.#candidate = 'cover';
+    this.#candidateSinceMs = 0;
   }
 
   #onFrame(sample: FrameSample): void {
@@ -149,21 +183,36 @@ export class CameraSource implements SignalSource {
     if (!this.#detector.fingerDetected) {
       this.#recentRr = [];
       this.#contactHasBeat = false;
+      this.#lastBeatMs = null;
     }
     if (intervals.length > 0) {
+      this.#lastBeatMs = timeMs;
       this.#contactHasBeat = true;
       this.#pendingRr.push(...intervals);
       this.#recentRr = keepRecentBeats(this.#recentRr, intervals);
       this.#heartRate = heartRateFromRr(this.#recentRr);
     }
+    this.#updateGuidance(timeMs);
     this.#notifyDue(timeMs);
+  }
+
+  #updateGuidance(timeMs: number): void {
+    const contact = this.#detector.fingerDetected;
+    if (contact) this.#hadContact = true;
+    const desired: CameraGuidanceState = !contact ? (this.#hadContact ? 'lost' : 'cover')
+      : this.#lastBeatMs !== null && timeMs - this.#lastBeatMs <= MAX_RR_MS ? 'receiving' : 'searching';
+    if (desired !== this.#candidate) {
+      this.#candidate = desired;
+      this.#candidateSinceMs = timeMs;
+    }
+    if (timeMs - this.#candidateSinceMs >= CAMERA_GUIDANCE_SETTLE_MS) this.#setGuidance(desired);
   }
 
   /** Emits every notification due up to `timeMs`; a late frame catches up period by period. */
   #notifyDue(timeMs: number): void {
     const generation = this.#generation;
     // Checked on every pass: an observer may disconnect the source while it receives a notification.
-    while (generation === this.#generation && this.#nextNotificationMs <= timeMs) {
+    while (generation === this.#generation && this.#channel.state === 'connected' && this.#nextNotificationMs <= timeMs) {
       const notificationMs = this.#nextNotificationMs;
       this.#nextNotificationMs += NOTIFICATION_PERIOD_MS;
       const heartRate = this.#heartRate;

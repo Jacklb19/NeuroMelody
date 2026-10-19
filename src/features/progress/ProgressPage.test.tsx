@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { reportPath, ROUTES } from '../../config/routes';
 import { es } from '../../i18n/es';
 import { MemorySessionStore } from '../records/sessionStore';
@@ -26,6 +26,13 @@ const NEWER = sessionRecord({
 });
 
 describe('ProgressPage', () => {
+  it('shows a read failure instead of claiming the history is empty', async () => {
+    const store = new MemorySessionStore();
+    vi.spyOn(store, 'list').mockRejectedValue(new Error('unavailable'));
+    renderWithStore(ROUTES.progress, ROUTES.progress, <ProgressPage />, store);
+    expect(await screen.findByRole('alert')).toHaveTextContent(es.records.readFailed(es.common.unknownError));
+    expect(screen.queryByText(progress.empty)).toBeNull();
+  });
   it('invites to a first session when nothing is saved', async () => {
     renderWithStore(ROUTES.progress, ROUTES.progress, <ProgressPage />);
     expect(await screen.findByText(progress.empty)).toBeVisible();
@@ -49,7 +56,7 @@ describe('ProgressPage', () => {
     expect(within(pulse).getByTestId('trend-readout'))
       .toHaveTextContent(es.common.withUnit('68', es.common.units.beatsPerMinute));
 
-    const rows = within(screen.getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true });
+    const rows = within(screen.getByRole('table', { name: progress.table.caption, hidden: true })).getAllByRole('row', { hidden: true });
     expect(rows).toHaveLength(3);
     expect(rows[1]).toHaveTextContent(es.common.withUnit(es.records.change('78', '68'), es.common.units.beatsPerMinute));
     expect(rows[2]).toHaveTextContent(es.records.noAnswer);

@@ -10,7 +10,7 @@ export const privacy = {
       title: 'En tu dispositivo',
       /** `seconds` is how often a session stores its indicators. */
       text: (seconds: number): string =>
-        `La señal se analiza en el navegador. Las sesiones (indicadores cada ${String(seconds)} segundos, valoraciones y objetivos) se guardan en este dispositivo y puedes borrarlas desde el historial.`,
+        `La señal se analiza en el navegador. Las sesiones (indicadores cada ${String(seconds)} segundos, valoraciones y objetivos) se guardan en este dispositivo y puedes borrarlas desde el historial. Las sesiones nuevas guardan también el sonido, ambiente y fecha y hora local al empezar para calcular observaciones del historial. Ese contexto, el relato musical y tus notas opcionales se quedan solo en este dispositivo; no se sincronizan.`,
     },
     camera: {
       title: 'Cámara',
@@ -22,7 +22,7 @@ export const privacy = {
     },
     summary: {
       title: 'Resumen automático',
-      text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente.',
+      text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente. También puedes aceptar enviar hasta tres comparaciones visibles del progreso, solo con sus opciones, conteos y medianas. En ese caso el modelo selecciona frases explicativas verificadas y las cifras se conservan. No recibe notas, fechas, identificadores de sesiones, imágenes ni señal.',
     },
     collection: {
       title: 'Grabaciones guiadas',

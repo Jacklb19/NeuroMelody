@@ -25,9 +25,8 @@ export interface Slides {
 
 /**
  * The current slide and the way to move to another. Where the browser can,
- * the change is drawn as a view transition: the old slide slides out and the
- * new one slides in, forwards or backwards (session.css reads the direction
- * from the document). Without that support, or with reduced motion, the
+ * the change is drawn as a view transition: the old slide fades out and the
+ * new one fades in. Without that support, or with reduced motion, the
  * slide simply changes.
  */
 export function useSlides(initial: SlideId): Slides {
@@ -37,8 +36,6 @@ export function useSlides(initial: SlideId): Slides {
     const current = currentRef.current;
     if (current === next) return;
     currentRef.current = next;
-    document.documentElement.dataset.slideDirection =
-      SLIDE_IDS.indexOf(next) > SLIDE_IDS.indexOf(current) ? 'forwards' : 'backwards';
     if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) {
       // The transition photographs the page before and after a synchronous update.
       document.startViewTransition(() => {

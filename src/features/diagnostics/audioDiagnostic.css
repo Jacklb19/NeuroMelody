@@ -1,0 +1,10 @@
+.audio-diagnostic { display: grid; gap: var(--space-5); margin-top: var(--space-10); padding-top: var(--space-8); border-top: var(--border-width) solid var(--color-border-subtle); }
+.audio-probe-steps, .audio-probe-warnings ul { padding-inline-start: var(--space-6); }
+.audio-probe-steps li + li, .audio-probe-warnings li + li { margin-top: var(--space-3); }
+.audio-probe-options { border: 0; padding: 0; min-width: 0; }
+.audio-probe-options legend { margin-bottom: var(--space-4); font-weight: var(--font-weight-strong); }
+.audio-probe-options select { max-width: 100%; }
+.audio-diagnostic .playback-panel { grid-area: auto; padding: 0; border: 0; }
+.audio-diagnostic .source-metrics { overflow-wrap: anywhere; }
+.audio-probe-warnings { display: grid; gap: var(--space-5); }
+.audio-diagnostic > .button, .audio-probe-warnings > .button { justify-self: start; }

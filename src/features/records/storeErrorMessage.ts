@@ -8,6 +8,7 @@ export function storeErrorMessages(t: Messages): Readonly<Record<SessionStoreErr
   const errors = t.records.errors;
   return {
     invalid_record: errors.invalid_record,
+    invalid_note: t.insights.note.invalid,
     invalid_rating: errors.invalid_rating(MIN_RATING, MAX_RATING),
     not_found: errors.not_found,
     access_failed: errors.access_failed,

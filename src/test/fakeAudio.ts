@@ -102,9 +102,9 @@ export class FakeWorkletNode extends FakeNode {
   }
 }
 
-export class FakeAudioContext {
+export class FakeAudioContext extends EventTarget {
   currentTime = 0;
-  state: 'suspended' | 'running' | 'closed' = 'suspended';
+  state: AudioContextState = 'suspended';
   readonly sampleRate = 48_000;
   readonly destination = new FakeNode('destination');
   readonly loadedModules: string[] = [];
@@ -141,16 +141,19 @@ export class FakeAudioContext {
   }
   resume(): Promise<void> {
     this.state = 'running';
+    this.dispatchEvent(new Event('statechange'));
     return Promise.resolve();
   }
   suspend(): Promise<void> {
     // Browsers reject this call once the context is closed.
     if (this.state === 'closed') return Promise.reject(new DOMException('Cannot suspend a closed AudioContext.', 'InvalidStateError'));
     this.state = 'suspended';
+    this.dispatchEvent(new Event('statechange'));
     return Promise.resolve();
   }
   close(): Promise<void> {
     this.state = 'closed';
+    this.dispatchEvent(new Event('statechange'));
     return Promise.resolve();
   }
 }

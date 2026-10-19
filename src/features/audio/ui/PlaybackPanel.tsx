@@ -46,6 +46,8 @@ interface PlaybackPanelProps {
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
+  /** Diagnostic comparison only; normal sessions keep the configured output. */
+  readonly outputThroughAudioElement?: boolean;
   readonly onEngineChange?: (engine: AudioEngine | null) => void;
   /** Listening time since the first start, read from the audio clock once per second. */
   readonly onElapsedChange?: (seconds: number) => void;
@@ -90,6 +92,7 @@ export function PlaybackPanel({
   quietEnding = false,
   factory,
   generateSeed = randomSeed,
+  outputThroughAudioElement = OUTPUT_THROUGH_AUDIO_ELEMENT,
   onEngineChange,
   onElapsedChange,
 }: PlaybackPanelProps): React.JSX.Element {
@@ -134,7 +137,7 @@ export function PlaybackPanel({
         initialLevel,
         ambience,
         instrument,
-        outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
+        outputThroughAudioElement,
       },
       volumeDb,
     );
@@ -158,6 +161,11 @@ export function PlaybackPanel({
     onEngineChange?.(null);
     void stop();
   }, [stop, onEngineChange]);
+
+  // Failed playback or a system-closed context also ends the parent's recording.
+  useEffect(() => {
+    if (state === 'error' || (state === 'stopped' && getEngine()?.contextState === 'closed')) onEngineChange?.(null);
+  }, [getEngine, onEngineChange, state]);
 
   const continueSession = (): void => {
     const engine = getEngine();
@@ -294,6 +302,7 @@ export function PlaybackPanel({
       <p role="status" className="playback-status" data-state={state}>
         {t.audio.playback.statusLabel} <strong>{stateText}</strong>
       </p>
+      {state === 'interrupted' && <p className="quiet-notice">{t.audio.playback.interruptionHint}</p>}
       {control.error !== null && (
         <p className="quiet-notice">
           {t.audio.playback.unavailable(describeFailure(control.error, t))}
@@ -330,7 +339,7 @@ export function PlaybackPanel({
       <button
         type="button"
         onClick={stopNow}
-        disabled={state !== 'playing'}
+        disabled={state !== 'playing' && state !== 'interrupted'}
         aria-keyshortcuts={STOP_SHORTCUT_KEY}
         className="button stop-button"
       >

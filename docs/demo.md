@@ -34,8 +34,11 @@ Qué es: música que se compone en el navegador y se adapta al pulso. Nació par
 ## 5. Lo demás (2 min)
 
 - **Historial y «Tu progreso»:** evolución del pulso, la variación entre latidos y la autovaloración entre sesiones (necesita sesiones medidas guardadas).
+- **«Lo que te funciona» y «Para ti»:** comparaciones locales con al menos cinco sesiones válidas por opción. Si las sesiones antiguas no tenían contexto, explicar el estado sin datos en vez de inventar preferencias. Con cuenta y consentimiento, pedir la explicación automática de las cifras; ante un fallo se mantienen las observaciones locales.
+- **Una nota en el resumen:** escribirla, guardar, recargar y quitarla. El texto queda solo en este dispositivo.
+- **«Tengo 3 minutos»:** entrada rápida desde Inicio con las últimas elecciones; mantiene advertencias, inicio manual y calibración de tres minutos.
 - **Informe** imprimible desde «Tu progreso».
-- **Perfil:** tema e idioma, recordatorio para el calendario, privacidad y «Ayuda a mejorar la app» (grabación guiada para reentrenar el clasificador).
+- **Perfil:** tema e idioma, recordatorio que abre un borrador de Google Calendar para revisar y guardar (archivo como alternativa), privacidad y «Ayuda a mejorar la app» (grabación guiada para reentrenar el clasificador).
 - **Para dormir:** una sesión con «Descansar antes de dormir» atenúa la pantalla a los 20 s y se apaga sola al final.
 
 ## Preguntas que suelen salir

@@ -1,7 +1,8 @@
 import { isRating, isSessionRecord, MAX_RATING, MIN_RATING, readSessionRecord, type SessionRecord } from './sessionRecord';
+import { isSessionNote } from './sessionContext';
 
 /** Why the local history failed; the interface turns each code into a sentence. */
-export const SESSION_STORE_ERROR_CODES = ['invalid_record', 'invalid_rating', 'not_found', 'access_failed', 'open_failed'] as const;
+export const SESSION_STORE_ERROR_CODES = ['invalid_record', 'invalid_rating', 'invalid_note', 'not_found', 'access_failed', 'open_failed'] as const;
 
 export type SessionStoreErrorCode = (typeof SESSION_STORE_ERROR_CODES)[number];
 
@@ -26,6 +27,8 @@ export interface SessionStore {
   /** All valid sessions, newest first. */
   list(): Promise<SessionRecord[]>;
   setRatingAfter(id: string, rating: number | null): Promise<SessionRecord>;
+  /** Saves or removes a local note, without sending it to the cloud. */
+  setNote(id: string, note: string): Promise<SessionRecord>;
   delete(id: string): Promise<void>;
   clear(): Promise<void>;
 }
@@ -40,6 +43,8 @@ abstract class ValidatingStore implements SessionStore {
   protected abstract read(id: string): Promise<unknown>;
   protected abstract readAll(): Promise<unknown[]>;
   protected abstract write(record: SessionRecord): Promise<void>;
+  /** Read-modify-write must be atomic so a note and a synced rating cannot erase one another. */
+  protected abstract update(id: string, change: (record: SessionRecord) => SessionRecord): Promise<SessionRecord>;
   abstract delete(id: string): Promise<void>;
   abstract clear(): Promise<void>;
 
@@ -60,11 +65,12 @@ abstract class ValidatingStore implements SessionStore {
     if (!isRating(rating)) {
       throw new SessionStoreError('invalid_rating', `The rating must be a whole number from ${String(MIN_RATING)} to ${String(MAX_RATING)}.`);
     }
-    const record = await this.get(id);
-    if (record === null) throw new SessionStoreError('not_found', `Session ${id} was not found.`);
-    const updated = { ...record, ratingAfter: rating };
-    await this.write(updated);
-    return updated;
+    return this.update(id, (record) => ({ ...record, ratingAfter: rating }));
+  }
+
+  async setNote(id: string, note: string): Promise<SessionRecord> {
+    if (!isSessionNote(note)) throw new SessionStoreError('invalid_note', 'The note exceeds its length limit.');
+    return this.update(id, (record) => ({ ...record, note: note.trim() }));
   }
 }
 
@@ -83,6 +89,14 @@ export class MemorySessionStore extends ValidatingStore {
   protected write(record: SessionRecord): Promise<void> {
     this.#records.set(record.id, structuredClone(record));
     return Promise.resolve();
+  }
+
+  protected update(id: string, change: (record: SessionRecord) => SessionRecord): Promise<SessionRecord> {
+    const record = readSessionRecord(this.#records.get(id));
+    if (record === null) return Promise.reject(new SessionStoreError('not_found', 'The session no longer exists.'));
+    const updated = change(record);
+    this.#records.set(id, structuredClone(updated));
+    return Promise.resolve(updated);
   }
 
   delete(id: string): Promise<void> {
@@ -149,6 +163,31 @@ export class IndexedDbSessionStore extends ValidatingStore {
 
   protected async write(record: SessionRecord): Promise<void> {
     await requestResult((await this.#store('readwrite')).put(record));
+  }
+
+  protected async update(id: string, change: (record: SessionRecord) => SessionRecord): Promise<SessionRecord> {
+    const store = await this.#store('readwrite');
+    return new Promise((resolve, reject) => {
+      let updated: SessionRecord | null = null;
+      let failure: SessionStoreError | null = null;
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const record = readSessionRecord(request.result);
+        if (record === null) {
+          failure = new SessionStoreError('not_found', 'The session no longer exists.');
+          store.transaction.abort();
+          return;
+        }
+        updated = change(record);
+        store.put(updated);
+      };
+      store.transaction.oncomplete = () => {
+        if (updated !== null) resolve(updated);
+      };
+      store.transaction.onabort = () => {
+        reject(failure ?? new SessionStoreError('access_failed', 'Could not update the local session.', { cause: store.transaction.error }));
+      };
+    });
   }
 
   async delete(id: string): Promise<void> {

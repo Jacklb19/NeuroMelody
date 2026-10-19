@@ -10,19 +10,29 @@ import { useSessionStore } from './sessionStoreContext';
  * (home, profile) show activity, and the history explains real failures.
  */
 export function useSessionRecords(): readonly SessionRecord[] | null {
+  return useSessionHistory().records;
+}
+
+/** Comparisons distinguish an unreadable store from a history with no sessions. */
+export function useSessionHistory(): { readonly records: readonly SessionRecord[] | null; readonly failure: { readonly cause: unknown } | null } {
   const store = useSessionStore();
   // A sync that brought or removed sessions makes the list be read again.
   const { revision } = useCloudSync();
-  const [records, setRecords] = useState<readonly SessionRecord[] | null>(null);
+  const [loaded, setLoaded] = useState<{
+    readonly store: typeof store;
+    readonly revision: number;
+    readonly records: readonly SessionRecord[];
+    readonly failure: { readonly cause: unknown } | null;
+  } | null>(null);
   useEffect(() => {
     let cancelled = false;
     store.list().then(
-      (list) => { if (!cancelled) setRecords(list); },
-      () => { if (!cancelled) setRecords([]); },
+      (records) => { if (!cancelled) setLoaded({ store, revision, records, failure: null }); },
+      (cause: unknown) => { if (!cancelled) setLoaded({ store, revision, records: [], failure: { cause } }); },
     );
     return () => { cancelled = true; };
   }, [store, revision]);
-  return records;
+  return loaded?.store === store && loaded.revision === revision ? loaded : { records: null, failure: null };
 }
 
 /** Activity at a glance. */
