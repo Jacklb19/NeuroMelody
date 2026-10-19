@@ -348,6 +348,14 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Resultado | Ninguna tarea larga desde que se conecta el pulso hasta que se detiene la música (46 s con los detalles técnicos abiertos); la única queda al cargar la pantalla, antes de tocar nada. Con la música sonando: proceso gráfico de 73 % a 19–24 % de un núcleo y página de 48 % a 31–33 %. Paquete principal de 545 kB a 321 kB (de 168 kB a 100 kB comprimido). Abrir la salida de audio por adelantado provocó al principio un corte de 20 ms al arrancar en navegadores que la dejan sonar sin gesto; se corrigió pausándola hasta montar el motor, y la prueba de 30 minutos pasó sin ningún corte. |
 | Pendiente | RNF-05 pide 35 % de un núcleo en un equipo de gama media: aquí la suma es ≈ 50 % con una pantalla de 130 Hz (la mitad de los fotogramas en una de 60 Hz), pero falta medirlo en un celular. La prueba manual con lector de pantalla sigue pendiente. |
 
+## ADR-45. «Lo que hizo la música» se guarda con la sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). |
+| Decisión | El relato de la música (ritmo al empezar y al terminar, y cada cambio de escalón con su minuto) se guarda con la sesión en el dispositivo y aparece en su resumen. Reemplaza el «no se guarda» de ADR-42. |
+| Consecuencias | Solo vive en el dispositivo: la copia de la sesión en la nube no lo lleva (el contrato de la API no cambia), así que una sesión traída de otro dispositivo no lo muestra. Las sesiones anteriores tampoco lo tienen. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

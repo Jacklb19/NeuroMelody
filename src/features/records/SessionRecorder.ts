@@ -1,5 +1,6 @@
 import type { SourceKind } from '../acquisition/sourceCatalog';
 import type { ActivationState } from '../adaptation/activationStates';
+import type { MusicRecap } from '../adaptation/AdaptationSession';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { COMPUTE_PERIOD_S } from '../signal/processing/thresholds';
 import { MS_PER_SECOND } from '../../shared/time';
@@ -76,8 +77,12 @@ export class SessionRecorder {
     });
   }
 
-  /** Ends the session; returns `null` when none was running. */
-  finish(listenedSeconds: number): SessionRecord | null {
+  /**
+   * Ends the session; returns `null` when none was running.
+   *
+   * @param music What the music did, kept with the session when there is a story to tell (ADR-42).
+   */
+  finish(listenedSeconds: number, music: MusicRecap | null = null): SessionRecord | null {
     const session = this.#session;
     if (session === null) return null;
     this.#session = null;
@@ -93,6 +98,7 @@ export class SessionRecorder {
       ratingBefore: session.ratingBefore,
       ratingAfter: null,
       samples: session.samples,
+      ...(music === null ? {} : { music }),
     };
   }
 }
