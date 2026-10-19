@@ -3,8 +3,8 @@ import { MS_PER_SECOND, SECONDS_PER_MINUTE } from '../../shared/time';
 /**
  * Session reminder (ADR-33, item 6; ADR-43). A web page cannot ring at a
  * set time on every phone without a server that pushes notifications, so the
- * reminder is handed to the person's own calendar as an iCalendar file
- * (RFC 5545) with a weekly repeating event and an alarm.
+ * reminder is reviewed and saved in Google Calendar, with an iCalendar file
+ * (RFC 5545) as an alternative for other calendars.
  */
 
 /** Days of the week in calendar order, as iCalendar names them in BYDAY. */
@@ -35,6 +35,8 @@ const CRLF = '\r\n';
 /** Day of `Date.getDay()` (Sunday is 0) of each weekday. */
 const JS_DAY: Readonly<Record<WeekdayId, number>> = { MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6, SU: 0 };
 const DAYS_IN_A_WEEK = 7;
+/** Opens a draft in Google's own calendar; the person reviews and saves it there. */
+const GOOGLE_CALENDAR_URL = 'https://calendar.google.com/calendar/render';
 
 export function isValidTime(value: unknown): value is string {
   return typeof value === 'string' && TIME_PATTERN.test(value);
@@ -79,6 +81,20 @@ function floating(date: Date): string {
 
 function utc(date: Date): string {
   return `${String(date.getUTCFullYear())}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+}
+
+/** A prefilled calendar draft. Notifications are reviewed in Calendar before saving. */
+export function buildGoogleCalendarUrl(reminder: Reminder, text: CalendarText, appUrl: string, now: Date, timeZone: string): string {
+  const start = firstOccurrence(reminder, now);
+  const end = new Date(start.getTime() + REMINDER_EVENT_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND);
+  const url = new URL(GOOGLE_CALENDAR_URL);
+  url.searchParams.set('action', 'TEMPLATE');
+  url.searchParams.set('text', text.title);
+  url.searchParams.set('details', `${text.description}\n${appUrl}`);
+  url.searchParams.set('dates', `${utc(start)}/${utc(end)}`);
+  url.searchParams.set('ctz', timeZone);
+  url.searchParams.set('recur', `RRULE:FREQ=WEEKLY;BYDAY=${reminder.days.join(',')}`);
+  return url.toString();
 }
 
 /** The first moment at or after `now` that falls on a chosen day at the chosen time. */

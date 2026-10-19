@@ -12,9 +12,10 @@ export const reminders = {
     SA: { short: 'Sa', long: 'Saturday' },
     SU: { short: 'Su', long: 'Sunday' },
   },
-  explanation: 'Your calendar will remind you: download the reminder and open it to add it. The app cannot alert you by itself on every phone.',
+  explanation: 'Open Google Calendar with your chosen time and days. Review the recurrence and notification, then press Save there. Each opening creates a new draft; to change a saved event, edit it in your calendar.',
   noDays: 'Pick at least one day to create the reminder.',
-  download: 'Add to my calendar',
+  openGoogle: 'Open Google Calendar',
+  download: 'Download for another calendar',
   /** What the calendar event says. */
   calendar: {
     title: 'NeuroMelody session',

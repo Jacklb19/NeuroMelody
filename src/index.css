@@ -95,11 +95,9 @@
   --dimmer-fade: 1.5s;
   --stop-reserve: 6rem;
   --motion-duration: 160ms;
-  /* Slides of the session (ADR-47): how long and how far a slide moves, and its curve. */
-  --slide-duration: 480ms;
-  --slide-distance: 3rem;
-  --slide-easing: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --slide-stagger: 70ms;
+  /* Slides of the session (ADR-47): a single crossfade between steps. */
+  --slide-duration: 240ms;
+  --slide-easing: ease-in-out;
 
   /* Landing page (ADR-28): a night forest around the beating staff, then the app's paper. */
   --landing-night: #0c1a15;
@@ -291,7 +289,7 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
 .pill-button-large { min-height: var(--stop-height); padding: 0 var(--space-8); font-size: var(--text-base); }
 .pill-button-primary { background: var(--color-accent); color: var(--color-button-text); box-shadow: var(--glow-accent); }
 .pill-button-primary:hover:not(:disabled) { background: var(--color-button-hover); color: var(--color-button-text); transform: translateY(-1px); }
-.pill-button-primary:disabled { background: var(--color-surface); color: var(--color-text-muted); border-color: var(--color-border-subtle); box-shadow: none; }
+.pill-button-primary:disabled, .pill-button-primary[aria-disabled='true'] { background: var(--color-surface); color: var(--color-text-muted); border-color: var(--color-border-subtle); box-shadow: none; cursor: default; }
 .pill-button-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
 .pill-button-ghost:hover:not(:disabled) { background: var(--color-paper); color: var(--color-text); }
 .pill-button-block { width: 100%; }
