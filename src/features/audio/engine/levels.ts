@@ -6,7 +6,7 @@ import { MODE, type Mode } from '../core/theory';
  * climbs one step at a time (ADR-12). Initial values approved in S3; they are
  * tuned with listeners when S4 closes. Their names live in the dictionary.
  */
-export const LEVEL_IDS = ['high', 'intermediate', 'target'] as const;
+export const LEVEL_IDS = ['high', 'intermediate', 'target', 'sleep'] as const;
 
 export type LevelId = (typeof LEVEL_IDS)[number];
 
@@ -47,10 +47,22 @@ export const LEVELS: Readonly<Record<LevelId, MusicLevel>> = {
     brightnessHz: 2000,
     reverb: 0.5,
   },
+  // One step past the target, reached only by the program for falling asleep (ADR-41).
+  sleep: {
+    id: 'sleep',
+    tempo: 50,
+    mode: MODE.deepDrone,
+    layers: 2,
+    brightnessHz: 1200,
+    reverb: 0.55,
+  },
 };
 
-/** Every session starts here and stays here while calibrating (ADR-12). */
+/** A session starts here, and stays here while calibrating, unless its program says otherwise (ADR-12, ADR-38). */
 export const CALIBRATION_LEVEL: LevelId = 'intermediate';
+
+/** Where the guidance leads unless a program stops earlier or, to fall asleep, goes one step further (ADR-38, ADR-41). */
+export const TARGET_LEVEL: LevelId = 'target';
 
 /** One step closer to the target; `null` at the target. */
 export function nextLevel(id: LevelId): LevelId | null {

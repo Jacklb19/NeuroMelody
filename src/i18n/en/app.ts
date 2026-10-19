@@ -9,8 +9,7 @@ export const app = {
   /** Labels of the main navigation; keys mirror `NAVIGATION_ITEMS`. */
   navigation: {
     home: 'Home',
-    plan: 'Plan',
-    session: 'Session',
+    plan: 'New session',
     history: 'History',
   },
   /** Accessible name of the avatar that opens the profile. */
@@ -20,7 +19,7 @@ export const app = {
     theme: {
       label: 'Theme',
       /** Keys mirror `ThemePreference`. */
-      options: { system: 'Same as system', light: 'Light', dark: 'Dark' },
+      options: { system: 'System', light: 'Light', dark: 'Dark' },
       /** Name of the header button, by the theme it switches to. */
       switchTo: { light: 'Switch to light theme', dark: 'Switch to dark theme' },
     },

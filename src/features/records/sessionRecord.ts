@@ -1,5 +1,7 @@
 import { SOURCE_KIND_IDS, type SourceKind } from '../acquisition/sourceCatalog';
 import { ACTIVATION_STATE_IDS, type ActivationState } from '../adaptation/activationStates';
+import type { MusicRecap } from '../adaptation/AdaptationSession';
+import { LEVEL_IDS } from '../audio/engine/levels';
 import { isGoalId, type GoalId } from '../plan/goalCatalog';
 import { isUuid } from './uuidv7';
 
@@ -35,6 +37,11 @@ export interface SessionRecord {
   readonly ratingBefore: number | null;
   readonly ratingAfter: number | null;
   readonly samples: readonly SessionSample[];
+  /**
+   * What the music did (ADR-42). Kept on the device only: the cloud copy of a
+   * session does not carry it, so sessions brought from the cloud have none.
+   */
+  readonly music?: MusicRecap;
 }
 
 /** Bounds of the optional self-rating scale (ADR-23); every check and text about the range reads them. */
@@ -64,6 +71,19 @@ function isSample(value: unknown): value is SessionSample {
     && typeof value.goodQuality === 'boolean';
 }
 
+const isTempoOrNull = (value: unknown): boolean => value === null || (isFiniteNumber(value) && value > 0);
+
+function isMusicRecap(value: unknown): value is MusicRecap {
+  return isRecord(value)
+    && isTempoOrNull(value.startTempoBpm)
+    && isTempoOrNull(value.endTempoBpm)
+    && Array.isArray(value.steps)
+    && value.steps.every((step: unknown) => isRecord(step)
+      && isFiniteNumber(step.atS) && step.atS >= 0
+      && LEVEL_IDS.some((level) => level === step.level)
+      && typeof step.calmer === 'boolean');
+}
+
 /**
  * Reads a stored record: records saved before goals existed get none, then
  * the whole record is validated. Returns `null` for anything unusable.
@@ -89,5 +109,6 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && (value.sourceKind === null || SOURCE_KIND_IDS.some((kind) => kind === value.sourceKind))
     && isRating(value.ratingBefore)
     && isRating(value.ratingAfter)
-    && Array.isArray(value.samples) && value.samples.every(isSample);
+    && Array.isArray(value.samples) && value.samples.every(isSample)
+    && (value.music === undefined || isMusicRecap(value.music));
 }

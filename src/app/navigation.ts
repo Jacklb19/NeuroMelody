@@ -8,13 +8,13 @@ export interface NavigationItem {
 }
 
 /**
- * Screens of the main navigation, in order (docs/pantallas.md). The profile
- * is reached from the avatar; diagnostics is a technical tool reached by its
- * route.
+ * Screens of the main navigation, in order (docs/pantallas.md). A session is
+ * not an entry of its own: it is reached by preparing it, so nobody lands on
+ * one without having chosen anything. The profile is reached from the avatar;
+ * diagnostics is a technical tool reached by its route.
  */
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   { route: ROUTES.app, labelKey: 'home' },
   { route: ROUTES.plan, labelKey: 'plan' },
-  { route: ROUTES.session, labelKey: 'session' },
   { route: ROUTES.history, labelKey: 'history' },
 ];

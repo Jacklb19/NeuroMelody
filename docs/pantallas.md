@@ -59,6 +59,22 @@ De arriba abajo:
 
 Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
 
+### Cambios de ADR-42 (13 oct 2026)
+
+- **Navegación de la app:** Inicio, Nueva sesión (`/plan`) e Historial. `/session` no está en la navegación: se llega preparando la sesión, o con «Repetir la última» desde el inicio.
+- **Inicio (`/app`):** la tarjeta principal lleva a preparar la sesión («Preparar mi sesión») y, si ya hay sesiones, ofrece «Repetir la última». Debajo, las cinco intenciones con una línea que dice qué hace la música con cada una.
+- **`/session`, de arriba abajo:** (1) antes de la primera nota, los tres pasos «Antes de empezar» con su estado; (2) «Cómo se mide tu pulso», plegable, con el panel de la fuente dentro: abierto al llegar, se pliega solo cuando la música suena con el pulso conectado; (3) el escenario de escucha, que mientras suena añade el recorrido de la música, su ritmo y «¿Qué significa?» junto al estado estimado, y al terminar «Lo que hizo la música»; (4) los detalles técnicos, plegados.
+
+### `/session` en diapositivas (ADR-47, 18 oct 2026)
+
+Sustituye la organización de arriba. La sesión es un recorrido de tres diapositivas que se deslizan con una animación suave (sin animación con «reducir movimiento»):
+
+1. **Tu pulso:** el panel de la fuente de señal, con el modo de prueba. Al conectarse, la diapositiva pasa sola a la siguiente. «Seguir sin medir mi pulso» permite avanzar igualmente (la música suena pero no se adapta).
+2. **Cómo llegas:** el pulso en vivo, que late con cada latido, el resumen de lo elegido (intención, sonido y ambiente) y la autovaloración opcional. «Iniciar música» empieza la sesión y lleva a la siguiente.
+3. **Escuchando:** el escenario de siempre (orbe, frase, recorrido de la música, estado estimado, controles y progreso) y, al terminar, el aviso de guardado y «Lo que hizo la música».
+
+Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página.
+
 ## Modo de prueba (simulador y registros de ejemplo)
 
 El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.
@@ -84,9 +100,31 @@ Vive en el escenario de escucha, bajo el orbe. No añade ruta ni pantalla.
 
 En `/plan`, antes de la duración, un grupo de casillas opcionales con los objetivos del catálogo (`goalCatalog.ts`): Relajarme, Descansar antes de dormir, Recuperar la calma después de una actividad, Acompañar una respiración lenta y Tomar una pausa para mí. Viajan a `/session` en el parámetro `goals`, se guardan con la sesión y aparecen en el resumen y en el historial («Sin objetivos elegidos» si no hay).
 
+Desde ADR-38 se elige **uno solo** (marcar otro reemplaza al anterior; desmarcarlo deja la sesión sin objetivo) y ese objetivo decide el programa de la sesión: en qué nivel empieza la música, hasta dónde baja y si la respiración guiada empieza encendida. La tarjeta «Tu sesión» lo cuenta con una frase bajo el objetivo y nombra el nivel de los primeros minutos.
+
+## Sesión para dormir (ADR-41)
+
+Con el objetivo «Descansar antes de dormir», `/session` cambia en dos cosas. Tras 20 segundos sin tocar la pantalla, una capa oscura la cubre con el texto «Pantalla atenuada para dormir. Toca para verla.»; cualquier toque o tecla la quita, y «Detener» sigue visible encima. Al acabar el plan no hay aviso: la música se apaga sola y la sesión queda terminada.
+
+## Recordatorio en el perfil (ADR-33, 6; ADR-43)
+
+En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Privacidad y datos». No añade ruta.
+
+- **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
+- **Qué hace:** «Añadir a mi calendario» descarga un archivo de calendario (`.ics`) con una cita que se repite esos días a esa hora, con aviso y el enlace a la app. Al abrirlo, el calendario del teléfono o del ordenador lo añade y es el que avisa.
+- **Por qué así:** una página web no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones. La tarjeta lo explica en una línea. Sin días marcados, el botón queda desactivado y lo dice.
+
+## Sonido de la sesión (ADR-46)
+
+En `/plan`, después de la duración y antes del ambiente: «¿Con qué sonido?», tres tarjetas con icono (Cálido, Piano, Cuencos). Empieza en el último elegido en el dispositivo; la tarjeta «Tu sesión» dice «Sonido: …» y la elección viaja a `/session` en el parámetro `instrument`.
+
+## Ambiente de la sesión (ADR-40)
+
+En `/plan`, después del sonido: «¿Con qué ambiente?», cuatro tarjetas con icono (Solo música, Lluvia, Mar, Viento). Empieza en el último elegido en el dispositivo. La tarjeta «Tu sesión» lo nombra («Con lluvia de fondo») y la elección viaja a `/session` en el parámetro `ambience`. No añade pantalla ni se guarda con la sesión.
+
 ## `/summary/:id` y `/history` (S6.1, solo en el dispositivo)
 
-- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
+- **Resumen:** fecha, tiempo escuchado frente al plan, objetivos elegidos, valoración al terminar si falta, indicadores al inicio y al final (promedio de hasta 15 s de buena calidad), tendencia de la variabilidad, tiempo en cada estado estimado y descarga en CSV. Desde ADR-45, tras el tiempo en cada estado, «Lo que hizo la música» si la sesión lo guardó. Al final, «Tu sesión en pocas palabras»: el texto del modelo de lenguaje (ver «Modelo de lenguaje»).
 - **Historial:** sesiones de la más reciente a la más antigua, con valoraciones y cambios de frecuencia y variabilidad, una tarjeta que lleva a «Tu progreso» y borrado de una sesión o de todo el historial, siempre con confirmación.
 - Sin cuenta, todo vive en IndexedDB. Con cuenta, verificación en dos pasos y consentimiento, las sesiones se sincronizan con la nube (ver «Sincronización»). El estado lo estima el clasificador entrenado, con las reglas como respaldo (ADR-32).
 

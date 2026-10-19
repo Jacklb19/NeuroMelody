@@ -1,15 +1,21 @@
 import { MS_PER_SECOND } from '../../../shared/time';
+import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from '../core/instrumentCatalog';
 import { dbToGain, gainToDb } from '../core/decibels';
 import { TelemetryReader } from '../telemetry/telemetryRing';
 import {
   CLIPPER_NAME,
+  MAX_TEMPO_BPM,
+  MIN_TEMPO_BPM,
   SYNTHESIZER_NAME,
+  SYNTHESIZER_OUTPUT,
+  SYNTHESIZER_OUTPUT_COUNT,
   type ParamName,
   type ClipperOptions,
   type SynthesizerOptions,
 } from '../worklet/workletContract';
 import { readPlaybackStats, type PlaybackStatistics } from './playbackStats';
-import { LEVELS, type LevelId } from './levels';
+import { LEVEL_IDS, LEVELS, type LevelId } from './levels';
 import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 import { AudioEngineError } from './AudioEngineError';
@@ -25,7 +31,7 @@ const VOLUME_SMOOTHING_S = 0.05;
 /** Limiter at the end of the chain (before the −1 dBFS clipper). */
 export const LIMITER = { thresholdDb: -6, ratio: 20, kneeDb: 0, attackS: 0.003, releaseS: 0.25 } as const;
 /** Resonance (`Q`) of the brightness low-pass filter. */
-const BRIGHTNESS_FILTER_Q = 0.5;
+export const BRIGHTNESS_FILTER_Q = 0.5;
 /** The whole chain is stereo. */
 const OUTPUT_CHANNELS = 2;
 
@@ -55,11 +61,23 @@ export interface AudioFactory {
   createTelemetryBuffer(): SharedArrayBuffer | null;
   createAudioElement(): HTMLAudioElement;
   wait(ms: number): Promise<void>;
+  /**
+   * Opens the audio output ahead of the first start. Opening it can block the
+   * page for a fifth of a second; done while the session screen loads, the
+   * press on "start" no longer waits for it (RNF-04).
+   */
+  prewarm?(): void;
+  /** Closes an output opened by `prewarm` that no session used. */
+  release?(): void;
 }
 
 export interface EngineOptions {
   readonly seed: number;
   readonly initialLevel: LevelId;
+  /** Ambience under the music (ADR-40); music alone when omitted. */
+  readonly ambience?: AmbienceId;
+  /** Instrument the music is played with (ADR-46); the warm sound when omitted. */
+  readonly instrument?: InstrumentId;
   /**
    * Media Session fallback: the output goes through an `<audio>` element.
    * With it, `playbackStats` no longer measures what is actually heard.
@@ -120,6 +138,8 @@ function hold(param: AudioParam, t: number): number {
  *
  * synthesizer → low-pass (brightness) → dry + reverb → volume →
  * session envelope → limiter → clipper (−1 dBFS) → output
+ *
+ * The ambience leaves the synthesizer on a second output and joins at the volume.
  */
 export class AudioEngine {
   readonly #context: AudioContext;
@@ -129,6 +149,13 @@ export class AudioEngine {
   readonly #audioElement: HTMLAudioElement | null;
   #state: EngineState = 'ready';
   #level: LevelId;
+  /** Tempo of each level in this session: the catalogue's until the person's pulse moves them (ADR-39). */
+  #tempos: Readonly<Record<LevelId, number>> = {
+    high: LEVELS.high.tempo,
+    intermediate: LEVELS.intermediate.tempo,
+    target: LEVELS.target.tempo,
+    sleep: LEVELS.sleep.tempo,
+  };
 
   private constructor(
     context: AudioContext,
@@ -149,6 +176,9 @@ export class AudioEngine {
   /** Creates the context, loads the worklet modules and builds the graph (silent). */
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
+    // An output opened ahead of time may already be running (some browsers allow it without a gesture):
+    // it is paused while the graph is built, so the audio thread never renders a half-built chain.
+    if (context.state === 'running') await context.suspend();
     for (const moduleUrl of factory.modules) {
       await context.audioWorklet.addModule(moduleUrl);
     }
@@ -158,17 +188,21 @@ export class AudioEngine {
       seed: options.seed,
       initialMode: level.mode,
       initialLayers: level.layers,
+      ambience: options.ambience ?? DEFAULT_AMBIENCE_ID,
+      instrument: options.instrument ?? DEFAULT_INSTRUMENT_ID,
     };
     const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [OUTPUT_CHANNELS],
+      numberOfOutputs: SYNTHESIZER_OUTPUT_COUNT,
+      outputChannelCount: [OUTPUT_CHANNELS, OUTPUT_CHANNELS],
       processorOptions: synthesizerOptions,
     });
     getParam(synthesizer, 'tempo').value = level.tempo;
     getParam(synthesizer, 'mode').value = level.mode;
     getParam(synthesizer, 'layers').value = level.layers;
 
+    // Each heavy step runs in its own task, so none of them holds the page for long (RNF-04).
+    await factory.wait(0);
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.value = BRIGHTNESS_FILTER_Q;
@@ -179,6 +213,7 @@ export class AudioEngine {
     const response = context.createBuffer(OUTPUT_CHANNELS, left.length, context.sampleRate);
     response.copyToChannel(left, 0);
     response.copyToChannel(right, 1);
+    await factory.wait(0);
     reverb.buffer = response;
 
     const wet = context.createGain();
@@ -204,7 +239,10 @@ export class AudioEngine {
       processorOptions: clipperOptions,
     });
 
-    synthesizer.connect(filter);
+    synthesizer.connect(filter, SYNTHESIZER_OUTPUT.music);
+    // The ambience skips the brightness filter and the reverb, and joins before the
+    // volume: the volume control, the stop and the output limits apply to it too.
+    synthesizer.connect(volume, SYNTHESIZER_OUTPUT.ambience);
     filter.connect(volume);
     filter.connect(reverb);
     reverb.connect(wet);
@@ -279,10 +317,7 @@ export class AudioEngine {
     const t = this.#context.currentTime;
     const { synthesizer, filter, wet } = this.#nodes;
 
-    const tempo = getParam(synthesizer, 'tempo');
-    const from = hold(tempo, t);
-    const duration = tempoRampDurationS(from, level.tempo);
-    tempo.linearRampToValueAtTime(level.tempo, t + duration);
+    const duration = this.#rampTempo(this.#tempos[id]);
 
     hold(getParam(synthesizer, 'mode'), t);
     getParam(synthesizer, 'mode').setValueAtTime(level.mode, t);
@@ -295,6 +330,31 @@ export class AudioEngine {
     wet.gain.linearRampToValueAtTime(level.reverb, t + TIMBRE_RAMP_DURATION_S);
 
     this.#level = id;
+    return duration;
+  }
+
+  /**
+   * Replaces the tempo of every level for this session and leads the current
+   * one to its new value with the same gradual ramp as a level change.
+   */
+  setTempos(tempos: Readonly<Record<LevelId, number>>): void {
+    for (const id of LEVEL_IDS) {
+      const tempo = tempos[id];
+      if (!Number.isFinite(tempo) || tempo < MIN_TEMPO_BPM || tempo > MAX_TEMPO_BPM) {
+        throw new RangeError(`Tempo out of range for ${id}: ${String(tempo)}`);
+      }
+    }
+    this.#tempos = { ...tempos };
+    this.#rampTempo(this.#tempos[this.#level]);
+  }
+
+  /** Ramps the tempo from its current value over max(20 s, |ΔBPM| × 2 s) and returns that duration. */
+  #rampTempo(to: number): number {
+    const t = this.#context.currentTime;
+    const tempo = getParam(this.#nodes.synthesizer, 'tempo');
+    const from = hold(tempo, t);
+    const duration = tempoRampDurationS(from, to);
+    tempo.linearRampToValueAtTime(to, t + duration);
     return duration;
   }
 
@@ -333,15 +393,16 @@ export class AudioEngine {
    * (end of session without an answer). It happens even when the tab is in
    * the background.
    *
+   * @param fadeS Length of the fade; a session for falling asleep takes a much longer one.
    * @returns the instant (audio clock) at which the fade ends.
    */
-  scheduleFinalFade(inSeconds: number): number {
+  scheduleFinalFade(inSeconds: number, fadeS: number = FINAL_FADE_S): number {
     // Only schedules ahead: it does not cancel the start fade if it is still running.
     const startTime = this.#context.currentTime + Math.max(0, inSeconds);
     const envelope = this.#nodes.envelope.gain;
     envelope.setValueAtTime(1, startTime);
-    envelope.linearRampToValueAtTime(0, startTime + FINAL_FADE_S);
-    return startTime + FINAL_FADE_S;
+    envelope.linearRampToValueAtTime(0, startTime + fadeS);
+    return startTime + fadeS;
   }
 
   /** Cancels a scheduled final fade and returns to full level over 2 s. */

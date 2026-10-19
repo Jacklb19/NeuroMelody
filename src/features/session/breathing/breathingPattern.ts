@@ -1,4 +1,3 @@
-import type { GoalId } from '../../plan/goalCatalog';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
 
 /**
@@ -9,9 +8,6 @@ import { SECONDS_PER_MINUTE } from '../../../shared/time';
 export const INHALE_BEATS = 4;
 export const EXHALE_BEATS = 6;
 export const BREATH_CYCLE_BEATS = INHALE_BEATS + EXHALE_BEATS;
-
-/** The goal of the plan that turns the guide on from the start. */
-export const BREATHING_GOAL: GoalId = 'slow_breathing';
 
 export const BREATH_PHASE_IDS = ['inhale', 'exhale'] as const;
 

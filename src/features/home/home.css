@@ -20,6 +20,7 @@
 .section-link { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-strong); text-decoration: none; }
 .goal-shortcuts { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-4); }
 .goal-shortcuts .goal-shortcut { height: 100%; display: grid; align-content: start; font-weight: var(--font-weight-strong); }
+.goal-tagline { margin-top: var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); }
 .goal-shortcut:hover .icon-badge { background: var(--color-accent); color: var(--color-button-text); }
 .goal-shortcut .icon-badge { transition: background var(--motion-duration), color var(--motion-duration); }
 

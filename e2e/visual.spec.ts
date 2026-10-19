@@ -46,8 +46,6 @@ for (const width of [360, 768, 1280]) {
     const stop = page.getByRole('button', { name: playback.stop, exact: true });
     await expect(stop).toBeVisible();
     await expect(stop).toBeDisabled();
-    await expect(page.getByText(es.session.stage.modelReady)).toBeVisible();
-    await expect(page.getByTestId('activation-state')).toHaveText(es.adaptation.states.calibrating);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
     await page.screenshot({ path: testInfo.outputPath('session-empty.png'), fullPage: true });
@@ -56,6 +54,9 @@ for (const width of [360, 768, 1280]) {
     await page.getByRole('button', { name: acquisition.connect.simulator }).click();
     await page.getByRole('button', { name: playback.start }).click();
     await expect(stop).toBeEnabled();
+    // The estimated state is part of the listening slide (ADR-47).
+    await expect(page.getByText(es.session.stage.modelReady)).toBeVisible();
+    await expect(page.getByTestId('activation-state')).toHaveText(es.adaptation.states.calibrating);
     await page.getByText(es.session.technicalDetails.title, { exact: true }).click();
     await expect(page.getByTestId('rmssd')).not.toHaveText(es.common.noValue, { timeout: 15_000 });
     await page.getByTestId('discarded-beats').scrollIntoViewIfNeeded();
@@ -109,6 +110,8 @@ test('loading and error messages remain usable on a narrow screen', async ({ pag
     acquisition.sourceErrors.recording(acquisition.recordingErrors.load_failed),
   );
   await expect(page.getByRole('combobox', { name: acquisition.recordingLabel, exact: true })).toBeEnabled();
+  // Without a pulse the session can still go on to start the music (ADR-47).
+  await page.getByRole('button', { name: es.session.slides.withoutPulse }).click();
   await page.getByRole('button', { name: playback.start }).click();
   await expect(page.getByText(playback.states.error, { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('session-errors.png'), fullPage: true });

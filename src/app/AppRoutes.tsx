@@ -1,25 +1,33 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { ROUTE_SEGMENTS, ROUTES } from '../config/routes';
 import { WarningsPage } from '../features/warnings/WarningsPage';
 import { RequireWarnings } from '../features/warnings/RequireWarnings';
-import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { HomePage } from '../features/home/HomePage';
 import { LandingPage } from '../features/landing/LandingPage';
-import { AccountPage } from '../features/account/AccountPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { RegisterPage } from '../features/account/RegisterPage';
 import { RequireSecondStep } from '../features/account/RequireSecondStep';
 import { ResetPasswordPage } from '../features/account/ResetPasswordPage';
-import { PrivacyPage } from '../features/privacy/PrivacyPage';
 import { PlanPage } from '../features/plan/PlanPage';
-import { SessionPage } from '../features/session/SessionPage';
-import { SessionSummaryPage } from '../features/summary/SessionSummaryPage';
-import { HistoryPage } from '../features/history/HistoryPage';
-import { ProgressPage } from '../features/progress/ProgressPage';
-import { ReportPage } from '../features/report/ReportPage';
-import { CollectionPage } from '../features/collection/CollectionPage';
 import { Layout } from './Layout';
+
+/*
+ * Screens loaded when first visited (RNF-04, RNF-05): the first screen a
+ * person sees (portada, inicio, preparar, advertencias y acceso) ships with
+ * the app; the rest arrive as separate files, which the service worker keeps
+ * for offline use like any other file of the build.
+ */
+const SessionPage = lazy(() => import('../features/session/SessionPage').then((m) => ({ default: m.SessionPage })));
+const SessionSummaryPage = lazy(() => import('../features/summary/SessionSummaryPage').then((m) => ({ default: m.SessionSummaryPage })));
+const HistoryPage = lazy(() => import('../features/history/HistoryPage').then((m) => ({ default: m.HistoryPage })));
+const ProgressPage = lazy(() => import('../features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })));
+const ReportPage = lazy(() => import('../features/report/ReportPage').then((m) => ({ default: m.ReportPage })));
+const CollectionPage = lazy(() => import('../features/collection/CollectionPage').then((m) => ({ default: m.CollectionPage })));
+const DiagnosticsPage = lazy(() => import('../features/diagnostics/DiagnosticsPage').then((m) => ({ default: m.DiagnosticsPage })));
+const AccountPage = lazy(() => import('../features/account/AccountPage').then((m) => ({ default: m.AccountPage })));
+const PrivacyPage = lazy(() => import('../features/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
 
 /** react-router pattern for any path no screen claims; it leads back home. */
 const UNKNOWN_PATH = '*';
@@ -29,7 +37,9 @@ const SECOND_STEP_PATHS = [ROUTES.app];
 
 /** Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in screens have their own layouts. */
 export function AppRoutes(): React.JSX.Element {
+  // Nothing is drawn for the instant a screen takes to load: its file is usually already cached.
   return (
+    <Suspense fallback={null}>
     <Routes>
       <Route index element={<LandingPage />} />
       <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
@@ -69,5 +79,6 @@ export function AppRoutes(): React.JSX.Element {
         </Route>
       </Route>
     </Routes>
+    </Suspense>
   );
 }

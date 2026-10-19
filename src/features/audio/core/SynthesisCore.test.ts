@@ -14,22 +14,40 @@ interface Params {
   layers: number;
 }
 
+interface Stereo {
+  readonly left: Float32Array;
+  readonly right: Float32Array;
+}
+
 /** Renders `seconds` of audio block by block; `onBlock` may change the parameters. */
+function renderStereo(
+  core: SynthesisCore,
+  seconds: number,
+  params: Params,
+  onBlock?: (timeS: number, p: Params) => void,
+): Stereo {
+  const total = Math.floor((seconds * FS) / BLOCK) * BLOCK;
+  const left = new Float32Array(total);
+  const right = new Float32Array(total);
+  const blockLeft = new Float32Array(BLOCK);
+  const blockRight = new Float32Array(BLOCK);
+  for (let offset = 0; offset < total; offset += BLOCK) {
+    onBlock?.(offset / FS, params);
+    core.process(blockLeft, blockRight, params.tempo, params.mode, params.layers);
+    left.set(blockLeft, offset);
+    right.set(blockRight, offset);
+  }
+  return { left, right };
+}
+
+/** The left channel alone, for the checks that only follow the sequencer or one signal. */
 function renderAudio(
   core: SynthesisCore,
   seconds: number,
   params: Params,
   onBlock?: (timeS: number, p: Params) => void,
 ): Float32Array {
-  const total = Math.floor((seconds * FS) / BLOCK) * BLOCK;
-  const output = new Float32Array(total);
-  const block = new Float32Array(BLOCK);
-  for (let offset = 0; offset < total; offset += BLOCK) {
-    onBlock?.(offset / FS, params);
-    core.process(block, params.tempo, params.mode, params.layers);
-    output.set(block, offset);
-  }
-  return output;
+  return renderStereo(core, seconds, params, onBlock).left;
 }
 
 function rms(samples: Float32Array, from: number, to: number): number {
@@ -60,7 +78,7 @@ describe('SynthesisCore', () => {
   it('over 60 s with level changes produces no NaN, overflow or abrupt jumps', () => {
     const core = new SynthesisCore(FS, 3, MODE.majorPentatonic);
     core.setInitialLayers(3);
-    const output = renderAudio(core, 60, { tempo: 76, mode: MODE.majorPentatonic, layers: 3 }, (t, p) => {
+    const stereo = renderStereo(core, 60, { tempo: 76, mode: MODE.majorPentatonic, layers: 3 }, (t, p) => {
       if (t >= 10) {
         p.mode = MODE.lydian;
         p.layers = 2;
@@ -74,14 +92,16 @@ describe('SynthesisCore', () => {
     let max = 0;
     let maxJump = 0;
     let nonFinite = 0;
-    for (let i = 0; i < output.length; i++) {
-      const x = output[i] ?? 0;
-      if (!Number.isFinite(x)) {
-        nonFinite++;
-      }
-      max = Math.max(max, Math.abs(x));
-      if (i > 0) {
-        maxJump = Math.max(maxJump, Math.abs(x - (output[i - 1] ?? 0)));
+    for (const output of [stereo.left, stereo.right]) {
+      for (let i = 0; i < output.length; i++) {
+        const x = output[i] ?? 0;
+        if (!Number.isFinite(x)) {
+          nonFinite++;
+        }
+        max = Math.max(max, Math.abs(x));
+        if (i > 0) {
+          maxJump = Math.max(maxJump, Math.abs(x - (output[i - 1] ?? 0)));
+        }
       }
     }
     expect(nonFinite).toBe(0);
@@ -89,6 +109,16 @@ describe('SynthesisCore', () => {
     expect(max).toBeLessThan(0.8);
     // A click is a sample-to-sample jump far larger than these frequencies produce.
     expect(maxJump).toBeLessThan(0.05);
+  }, RENDER_TIMEOUT_MS);
+
+  it('spreads the sound between two channels that differ but carry a similar level', () => {
+    const core = new SynthesisCore(FS, 4, MODE.lydian);
+    core.setInitialLayers(3);
+    const { left, right } = renderStereo(core, 20, { tempo: 66, mode: MODE.lydian, layers: 3 });
+    expect(right).not.toEqual(left);
+    const balance = rms(left, 0, left.length) / rms(right, 0, right.length);
+    expect(balance).toBeGreaterThan(0.8);
+    expect(balance).toBeLessThan(1.25);
   }, RENDER_TIMEOUT_MS);
 
   it('never steals a voice in 3 minutes with all three layers at the highest tempo', () => {
@@ -127,6 +157,22 @@ describe('SynthesisCore', () => {
     renderAudio(core, FADE_DURATION_S / 2 + 1, p);
     expect(core.bankGain(1)).toBe(1);
     expect(core.bankGain(0)).toBe(0);
+  }, RENDER_TIMEOUT_MS);
+
+  it('keeps the outgoing mode playing during the crossfade and silences it afterwards', () => {
+    const core = new SynthesisCore(FS, 5, MODE.lydian);
+    core.setInitialLayers(2);
+    const p = { tempo: 60, mode: MODE.dronePentatonic as number, layers: 2 };
+    // The 16-beat cycle closes at 16 s; 20 s later the crossfade is two thirds done.
+    renderAudio(core, 36, p);
+    expect(core.activeBank).toBe(1);
+    expect(core.soundingVoices(0)).toBeGreaterThan(0);
+    expect(core.soundingVoices(1)).toBeGreaterThan(0);
+
+    // The fade ends at 46 s; the last chord of the old mode then needs its release to die away.
+    renderAudio(core, 60, p);
+    expect(core.soundingVoices(0)).toBe(0);
+    expect(core.soundingVoices(1)).toBeGreaterThan(0);
   }, RENDER_TIMEOUT_MS);
 
   it('turns layers on and off with a 30 s fade', () => {

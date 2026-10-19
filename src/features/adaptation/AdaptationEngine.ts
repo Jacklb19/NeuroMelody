@@ -1,7 +1,8 @@
-import { CALIBRATION_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
+import { CALIBRATION_LEVEL, TARGET_LEVEL, nextLevel, previousLevel, type LevelId } from '../audio/engine/levels';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import type { ActivationState } from './activationStates';
 import { predictActivation, type ActivationModel } from './classifier/activationModel';
+import { PERSONAL_TEMPO_MIN_READINGS, startTempoOffset } from './personalTempo';
 import {
   CALIBRATION_MS,
   HEART_RATE_CHANGE,
@@ -31,11 +32,24 @@ export interface AdaptationSnapshot {
   /** Calibrated probability the model gives the accepted state; `null` with the rules, which have none. */
   readonly confidence: number | null;
   readonly level: LevelId;
+  /** Beats per minute the tempo of the start level moves to meet the person's pulse (ADR-39). */
+  readonly tempoOffsetBpm: number;
   readonly waitingForDwell: boolean;
   readonly lastTransition: TransitionTiming | null;
 }
 
 export type EstimatorKind = 'model' | 'rules';
+
+/** The stretch of the ladder a session moves in (ADR-38). */
+export interface GuidanceRange {
+  /** Level the music starts at and holds while the baseline is taken. */
+  readonly startLevel: LevelId;
+  /** Calmest level the guidance advances to; it never goes past it. */
+  readonly calmestLevel: LevelId;
+}
+
+/** The whole ladder from the calibration level: the range of a session without a program. */
+export const DEFAULT_GUIDANCE_RANGE: GuidanceRange = { startLevel: CALIBRATION_LEVEL, calmestLevel: TARGET_LEVEL };
 
 /** Provisional, uncalibrated rules (ADR-12); the fallback when the trained model is unavailable. */
 export function estimateState(hr: number, rmssd: number, baseHr: number, baseRmssd: number): ActivationState {
@@ -68,15 +82,21 @@ export class AdaptationEngine {
   #consecutive = 0;
   #accepted: ActivationState | null = null;
   #recent: ActivationState[] = [];
-  #level: LevelId = CALIBRATION_LEVEL;
+  readonly #startLevel: LevelId;
+  readonly #calmestLevel: LevelId;
+  #tempoOffsetBpm = 0;
+  #level: LevelId;
   #levelStartS = 0;
   #audioTimeS = 0;
   #acceptedAtS = 0;
   #criteriaReadyS: number | null = null;
   #lastTransition: TransitionTiming | null = null;
 
-  constructor(model: ActivationModel | null = null) {
+  constructor(model: ActivationModel | null = null, range: GuidanceRange = DEFAULT_GUIDANCE_RANGE) {
     this.#model = model;
+    this.#level = range.startLevel;
+    this.#startLevel = range.startLevel;
+    this.#calmestLevel = range.calmestLevel;
   }
 
   /** Swaps the estimator, for example when the model finishes loading mid-session. */
@@ -87,9 +107,10 @@ export class AdaptationEngine {
   get snapshot(): AdaptationSnapshot {
     return { state: this.#accepted, calibrated: this.#calibrated,
       baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
+      tempoOffsetBpm: this.#tempoOffsetBpm,
       estimator: this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
-        this.#accepted !== 'high' && nextLevel(this.#level) !== null &&
+        this.#accepted !== 'high' && this.#calmerLevel() !== null &&
         this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
       lastTransition: this.#lastTransition };
   }
@@ -131,6 +152,11 @@ export class AdaptationEngine {
         }
       }
       this.#calibrated = result.timeMs >= CALIBRATION_MS && this.#count >= MIN_BASELINE_READINGS;
+      // The pulse sets the starting tempo twice: early, so the music meets the person soon, and
+      // again with the full baseline. In between it holds, so the tempo is not chased reading by reading.
+      if (this.#qualityGood && (this.#count === PERSONAL_TEMPO_MIN_READINGS || this.#calibrated)) {
+        this.#tempoOffsetBpm = startTempoOffset(this.#sumHr / this.#count, this.#startLevel);
+      }
       if (!this.#calibrated) return null;
     }
     const state = this.#qualityGood && meanHr !== null && rmssd !== null
@@ -170,8 +196,13 @@ export class AdaptationEngine {
     if (!playing || this.#criteriaReadyS === null || !this.#qualityGood) return null;
     const eligibleAtS = Math.max(this.#levelStartS + MIN_LEVEL_DURATION_S, this.#criteriaReadyS);
     if (audioTime < eligibleAtS) return null;
-    const next = nextLevel(this.#level);
+    const next = this.#calmerLevel();
     return next === null ? null : this.#transition(next, 'advance', eligibleAtS, audioTime);
+  }
+
+  /** The next step towards calm, or `null` once the calmest level of the session is reached. */
+  #calmerLevel(): LevelId | null {
+    return this.#level === this.#calmestLevel ? null : nextLevel(this.#level);
   }
 
   /** The model's estimate when it can give one; the rules otherwise. */

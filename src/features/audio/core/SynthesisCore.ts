@@ -1,67 +1,39 @@
-import { createRandom, type RandomSource } from '../../acquisition/simulator/prng';
+import { createRandom } from '../../acquisition/simulator/prng';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
 import { FADE_DURATION_S } from '../engine/ramps';
-import {
-  SCALES,
-  MIDI_DRONE,
-  MIDI_TONIC,
-  MODE,
-  SEMITONES_PER_OCTAVE,
-  isMode,
-  midiFrequency,
-  degreeNote,
-  type Mode,
-} from './theory';
+import { BankComposer, TICKS_PER_BEAT } from './composer';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from './instrumentCatalog';
+import { INSTRUMENTS } from './instruments';
+import { BANK_COUNT, LAYER, LAYER_COUNT, MIN_LAYERS } from './layers';
+import { sine } from './oscillator';
+import { MIDI_DRONE, isMode, midiFrequency, type Mode } from './theory';
+import { DRONE_AMPLITUDE, DRONE_PARTIALS } from './timbres';
+import { VoicePool, panGain, wrap } from './voices';
+
+export { LAYER_COUNT, MIN_LAYERS } from './layers';
+export { MAX_VOICES } from './voices';
 
 /** Beats in a harmonic cycle: mode changes wait for it to close. */
 export const BEATS_PER_CYCLE = 16;
-/** How many beats between chord changes in the harmony layer. */
-export const BEATS_PER_CHORD = 4;
-/** Voices allocated at start; no more are ever created. */
-export const MAX_VOICES = 32;
-/** Layers the `layers` parameter can turn on: drone, harmony and melody. */
-export const LAYER_COUNT = 3;
-/** The drone layer always sounds: at least one layer is active. */
-export const MIN_LAYERS = 1;
-/** Voice banks: the outgoing and the incoming mode of a crossfade. */
-const BANK_COUNT = 2;
 
-const MELODY_NOTE_PROBABILITY = 0.35;
-/** Amplitude below which a voice is released (≈ −80 dB, inaudible). */
-const SILENCE_THRESHOLD = 1e-4;
+/**
+ * Offset of the second random sequence, which decides only where a note sits
+ * and how hard it is struck. The notes come from the first one, so a change
+ * of sound never changes what is played.
+ */
+const COLOUR_SEED_OFFSET = 0x5bd1e995;
 
-const LAYER_DRONE = 0;
-const LAYER_HARMONY = 1;
-const LAYER_MELODY = 2;
-const STATE_FREE = 0;
-const STATE_ATTACK = 1;
-const STATE_DECAY = 2;
-
-interface Envelope {
-  readonly amplitude: number;
-  readonly attackS: number;
-  readonly decayS: number;
-}
-
-const CHORD_ENVELOPE: Envelope = { amplitude: 0.07, attackS: 0.8, decayS: 2.5 };
-const DYAD_ENVELOPE: Envelope = { amplitude: 0.08, attackS: 2, decayS: 4 };
-const MELODY_ENVELOPE: Envelope = { amplitude: 0.09, attackS: 0.02, decayS: 1.2 };
-const DRONE_AMPLITUDE = 0.11;
-/** Slow amplitude breathing of the drone: gain = 1 − depth + depth · sin(2π · rate · t). */
-const DRONE_BREATH_HZ = 0.07;
-const DRONE_BREATH_DEPTH = 0.15;
-/** The drone sounds with its perfect fifth above, a little softer. */
-const FIFTH_SEMITONES = 7;
-const FIFTH_GAIN = 0.6;
-/** The melody plays one octave above the tonic and spans two octaves of the scale. */
-const MELODY_BASE_MIDI = MIDI_TONIC + SEMITONES_PER_OCTAVE;
-const MELODY_RANGE_OCTAVES = 2;
-/** Scale steps above the root of a triad and, over the drone, of an open dyad. */
-const CHORD_MIDDLE_STEP = 2;
-const CHORD_TOP_STEP = 4;
-const DYAD_TOP_STEP = 3;
-/** Level of the second harmonic over the sine: a soft, warm timbre. */
-const SECOND_HARMONIC_GAIN = 0.15;
+/**
+ * Slow cycles that keep a long session from repeating, in seconds: how busy
+ * the music is, how high it sits and how open the pad sounds. The periods are
+ * primes, so the three never come back to the same combination in a session.
+ */
+const DENSITY_PERIOD_S = 127;
+const LIFT_PERIOD_S = 211;
+const TONE_PERIOD_S = 337;
+/** Range the overtones of the pad move in, as a factor of what its timbre defines. */
+const PAD_TONE_MIN = 0.7;
+const PAD_TONE_MAX = 1.2;
 
 /**
  * Layered generative synthesis (RF-08), with no browser dependencies so it
@@ -72,62 +44,101 @@ const SECOND_HARMONIC_GAIN = 0.15;
  * creates no objects or arrays. The sequencer advances with the sample clock,
  * so it does not depend on timers.
  *
- * Layers: 0 drone (sustained D2 and A2), 1 harmony (chords every 4 beats),
- * 2 melody (sparse notes). The `layers` parameter (1 to 3) turns layers on in
- * that order, with a 30 s fade. A `mode` change is applied when the harmonic
- * cycle closes, with a 30 s crossfade between two voice banks.
+ * Layers: 0 drone (a slow-moving stack of D and A), 1 harmony (held chords and
+ * the figure above them), 2 melody (phrases). The `layers` parameter (1 to 3)
+ * turns layers on in that order, with a 30 s fade. A `mode` change is applied
+ * when the harmonic cycle closes, with a 30 s crossfade between two voice
+ * banks: each bank has its own composer, and the outgoing one keeps playing
+ * its mode until it is silent, so the music never thins out in between.
+ *
+ * What each mode plays is in `arrangement.ts`, how the notes are chosen in
+ * `composer.ts` and how each instrument sounds in `timbres.ts`.
  */
 export class SynthesisCore {
   readonly #fs: number;
-  readonly #random: RandomSource;
   readonly #fadeStep: number;
+  readonly #voices: VoicePool;
+  readonly #composers: readonly BankComposer[];
 
-  // Voices: one array per field, allocated once.
-  readonly #phase = new Float64Array(MAX_VOICES);
-  readonly #increment = new Float64Array(MAX_VOICES);
-  readonly #amplitude = new Float64Array(MAX_VOICES);
-  readonly #peak = new Float64Array(MAX_VOICES);
-  readonly #attackStep = new Float64Array(MAX_VOICES);
-  readonly #decayFactor = new Float64Array(MAX_VOICES);
-  readonly #state = new Int8Array(MAX_VOICES);
-  readonly #layer = new Int8Array(MAX_VOICES);
-  readonly #bank = new Int8Array(MAX_VOICES);
+  // Drone partials: two oscillators and a slow swell each. Phases are in cycles.
+  readonly #dronePhaseA = new Float64Array(DRONE_PARTIALS.length);
+  readonly #dronePhaseB = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneIncrementA = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneIncrementB = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneGainALeft = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneGainARight = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneGainBLeft = new Float64Array(DRONE_PARTIALS.length);
+  readonly #droneGainBRight = new Float64Array(DRONE_PARTIALS.length);
+  readonly #swellPhase = new Float64Array(DRONE_PARTIALS.length);
+  readonly #swellIncrement = new Float64Array(DRONE_PARTIALS.length);
+  readonly #swellDepth = new Float64Array(DRONE_PARTIALS.length);
 
   readonly #layerGain = new Float64Array(LAYER_COUNT);
   readonly #layerTarget = new Float64Array(LAYER_COUNT);
   readonly #layerStep = new Float64Array(LAYER_COUNT);
+  /** Position of each bank in its crossfade, from 0 to 1, and the level it is heard at. */
   readonly #bankGain = new Float64Array(BANK_COUNT);
+  readonly #bankLevel = new Float64Array(BANK_COUNT);
   readonly #bankStep = new Float64Array(BANK_COUNT);
 
-  #dronePhase = 0;
-  #fifthPhase = 0;
-  #lifePhase = 0;
-  #beatPhase = 1;
-  #beat = -1;
+  /** Where each slow cycle starts, in cycles: different in every session. */
+  readonly #densityStart: number;
+  readonly #liftStart: number;
+  readonly #toneStart: number;
+  #samples = 0;
+
+  #tickPhase = 1;
+  #tick = -1;
   #currentMode: Mode;
   #pendingMode: Mode;
   #activeBank = 0;
-  #steals = 0;
 
   /**
    * `initialMode` is required: the starting level is decided on the main
    * thread (AudioEngine) and reaches the worklet as processor options, so the
    * core holds no default of its own that could drift from it.
    */
-  constructor(sampleRate: number, seed: number, initialMode: Mode) {
+  constructor(sampleRate: number, seed: number, initialMode: Mode, instrumentId: InstrumentId = DEFAULT_INSTRUMENT_ID) {
+    const instrument = INSTRUMENTS[instrumentId];
     this.#fs = sampleRate;
-    this.#random = createRandom(seed);
     this.#fadeStep = 1 / (FADE_DURATION_S * sampleRate);
     this.#currentMode = initialMode;
     this.#pendingMode = initialMode;
     this.#bankGain[0] = 1;
-    this.#layerGain[LAYER_DRONE] = 1;
-    this.#layerTarget[LAYER_DRONE] = 1;
+    this.#bankLevel[0] = 1;
+    this.#layerGain[LAYER.drone] = 1;
+    this.#layerTarget[LAYER.drone] = 1;
+
+    const random = createRandom(seed);
+    const colour = createRandom(seed ^ COLOUR_SEED_OFFSET);
+    this.#densityStart = colour();
+    this.#liftStart = colour();
+    this.#toneStart = colour();
+    this.#voices = new VoicePool(sampleRate, this.#layerGain, this.#bankLevel);
+    this.#composers = Array.from(
+      { length: BANK_COUNT },
+      (_, bank) => new BankComposer(bank, initialMode, random, colour, this.#voices, instrument),
+    );
+
+    DRONE_PARTIALS.forEach((partial, p) => {
+      const frequency = midiFrequency(MIDI_DRONE + partial.semitones);
+      this.#droneIncrementA[p] = (frequency - partial.beatHz / 2) / sampleRate;
+      this.#droneIncrementB[p] = (frequency + partial.beatHz / 2) / sampleRate;
+      const level = DRONE_AMPLITUDE * partial.gain * instrument.droneGain;
+      this.#droneGainALeft[p] = level * panGain(-partial.width, false);
+      this.#droneGainARight[p] = level * panGain(-partial.width, true);
+      this.#droneGainBLeft[p] = level * panGain(partial.width, false);
+      this.#droneGainBRight[p] = level * panGain(partial.width, true);
+      // Each session starts the swells at a different point of their cycles.
+      this.#swellPhase[p] = colour();
+      this.#swellIncrement[p] = partial.swellHz / sampleRate;
+      this.#swellDepth[p] = partial.swellDepth;
+    });
   }
 
   /** Inspection data for tests and telemetry; not part of the sound. */
   get beat(): number {
-    return this.#beat;
+    return Math.floor(this.#tick / TICKS_PER_BEAT);
   }
   get currentMode(): Mode {
     return this.#currentMode;
@@ -136,7 +147,11 @@ export class SynthesisCore {
     return this.#activeBank;
   }
   get voiceSteals(): number {
-    return this.#steals;
+    return this.#voices.steals;
+  }
+  /** Voices of a bank that have not finished fading. */
+  soundingVoices(bank: number): number {
+    return this.#voices.sounding(bank);
   }
   bankGain(bank: number): number {
     return this.#bankGain[bank] ?? 0;
@@ -155,55 +170,56 @@ export class SynthesisCore {
   }
 
   /**
-   * Synthesizes `output.length` samples with the block parameters.
+   * Synthesizes one block in stereo with the block parameters. `left` and
+   * `right` have the same length; passing the same buffer twice is allowed
+   * and leaves the right channel in it.
    *
    * @param tempo Beats per minute.
    * @param mode 0 major pentatonic, 1 lydian, 2 drone with pentatonic.
    * @param layers Number of active layers (1 to 3).
    */
-  process(output: Float32Array, tempo: number, mode: number, layers: number): void {
+  process(left: Float32Array, right: Float32Array, tempo: number, mode: number, layers: number): void {
     const roundedMode = Math.round(mode);
     if (isMode(roundedMode)) {
       this.#pendingMode = roundedMode;
     }
     this.#updateLayerTargets(layers);
 
-    const beatAdvance = tempo / (SECONDS_PER_MINUTE * this.#fs);
-    const droneIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE)) / this.#fs;
-    const fifthIncrement = (2 * Math.PI * midiFrequency(MIDI_DRONE + FIFTH_SEMITONES)) / this.#fs;
-    const lifeIncrement = (2 * Math.PI * DRONE_BREATH_HZ) / this.#fs;
+    const tickAdvance = (tempo * TICKS_PER_BEAT) / (SECONDS_PER_MINUTE * this.#fs);
 
-    for (let n = 0; n < output.length; n++) {
-      this.#beatPhase += beatAdvance;
-      if (this.#beatPhase >= 1) {
-        this.#beatPhase -= 1;
-        this.#onBeat();
+    for (let n = 0; n < left.length; n++) {
+      this.#samples++;
+      this.#tickPhase += tickAdvance;
+      if (this.#tickPhase >= 1) {
+        this.#tickPhase -= 1;
+        this.#onTick();
       }
       this.#smoothGains();
 
-      // Sustained drone with a slow amplitude breathing.
-      this.#dronePhase += droneIncrement;
-      this.#fifthPhase += fifthIncrement;
-      this.#lifePhase += lifeIncrement;
-      const breathing = 1 - DRONE_BREATH_DEPTH + DRONE_BREATH_DEPTH * Math.sin(this.#lifePhase);
-      let sample =
-        (this.#layerGain[LAYER_DRONE] ?? 0) *
-        DRONE_AMPLITUDE *
-        breathing *
-        (Math.sin(this.#dronePhase) + FIFTH_GAIN * Math.sin(this.#fifthPhase));
+      let sumLeft = 0;
+      let sumRight = 0;
 
-      for (let v = 0; v < MAX_VOICES; v++) {
-        if (this.#state[v] !== STATE_FREE) {
-          sample += this.#voiceSample(v);
-        }
+      // Drone: every partial swells on its own and drifts slowly between the ears.
+      const droneGain = this.#layerGain[LAYER.drone] ?? 0;
+      for (let p = 0; p < DRONE_PARTIALS.length; p++) {
+        const phaseA = wrap((this.#dronePhaseA[p] ?? 0) + (this.#droneIncrementA[p] ?? 0));
+        const phaseB = wrap((this.#dronePhaseB[p] ?? 0) + (this.#droneIncrementB[p] ?? 0));
+        const swellPhase = wrap((this.#swellPhase[p] ?? 0) + (this.#swellIncrement[p] ?? 0));
+        this.#dronePhaseA[p] = phaseA;
+        this.#dronePhaseB[p] = phaseB;
+        this.#swellPhase[p] = swellPhase;
+        const depth = this.#swellDepth[p] ?? 0;
+        const swell = droneGain * (1 - depth + depth * sine(swellPhase));
+        const a = sine(phaseA);
+        const b = sine(phaseB);
+        sumLeft += swell * (a * (this.#droneGainALeft[p] ?? 0) + b * (this.#droneGainBLeft[p] ?? 0));
+        sumRight += swell * (a * (this.#droneGainARight[p] ?? 0) + b * (this.#droneGainBRight[p] ?? 0));
       }
-      output[n] = sample;
-    }
 
-    // Keeps phases from growing unbounded and losing precision.
-    this.#dronePhase %= 2 * Math.PI;
-    this.#fifthPhase %= 2 * Math.PI;
-    this.#lifePhase %= 2 * Math.PI;
+      this.#voices.render();
+      left[n] = sumLeft + this.#voices.left;
+      right[n] = sumRight + this.#voices.right;
+    }
   }
 
   #updateLayerTargets(layers: number): void {
@@ -224,15 +240,23 @@ export class SynthesisCore {
     }
     for (let b = 0; b < BANK_COUNT; b++) {
       const target = b === this.#activeBank ? 1 : 0;
-      this.#bankGain[b] = moveTowards(this.#bankGain[b] ?? 0, target, this.#bankStep[b] ?? 0);
+      const gain = moveTowards(this.#bankGain[b] ?? 0, target, this.#bankStep[b] ?? 0);
+      this.#bankGain[b] = gain;
+      // Equal-power curve: halfway through, the two modes together are as loud as either alone.
+      this.#bankLevel[b] = Math.sqrt(gain);
     }
   }
 
-  #onBeat(): void {
-    this.#beat++;
-    const position = this.#beat % BEATS_PER_CYCLE;
+  /** A layer keeps being played while it fades out, so the fade is heard on music and not on silence. */
+  #heard(layer: number): boolean {
+    return (this.#layerTarget[layer] ?? 0) > 0 || (this.#layerGain[layer] ?? 0) > 0;
+  }
 
-    if (position === 0 && this.#pendingMode !== this.#currentMode) {
+  #onTick(): void {
+    this.#tick++;
+    const closesCycle = this.#tick % (BEATS_PER_CYCLE * TICKS_PER_BEAT) === 0;
+
+    if (closesCycle && this.#pendingMode !== this.#currentMode) {
       // The harmonic cycle closes: the crossfade to the new mode starts.
       this.#currentMode = this.#pendingMode;
       this.#activeBank = 1 - this.#activeBank;
@@ -240,89 +264,32 @@ export class SynthesisCore {
         const target = b === this.#activeBank ? 1 : 0;
         this.#bankStep[b] = Math.abs(target - (this.#bankGain[b] ?? 0)) * this.#fadeStep;
       }
+      this.#composers[this.#activeBank]?.start(this.#currentMode);
     }
 
-    if (position % BEATS_PER_CHORD === 0 && (this.#layerTarget[LAYER_HARMONY] ?? 0) > 0) {
-      this.#triggerChord();
-    }
-    if (
-      (this.#layerTarget[LAYER_MELODY] ?? 0) > 0 &&
-      this.#random() < MELODY_NOTE_PROBABILITY
-    ) {
-      const scale = SCALES[this.#currentMode];
-      const degree = Math.floor(this.#random() * scale.length * MELODY_RANGE_OCTAVES);
-      this.#triggerVoice(degreeNote(scale, degree, MELODY_BASE_MIDI), LAYER_MELODY, MELODY_ENVELOPE);
-    }
-  }
+    // The slow cycles follow the clock, not the beat: a slower tempo does not stretch them.
+    const seconds = this.#samples / this.#fs;
+    const density = slowCycle(this.#densityStart, seconds, DENSITY_PERIOD_S);
+    const lift = slowCycle(this.#liftStart, seconds, LIFT_PERIOD_S);
+    this.#voices.padTone =
+      PAD_TONE_MIN + (PAD_TONE_MAX - PAD_TONE_MIN) * slowCycle(this.#toneStart, seconds, TONE_PERIOD_S);
 
-  #triggerChord(): void {
-    const scale = SCALES[this.#currentMode];
-    const root = Math.floor(this.#random() * scale.length);
-    if (this.#currentMode === MODE.dronePentatonic) {
-      // Open dyad over the drone: calmer than a full chord.
-      this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
-      this.#triggerVoice(degreeNote(scale, root + DYAD_TOP_STEP, MIDI_TONIC), LAYER_HARMONY, DYAD_ENVELOPE);
-      return;
-    }
-    // Three explicit calls instead of looping over an array literal: no allocation.
-    this.#triggerVoice(degreeNote(scale, root, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
-    this.#triggerVoice(degreeNote(scale, root + CHORD_MIDDLE_STEP, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
-    this.#triggerVoice(degreeNote(scale, root + CHORD_TOP_STEP, MIDI_TONIC), LAYER_HARMONY, CHORD_ENVELOPE);
-  }
-
-  #triggerVoice(midi: number, layer: number, envelope: Envelope): void {
-    let chosen = -1;
-    let lowest = Number.POSITIVE_INFINITY;
-    for (let v = 0; v < MAX_VOICES; v++) {
-      if (this.#state[v] === STATE_FREE) {
-        chosen = v;
-        break;
-      }
-      const amplitude = this.#amplitude[v] ?? 0;
-      if (amplitude < lowest) {
-        lowest = amplitude;
-        chosen = v;
+    const harmony = this.#heard(LAYER.harmony);
+    const melody = this.#heard(LAYER.melody);
+    for (let b = 0; b < BANK_COUNT; b++) {
+      // The outgoing bank plays on in its own mode until its fade ends.
+      if (b === this.#activeBank || (this.#bankGain[b] ?? 0) > 0) {
+        this.#composers[b]?.onTick(this.#tick, harmony, melody, density, lift);
+      } else {
+        this.#composers[b]?.stop();
       }
     }
-    if (this.#state[chosen] !== STATE_FREE) {
-      this.#steals++;
-    }
-    this.#phase[chosen] = 0;
-    this.#increment[chosen] = (2 * Math.PI * midiFrequency(midi)) / this.#fs;
-    this.#amplitude[chosen] = 0;
-    this.#peak[chosen] = envelope.amplitude;
-    this.#attackStep[chosen] = envelope.amplitude / (envelope.attackS * this.#fs);
-    this.#decayFactor[chosen] = Math.exp(-1 / (envelope.decayS * this.#fs));
-    this.#state[chosen] = STATE_ATTACK;
-    this.#layer[chosen] = layer;
-    this.#bank[chosen] = this.#activeBank;
   }
+}
 
-  #voiceSample(v: number): number {
-    let amplitude = this.#amplitude[v] ?? 0;
-    if (this.#state[v] === STATE_ATTACK) {
-      amplitude += this.#attackStep[v] ?? 0;
-      if (amplitude >= (this.#peak[v] ?? 0)) {
-        amplitude = this.#peak[v] ?? 0;
-        this.#state[v] = STATE_DECAY;
-      }
-    } else {
-      amplitude *= this.#decayFactor[v] ?? 0;
-      if (amplitude < SILENCE_THRESHOLD) {
-        this.#state[v] = STATE_FREE;
-        this.#amplitude[v] = 0;
-        return 0;
-      }
-    }
-    this.#amplitude[v] = amplitude;
-
-    const phase = (this.#phase[v] ?? 0) + (this.#increment[v] ?? 0);
-    this.#phase[v] = phase > 2 * Math.PI ? phase - 2 * Math.PI : phase;
-    const gain =
-      (this.#layerGain[this.#layer[v] ?? 0] ?? 0) * (this.#bankGain[this.#bank[v] ?? 0] ?? 0);
-    // Sine with a little second harmonic: a soft, warm timbre.
-    return gain * amplitude * (Math.sin(phase) + SECOND_HARMONIC_GAIN * Math.sin(2 * phase));
-  }
+/** Value from 0 to 1 of a sine cycle of `periodS` seconds that began at `start` cycles. */
+function slowCycle(start: number, seconds: number, periodS: number): number {
+  return 0.5 + 0.5 * sine(start + seconds / periodS);
 }
 
 function moveTowards(current: number, target: number, step: number): number {

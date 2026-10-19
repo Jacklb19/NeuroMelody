@@ -3,12 +3,21 @@
  * registration names, parameters and creation options. It imports nothing
  * from the worklet scope, so both sides can use it.
  */
+import { isAmbienceId, type AmbienceId } from '../core/ambienceCatalog';
+import { isInstrumentId, type InstrumentId } from '../core/instrumentCatalog';
 import { LAYER_COUNT, MIN_LAYERS } from '../core/SynthesisCore';
 import { MODE, isMode, type Mode } from '../core/theory';
 import { CALIBRATION_LEVEL, LEVELS } from '../engine/levels';
 
 export const SYNTHESIZER_NAME = 'neuromelody-synthesizer';
 export const CLIPPER_NAME = 'neuromelody-clipper';
+
+/**
+ * Outputs of the synthesizer node. The ambience leaves on its own output so
+ * the brightness filter and the reverb of the music do not colour it (ADR-40).
+ */
+export const SYNTHESIZER_OUTPUT = { music: 0, ambience: 1 } as const;
+export const SYNTHESIZER_OUTPUT_COUNT = 2;
 
 /** Tempo range the synthesizer accepts, in BPM; it contains every level tempo. */
 export const MIN_TEMPO_BPM = 40;
@@ -72,6 +81,10 @@ export interface SynthesizerOptions {
   readonly seed: number;
   readonly initialMode: Mode;
   readonly initialLayers: number;
+  /** Ambience under the music for the whole session. */
+  readonly ambience: AmbienceId;
+  /** Instrument the music is played with for the whole session (ADR-46). */
+  readonly instrument: InstrumentId;
 }
 
 export interface ClipperOptions {
@@ -95,7 +108,9 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     !isMode(value.initialMode) ||
     typeof value.initialLayers !== 'number' ||
     value.initialLayers < MIN_LAYERS ||
-    value.initialLayers > LAYER_COUNT
+    value.initialLayers > LAYER_COUNT ||
+    !isAmbienceId(value.ambience) ||
+    !isInstrumentId(value.instrument)
   ) {
     throw new TypeError('Invalid synthesizer options.');
   }
@@ -103,6 +118,8 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     seed: value.seed,
     initialMode: value.initialMode,
     initialLayers: value.initialLayers,
+    ambience: value.ambience,
+    instrument: value.instrument,
   };
 }
 

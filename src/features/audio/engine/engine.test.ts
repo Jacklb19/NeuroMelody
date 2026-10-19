@@ -4,7 +4,7 @@ import { dbToGain, gainToDb } from '../core/decibels';
 import { MAX_TEMPO_BPM, MIN_TEMPO_BPM } from '../worklet/workletContract';
 import { LEVEL_IDS, LEVELS, CALIBRATION_LEVEL, nextLevel, previousLevel } from './levels';
 import { tempoRampDurationS } from './ramps';
-import { generateImpulseResponse } from './impulseResponse';
+import { DEFAULT_IMPULSE_RESPONSE, generateImpulseResponse } from './impulseResponse';
 
 describe('ramps', () => {
   it.each([
@@ -41,6 +41,8 @@ describe('music levels', () => {
       [76, 0, 3, 6000, 0.25],
       [66, 1, 2, 3500, 0.35],
       [59, 2, 2, 2000, 0.5],
+      // One step past the target, for the program to fall asleep (ADR-41).
+      [50, 3, 2, 1200, 0.55],
     ]);
     expect(CALIBRATION_LEVEL).toBe('intermediate');
   });
@@ -58,8 +60,8 @@ describe('music levels', () => {
   });
 
   it('climbs the ladder one adjacent step at a time', () => {
-    expect(LEVEL_IDS.map(nextLevel)).toEqual(['intermediate', 'target', null]);
-    expect(LEVEL_IDS.map(previousLevel)).toEqual([null, 'high', 'intermediate']);
+    expect(LEVEL_IDS.map(nextLevel)).toEqual(['intermediate', 'target', 'sleep', null]);
+    expect(LEVEL_IDS.map(previousLevel)).toEqual([null, 'high', 'intermediate', 'target']);
   });
 });
 
@@ -74,10 +76,30 @@ describe('generateImpulseResponse', () => {
     return sum;
   }
 
-  it('lasts 3.5 s in two different channels', () => {
-    expect(left.length).toBe(168_000);
-    expect(right.length).toBe(168_000);
+  /** How often the signal changes sign: a simple measure of how much treble it carries. */
+  function signChanges(channel: Float32Array, from: number, to: number): number {
+    let changes = 0;
+    for (let i = from + 1; i < to; i++) {
+      if ((channel[i] ?? 0) * (channel[i - 1] ?? 0) < 0) changes++;
+    }
+    return changes;
+  }
+
+  it('lasts its configured length in two different channels', () => {
+    expect(left.length).toBe(DEFAULT_IMPULSE_RESPONSE.durationS * 48_000);
+    expect(right.length).toBe(left.length);
     expect(right).not.toEqual(left);
+  });
+
+  it('stays silent during the pre-delay and then builds up', () => {
+    const preDelay = DEFAULT_IMPULSE_RESPONSE.preDelayS * 48_000;
+    expect(energy(left, 0, preDelay)).toBe(0);
+    expect(energy(left, preDelay, 2 * preDelay)).toBeGreaterThan(0);
+  });
+
+  it('darkens along the tail: the end carries clearly less treble than the start', () => {
+    const tenth = left.length / 10;
+    expect(signChanges(left, 8 * tenth, 9 * tenth)).toBeLessThan(signChanges(left, tenth, 2 * tenth) * 0.7);
   });
 
   it('decays exponentially: the last tenth has far less energy than the first', () => {

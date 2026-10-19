@@ -20,6 +20,8 @@ El lazo de control se cierra íntegramente en el dispositivo; la API solo aporta
 | API | Repositorio y proyecto de Vercel aparte | FastAPI (Python) |
 | Identidad y datos | Supabase | Auth, PostgreSQL con RLS |
 
+Antes de cada sesión la persona elige qué busca (relajarse, dormir, recuperar la calma, respirar o una pausa), cuánto tiempo y si quiere lluvia, mar o viento de fondo; esa intención decide en qué escalón empieza la música y hasta dónde baja, y el tempo parte de su propio pulso. En el perfil puede crear un recordatorio para su calendario.
+
 El modelo de lenguaje nunca participa en el lazo de control: solo propone el plan inicial y redacta el resumen final, marcado siempre como texto generado automáticamente. Las decisiones técnicas están en [`docs/decisiones.md`](docs/decisiones.md) y la especificación completa en [`docs/definicion-proyecto.md`](docs/definicion-proyecto.md).
 
 ## Requisitos
@@ -51,6 +53,7 @@ La página `/diagnostics` muestra si el entorno tiene aislamiento de origen cruz
 | `npm run test:e2e` | Recorridos de navegador en Chrome y Edge |
 | `npm run test:audio` | Continuidad de audio durante 60 s en Chrome (`playbackStats`) |
 | `npm run recordings:extract` | Regenera los extractos nsr2db y verifica sus SHA-256 |
+| `node scripts/audio/renderSamples.ts <etiqueta>` | Renderiza el sintetizador a archivos WAV en `audio-samples/<etiqueta>/` para oír un cambio antes de integrarlo |
 
 Para comprobar 30 minutos de audio sin cortes: `AUDIO_LONG=1 npm run test:audio` (en PowerShell, `$env:AUDIO_LONG='1'` antes del comando). También existe el workflow manual «Continuidad de audio (30 minutos)».
 

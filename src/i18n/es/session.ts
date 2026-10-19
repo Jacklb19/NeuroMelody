@@ -6,6 +6,45 @@ export const session = {
   eyebrow: 'Tu espacio de escucha',
   /** Planned duration under the heading. */
   plan: (minutes: number): string => `Plan: ${String(minutes)} minutos.`,
+  /** Dark layer of a session for falling asleep (ADR-41): the text of the button that removes it. */
+  dimmer: {
+    restore: 'Pantalla atenuada para dormir. Toca para verla.',
+  },
+  /** The session as three slides (ADR-47); `names` and `leads` keys mirror `SlideId`. */
+  slides: {
+    label: 'Pasos de la sesión',
+    names: { pulse: 'Tu pulso', arrival: 'Cómo llegas', listening: 'Escuchando' },
+    leads: {
+      pulse: 'Elige cómo medir tu pulso y conéctalo. Cuando llegue, pasamos al siguiente paso.',
+      arrival: 'Así estás ahora. Si quieres, di cómo te sientes antes de empezar.',
+    },
+    next: 'Continuar',
+    withoutPulse: 'Seguir sin medir mi pulso',
+    /** Mark of a finished step, and the same for a screen reader. */
+    doneMark: '✓',
+    done: 'hecho',
+  },
+  /** Second slide: the pulse now and what was chosen. */
+  arrival: {
+    pulseLabel: 'Tu pulso ahora',
+    noPulse: 'Sin el pulso conectado la música suena, pero no se adapta a ti.',
+    measure: 'Conectar mi pulso',
+    choicesLabel: 'Lo que elegiste para esta sesión',
+  },
+  /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
+  journey: {
+    label: 'Recorrido de la música',
+    levels: { high: 'Con movimiento', intermediate: 'A paso medio', target: 'En calma', sleep: 'Para dormir' },
+  },
+  /** What the music did, shown when the session ends (ADR-42). */
+  recap: {
+    title: 'Lo que hizo la música',
+    tempo: (from: string, to: string): string => `Empezó a ${from} pulsos por minuto y terminó a ${to}.`,
+    steadyTempo: (tempo: string): string => `Se mantuvo a ${tempo} pulsos por minuto.`,
+    noSteps: 'No cambió de paso durante la sesión.',
+    calmerStep: (minute: number, level: string): string => `Minuto ${String(minute)}: bajó a «${level}».`,
+    livelierStep: (minute: number, level: string): string => `Minuto ${String(minute)}: volvió a «${level}» para acompañarte.`,
+  },
   technicalDetails: {
     title: 'Detalles técnicos',
     hint: 'Gráfica de la señal, índices y parámetros musicales',
@@ -48,6 +87,13 @@ export const session = {
   stage: {
     eyebrow: 'Ahora',
     estimatedState: 'Estado estimado:',
+    /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
+    pace: (tempo: number, personal: boolean): string =>
+      `La música va a ${String(tempo)} pulsos por minuto${personal ? ', ajustada a tu pulso' : ''}.`,
+    help: {
+      summary: '¿Qué significa?',
+      text: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que el pulso subió y la variación entre latidos bajó: la música vuelve un paso para acompañarte. «Baja» es lo contrario, e «Incierta», que no cambió lo bastante: en ambos casos la música sigue bajando poco a poco. Es una estimación para guiar la música; no mide el dolor ni es un diagnóstico.',
+    },
     /** Shown while the rules estimate the state, because the trained model could not be loaded. */
     confidence: common.provisionalEstimate,
     /** Shown with the trained model before it has an estimate to be confident about. */

@@ -281,6 +281,98 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 | Desviación | Hay latidos en la nube por primera vez (antes solo indicadores agregados), siempre por decisión expresa de la persona; `/privacy` lo explica. La clave de servicio de Supabase está también en los secretos de GitHub. `model_versions` guarda el archivo del modelo en una columna en lugar de una ruta de almacenamiento. |
 | Consecuencias | El modelo nunca se entrena ni se publica solo dentro de la app. Sin cuenta, la app usa el modelo que trae. La caché de latidos de WESAD vive en una tabla privada (`training_assets`), no en el repositorio. Cada versión publicada debe llevar sus cifras y límites a `modelo.md`. Requiere una migración (`20261012000000_training_recordings.sql`) y una preparación única en Supabase y GitHub, descrita en `back/training/README.md`. |
 
+## ADR-38. La intención decide qué hace la música: programas de sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 1 a 6 de la propuesta P-06). Este ADR cubre el paso 1; los demás se añaden al implementarse. |
+| Contexto | Los objetivos del plan (ADR-27) no cambiaban nada de la música: solo «Acompañar una respiración lenta» encendía la respiración guiada. Toda sesión empezaba en Intermedio y bajaba a la meta, eligiera lo que eligiera la persona. |
+| Decisión | Cada objetivo tiene un **programa** (`src/features/plan/programCatalog.ts`) con tres valores: el nivel en que empieza la música, el nivel más calmado al que llega y si la respiración guiada empieza encendida. Relajarme: de Intermedio a la meta. Descansar antes de dormir: igual, con respiración. Recuperar la calma después de una actividad: empieza en Activación alta y baja dos escalones. Acompañar una respiración lenta: empieza ya en la meta, con respiración. Tomar una pausa: se queda en Intermedio. Sin objetivo, la sesión es la de siempre. El objetivo pasa a ser **uno solo**; un enlace con varios se lee por el primero. |
+| Desviación | Modifica ADR-12 en dos puntos: la calibración ocurre en el nivel inicial del programa, no siempre en Intermedio, y el avance se detiene en el nivel más calmado del programa. Todo lo demás de ADR-12 sigue igual: histéresis de 3, permanencia de 3 minutos, un escalón por vez, retroceso inmediato por Alta y rampas graduales. Modifica ADR-27: el objetivo deja de ser múltiple. |
+| Consecuencias | El plan dice con una frase qué hará la música con la intención elegida. Las sesiones guardadas con varios objetivos siguen leyéndose igual. El modelo de lenguaje recibe un objetivo como mucho. La duración no forma parte del programa: la sigue eligiendo la persona, con la propuesta del modelo si la pide. |
+
+## ADR-39. La música parte del pulso de la persona
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 2 de P-06). |
+| Contexto | El tempo de cada nivel era fijo (76, 66 y 59 por minuto) para todo el mundo. El principio iso pide empezar donde está la persona y guiarla desde ahí; con un tempo igual para todos, «se adapta a ti» era solo el cambio de escalón. |
+| Decisión | El tempo del nivel en que empieza la sesión se mueve al pulso medido, como mucho 14 por minuto hacia arriba y 5 hacia abajo (`src/features/adaptation/personalTempo.ts`). Los niveles más activos reciben el mismo desplazamiento, los intermedios hacia la calma una parte proporcional, y la meta conserva sus 59. Se ajusta dos veces: con las tres primeras lecturas de buena calidad, para que la música encuentre pronto a la persona, y al terminar la calibración, con la referencia completa. Cada ajuste es una rampa gradual con la regla de siempre: máx(20 s, \|ΔBPM\| × 2 s). Una sesión que empieza en la meta no se mueve. |
+| Desviación | Modifica la tabla de niveles de `diseno-musical.md`: 76 y 66 pasan a ser los valores de partida cuando aún no hay pulso. No cambia ADR-12 (histéresis, permanencias, un escalón por vez) ni RNF-03 (ninguna rampa de tempo de menos de 20 s). |
+| Consecuencias | La respiración guiada, que cuenta en tiempos de la música, empieza más cerca del ritmo de la persona. Los detalles técnicos muestran el tempo de la sesión, no el del catálogo. Si la señal se reinicia, los tempos vuelven a los del catálogo hasta tener pulso de nuevo. |
+
+## ADR-40. Ambientes bajo la música: lluvia, mar y viento
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 6 de P-06; concreta el «paisaje sonoro» de ADR-33). |
+| Decisión | La persona elige en el plan un ambiente de un catálogo (`src/features/audio/core/ambienceCatalog.ts`): solo música (por defecto), lluvia, mar o viento. Los tres se sintetizan con ruido filtrado en el AudioWorklet (`core/ambience.ts`), sin archivos de audio y sin reservar memoria en `process()`. Salen por una segunda salida del sintetizador y se unen antes del volumen: no pasan por el filtro de brillo ni por la reverberación de la música, y sí por el control de volumen, la detención y el límite de salida (ADR-16). El ambiente es el mismo durante toda la sesión. La elección viaja en la dirección de la sesión (`ambience`) y se recuerda en el dispositivo, junto al tema y el idioma; no se guarda con la sesión ni se envía a ningún sitio. |
+| Consecuencias | Una sesión iniciada desde el inicio, sin pasar por el plan, usa el último ambiente elegido. La herramienta de muestras renderiza la meta con cada ambiente. Un ambiente nuevo es una entrada del catálogo, su sonido, su icono y su nombre en los dos idiomas. |
+
+## ADR-41. Programa para dormir: un escalón más, final silencioso y pantalla atenuada
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (paso 5 de P-06). |
+| Decisión | (1) **Un cuarto nivel, «Para dormir»**, un escalón más allá de la meta: 50 por minuto, modo «bordón profundo» (las mismas notas de la pentatónica, díadas graves que duran un ciclo entero de 16 pulsos y tardan cinco segundos en entrar, sin campanas ni notas pulsadas), filtro en 1,2 kHz y reverberación 0,55. Solo lo alcanza el programa del objetivo «Descansar antes de dormir»; los demás siguen deteniéndose en la meta. Se llega con las mismas reglas de ADR-12: tres minutos de permanencia, un escalón por vez, y Alta aceptada hace retroceder. (2) **Final silencioso:** en ese programa no se abre el aviso de fin de plan; la música se apaga sola en un fundido de dos minutos que termina justo cuando acaba el plan, programado en el reloj de audio. (3) **Pantalla atenuada:** tras 20 segundos sin tocar la pantalla ni el teclado, una capa oscura cubre la página; cualquier toque la quita. El botón «Detener» queda por encima de la capa, siempre visible. |
+| Desviación | Añade un nivel y un modo a los tres de ADR-12 y `diseno-musical.md`, y exceptúa a este programa del aviso de fin de plan de ADR-16 (el límite de nivel de salida y la duración máxima de 60 minutos se mantienen). |
+| Consecuencias | La app no detecta el sueño ni lo afirma: el final depende del tiempo del plan. El tempo de este nivel no lo mueve el pulso (ADR-39). La cámara no sirve acostado: para dormir conviene la banda o, sin sensor, el modo de prueba. |
+
+## ADR-42. Recorrido guiado, sesión que se explica y alcance más amplio
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 3, 4 y 7 de P-06; el 7, con la condición de añadir usos sin quitar el dolor crónico). |
+| Contexto | Se podía iniciar una sesión desde el inicio sin elegir nada; el plan parecía opcional; la pantalla de sesión juntaba paneles sin orden y no decía qué hacía la música ni qué era el «estado estimado». |
+| Decisión | (1) **Recorrido:** Inicio → Preparar (`/plan`: intención, duración y ambiente) → Sesión → Cierre. El inicio lleva a preparar la sesión; solo «Repetir la última» va directo, con la intención y la duración de la última sesión. La navegación pasa a ser Inicio, Nueva sesión e Historial: la sesión no tiene entrada propia. (2) **Antes de la música**, la sesión muestra tres pasos con su estado: medir el pulso, decir cómo te sientes (opcional) e iniciar la música. El panel de la fuente de señal va primero y se pliega solo cuando la música suena con el pulso conectado; la persona puede abrirlo cuando quiera. (3) **Mientras suena**, el escenario muestra el recorrido de la música (los escalones de su programa en palabras llanas: Con movimiento, A paso medio, En calma, Para dormir, con el actual marcado), a cuántos pulsos por minuto va y si está ajustada al pulso, y «¿Qué significa?» junto al estado estimado. (4) **Al terminar**, «Lo que hizo la música»: el ritmo al que empezó y terminó y cada cambio de escalón con su minuto. No se guarda: vive hasta salir de la pantalla. (5) **Alcance:** la portada dice que NeuroMelody nació para acompañar a personas con dolor crónico y que sirve también para calmarse, descansar antes de dormir, respirar más despacio o tomar una pausa. |
+| Desviación | Cambia `pantallas.md` (navegación, inicio y organización de `/session`, ADR-24). Amplía el alcance descrito en la especificación sin retirar el dolor crónico. Las advertencias y el lenguaje no clínico no cambian. |
+| Consecuencias | Los detalles técnicos y sus nombres (Alta, Baja, Incierta; Activación alta, Intermedio…) se conservan para RF-12; la vista sencilla usa los nombres llanos. La ruta `/session` sigue aceptando enlaces directos. |
+
+## ADR-43. Recordatorio por el calendario de la persona
+
+| Campo | Contenido |
+|---|---|
+| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 18 por pedido del usuario («sigue programando lo que falte»); pendiente de su visto bueno. |
+| Contexto | ADR-33 (6) pide recordatorios «donde el navegador lo permita». Una página no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones (Web Push necesita claves y un envío programado; los trabajos programados de Vercel Hobby son diarios y no por persona), y las alarmas locales del navegador no existen de forma estable. |
+| Decisión | En el perfil, la persona elige la hora y los días; la app genera un archivo de calendario (iCalendar, RFC 5545) con una cita que se repite esos días a esa hora local, con aviso al empezar y el enlace a la app. El calendario del teléfono o del ordenador es quien avisa. La elección se guarda en el dispositivo (\`neuromelody.reminder\`); nada viaja a un servidor. Por defecto: 21:00, todos los días. |
+| Consecuencias | Funciona en cualquier sistema con calendario y sin permisos de notificación. Cambiar la hora exige descargar el archivo otra vez (el calendario sustituye la cita por su identificador, si lo admite). Si más adelante hay notificaciones push, este archivo sigue siendo la opción sin cuenta. Además, los controles nativos (campo de hora, listas) siguen ahora el tema claro u oscuro (\`color-scheme\`). |
+
+## ADR-44. Rendimiento y accesibilidad medidos (bloque 19)
+
+| Campo | Contenido |
+|---|---|
+| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 19 por pedido del usuario; pendiente de su visto bueno y de la prueba en un celular de gama media. |
+| Medición | En Chrome, sobre la versión de producción con los servicios apagados, con el simulador: tareas largas del hilo principal (más de 50 ms), CPU de cada proceso del navegador por fase y árbol de accesibilidad de 14 pantallas. Equipo: portátil AMD Ryzen 7 8845HS con pantalla de 130 Hz. |
+| Hallazgos | (1) Al pulsar «Iniciar música» había dos tareas largas: abrir la salida de audio (110–200 ms, del navegador) y preparar la reverberación (40 ms más el resto de la cadena). (2) Con la música sonando el navegador gastaba ≈ 120 % de un núcleo: la barra de progreso y el anillo se animaban con una transición de 1 s renovada cada segundo, lo que rehacía el diseño en cada fotograma, y el orbe se redibujaba en vez de solo moverse. El audio en sí costaba poco. (3) Accesibilidad: ningún control sin nombre, un solo título principal por pantalla y ningún salto de nivel de títulos en las 14 pantallas. |
+| Decisión | (1) La salida de audio se abre al cargar la pantalla de sesión (silenciosa y en pausa hasta que la persona pulsa iniciar) y se cierra si nadie la usa; la preparación del motor cede el turno entre pasos y la respuesta al impulso se calcula tres veces más rápido. (2) La barra y el anillo de progreso se redibujan una vez por segundo, sin transición (avanzan menos de un píxel por segundo); las partes animadas del orbe tienen su propia capa (\`will-change\`). (3) Las pantallas menos visitadas (sesión, resumen, historial, progreso, informe, grabación, perfil, privacidad y diagnóstico) se cargan al abrirlas; el trabajador de servicio las guarda igual para usarlas sin conexión. |
+| Resultado | Ninguna tarea larga desde que se conecta el pulso hasta que se detiene la música (46 s con los detalles técnicos abiertos); la única queda al cargar la pantalla, antes de tocar nada. Con la música sonando: proceso gráfico de 73 % a 19–24 % de un núcleo y página de 48 % a 31–33 %. Paquete principal de 545 kB a 321 kB (de 168 kB a 100 kB comprimido). Abrir la salida de audio por adelantado provocó al principio un corte de 20 ms al arrancar en navegadores que la dejan sonar sin gesto; se corrigió pausándola hasta montar el motor, y la prueba de 30 minutos pasó sin ningún corte. |
+| Pendiente | RNF-05 pide 35 % de un núcleo en un equipo de gama media: aquí la suma es ≈ 50 % con una pantalla de 130 Hz (la mitad de los fotogramas en una de 60 Hz), pero falta medirlo en un celular. La prueba manual con lector de pantalla sigue pendiente. |
+
+## ADR-45. «Lo que hizo la música» se guarda con la sesión
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). |
+| Decisión | El relato de la música (ritmo al empezar y al terminar, y cada cambio de escalón con su minuto) se guarda con la sesión en el dispositivo y aparece en su resumen. Reemplaza el «no se guarda» de ADR-42. |
+| Consecuencias | Solo vive en el dispositivo: la copia de la sesión en la nube no lo lleva (el contrato de la API no cambia), así que una sesión traída de otro dispositivo no lo muestra. Las sesiones anteriores tampoco lo tienen. |
+
+## ADR-46. Instrumentos: cálido, piano y cuencos
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). Los valores de cada timbre son del agente y se ajustan con la escucha del usuario. |
+| Decisión | En el plan se elige el sonido de la música (`src/features/audio/core/instrumentCatalog.ts`): **cálido** (el de siempre: colchón y teclas suaves), **piano** o **cuencos**. Las notas, los escalones y la guía son los mismos; cambia cómo suena cada parte (`instruments.ts`: colchón, díadas, melodía, notas del acorde y campanas) y cómo se tocan los acordes. En el sonido cálido se sostienen; en piano y cuencos se pulsan, escalonados como una mano, y se vuelven a pulsar más suave cada 4 pulsos (piano) u 8 (cuencos) mientras dura el acorde. Los cuencos tienen armónicos que no son múltiplos de la nota (razón 2,76) y un vaivén lento entre los oídos. El bordón suena algo más bajo con piano y cuencos. Todo en el AudioWorklet, sin archivos de audio. La elección viaja en la dirección de la sesión (`instrument`) y se recuerda en el dispositivo, como el ambiente. |
+| Consecuencias | El nivel percibido de cada instrumento quedó dentro de ±2 dB del sonido cálido (medido con la herramienta de muestras). Un instrumento nuevo es una entrada del catálogo, su juego de timbres, su icono y su nombre en los dos idiomas. |
+
+## ADR-47. La sesión en diapositivas
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado el 18 oct 2026 por el usuario (lo propuso él: «que fueran como unos slides, con animación súper fluida»). Los detalles de interacción son del agente. |
+| Contexto | Aun con los pasos de ADR-42, la pantalla de sesión mostraba a la vez la fuente, la valoración, el escenario y los controles: se leía como una lista de paneles. |
+| Decisión | \`/session\` es un recorrido de tres diapositivas: **Tu pulso** (la fuente y el modo de prueba), **Cómo llegas** (el pulso en vivo, lo elegido y la valoración, con «Iniciar música») y **Escuchando** (el escenario de siempre). Al conectarse el pulso, la segunda llega sola tras 0,7 s; «Seguir sin medir mi pulso» permite avanzar igualmente. Un indicador de pasos arriba marca el actual y deja volver atrás, también con la música sonando. Las diapositivas se deslizan con una transición de vista del navegador (\`document.startViewTransition\`, 480 ms) y sus partes entran escalonadas; con «reducir movimiento» o sin soporte, el cambio es inmediato. Todas siguen montadas aunque estén ocultas, así que la fuente sigue midiendo y la música sigue sonando al cambiar de diapositiva. Al cambiar, el foco va al título de la nueva. Los detalles técnicos quedan debajo, plegados. |
+| Consecuencias | Las pruebas E2E conectan el pulso antes de iniciar la música. En navegadores sin transiciones de vista (Firefox, hoy) se ve el cambio sin animación. «Detener» y Esc siguen disponibles en todo momento. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

@@ -17,7 +17,7 @@
 .session-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .session-ring circle { fill: none; stroke-width: calc(var(--ring-width) * 0.25); }
 .session-ring-track { stroke: var(--color-border-subtle); }
-.session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; transition: stroke-dashoffset var(--progress-duration) linear; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
+.session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
 .session-orb-figure { font-size: calc(var(--ring-size) * 0.82); }
 
 /* Guided breathing (ADR-33): the word under the orb and the switch that turns it on. */
@@ -41,7 +41,84 @@
 .listening-stage .check-in { border-top: 0; padding-top: 0; }
 .rating-option { background: var(--color-background); }
 
-/* Source and technical details as cards under the stage. */
+/* The session as slides (ADR-47): the steps on top, one slide at a time, sliding in. */
+.session-stepper ol { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-bottom: var(--space-6); }
+.stepper-step { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1); background: none; border: 0; border-radius: var(--radius-pill); color: var(--color-text-secondary); font: inherit; cursor: pointer; transition: color var(--motion-duration); }
+.stepper-step:disabled { cursor: default; opacity: 0.55; }
+.stepper-step:not(:disabled):hover { color: var(--color-text); }
+.stepper-step .step-mark { transition: background var(--slide-duration) var(--slide-easing), color var(--slide-duration), border-color var(--slide-duration); }
+.stepper-step[aria-current='step'] { color: var(--color-text); font-weight: var(--font-weight-strong); }
+.stepper-step[aria-current='step'] .step-mark { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-button-text); }
+@media (max-width: 600px) {
+  /* On a phone only the current step keeps its name in sight; the others keep it for screen readers. */
+  .stepper-step:not([aria-current='step']) > span:not(.step-mark) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+.session-slides { position: relative; view-transition-name: session-slide; }
+.session-slide { display: grid; gap: var(--space-5); }
+/* A slide away is out of sight and out of the way, but stays mounted; what must never hide stays visible. */
+.session-slide.is-away { position: absolute; inset-inline: 0; top: 0; height: 0; overflow: hidden; visibility: hidden; }
+.session-slide.is-away .stop-button, .session-slide.is-away dialog { visibility: visible; }
+/* A plan warning that opens while another slide is in front floats above the Stop button, where it can be answered. */
+.session-slide.is-away .duration-dialog { position: fixed; inset-inline: var(--space-4); bottom: var(--stop-reserve); z-index: var(--stop-layer); width: auto; max-width: var(--auth-card-width); margin: 0 auto; box-shadow: var(--card-shadow); }
+/* The Stop button keeps its place while the slides move. */
+.session-page .stop-button { view-transition-name: stop-button; }
+.slide-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); }
+.slide-title:focus { outline: none; }
+.slide-lead { color: var(--color-text-secondary); max-width: var(--stage-detail-max-width); }
+.slide-actions { display: flex; justify-content: flex-end; }
+/* Each part of a slide rises in a little after the previous one. */
+.session-slide:not(.is-away) > * { animation: slide-rise var(--slide-duration) var(--slide-easing) backwards; }
+/* The listening stage holds the fixed Stop button: a moving parent would carry it, so the stage only fades in. */
+.session-slide:not(.is-away) > .listening-stage { animation-name: slide-fade; }
+.session-slide:not(.is-away) > :nth-child(2) { animation-delay: var(--slide-stagger); }
+.session-slide:not(.is-away) > :nth-child(3) { animation-delay: calc(var(--slide-stagger) * 2); }
+.session-slide:not(.is-away) > :nth-child(n + 4) { animation-delay: calc(var(--slide-stagger) * 3); }
+@keyframes slide-fade { from { opacity: 0; } }
+@keyframes slide-rise { from { opacity: 0; transform: translateY(calc(var(--slide-distance) / 3)); } }
+/* Only the slides move between steps; the rest of the page changes in place. */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-old(session-slide) { animation: slide-out var(--slide-duration) var(--slide-easing) both; }
+::view-transition-new(session-slide) { animation: slide-in var(--slide-duration) var(--slide-easing) both; }
+:root[data-slide-direction='backwards']::view-transition-old(session-slide) { animation-name: slide-out-backwards; }
+:root[data-slide-direction='backwards']::view-transition-new(session-slide) { animation-name: slide-in-backwards; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(var(--slide-distance)); } }
+@keyframes slide-out { to { opacity: 0; transform: translateX(calc(-1 * var(--slide-distance))); } }
+@keyframes slide-in-backwards { from { opacity: 0; transform: translateX(calc(-1 * var(--slide-distance))); } }
+@keyframes slide-out-backwards { to { opacity: 0; transform: translateX(var(--slide-distance)); } }
+
+/* Second slide: the pulse now, beating, and what was chosen. */
+.arrival { display: grid; gap: var(--space-6); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
+.arrival-pulse .eyebrow { color: var(--color-accent); margin-bottom: var(--space-2); }
+.arrival-rate { display: flex; align-items: baseline; gap: var(--space-3); }
+.arrival-rate strong { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-display); line-height: 1; font-variant-numeric: tabular-nums; }
+.arrival-heart { align-self: center; width: var(--space-4); height: var(--space-4); border-radius: 50%; background: var(--color-accent); box-shadow: var(--glow-accent); animation: heart-beat 620ms ease-out; }
+@keyframes heart-beat { 18% { transform: scale(1.6); } }
+.arrival-choices { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.arrival-choices li, .arrival-choice { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.arrival-choices > li { padding: var(--space-1) var(--space-3); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-sm); }
+.arrival-choices .icon { color: var(--color-accent); }
+.arrival > .pill-button-primary { justify-self: start; }
+
+.step-mark { display: inline-grid; place-items: center; width: var(--icon-badge-size); height: var(--icon-badge-size); flex-shrink: 0; border: var(--border-width) solid var(--color-border); border-radius: 50%; font-weight: var(--font-weight-strong); font-variant-numeric: tabular-nums; }
+
+/* While it plays: the steps the music can take and its pace. */
+.music-now { margin-bottom: var(--space-6); }
+.session-journey { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.journey-step { padding: var(--space-1) var(--space-4); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.journey-step + .journey-step { position: relative; margin-left: var(--space-4); }
+.journey-step + .journey-step::before { content: ''; position: absolute; right: 100%; top: 50%; width: var(--space-4); margin-right: var(--space-2); border-top: var(--border-width) solid var(--color-border); }
+.journey-step[aria-current='step'] { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-button-text); font-weight: var(--font-weight-strong); }
+.music-pace { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.state-help { flex-basis: 100%; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.state-help summary { cursor: pointer; width: fit-content; text-decoration: underline; text-underline-offset: var(--space-1); }
+.state-help p { margin-top: var(--space-2); max-width: var(--stage-detail-max-width); }
+
+/* After it ends: what the music did. */
+.session-recap { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.session-recap h3 { font-size: var(--text-base); color: var(--color-text); margin-bottom: var(--space-2); }
+.session-recap ul { list-style: none; margin-top: var(--space-2); display: grid; gap: var(--space-1); }
+
+/* Source and technical details as cards around the stage. */
 .session-page .acquisition-panel { margin-top: var(--space-8); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
 .session-page .technical-details { margin-top: var(--space-6); padding: 0 var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }
 .session-page .signal-chart { border-radius: var(--border-radius); }
@@ -53,6 +130,9 @@
   .listening-stage .stage-main { text-align: center; padding-bottom: 0; }
   .listening-stage .stage-title, .listening-stage .stage-detail { margin-left: auto; margin-right: auto; }
   .listening-stage .session-stage .estimated-state { justify-content: center; }
+  .session-journey { justify-content: center; }
+  .state-help summary { margin-inline: auto; }
+  .state-help p { margin-inline: auto; }
   .listening-stage .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: var(--space-5); }
   .listening-stage .play-button { grid-column: 1 / -1; justify-self: center; margin: 0; }
   .session-page .acquisition-panel, .session-page .technical-details { padding-left: var(--space-5); padding-right: var(--space-5); }

@@ -57,6 +57,12 @@ export const SparkIcon = (props: IconProps): React.JSX.Element => (
 export const LeafIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M5 19c0-8 5-13 14-14 0 9-4.500 14-12 14" /><path d="M5 19c2.500-4.500 5.500-7.500 9-9.500" /></Icon>
 );
+export const MonitorIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><rect x="3" y="4.500" width="18" height="12" rx="2" /><path d="M9 20h6M12 16.500V20" /></Icon>
+);
+export const GlobeIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.500 2.500 3.800 5.500 3.800 9s-1.300 6.500-3.800 9c-2.500-2.500-3.800-5.500-3.800-9S9.500 5.500 12 3z" /></Icon>
+);
 export const MoonIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M19.500 14.500A8 8 0 0 1 9.500 4.500a8 8 0 1 0 10 10z" /></Icon>
 );
@@ -65,6 +71,18 @@ export const SunIcon = (props: IconProps): React.JSX.Element => (
 );
 export const SunsetIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.600 9.600l1.800 1.800M18.400 9.600l-1.800 1.800" /></Icon>
+);
+export const SeaIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /></Icon>
+);
+export const KeysIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M8 5v8M12 5v8M16 5v8M8 13v6M12 13v6M16 13v6" /></Icon>
+);
+export const BowlIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M3.500 11h17a8.500 8.500 0 0 1-17 0z" /><path d="M9 19.200h6M12 4v2.500M8.500 5.500l.800 1.600M15.500 5.500l-.800 1.600" /></Icon>
+);
+export const RainIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M7 15.500a4 4 0 0 1 .500-8 5.500 5.500 0 0 1 10.500 1.500 3.300 3.300 0 0 1-.500 6.500" /><path d="M9 18l-1 2.500M13 18l-1 2.500M17 18l-1 2.500" /></Icon>
 );
 export const WindIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M3 9h10.500a2.500 2.500 0 1 0-2.500-2.500M3 14h14.500a2.500 2.500 0 1 1-2.500 2.500M3 11.500h6" /></Icon>

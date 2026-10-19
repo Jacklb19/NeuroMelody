@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { act } from 'react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { APP_NAME } from '../config/app';
 import { ROUTES, sessionPath } from '../config/routes';
+import { DEFAULT_AMBIENCE_ID } from '../features/audio/core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID } from '../features/audio/core/instrumentCatalog';
 import { es } from '../i18n/es';
 import { WarningsContext } from '../features/warnings/warningsContext';
 import { WarningsRegistry } from '../features/warnings/warningsRegistry';
@@ -47,6 +49,9 @@ function renderWith(route: string, accepted = false, account: AccountSetup = {})
   return { registry };
 }
 
+/** The first load of a screen file in the test environment transforms all its modules: give it time. */
+const LAZY_SCREEN = { timeout: 15_000 };
+
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
 describe('routes', () => {
@@ -59,14 +64,15 @@ describe('routes', () => {
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
-  it('the app home starts a session and opens the plan; the profile sits apart from the navigation', () => {
+  it('the app home leads into preparing a session; the profile sits apart from the navigation', () => {
     renderWith(ROUTES.app);
-    expect(screen.getByRole('heading', { level: 2, name: es.home.start.title(DEFAULT_DURATION_MIN) })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: es.home.start.title })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: es.app.mainNavigation });
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
     const labels = es.app.navigation;
-    expect(links).toEqual([labels.home, labels.plan, labels.session, labels.history]);
-    expect(screen.getByRole('link', { name: es.home.start.customize })).toHaveAttribute('href', ROUTES.plan);
+    // A session is not an entry of the navigation: it is reached by preparing it (ADR-42).
+    expect(links).toEqual([labels.home, labels.plan, labels.history]);
+    expect(screen.getByRole('link', { name: es.home.start.action })).toHaveAttribute('href', ROUTES.plan);
     expect(screen.getByRole('link', { name: es.app.profile })).toHaveAttribute('href', ROUTES.account);
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
@@ -89,16 +95,19 @@ describe('routes', () => {
     await user.click(button);
 
     expect(registry.isAccepted()).toBe(true);
+    // The session screen arrives as its own file: the route changes once it has loaded.
+    expect(await screen.findByRole('heading', { level: 1, name: es.session.title }, LAZY_SCREEN)).toBeInTheDocument();
     expect(currentPath()).toBe(sessionPath(30));
-    expect(screen.getByRole('heading', { level: 1, name: es.session.title })).toBeInTheDocument();
     expect(screen.getByText(es.session.plan(30))).toBeInTheDocument();
   });
 
-  it('with the warnings accepted it goes straight to the session and its panels', () => {
+  it('with the warnings accepted it goes straight to the session and its panels', async () => {
     renderWith(ROUTES.session, true);
-    expect(screen.getByText(es.session.plan(DEFAULT_DURATION_MIN))).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: es.session.narrative.noSource.title })).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: es.session.progress.label })).toBeInTheDocument();
+    expect(await screen.findByText(es.session.plan(DEFAULT_DURATION_MIN), undefined, LAZY_SCREEN)).toBeInTheDocument();
+    // The session opens on its first slide, the pulse; the listening slide waits for the music (ADR-47).
+    expect(screen.getByRole('heading', { level: 2, name: es.session.slides.names.pulse })).toBeVisible();
+    expect(screen.getByRole('button', { name: es.session.slides.names.listening })).toBeDisabled();
+    expect(screen.getByRole('progressbar', { name: es.session.progress.label, hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: es.acquisition.title })).toBeInTheDocument();
     // Signal figures stay folded under the technical details (ADR-24).
     expect(screen.getByText(es.session.technicalDetails.title)).toBeVisible();
@@ -113,12 +122,15 @@ describe('routes', () => {
     await user.click(screen.getByRole('radio', { name: es.plan.minutes(45) }));
     expect(screen.getByText(es.plan.minutes(45), { selector: 'strong' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: es.plan.continueToSession }));
-    expect(currentPath()).toBe(sessionPath(45));
+    // The plan always names the ambience and the instrument it shows, so the session cannot fall back to stored ones.
+    await waitFor(() => {
+      expect(currentPath()).toBe(sessionPath(45, [], DEFAULT_AMBIENCE_ID, DEFAULT_INSTRUMENT_ID));
+    }, LAZY_SCREEN);
   });
 
-  it('diagnostics stays reachable through its route', () => {
+  it('diagnostics stays reachable through its route', async () => {
     renderWith(ROUTES.diagnostics);
-    expect(screen.getByRole('heading', { level: 1, name: es.diagnostics.pageTitle })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: es.diagnostics.pageTitle }, LAZY_SCREEN)).toBeInTheDocument();
   });
 
   it('an unknown route goes back home', () => {
@@ -133,7 +145,7 @@ describe('routes', () => {
 });
 
 describe('two-step verification on the way into the app', () => {
-  const homeTitle = es.home.start.title(DEFAULT_DURATION_MIN);
+  const homeTitle = es.home.start.title;
   const appIsHidden = (): void => {
     expect(screen.queryByRole('heading', { level: 2, name: homeTitle })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: es.app.mainNavigation })).not.toBeInTheDocument();

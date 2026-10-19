@@ -22,10 +22,10 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | 14 | Recolección de datos y reentrenamiento | front + back | ADR-33 (3), ADR-37: protocolo guiado con etiquetas, consentimiento, envío, reentrenamiento y nueva versión del modelo | Hecho el código, en `dev` (12 oct): grabación guiada en `/collect`, exportación, envío consentido a la nube, reentrenamiento programado con control de calidad, publicación con aprobación de una persona y descarga de la última versión por la app. Falta la preparación del usuario (migración, caché de WESAD, secretos y entorno en GitHub) y grabaciones reales de al menos 5 personas; hasta entonces no hay ninguna versión nueva del modelo |
 | 15 | S6.4 Modelo de lenguaje | back + front | RF-13, RF-15; ADR-08, ADR-36. Plan propuesto y resumen con esquema cerrado | Hecho, en `dev` (12 oct). Probado con la clave real de Groq desde `tools/try_language_model.py` en español; falta la prueba del usuario en la app y en inglés |
 | 16 | S7.1 Sin conexión | front | HU-09, RNF-08. Sesión completa sin red y cola de sincronización sin duplicados | Hecho, en `dev` (12 oct): cola de borrados por cuenta, sincronización automática al volver la conexión y envíos sin duplicados. Falta la prueba del usuario cortando la red con su cuenta |
-| 17 | Paisaje sonoro y mejora de la música | front | ADR-33 (5): elegir entre dos o tres timbres o ambientes; el usuario pidió además (12 oct) una mejora profunda de cómo suena la música. Toca el motor de audio | Pendiente; es lo siguiente |
-| 18 | Recordatorios | front | ADR-33 (6): aviso a la hora elegida, donde el navegador lo permita | Pendiente |
-| 19 | S7.2 Accesibilidad y rendimiento | front | RNF-01 a RNF-06, RNF-09, RNF-10 | Pendiente |
-| 20 | S7.3 Cierre | ambos | Matriz final, pruebas completas, documentación y demo | Pendiente |
+| 17 | Paisaje sonoro y mejora de la música | front | ADR-33 (5): elegir entre dos o tres timbres o ambientes; el usuario pidió además (12 oct) una mejora profunda de cómo suena la música. Toca el motor de audio | En curso (12 oct), en la rama `feat/richer-music`: timbre estéreo, acordes con conducción de voces, frases, variación lenta, reverberación y fundido real entre modos, con muestras «antes y después» (`diseno-musical.md`). Música integrada en `dev` el 13 oct con el visto bueno del usuario. Ampliado por P-06 (ADR-38 a ADR-42): programas por intención, tempo que parte del pulso, ambientes (lluvia, mar, viento), programa para dormir, recorrido guiado y sesión que se explica. Hecho en `dev` local; falta la prueba del usuario en la app y publicarlo |
+| 18 | Recordatorios | front | ADR-33 (6): aviso a la hora elegida, donde el navegador lo permita | Hecho en `dev` local (15 oct, ADR-43): hora y días en el perfil y un archivo de calendario que avisa desde el calendario de la persona. Falta su prueba en el teléfono |
+| 19 | S7.2 Accesibilidad y rendimiento | front | RNF-01 a RNF-06, RNF-09, RNF-10 | Hecho en `dev` local (15 oct, ADR-44): sin tareas largas durante la sesión, CPU del navegador a menos de la mitad, paquete principal de 545 a 321 kB, árbol de accesibilidad revisado en 14 pantallas. Falta medir en un celular de gama media y la prueba con lector de pantalla |
+| 20 | S7.3 Cierre | ambos | Matriz final, pruebas completas, documentación y demo | En curso (15 oct): matriz de RF, HU y RNF al día (abajo), guion de demostración en `docs/demo.md` y README actualizado. Falta la batería completa sobre lo publicado y la prueba del usuario |
 | 21 | Publicación | ambos | Push del usuario, vista previa y producción, comprobaciones reales | Continua: el front se publica en `neruomelody.vercel.app` y el back en `neuro-m-back.vercel.app`, los dos desde `main` |
 
 **Ruta crítica:** API/RLS/aal2 → sincronización → sin conexión → validación → cierre. Los bloques 10, 11 y 13 son cortos y no dependen del back, por eso van antes o entre medias; el 14 necesita la API; el 17 y el 18 son los más costosos o menos fiables y van al final. El agente no recorta alcance por su cuenta.
@@ -54,22 +54,35 @@ Orden de trabajo por prioridad, sin calendario (ADR-13 retirado). Cada bloque se
 | RF-02, RF-04, RF-05 | Verificados (simulador con cinco escenarios, filtro, calidad e índices). |
 | RF-06 | Verificado con referencias sintéticas. |
 | RF-07 | Cumplido con un clasificador entrenado con WESAD (ADR-32, `docs/modelo.md`); reglas como respaldo. Sin validación clínica. |
-| RF-08, RF-09, RF-10 | Verificados con pruebas y escucha del usuario. |
+| RF-08, RF-09, RF-10 | Verificados con pruebas; la música se rehízo en el bloque 17 (timbre, acordes, frases, ambientes, tempo que parte del pulso, nivel para dormir) y el usuario aprobó las muestras. Falta su escucha en la app. |
 | RF-11, RF-17, RF-18 | Verificados; quedan comprobaciones manuales de accesibilidad y nivel acústico. |
 | RF-12 | Verificado, incluido LF/HF. |
-| RF-13 | Plan manual y propuesta de duración por el modelo de lenguaje, en `dev`. |
+| RF-13 | Plan con intención (que decide el programa de la música, ADR-38), duración y ambiente; propuesta de duración por el modelo de lenguaje, publicada. |
 | RF-14 | Implementado: sesiones en el dispositivo y, con cuenta, dos pasos y consentimiento, también en la nube. Verificado con pruebas automáticas y con la migración en una base local; publicado; falta la prueba con una cuenta real. |
-| RF-15, RF-16 | Hechos en el dispositivo (resumen, CSV, historial y «Tu progreso»); falta el texto del modelo de lenguaje (bloque 15). |
+| RF-15, RF-16 | Hechos: resumen con CSV y texto del modelo de lenguaje (publicado), historial, «Tu progreso», informe imprimible y «Lo que hizo la música» al terminar. |
 
 | HU | Estado |
 |---|---|
 | HU-01 | Cumplida con periférico emulado: emparejamiento en menos de 15 s y estado siempre visible. |
 | HU-02, HU-04, HU-06 | Cumplidas con evidencia automática; HU-06 con revisión manual pendiente. |
-| HU-03 | 30 min sin subdesbordamientos (S3); falta medir el inicio < 1 s en vista previa. |
-| HU-05 | Cumplida; revisión de rendimiento en S7. |
-| HU-07 | Plan manual hecho; falta la propuesta del modelo. |
-| HU-08, HU-10 | Cumplidas en el dispositivo; HU-08 espera el resumen del modelo de lenguaje. |
-| HU-09 | Pendiente (bloque 16, sin conexión). |
+| HU-03 | 30 min sin subdesbordamientos (S3, repetida con el motor nuevo en el bloque 19); el inicio ya no espera a abrir la salida de audio (ADR-44). |
+| HU-05 | Cumplida; rendimiento medido en el bloque 19 (ADR-44). |
+| HU-07 | Cumplida: plan con intención, duración y ambiente, y propuesta del modelo de lenguaje. |
+| HU-08, HU-10 | Cumplidas, con el resumen del modelo de lenguaje. |
+| HU-09 | Cumplida (bloque 16): sesión completa sin red y cola de sincronización; las pantallas que se cargan al abrirlas también se guardan para usarlas sin conexión (E2E `offline.spec.ts`). |
+
+| RNF | Estado (15 oct 2026) |
+|---|---|
+| RNF-01 | 60 s sin subdesbordamientos en cada cambio del motor y 30 min sin ninguno con el motor de los bloques 17 a 19 (15 oct). |
+| RNF-02 | Menos de 2 s desde la aceptación (E2E `adaptation.spec.ts`). |
+| RNF-03 | Ninguna rampa de tempo menor de 20 s, también la del ajuste al pulso (ADR-39). |
+| RNF-04 | Sin tareas largas desde que se conecta el pulso hasta detener la música; una sola al cargar la pantalla (ADR-44). |
+| RNF-05 | En el portátil de pruebas, ≈ 50 % de un núcleo sumando página y proceso gráfico con pantalla de 130 Hz (antes ≈ 120 %). Falta medir en un celular de gama media. |
+| RNF-06 | Límite de salida, aviso al final del plan y cada 60 min; el programa para dormir se apaga solo, sin aviso (ADR-41). |
+| RNF-07 | La señal se procesa en el dispositivo; solo viajan resúmenes con consentimiento y dos pasos. |
+| RNF-08 | Ver HU-09. |
+| RNF-09 | Árbol de accesibilidad revisado en 14 pantallas sin controles sin nombre ni saltos de títulos; falta la prueba con lector de pantalla. |
+| RNF-10 | Bluetooth en Chrome y Edge; el resto con el simulador o la cámara. |
 
 ## Riesgos
 

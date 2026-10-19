@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { APP_NAME } from '../../../config/app';
 import { useMessages, type Messages } from '../../../i18n/messages';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
@@ -11,19 +11,38 @@ import {
   VOLUME_STEP_DB,
 } from '../engine/AudioEngine';
 import type { AudioEngineErrorCode, AudioEngineErrorParams } from '../engine/AudioEngineError';
-import { CALIBRATION_LEVEL } from '../engine/levels';
+import { DEFAULT_AMBIENCE_ID, type AmbienceId } from '../core/ambienceCatalog';
+import { DEFAULT_INSTRUMENT_ID, type InstrumentId } from '../core/instrumentCatalog';
+import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
   CONTINUOUS_WARNING_PERIOD_S,
+  QUIET_FADE_S,
   RESPONSE_WAIT_S,
   fadeStartS,
+  quietFadeStartS,
   warningInstantS,
 } from '../session/durationWarnings';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
 
+/** What the session screen can ask of the panel from outside it (ADR-47). */
+export interface PlaybackHandle {
+  /** Starts the music, as the panel's own button does; call it inside a click. */
+  start(): void;
+}
+
 interface PlaybackPanelProps {
+  readonly ref?: Ref<PlaybackHandle>;
   readonly durationMin: number;
+  /** Level the music starts at: the one the program of the session asks for (ADR-38). */
+  readonly initialLevel?: LevelId;
+  /** Ambience under the music, chosen before the session (ADR-40). */
+  readonly ambience?: AmbienceId;
+  /** Instrument of the music, chosen before the session (ADR-46). */
+  readonly instrument?: InstrumentId;
+  /** Ends by fading out when the plan does, with no warning to answer (ADR-41). */
+  readonly quietEnding?: boolean;
   /** Injectable to test without a browser. */
   readonly factory?: AudioFactory;
   readonly generateSeed?: () => number;
@@ -63,7 +82,12 @@ function describeFailure(failure: AudioStartFailure, t: Messages): string {
  *   clock at start: it happens even when the tab is in the background.
  */
 export function PlaybackPanel({
+  ref,
   durationMin,
+  initialLevel = CALIBRATION_LEVEL,
+  ambience = DEFAULT_AMBIENCE_ID,
+  instrument = DEFAULT_INSTRUMENT_ID,
+  quietEnding = false,
   factory,
   generateSeed = randomSeed,
   onEngineChange,
@@ -92,17 +116,24 @@ export function PlaybackPanel({
       if (startTime === null) {
         return;
       }
+      if (quietEnding) {
+        const startsAt = startTime + quietFadeStartS(planDurationS);
+        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, QUIET_FADE_S);
+        return;
+      }
       const startsAt = startTime + fadeStartS(planDurationS, warningIndexRef.current);
       fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime);
     },
-    [planDurationS],
+    [planDurationS, quietEnding],
   );
 
   const start = async (): Promise<void> => {
     const engine = await control.start(
       {
         seed: generateSeed(),
-        initialLevel: CALIBRATION_LEVEL,
+        initialLevel,
+        ambience,
+        instrument,
         outputThroughAudioElement: OUTPUT_THROUGH_AUDIO_ELEMENT,
       },
       volumeDb,
@@ -115,6 +146,12 @@ export function PlaybackPanel({
     scheduleFade(engine);
     onEngineChange?.(engine);
   };
+
+  useImperativeHandle(ref, () => ({
+    start: () => {
+      void start();
+    },
+  }));
 
   const stopNow = useCallback((): void => {
     setWarning(null);
@@ -151,7 +188,8 @@ export function PlaybackPanel({
         return;
       }
       onElapsedChange?.(engine.audioTime - startTime);
-      if (engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
+      // A quiet ending never opens a warning: nobody should have to answer it half asleep.
+      if (!quietEnding && engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
         setWarning(warningIndexRef.current);
       }
       const end = fadeEndRef.current;
@@ -163,7 +201,7 @@ export function PlaybackPanel({
     return () => {
       clearInterval(id);
     };
-  }, [state, getEngine, planDurationS, stopNow, onElapsedChange]);
+  }, [state, getEngine, planDurationS, quietEnding, stopNow, onElapsedChange]);
 
   // Escape key: stops the music unless a dialog is open.
   useEffect(() => {

@@ -13,4 +13,12 @@ describe('readSessionRecord', () => {
     expect(readSessionRecord({ ...sessionRecord(), goals: ['cure'] })).toBeNull();
     expect(readSessionRecord({ ...sessionRecord(), goals: ['relax', 'relax'] })).toBeNull();
   });
+
+  it('keeps what the music did when it is valid, and refuses it otherwise (ADR-42)', () => {
+    const music = { startTempoBpm: 72, endTempoBpm: 59, steps: [{ atS: 200, level: 'target', calmer: true }] };
+    expect(readSessionRecord({ ...sessionRecord(), music })?.music).toEqual(music);
+    expect(readSessionRecord(sessionRecord())?.music).toBeUndefined();
+    expect(readSessionRecord({ ...sessionRecord(), music: { ...music, steps: [{ atS: 200, level: 'loud', calmer: true }] } })).toBeNull();
+    expect(readSessionRecord({ ...sessionRecord(), music: { ...music, startTempoBpm: -1 } })).toBeNull();
+  });
 });

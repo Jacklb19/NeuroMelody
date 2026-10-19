@@ -13,9 +13,10 @@ it('exposes the scheduled musical parameters', () => {
   act(() => { calibrateToUncertain(session); });
   expect(screen.getByTestId('music-level')).toHaveTextContent(es.audio.levels[CALIBRATION_LEVEL]);
   expect(es.audio.levels[CALIBRATION_LEVEL]).toBe('Intermedio');
-  const targetTempo = es.common.withUnit(String(LEVELS[CALIBRATION_LEVEL].tempo), es.common.units.tempo);
-  expect(targetTempo).toBe('66 BPM');
-  expect(screen.getByText(targetTempo)).toBeVisible();
+  // The tempo shown is the one of this session, which the pulse of the readings has moved (ADR-39).
+  const { levelTempoBpm } = session.getSnapshot();
+  expect(levelTempoBpm).not.toBe(LEVELS[CALIBRATION_LEVEL].tempo);
+  expect(screen.getByText(es.common.withUnit(String(levelTempoBpm), es.common.units.tempo))).toBeVisible();
   expect(screen.getByText(es.audio.modes.lydian)).toBeVisible();
   expect(screen.getByText(es.common.noValue)).toBeVisible();
 });
