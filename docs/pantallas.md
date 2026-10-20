@@ -155,6 +155,16 @@ Desarrollo autorizado e implementado en local el 19 oct. El plan está en `plan-
 
 No se añaden rutas de pantalla. La sesión rápida es una excepción aprobada de 3 minutos y explica que puede terminar antes de disponer de una estimación adaptada; la calibración no se acorta. La explicación del progreso requiere aceptación explícita y cuenta; el modelo solo elige frases verificadas, sin alterar cifras. Los estados sin datos y de fallo conservan el recorrido manual.
 
+## Modo solo pulso (ADR-51, 20 oct 2026)
+
+No añade pantallas.
+
+| Pantalla | Cambio |
+|---|---|
+| `/session` | Con un reloj que solo envía el pulso, la nota del estado estimado dice «Estimado solo con tu pulso» y un aviso explica que el reloj no envía el tiempo entre latidos. |
+| `/summary/:id` | En lugar de la variación entre latidos, una nota: este reloj solo envió el pulso. |
+| `/progress`, `/report`, `/history` | El pulso aparece como siempre; la variación queda vacía en esas sesiones. «Lo que te funciona» no compara su pulso con el de una banda. |
+
 ## `/report`, informe para compartir (ADR-33, solo en el dispositivo)
 
 Se llega desde la tarjeta «Compártelo con quien te acompaña», al final de «Tu progreso»; abre con el mismo grupo de sesiones que estaba elegido allí (viaja en la dirección, parámetro `range`). No está en la cabecera.

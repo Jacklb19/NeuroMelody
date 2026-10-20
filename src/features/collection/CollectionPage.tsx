@@ -48,7 +48,8 @@ type Step =
   | { readonly kind: 'saved' }
   /** The protocol was walked with a trial source: nothing was kept. */
   | { readonly kind: 'trial_done' }
-  | { readonly kind: 'save_failed' };
+  | { readonly kind: 'save_failed' }
+  | { readonly kind: 'no_intervals' };
 
 const EXPORT_MIME_TYPE = 'application/json';
 
@@ -110,6 +111,11 @@ export function CollectionPage({ acquisition }: CollectionPageProps): React.JSX.
     if (!isMeasuringSource(kind)) {
       // A trial of the protocol: those beats are nobody's, so there is nothing to keep.
       setStep({ kind: 'trial_done' });
+      return;
+    }
+    // A watch that sends only the pulse leaves the stages empty: there is nothing to learn from (ADR-51).
+    if (segmentsRef.current.every((segment) => segment.rrMs.length === 0)) {
+      setStep({ kind: 'no_intervals' });
       return;
     }
     const recording: CollectionRecording = {
@@ -254,6 +260,13 @@ export function CollectionPage({ acquisition }: CollectionPageProps): React.JSX.
           <h2>{copy.trialDone.title}</h2>
           <p>{copy.trialDone.text}</p>
           <button type="button" className="pill-button pill-button-ghost" onClick={cancel}>{copy.trialDone.again}</button>
+        </section>
+      )}
+      {step.kind === 'no_intervals' && (
+        <section className="glass-card collection-card" role="alert" tabIndex={-1} ref={stepRef}>
+          <h2>{copy.noIntervals.title}</h2>
+          <p>{copy.noIntervals.text}</p>
+          <button type="button" className="pill-button pill-button-ghost" onClick={cancel}>{copy.saveFailed.retry}</button>
         </section>
       )}
       {step.kind === 'save_failed' && (

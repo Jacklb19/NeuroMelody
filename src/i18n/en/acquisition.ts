@@ -47,6 +47,7 @@ export const acquisition = {
     rest: 'Rest',
     activation: 'Activation',
     progressive_relaxation: 'Gradual relaxation',
+    pulse_only: 'Watch that sends only the pulse',
     progressive_activation: 'Rising activation',
     // Describes the device, not the body: the interface does not interpret the signal.
     artifacts: 'Rest with reading glitches',

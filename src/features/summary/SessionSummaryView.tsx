@@ -38,6 +38,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
   const musicId = useId();
   const trendValues = record.samples.map((sample) => (sample.goodQuality ? sample.rmssd : null));
   const { figures } = t.summary;
+  const heartRateOnly = record.signalMode === 'hr_only';
 
   return (
     <div className="summary-page">
@@ -64,18 +65,21 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
             <dt>{figures.heartRate}</dt>
             <dd data-testid="summary-heart-rate">{format.change(summary.heartRate, t.common.units.beatsPerMinute)}</dd>
           </div>
-          <div>
-            <dt>{figures.rmssd}</dt>
-            <dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd>
-            <dd className="figure-trend">
-              <Sparkline values={trendValues} label={figures.rmssdTrend} />
-            </dd>
-          </div>
-          <div>
-            <dt>{figures.lfHfAtEnd}</dt>
-            <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
-          </div>
+          {heartRateOnly ? null : <>
+            <div>
+              <dt>{figures.rmssd}</dt>
+              <dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd>
+              <dd className="figure-trend">
+                <Sparkline values={trendValues} label={figures.rmssdTrend} />
+              </dd>
+            </div>
+            <div>
+              <dt>{figures.lfHfAtEnd}</dt>
+              <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
+            </div>
+          </>}
         </dl>
+        {heartRateOnly && <p className="panel-footnote">{figures.heartRateOnly}</p>}
         <p className="panel-footnote">{figures.footnote(EDGE_SECONDS)}</p>
       </section>
 

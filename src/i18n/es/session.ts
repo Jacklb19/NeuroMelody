@@ -101,6 +101,9 @@ export const session = {
     /** The model's calibrated probability for the state shown, as a whole percentage. */
     modelConfidence: (percent: number): string => `Estimado por un modelo entrenado · confianza del ${String(percent)} %`,
     waitingForQuality: 'La adaptación espera datos de buena calidad.',
+    /** With a watch that sends only the pulse (ADR-51). */
+    heartRateOnly: 'Estimado solo con tu pulso',
+    heartRateOnlyNotice: 'Tu reloj envía el pulso, pero no el tiempo entre latidos. La música se adapta con una estimación más simple, solo con tu pulso.',
     /** Why the music holds its step; the minutes come from the adaptation rules (ADR-12). */
     dwell: (minutes: number): string =>
       `Se conserva el escalón hasta completar su duración mínima de ${String(minutes)} minutos.`,

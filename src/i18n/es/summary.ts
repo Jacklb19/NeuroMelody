@@ -20,6 +20,8 @@ export const summary = {
     rmssd: 'Variabilidad entre latidos (RMSSD)',
     rmssdTrend: 'Variabilidad entre latidos a lo largo de la sesión',
     lfHfAtEnd: 'Razón LF/HF al final',
+    /** In place of the variability, for a watch that sent only the pulse (ADR-51). */
+    heartRateOnly: 'Tu reloj solo envió el pulso, así que esta sesión no tiene la variación entre latidos.',
     /** The seconds come from the samples averaged at each end of the session. */
     footnote: (edgeSeconds: number): string =>
       `Cada valor promedia hasta ${String(edgeSeconds)} s de señal de buena calidad al principio y al final. ` +

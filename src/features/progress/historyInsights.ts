@@ -91,6 +91,8 @@ export function historyInsights(records: readonly SessionRecord[], range: Progre
       const scopes = new Map<string, { goal: string; version: number; source: SourceKind | null; values: Map<string, number[]> }>();
       for (const { record, summary } of prepared) {
         if (metric === 'pulse' && record.sourceKind !== 'ble' && record.sourceKind !== 'camera') continue;
+        // A watch's pulse is not compared with a strap's, even though both arrive over Bluetooth (ADR-51).
+        if (metric === 'pulse' && record.signalMode === 'hr_only') continue;
         const value = valueOf(record, dimension);
         const change = metric === 'rating' ? summary.ratingChange : summary.heartRate === null ? null : summary.heartRate.end - summary.heartRate.start;
         if (value === null || change === null) continue;

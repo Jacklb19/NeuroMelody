@@ -40,7 +40,9 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
   })];
   const connected = connection === 'connected';
   // Says who is estimating: the trained model (with its confidence once it has one) or the fallback rules.
-  const estimateNote = snapshot.estimator === 'rules'
+  const estimateNote = snapshot.estimator === 'heart_rate'
+    ? t.session.stage.heartRateOnly
+    : snapshot.estimator === 'rules'
     ? t.session.stage.confidence
     : snapshot.confidence === null || snapshot.state === null
       ? t.session.stage.modelReady
@@ -77,6 +79,7 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
         </details>
       </div>
 
+      {snapshot.estimator === 'heart_rate' && <p className="quiet-notice">{t.session.stage.heartRateOnlyNotice}</p>}
       {connected && playing && !snapshot.qualityGood && (
         <p className="quiet-notice">{t.session.stage.waitingForQuality}</p>
       )}

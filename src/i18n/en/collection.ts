@@ -76,6 +76,11 @@ export const collection = {
     /** File name, e.g. "neuromelody-recordings-2026-10-12.json". */
     fileName: (prefix: string, date: string): string => `${prefix}-recordings-${date}.json`,
   },
+  /** A source that sent no beat intervals, such as a watch (ADR-51). */
+  noIntervals: {
+    title: 'The recording was not saved',
+    text: 'Your device sent your pulse but not the time between beats, which the recording needs. Use a chest strap or the camera.',
+  },
   saveFailed: {
     title: 'It could not be saved',
     text: 'The recording was not saved on this device. You can try again.',

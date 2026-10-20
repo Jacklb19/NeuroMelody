@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AdaptationEngine, estimateState } from './AdaptationEngine';
+import { AdaptationEngine, estimateState, estimateStateFromHeartRate } from './AdaptationEngine';
 import { SignalProcessor, type IndicesResult } from '../signal/processing/SignalProcessor';
 import { createRrGenerator } from '../acquisition/simulator/rrGenerator';
 import { SCENARIOS } from '../acquisition/simulator/scenarios';
@@ -196,4 +196,25 @@ it('goes one step past the target only when the range of the program reaches the
   };
   expect(descent('target')).toEqual(['target']);
   expect(descent('sleep')).toEqual(['target', 'sleep']);
+});
+
+describe('pulse-only estimation (ADR-51)', () => {
+  const pulse = (timeMs: number, meanHr: number): IndicesResult => ({ ...reading(timeMs, meanHr), rmssd: null, sdnn: null, signalMode: 'hr_only' });
+
+  it('applies the heart rate change alone', () => {
+    expect(estimateStateFromHeartRate(110, 100)).toBe('high');
+    expect(estimateStateFromHeartRate(90, 100)).toBe('low');
+    expect(estimateStateFromHeartRate(105, 100)).toBe('uncertain');
+  });
+
+  it('calibrates and accepts states from the pulse, saying so', () => {
+    const engine = new AdaptationEngine();
+    engine.start(0, 'intermediate');
+    for (let ms = 60_000; ms <= 180_000; ms += 5000) engine.process(pulse(ms, 100), ms / 1000, true);
+    expect(engine.snapshot.calibrated).toBe(true);
+    for (let ms = 185_000; ms <= 195_000; ms += 5000) engine.process(pulse(ms, 85), ms / 1000, true);
+    expect(engine.snapshot.state).toBe('low');
+    expect(engine.snapshot.estimator).toBe('heart_rate');
+    expect(engine.snapshot.confidence).toBeNull();
+  });
 });
