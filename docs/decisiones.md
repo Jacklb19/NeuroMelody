@@ -400,6 +400,16 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Explicación opcional | Amplía ADR-08/36 con `POST /v1/progress/summary`, sin almacenamiento ni migraciones. Cuenta y consentimiento por petición, como el resumen agregado existente. Envía hasta 3 comparaciones, con catálogos, conteos y cifras cerrados. Para validar completamente lenguaje y referencias, el proveedor solo elige una presentación entre frases revisadas, sin prosa libre ni cifras nuevas. La interfaz conserva las cifras locales y marca el resultado automático. Contrato y errores en `contrato-progress-summary.md`. Se invalida ante cualquier cambio de historial, filtro, idioma o cuenta; las respuestas tardías no reaparecen. |
 | Límites | Código local en ambos repositorios, sin dependencias nuevas. La publicación, el teléfono físico, BLE, el guardado real en Google Calendar y las llamadas reales a Groq se verifican por separado. El corte al bloquear y el calentamiento continúan abiertos; este ADR no los da por resueltos. |
 
+## ADR-50. Cámara: margen de contacto, exceso de luz y un solo reloj
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026 dentro de P-05 A (mejorar la cámara). La cámara sigue experimental (P-01) hasta la prueba física. |
+| Medición | Antes de cambiar nada se ampliaron las grabaciones sintéticas: 15, 24, 30 y 60 fotogramas por segundo, una forma de pulso con onda sistólica y diastólica, fotogramas perdidos o repetidos, más variación de tiempos, un dedo que resbala un fotograma y una imagen saturada. El detector ya acertaba en frecuencia, forma, pérdidas y repeticiones (error medio de 3 a 8 ms en 39 intervalos). Fallaba en dos casos: tres resbalones de un fotograma perdían 6 de 39 latidos, porque cada uno reiniciaba el detector, y la imagen saturada perdía de 10 a 12 sin avisar. |
+| Decisión | 1) Hasta 300 ms sin dedo se saltan los fotogramas en lugar de reiniciar; con más, se reinicia como antes y la guía dice que se perdió el contacto. 2) La captura cuenta la parte de píxeles con el rojo al máximo; si en el último segundo es la mitad o más, la guía dice «Entra demasiada luz…». No se intenta recuperar latidos ocultos por la saturación. 3) El tiempo de cada fotograma usa siempre el mismo reloj, elegido con el primero (captura de la cámara o, si no existe, la visualización); un fotograma sin ese dato se salta. |
+| Resultado | Con resbalones, 39 de 39 latidos a 15, 24, 30 y 60 fotogramas por segundo, con menos de 20 ms de error por intervalo en las pruebas. La saturación se detecta y se avisa. |
+| Límites | Nada de esto se ha comparado con una banda ni con un teléfono real; los umbrales (300 ms, mitad de píxeles, 1 s) son de producto. No se cambió el filtrado ni el punto del latido, porque las mediciones no mostraron un problema allí. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

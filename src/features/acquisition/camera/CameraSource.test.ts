@@ -6,6 +6,7 @@ import { CameraSource } from './CameraSource';
 import { CameraUnavailableError, type CameraCapture, type StartCameraCapture } from './cameraCapture';
 import type { FrameSample } from './pulseDetector';
 import { MACRO_RR, syntheticPpg, uncoveredFrames } from './syntheticPpg';
+import { CONTACT_GRACE_MS } from './config';
 
 /** Camera timestamps are far from zero, like `performance.now()`. */
 const CAMERA_START_MS = 1_000_000;
@@ -166,9 +167,12 @@ describe('CameraSource', () => {
     const withContact = notifications.length;
     expect(withContact).toBeGreaterThan(0);
 
-    camera.emit(uncoveredFrames((frames.at(-1)?.timeMs ?? 0) + 1, 3 * NOTIFICATION_PERIOD_MS));
+    const lossMs = (frames.at(-1)?.timeMs ?? 0) + 1;
+    camera.emit(uncoveredFrames(lossMs, 3 * NOTIFICATION_PERIOD_MS));
 
-    const afterLoss = notifications.slice(withContact);
+    // A slip shorter than the grace keeps the contact; the loss is reported once it is longer.
+    const lossSignalMs = lossMs - (frames[0]?.timeMs ?? 0);
+    const afterLoss = notifications.slice(withContact).filter((notification) => notification.timeMs > lossSignalMs + CONTACT_GRACE_MS);
     const allIntervals = notifications.flatMap((notification) => notification.rrIntervalsMs);
     const lastHeartRate = heartRateFromRr(allIntervals.slice(-BEATS_FOR_HR));
     expect(afterLoss.length).toBeGreaterThanOrEqual(2);

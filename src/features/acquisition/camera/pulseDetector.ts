@@ -2,10 +2,13 @@ import { MAX_RR_MS, MIN_RR_MS } from '../../signal/processing/thresholds';
 import {
   AMPLITUDE_WINDOW_MS,
   BASELINE_WINDOW_MS,
+  CONTACT_GRACE_MS,
   MIN_FINGER_RED,
   MIN_RED_TO_GREEN,
   PEAK_HALF_WIDTH,
   PEAK_THRESHOLD,
+  SATURATED_SHARE,
+  SATURATION_WINDOW_MS,
   SMOOTHING_FRAMES,
 } from './config';
 
@@ -14,6 +17,8 @@ export interface FrameSample {
   readonly timeMs: number;
   readonly red: number;
   readonly green: number;
+  /** Share of pixels whose red is at the channel maximum, 0–1; unknown when absent. */
+  readonly clipped?: number;
 }
 
 interface Point {
@@ -65,6 +70,11 @@ function parabolaVertex(points: readonly Point[], originMs: number): number | nu
  * Frames arrive every ~33 ms, so each peak is refined with a least-squares
  * parabola over its neighbours and their real timestamps; without that, RR
  * would be quantised to the frame and shaken by frame-time jitter.
+ *
+ * Frames without a finger for up to CONTACT_GRACE_MS are skipped rather than
+ * restarting the detector, and the share of clipped pixels tells when the
+ * image is too bright to hold the pulse (measured on synthetic recordings,
+ * docs/decisiones.md ADR-50).
  */
 export class PulseDetector {
   readonly #raw: Point[] = [];
@@ -74,9 +84,17 @@ export class PulseDetector {
   /** First frame of the current contact; peaks wait until the baseline is full. */
   #contactStartMs: number | null = null;
   #fingerDetected = false;
+  /** When the current run of frames without a finger began; `null` while the finger is on the lens. */
+  #lostSinceMs: number | null = null;
+  readonly #clipped: Point[] = [];
 
   get fingerDetected(): boolean {
     return this.#fingerDetected;
+  }
+
+  /** Whether most of the image has been at the channel maximum lately, so beats can be lost in it. */
+  get saturated(): boolean {
+    return this.#clipped.length > 0 && meanOf(this.#clipped) >= SATURATED_SHARE;
   }
 
   /** Recent smoothed signal, oldest first, for drawing the waveform. */
@@ -87,12 +105,19 @@ export class PulseDetector {
   /** Adds a frame and returns the beat intervals it completes, in ms. */
   push(sample: FrameSample): number[] {
     const finger = sample.red >= MIN_FINGER_RED && sample.red >= MIN_RED_TO_GREEN * sample.green;
+    const { timeMs } = sample;
     if (!finger) {
-      if (this.#fingerDetected) this.reset();
+      // A brief slip only skips its frames; a longer one starts over.
+      this.#lostSinceMs ??= timeMs;
+      if (this.#fingerDetected && timeMs - this.#lostSinceMs > CONTACT_GRACE_MS) this.reset();
       return [];
     }
+    this.#lostSinceMs = null;
     this.#fingerDetected = true;
-    const { timeMs } = sample;
+    if (sample.clipped !== undefined) {
+      this.#clipped.push({ timeMs, value: sample.clipped });
+      trim(this.#clipped, timeMs, SATURATION_WINDOW_MS);
+    }
     this.#contactStartMs ??= timeMs;
 
     this.#raw.push({ timeMs, value: sample.red });
@@ -121,6 +146,7 @@ export class PulseDetector {
     this.#lastPeakMs = null;
     this.#contactStartMs = null;
     this.#fingerDetected = false;
+    this.#clipped.length = 0;
   }
 
   /** Time of a confirmed peak two frames back, refined to sub-frame precision. */

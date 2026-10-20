@@ -46,7 +46,7 @@ export const insights = {
   },
   camera: {
     instruction: 'Cover the camera with your finger, rest it gently and keep it still. The camera does not measure pressure.',
-    states: { cover: 'Cover the camera with your finger.', searching: 'Looking for heartbeats.', receiving: 'Receiving heartbeats.', lost: 'Contact was lost. Cover the camera again.', inactive: 'The camera is disconnected.' },
+    states: { cover: 'Cover the camera with your finger.', searching: 'Looking for heartbeats.', receiving: 'Receiving heartbeats.', lost: 'Contact was lost. Cover the camera again.', bright: 'Too much light is getting in. Cover the camera and the flashlight completely with your fingertip.', inactive: 'The camera is disconnected.' },
   },
   automatic: {
     title: 'An explanation of these observations',

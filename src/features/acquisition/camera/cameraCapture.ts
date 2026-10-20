@@ -1,5 +1,6 @@
 import {
   CAMERA_FACING_MODE,
+  CHANNEL_MAX,
   CAMERA_FRAME_RATE,
   CAPTURE_HEIGHT,
   CAPTURE_WIDTH,
@@ -60,6 +61,22 @@ export function cameraApiAvailable(): boolean {
 /** `torch` is a camera capability not yet in TypeScript's DOM library. */
 type TorchCapabilities = MediaTrackCapabilities & { readonly torch?: boolean };
 type TorchConstraints = MediaTrackConstraintSet & { readonly torch?: boolean };
+
+/**
+ * Which timestamp the frames are measured with. It is chosen on the first
+ * frame and kept: mixing the camera's capture time with the display time
+ * would shift some beats by up to a frame.
+ */
+export type FrameClock = 'capture' | 'display';
+
+export function frameClockOf(metadata: Pick<VideoFrameCallbackMetadata, 'captureTime'>): FrameClock {
+  return metadata.captureTime === undefined ? 'display' : 'capture';
+}
+
+/** The frame's time on the chosen clock, or `null` for a frame that lacks it and is skipped. */
+export function frameTime(clock: FrameClock, metadata: Pick<VideoFrameCallbackMetadata, 'captureTime' | 'expectedDisplayTime'>): number | null {
+  return clock === 'capture' ? metadata.captureTime ?? null : metadata.expectedDisplayTime;
+}
 
 /** Bytes per pixel of canvas image data (red, green, blue, alpha). */
 const RGBA_CHANNELS = 4;
@@ -152,18 +169,24 @@ export async function startCameraCapture(
     const { data } = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT);
     let red = 0;
     let green = 0;
+    let clipped = 0;
     for (let i = 0; i < data.length; i += RGBA_CHANNELS) {
-      red += data[i] ?? 0;
+      const pixelRed = data[i] ?? 0;
+      red += pixelRed;
       green += data[i + 1] ?? 0;
+      if (pixelRed >= CHANNEL_MAX) clipped++;
     }
     const pixels = data.length / RGBA_CHANNELS;
-    onFrame({ timeMs, red: red / pixels, green: green / pixels });
+    onFrame({ timeMs, red: red / pixels, green: green / pixels, clipped: clipped / pixels });
   };
+  let clock: FrameClock | null = null;
   const schedule = (): void => {
     if (!active) return;
     if (frameCallbacks) {
       handle = video.requestVideoFrameCallback((_now, metadata) => {
-        sample(metadata.captureTime ?? metadata.expectedDisplayTime);
+        clock ??= frameClockOf(metadata);
+        const timeMs = frameTime(clock, metadata);
+        if (timeMs !== null) sample(timeMs);
         schedule();
       });
     } else {

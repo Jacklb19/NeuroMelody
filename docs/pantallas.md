@@ -151,7 +151,7 @@ Desarrollo autorizado e implementado en local el 19 oct. El plan está en `plan-
 | `/plan` | «Para ti» | Encima de las elecciones. Propone sonido, ambiente y duración cuando hay datos suficientes, con un motivo por campo y «Usar esta propuesta»; se puede cambiar todo. |
 | `/summary/:id` | Nota opcional | Junto a la valoración final. Hasta 200 caracteres guardables, editables y eliminables; solo en el dispositivo. |
 | `/app` | «Tengo 3 minutos» | Acción secundaria en la tarjeta de preparar la sesión, con lo último conocido. Lleva a las mismas diapositivas, conserva las advertencias y no inicia música automáticamente. |
-| `/session` | Guía de cámara | En «Tu pulso», junto al control de cámara: contacto, búsqueda de latidos, recepción y pérdida. Indicación de apoyar sin apretar; no mide presión. |
+| `/session` | Guía de cámara | En «Tu pulso», junto al control de cámara: contacto, búsqueda de latidos, recepción y pérdida. Indicación de apoyar sin apretar; no mide presión. Desde ADR-50 también «Entra demasiada luz…» cuando la imagen se satura, y un resbalón de menos de 300 ms no cuenta como pérdida. |
 
 No se añaden rutas de pantalla. La sesión rápida es una excepción aprobada de 3 minutos y explica que puede terminar antes de disponer de una estimación adaptada; la calibración no se acorta. La explicación del progreso requiere aceptación explícita y cuenta; el modelo solo elige frases verificadas, sin alterar cifras. Los estados sin datos y de fallo conservan el recorrido manual.
 
