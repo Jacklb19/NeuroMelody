@@ -83,6 +83,11 @@ export interface EngineOptions {
    * With it, `playbackStats` no longer measures what is actually heard.
    */
   readonly outputThroughAudioElement: boolean;
+  /**
+   * The long convolution reverb; on unless `/diagnostics` turns it off to
+   * compare its cost with the screen locked (P-08). Sessions always keep it.
+   */
+  readonly reverb?: boolean;
 }
 
 export type EngineState = 'ready' | 'playing' | 'stopped' | 'closed';
@@ -233,13 +238,16 @@ export class AudioEngine {
     filter.Q.value = BRIGHTNESS_FILTER_Q;
     filter.frequency.value = level.brightnessHz;
 
-    const reverb = context.createConvolver();
-    const [left, right] = generateImpulseResponse(context.sampleRate);
-    const response = context.createBuffer(OUTPUT_CHANNELS, left.length, context.sampleRate);
-    response.copyToChannel(left, 0);
-    response.copyToChannel(right, 1);
-    await factory.wait(0);
-    reverb.buffer = response;
+    const withReverb = options.reverb ?? true;
+    const reverb = withReverb ? context.createConvolver() : null;
+    if (reverb !== null) {
+      const [left, right] = generateImpulseResponse(context.sampleRate);
+      const response = context.createBuffer(OUTPUT_CHANNELS, left.length, context.sampleRate);
+      response.copyToChannel(left, 0);
+      response.copyToChannel(right, 1);
+      await factory.wait(0);
+      reverb.buffer = response;
+    }
 
     const wet = context.createGain();
     wet.gain.value = level.reverb;
@@ -269,9 +277,12 @@ export class AudioEngine {
     // volume: the volume control, the stop and the output limits apply to it too.
     synthesizer.connect(volume, SYNTHESIZER_OUTPUT.ambience);
     filter.connect(volume);
-    filter.connect(reverb);
-    reverb.connect(wet);
-    wet.connect(volume);
+    // Without the reverb the wet gain stays unconnected: its scheduled ramps then have no effect.
+    if (reverb !== null) {
+      filter.connect(reverb);
+      reverb.connect(wet);
+      wet.connect(volume);
+    }
     volume.connect(envelope);
     envelope.connect(limiter);
     limiter.connect(clipper);

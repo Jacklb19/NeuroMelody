@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { EngineDiagnostic } from '../audio/engine/AudioEngine';
-import { AudioTrace, MAX_AUDIO_TRACE_ENTRIES } from './audioTrace';
+import { AudioTrace, MAX_AUDIO_TRACE_ENTRIES, clockSummary, type AudioTraceEntry } from './audioTrace';
 
-const setup = { output: 'direct', instrument: 'warm', ambience: 'none', userAgent: 'test-browser' } as const;
+const setup = { output: 'direct', latency: 'playback', reverb: 'on', instrument: 'warm', ambience: 'none', userAgent: 'test-browser', processors: 8 } as const;
 const reading: EngineDiagnostic = {
   contextState: 'running', engineState: 'playing', audioTimeS: 10, sampleRateHz: 48000,
   baseLatencyS: null, outputLatencyS: null, outputThroughAudioElement: false, playback: null,
@@ -16,7 +16,8 @@ describe('AudioTrace', () => {
     now += 50;
     trace.capture('hidden', 'hidden', reading);
     expect(JSON.parse(trace.serialize())).toEqual({
-      version: 1, setup, droppedEntries: 0,
+      version: 2, setup, droppedEntries: 0,
+      clock: { visible: { wallMs: 0, audioMs: 0, ratio: null, slowest: null }, hidden: { wallMs: 0, audioMs: 0, ratio: null, slowest: null } },
       entries: [{ ...reading, elapsedMs: 50, reason: 'hidden', visibility: 'hidden' }],
     });
   });
@@ -43,5 +44,16 @@ describe('AudioTrace', () => {
     trace.begin({ ...setup, output: 'media' });
     expect(trace.length).toBe(0);
     expect(JSON.parse(trace.serialize())).toMatchObject({ droppedEntries: 0 });
+  });
+
+  it('measures how far the audio clock falls behind the wall clock while hidden, skipping paused intervals', () => {
+    const at = (elapsedMs: number, audioTimeS: number, visibility: DocumentVisibilityState, contextState: AudioContextState = 'running'): AudioTraceEntry =>
+      ({ ...reading, reason: 'sample', elapsedMs, audioTimeS, visibility, contextState });
+    const summary = clockSummary([
+      at(0, 0, 'visible'), at(10_000, 10, 'hidden'), at(20_000, 19, 'hidden'), at(30_000, 27, 'visible', 'suspended'), at(40_000, 27, 'visible'), at(40_100, 27.1, 'visible'),
+    ]);
+    expect(summary.visible).toEqual({ wallMs: 10_000, audioMs: 10_000, ratio: 1, slowest: 1 });
+    expect(summary.hidden.ratio).toBeCloseTo(0.85);
+    expect(summary.hidden.slowest).toBeCloseTo(0.8);
   });
 });
