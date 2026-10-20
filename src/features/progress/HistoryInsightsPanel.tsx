@@ -1,26 +1,36 @@
 import { useId } from 'react';
-import { useMessages } from '../../i18n/messages';
-import { MIN_INSIGHT_SESSIONS, type HistoryInsights } from './historyInsights';
+import { useMessages, type Messages } from '../../i18n/messages';
+import { MIN_INSIGHT_SESSIONS, nextComparison, type HistoryInsights } from './historyInsights';
 import { useInsightText } from './useInsightText';
 import type { SessionRecord } from '../records/sessionRecord';
 import type { ProgressRangeId } from './progressRangeCatalog';
 import { AutomaticInsights } from './AutomaticInsights';
 
+/** Before any observation: how many sessions the closest first comparison still needs, or what it takes in general. */
+function waitingText(insights: HistoryInsights, copy: Messages['insights'], text: ReturnType<typeof useInsightText>): string {
+  const next = nextComparison(insights);
+  if (next === null) return copy.empty(MIN_INSIGHT_SESSIONS);
+  const { comparison, needs } = next;
+  const parts = needs.map((need) => copy.missing(need.missing, text.option(comparison.dimension, need.value)));
+  return copy.needs(parts, needs.reduce((total, need) => total + need.missing, 0), text.goals(comparison.goal));
+}
+
 export function HistoryInsightsPanel({ insights, records, range }: { readonly insights: HistoryInsights; readonly records: readonly SessionRecord[]; readonly range: ProgressRangeId }): React.JSX.Element {
   const copy = useMessages().insights;
   const titleId = useId();
   const text = useInsightText();
+  const observed = insights.observations.length > 0;
   return (
     <section className="glass-card history-insights" aria-labelledby={titleId}>
       <h2 id={titleId}>{copy.title}</h2>
-      <p className="secondary-text">{copy.intro}</p>
-      {insights.observations.length === 0 ? <p>{copy.empty(MIN_INSIGHT_SESSIONS)}</p> : (
+      {observed ? <>
+        <p className="secondary-text">{copy.intro}</p>
         <ul className="insight-observations">
           {insights.observations.map((comparison) => <li key={comparison.id}><h3>{text.scope(comparison)}</h3><p>{text.observation(comparison)}</p></li>)}
         </ul>
-      )}
+      </> : <p>{waitingText(insights, copy, text)}</p>}
       <p className="secondary-text">{copy.days(insights.knownDays, insights.unknownDates)}</p>
-      <p className="quiet-notice">{copy.caution}</p>
+      {observed && <p className="quiet-notice">{copy.caution}</p>}
       <AutomaticInsights comparisons={insights.observations} records={records} range={range} />
       <details className="progress-data">
         <summary>{copy.methodTitle}</summary>

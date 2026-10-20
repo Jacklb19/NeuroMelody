@@ -8,7 +8,7 @@ export const adaptation = {
     high: 'Alta',
     low: 'Baja',
     uncertain: 'Incierta',
-    calibrating: 'Calibrando: no hay datos suficientes',
+    calibrating: 'Aprendiendo tu ritmo de partida',
   },
   /** Scheduled musical parameters, among the technical details of the session. */
   musicalState: {

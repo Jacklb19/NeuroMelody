@@ -46,7 +46,6 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       </PageHeading>
 
       {record.ratingAfter === null && <AfterRating record={record} onSaved={onRecordChange} />}
-      <SessionNote key={record.id} record={record} onSaved={onRecordChange} />
 
       <section aria-labelledby={figuresId} className="summary-section">
         <h2 id={figuresId}>{figures.title}</h2>
@@ -71,12 +70,17 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
               <Sparkline values={trendValues} label={figures.rmssdTrend} />
             </dd>
           </div>
-          <div>
-            <dt>{figures.lfHfAtEnd}</dt>
-            <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
-          </div>
         </dl>
         <p className="panel-footnote">{figures.footnote(EDGE_SECONDS)}</p>
+        <details className="summary-technical">
+          <summary>{figures.technical}</summary>
+          <dl className="summary-figures">
+            <div>
+              <dt>{figures.lfHfAtEnd}</dt>
+              <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
+            </div>
+          </dl>
+        </details>
       </section>
 
       <StateTimeShare secondsByState={summary.secondsByState} />
@@ -88,6 +92,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       )}
 
       <AutomaticSummary record={record} />
+      <SessionNote key={record.id} record={record} onSaved={onRecordChange} />
 
       <div className="action-row summary-actions">
         <button

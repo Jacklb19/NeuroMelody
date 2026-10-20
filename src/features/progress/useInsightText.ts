@@ -33,5 +33,5 @@ export function useInsightText() {
     return t.insights.observation(option(comparison.dimension, pair[0].value), pair[0].count, number(pair[0].median),
       option(comparison.dimension, pair[1].value), pair[1].count, number(pair[1].median));
   };
-  return { option, scope, observation, number };
+  return { option, scope, observation, number, goals };
 }

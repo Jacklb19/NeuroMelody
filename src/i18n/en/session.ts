@@ -60,6 +60,9 @@ export const session = {
     /** After a session made with a trial source. */
     trialEnded: 'It was a trial session and was not saved.',
     trialEndedDetail: 'To save your sessions and see your progress, measure your pulse with a strap or with the camera.',
+    /** Ways on once the session is over. */
+    home: 'Back to the start',
+    measure: 'Prepare a session with my pulse',
     saveFailed: (reason: string): string => `The session could not be saved on this device (${reason}).`,
   },
   /** Guided breathing under the orb (ADR-33): a pace to follow, never a promise of an effect. */
@@ -86,6 +89,8 @@ export const session = {
   },
   stage: {
     eyebrow: 'Now',
+    /** Once the music has stopped, instead of the moment of the session. */
+    ended: { title: 'Your session is over', detail: 'The music has stopped. Below is what it did during this time.' },
     estimatedState: 'Estimated state:',
     /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
     pace: (tempo: number, personal: boolean): string =>

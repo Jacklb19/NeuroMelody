@@ -14,11 +14,15 @@ export const history = {
     text: 'Your pulse and how you felt, session by session.',
     action: 'View your progress',
   },
+  /** Headings of the weeks the list is grouped in, Monday first. */
+  weeks: {
+    this: 'This week',
+    last: 'Last week',
+    of: (date: string): string => `Week of ${date}`,
+  },
   item: {
     listenedOf: (listened: string, plannedMinutes: number): string => `${listened} of ${String(plannedMinutes)} min`,
-    heartRate: 'Average heart rate',
-    rmssd: 'RMSSD',
-    viewSummary: 'View summary',
+    feeling: 'How you felt',
     delete: 'Delete',
     confirmDelete: 'Yes, delete this session',
   },

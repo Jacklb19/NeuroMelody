@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { summaryPath } from '../../config/routes';
+import { ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { SelfRatingField } from '../records/SelfRatingField';
 import { MAX_RATING } from '../records/sessionRecord';
@@ -43,7 +43,10 @@ export function SessionCheckIn({
     return (
       <div className="session-saved" role="status">
         <p><strong>{checkIn.saved}</strong> {checkIn.savedDetail}</p>
-        <Link to={summaryPath(savedId)} className="button button-primary">{checkIn.viewSummary}</Link>
+        <div className="action-row">
+          <Link to={summaryPath(savedId)} className="button button-primary">{checkIn.viewSummary}</Link>
+          <Link to={ROUTES.app} className="button button-secondary">{checkIn.home}</Link>
+        </div>
       </div>
     );
   }
@@ -51,6 +54,10 @@ export function SessionCheckIn({
     return (
       <div className="session-saved" role="status" data-testid="trial-ended">
         <p><strong>{checkIn.trialEnded}</strong> {checkIn.trialEndedDetail}</p>
+        <div className="action-row">
+          <Link to={ROUTES.plan} className="button button-primary">{checkIn.measure}</Link>
+          <Link to={ROUTES.app} className="button button-secondary">{checkIn.home}</Link>
+        </div>
       </div>
     );
   }
