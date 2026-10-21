@@ -7,6 +7,8 @@ const FS = 48_000;
 const BLOCK = 128;
 // Offline rendering with V8 coverage is CPU-bound, not a real-time audio benchmark.
 const RENDER_TIMEOUT_MS = 90_000;
+// Three minutes of audio, three times the usual render: a shared CI runner needs room for it.
+const LONG_RENDER_TIMEOUT_MS = 3 * RENDER_TIMEOUT_MS;
 
 interface Params {
   tempo: number;
@@ -126,7 +128,7 @@ describe('SynthesisCore', () => {
     core.setInitialLayers(3);
     renderAudio(core, 180, { tempo: 76, mode: MODE.lydian, layers: 3 });
     expect(core.voiceSteals).toBe(0);
-  }, RENDER_TIMEOUT_MS);
+  }, LONG_RENDER_TIMEOUT_MS);
 
   it('keeps tempo: beats 0 to 60 in 60.5 s at 60 BPM', () => {
     const core = new SynthesisCore(FS, 1, MODE.majorPentatonic);
