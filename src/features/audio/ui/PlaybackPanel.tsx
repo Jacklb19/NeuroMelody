@@ -48,6 +48,8 @@ interface PlaybackPanelProps {
   readonly generateSeed?: () => number;
   /** Diagnostic comparison only; normal sessions keep the configured output. */
   readonly outputThroughAudioElement?: boolean;
+  /** Diagnostic comparison only; sessions keep the reverb. */
+  readonly reverb?: boolean;
   readonly onEngineChange?: (engine: AudioEngine | null) => void;
   /** Listening time since the first start, read from the audio clock once per second. */
   readonly onElapsedChange?: (seconds: number) => void;
@@ -93,6 +95,7 @@ export function PlaybackPanel({
   factory,
   generateSeed = randomSeed,
   outputThroughAudioElement = OUTPUT_THROUGH_AUDIO_ELEMENT,
+  reverb = true,
   onEngineChange,
   onElapsedChange,
 }: PlaybackPanelProps): React.JSX.Element {
@@ -138,6 +141,7 @@ export function PlaybackPanel({
         ambience,
         instrument,
         outputThroughAudioElement,
+        reverb,
       },
       volumeDb,
     );

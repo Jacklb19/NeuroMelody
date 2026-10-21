@@ -236,6 +236,8 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 
 En `/diagnostics`, después de las capacidades y antes del prototipo de cámara, un panel de prueba de audio de hasta 3 minutos, con advertencias de uso si faltan. Permite elegir sonido, ambiente y salida actual o alternativa; muestra el último estado real del contexto, reloj, latencias, contadores disponibles y lecturas. Detener sigue fijo y Esc funciona; la prueba se apaga sola. La descarga del registro es explícita y local; no guarda una sesión ni transmite datos. Un contador no disponible se declara sin medición; en la salida alternativa advierte que no mide el último tramo audible. Detalle y limitaciones en `plan-audio-bloqueo.md`.
 
+Desde el 20 oct el mismo panel compara también reverberación (con o sin) y la latencia pedida al navegador (para escuchar, equilibrada o interactiva); las dos primeras de cada lista son las de la sesión. Muestra el ritmo del reloj de audio frente al real con la pantalla encendida y bloqueada, y el tramo más lento. Los pasos guían cuatro pruebas cambiando una sola cosa cada vez.
+
 En `/session`, una interrupción del contexto deja de mostrarse como «Sonando»: se explica y permite iniciar de nuevo o detener. La música no se reinicia por un cambio de visibilidad. La salida alternativa no se activa en las sesiones normales.
 
 ## Funciones todavía no activas

@@ -43,6 +43,14 @@ La documentación de [Chrome sobre AudioWorklet](https://developer.chrome.com/bl
 
 Capturas y registros de la interfaz en `audio-samples/capturas/audio-bloqueo/`. Evidencia preliminar de audio y comparación de síntesis en `audio-samples/capturas/desvanecido/`. La verificación final de tipos, lint, pruebas, build, recorridos y audio queda en `PROGRESS.md`.
 
+## Variantes de comparación (20 oct 2026)
+
+Aprobado por el usuario junto con la revisión del 20 oct. La lectura del código no encontró nada audible que dependa de temporizadores del hilo principal: el sintetizador no recibe datos ni mensajes y solo lee parámetros. Quedan como hipótesis, sin confirmar: que Android baje la prioridad de Chrome cuando solo suena Web Audio, el costo de la reverberación larga (4,5 s, que Chrome procesa en parte en otro hilo), el costo total de la síntesis y la latencia pedida.
+
+- `/diagnostics` añade reverberación sí/no y latencia «para escuchar», «equilibrada» o «interactiva». Solo existen en la prueba; la sesión no cambia.
+- El registro (versión 2) guarda esas elecciones, los procesadores que informa el navegador y los eventos de ciclo de vida de la página (congelada, reanudada, `pagehide`, `pageshow`). Resume, para la pantalla encendida y bloqueada, cuánto avanzó el reloj de audio frente al real y el tramo más lento. Un ritmo por debajo del 100 % mientras el contexto sigue en ejecución indica que el audio no llegó a tiempo; un 100 % no descarta cortes en el último tramo hasta el altavoz.
+- Protocolo para el Xiaomi: una prueba tal cual y luego cambiando una cosa cada vez (salida alternativa, sin reverberación, sin ambiente, latencia interactiva), bloqueando unos 30 s en cada una y anotando si se oyeron cortes. Con esos registros se elige la corrección.
+
 ## Criterio de cierre
 
 Música continua al bloquear y desbloquear el Xiaomi en la prueba acordada, con Detener y el final del plan funcionando, sin esconder la falta de estadísticas ni confundir el reloj interno con lo audible. No se fuerza a mantener encendida la pantalla como sustituto de la corrección. Las pruebas automáticas de escritorio acompañan la prueba real; no acreditan por sí solas el bloqueo en Android.
