@@ -11,7 +11,7 @@ import {
 import { PulseDetector, type FrameSample } from './pulseDetector';
 import { MAX_RR_MS } from '../../signal/processing/thresholds';
 
-export const CAMERA_GUIDANCE_IDS = ['inactive', 'cover', 'searching', 'receiving', 'lost'] as const;
+export const CAMERA_GUIDANCE_IDS = ['inactive', 'cover', 'searching', 'receiving', 'lost', 'bright'] as const;
 export type CameraGuidanceState = (typeof CAMERA_GUIDANCE_IDS)[number];
 /** Contact flicker must settle before a screen reader announces a new instruction. */
 export const CAMERA_GUIDANCE_SETTLE_MS = 400;
@@ -199,8 +199,10 @@ export class CameraSource implements SignalSource {
   #updateGuidance(timeMs: number): void {
     const contact = this.#detector.fingerDetected;
     if (contact) this.#hadContact = true;
+    // Too much light hides beats even while some still arrive, so it is said first.
     const desired: CameraGuidanceState = !contact ? (this.#hadContact ? 'lost' : 'cover')
-      : this.#lastBeatMs !== null && timeMs - this.#lastBeatMs <= MAX_RR_MS ? 'receiving' : 'searching';
+      : this.#detector.saturated ? 'bright'
+        : this.#lastBeatMs !== null && timeMs - this.#lastBeatMs <= MAX_RR_MS ? 'receiving' : 'searching';
     if (desired !== this.#candidate) {
       this.#candidate = desired;
       this.#candidateSinceMs = timeMs;

@@ -53,7 +53,7 @@ export const insights = {
   },
   camera: {
     instruction: 'Cubre la cámara con el dedo, apóyalo sin apretar y mantenlo quieto. La cámara no mide la presión.',
-    states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', inactive: 'La cámara está desconectada.' },
+    states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', bright: 'Entra demasiada luz. Cubre por completo la cámara y la linterna con la yema del dedo.', inactive: 'La cámara está desconectada.' },
   },
   automatic: {
     title: 'Una explicación de estas observaciones',
