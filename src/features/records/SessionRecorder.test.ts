@@ -62,3 +62,16 @@ describe('SessionRecorder', () => {
     expect(recorder.finish(0)?.sourceKind).toBe('ble');
   });
 });
+
+describe('SessionRecorder with a watch that sends only the pulse (ADR-51)', () => {
+  it('marks the session as pulse only when no reading carried variability', () => {
+    const recorder = new SessionRecorder(() => 0);
+    recorder.start({ ...START, sourceKind: 'ble' });
+    recorder.add(indices(5000, { rmssd: null, sdnn: null, signalMode: 'hr_only' }), null);
+    expect(recorder.finish(60)?.signalMode).toBe('hr_only');
+    recorder.start({ ...START, sourceKind: 'ble' });
+    recorder.add(indices(5000, { rmssd: null, signalMode: 'hr_only' }), null);
+    recorder.add(indices(10_000, { rmssd: 40, signalMode: 'hrv' }), null);
+    expect(recorder.finish(60)?.signalMode).toBeUndefined();
+  });
+});

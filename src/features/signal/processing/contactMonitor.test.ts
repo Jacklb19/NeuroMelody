@@ -34,3 +34,12 @@ describe('ContactMonitor', () => {
     expect(monitor.observe(beat(1000, []))).toBe(true);
   });
 });
+
+describe('ContactMonitor with a watch that sends only the pulse (ADR-51)', () => {
+  it('keeps the contact while pulses arrive and no interval was ever sent, and loses it when the watch reports no contact', () => {
+    const monitor = new ContactMonitor();
+    const pulse = (timeMs: number) => ({ timeMs, heartRate: 70, rrIntervalsMs: [], sensorContact: true });
+    expect([1000, 2000, 3000].map((ms) => monitor.observe(pulse(ms)))).toEqual([true, true, true]);
+    expect(monitor.observe({ ...pulse(4000), sensorContact: false })).toBe(false);
+  });
+});

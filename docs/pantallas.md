@@ -168,6 +168,16 @@ Ajustes aprobados tras recorrer todas las pantallas en celular y escritorio. No 
 | `/history` | Filas compactas agrupadas por semana («Esta semana», «La semana pasada», «Semana del…»), lunes primero. Cada fila abre el resumen y muestra fecha, tiempo, intención y cómo te sentías; las cifras de pulso quedan en el resumen. |
 | `/session` | Al detener la música, la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
 
+## Modo solo pulso (ADR-51, 20 oct 2026)
+
+No añade pantallas.
+
+| Pantalla | Cambio |
+|---|---|
+| `/session` | Con un reloj que solo envía el pulso, la nota del estado estimado dice «Estimado solo con tu pulso» y un aviso explica que el reloj no envía el tiempo entre latidos. |
+| `/summary/:id` | En lugar de la variación entre latidos, una nota: este reloj solo envió el pulso. |
+| `/progress` y `/report` | El pulso aparece como siempre; la variación queda vacía en esas sesiones. «Lo que te funciona» no compara su pulso con el de una banda. |
+
 ## `/report`, informe para compartir (ADR-33, solo en el dispositivo)
 
 Se llega desde la tarjeta «Compártelo con quien te acompaña», al final de «Tu progreso»; abre con el mismo grupo de sesiones que estaba elegido allí (viaja en la dirección, parámetro `range`). No está en la cabecera.

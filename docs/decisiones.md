@@ -419,6 +419,18 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Resultado | Con resbalones, 39 de 39 latidos a 15, 24, 30 y 60 fotogramas por segundo, con menos de 20 ms de error por intervalo en las pruebas. La saturación se detecta y se avisa. |
 | Límites | Nada de esto se ha comparado con una banda ni con un teléfono real; los umbrales (300 ms, mitad de píxeles, 1 s) son de producto. No se cambió el filtrado ni el punto del latido, porque las mediciones no mostraron un problema allí. |
 
+## ADR-51. Modo solo pulso para relojes
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026 (P-05 B): regla simple por pulso y sesiones también en la nube, con migración que aplica el usuario. Sin reloj físico para probar: se verifica con pruebas automáticas y con nRF Connect enviando pulso sin intervalos. |
+| Problema | Muchos relojes (Garmin, Huawei, Amazfit) emiten el servicio estándar de frecuencia cardíaca solo con el pulso, sin el tiempo entre latidos. Hoy se conectan, pero el análisis no recibe latidos: la señal queda «baja», nunca termina la calibración y la música no se adapta, sin explicar por qué. |
+| Detección | En el hilo de señal, por conexión. En cuanto llega un intervalo, la conexión es de variabilidad. Si llegan 5 notificaciones seguidas con contacto y pulso pero sin intervalos, la conexión pasa a «solo pulso». Si después llegan intervalos, vuelve a variabilidad. |
+| Análisis | En solo pulso, una pausa es el tiempo sin notificaciones con contacto, con el mismo umbral de 3 s. El pulso medio se calcula con los valores que envía el reloj en la ventana de 5 minutos y se publica tras 60 s de señal, como antes. Variación, SDNN y LF/HF quedan vacíos. El resultado lleva el modo. |
+| Adaptación | Misma calibración (3 min y 12 lecturas), histéresis de 3 estimaciones, permanencia y tempo inicial a partir del pulso. El estado sale de una regla solo de pulso respecto a la referencia: «Alta» con una subida del 10 %, «Baja» con una bajada del 10 % e «Incierta» en otro caso. Es más simple que la de ADR-12 y la interfaz lo dice («Estimado solo con tu pulso»). El modelo entrenado no se usa, porque necesita la variación. |
+| Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
+| Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

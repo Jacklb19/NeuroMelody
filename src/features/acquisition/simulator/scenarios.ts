@@ -25,6 +25,7 @@ export const SCENARIO_IDS = [
   'progressive_relaxation',
   'progressive_activation',
   'artifacts',
+  'pulse_only',
 ] as const;
 
 export type ScenarioId = (typeof SCENARIO_IDS)[number];
@@ -53,6 +54,8 @@ export interface Scenario {
   paramsAt(timeMs: number): PhysiologicalParams;
   /** Simulated reading faults; `null` in clean scenarios. */
   readonly artifacts: ArtifactConfig | null;
+  /** Sends the pulse without beat intervals, like many watches (ADR-51). */
+  readonly pulseOnly?: boolean;
 }
 
 /** Expected RMSSD ≈ 45 ms. */
@@ -136,5 +139,13 @@ export const SCENARIOS: Readonly<Record<ScenarioId, Scenario>> = {
     id: 'artifacts',
     paramsAt: () => REST_PARAMS,
     artifacts: DEFAULT_ARTIFACTS,
+  },
+  pulse_only: {
+    id: 'pulse_only',
+    // The gradual relaxation, as a watch would report it.
+    paramsAt: (timeMs) =>
+      interpolateParameters(ACTIVATION_PARAMS, REST_PARAMS, transitionProgress(timeMs)),
+    artifacts: null,
+    pulseOnly: true,
   },
 };

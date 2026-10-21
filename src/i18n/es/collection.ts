@@ -76,6 +76,11 @@ export const collection = {
     /** File name without extension, e.g. "neuromelody-grabaciones-2026-10-12". */
     fileName: (prefix: string, date: string): string => `${prefix}-grabaciones-${date}.json`,
   },
+  /** A source that sent no beat intervals, such as a watch (ADR-51). */
+  noIntervals: {
+    title: 'No se guardó la grabación',
+    text: 'Tu dispositivo envió el pulso, pero no el tiempo entre latidos, y la grabación lo necesita. Usa una banda de pecho o la cámara.',
+  },
   saveFailed: {
     title: 'No se pudo guardar',
     text: 'La grabación no quedó guardada en este dispositivo. Puedes intentarlo de nuevo.',

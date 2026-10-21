@@ -109,7 +109,7 @@ describe('AcquisitionPanel', () => {
     expect(screen.getByRole('combobox', { name: text.sourceLabel })).toHaveValue('camera');
   });
 
-  it('offers the two trial sources, the five scenarios and the four speeds', () => {
+  it('offers the two trial sources, the six scenarios and the four speeds', () => {
     renderWithFakeTime();
 
     const scenarios = screen.getAllByRole('option').map((o) => o.textContent);
@@ -121,6 +121,7 @@ describe('AcquisitionPanel', () => {
       text.scenarios.progressive_relaxation,
       text.scenarios.progressive_activation,
       text.scenarios.artifacts,
+      text.scenarios.pulse_only,
       text.speedOption(1),
       text.speedOption(2),
       text.speedOption(5),

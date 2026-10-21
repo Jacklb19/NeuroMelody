@@ -5,6 +5,7 @@ import { LEVEL_IDS } from '../audio/engine/levels';
 import { isGoalId, type GoalId } from '../plan/goalCatalog';
 import { isUuid } from './uuidv7';
 import { isSessionContext, isSessionNote, type SessionContext } from './sessionContext';
+import { isSignalMode, type SignalMode } from '../signal/processing/signalMode';
 
 /**
  * One sample of a session per published index set (every `COMPUTE_PERIOD_S`
@@ -38,6 +39,8 @@ export interface SessionRecord {
   readonly ratingBefore: number | null;
   readonly ratingAfter: number | null;
   readonly samples: readonly SessionSample[];
+  /** `hr_only` when the source sent only the pulse, so there is no variability (ADR-51); absent means intervals. */
+  readonly signalMode?: SignalMode;
   /**
    * What the music did (ADR-42). Kept on the device only: the cloud copy of a
    * session does not carry it, so sessions brought from the cloud have none.
@@ -114,6 +117,7 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && isRating(value.ratingBefore)
     && isRating(value.ratingAfter)
     && Array.isArray(value.samples) && value.samples.every(isSample)
+    && (value.signalMode === undefined || isSignalMode(value.signalMode))
     && (value.music === undefined || isMusicRecap(value.music))
     && (value.context === undefined || isSessionContext(value.context))
     && (value.note === undefined || isSessionNote(value.note));

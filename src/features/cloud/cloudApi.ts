@@ -124,6 +124,8 @@ function toWire(record: SessionRecord): Json {
     source_kind: record.sourceKind,
     rating_before: record.ratingBefore,
     rating_after: record.ratingAfter,
+    // Sent only when it says something: an API from before ADR-51 still accepts every other session.
+    ...(record.signalMode === 'hr_only' ? { signal_mode: record.signalMode } : {}),
     samples: record.samples.map((sample) => ({
       second: sample.second,
       mean_hr: sample.meanHr,
@@ -170,6 +172,8 @@ export function fromWire(value: unknown): SessionRecord | null {
     ratingBefore: value.rating_before,
     ratingAfter: value.rating_after,
     samples,
+    // Intervals are the default and stay implicit, like in the sessions stored on the device.
+    ...(value.signal_mode === 'hr_only' ? { signalMode: 'hr_only' } : {}),
   });
 }
 

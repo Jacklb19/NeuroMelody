@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMessages } from '../../i18n/messages';
 import type { SourceReading } from '../acquisition/useSignalSource';
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
@@ -7,9 +8,12 @@ import { GoalIcon } from '../plan/GoalIcon';
 import { AmbienceIcon } from '../plan/AmbienceIcon';
 import { InstrumentIcon } from '../plan/InstrumentIcon';
 import { SelfRatingField } from '../records/SelfRatingField';
+import { useHeartRateBeats } from './useHeartRateBeats';
 
 interface ArrivalSlideProps {
   readonly reading: SourceReading;
+  /** The pulse of a watch that sends no beats (ADR-51): the figure then beats at its pace. */
+  readonly watchHeartRate?: number | null;
   readonly goals: readonly GoalId[];
   readonly instrument: InstrumentId;
   readonly ambience: AmbienceId;
@@ -25,13 +29,15 @@ interface ArrivalSlideProps {
  * each heartbeat, what was chosen for this session, and how the person feels
  * before starting. Starting the music leads to the listening slide.
  */
-export function ArrivalSlide({ reading, goals, instrument, ambience, rating, onRatingChange, onStart, onMeasure }: ArrivalSlideProps): React.JSX.Element {
+export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument, ambience, rating, onRatingChange, onStart, onMeasure }: ArrivalSlideProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.session.arrival;
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
   const heartRate = reading.state === 'connected' ? reading.last?.heartRate ?? null : null;
+  const [watchBeats, setWatchBeats] = useState(0);
+  useHeartRateBeats(watchHeartRate, () => { setWatchBeats((count) => count + 1); });
 
   return (
     <div className="arrival">
@@ -46,7 +52,7 @@ export function ArrivalSlide({ reading, goals, instrument, ambience, rating, onR
             <p className="eyebrow">{copy.pulseLabel}</p>
             {/* A new key on every beat restarts the small swell of the figure. */}
             <p className="arrival-rate">
-              <span key={reading.receivedBeats} className="arrival-heart" aria-hidden="true" />
+              <span key={watchHeartRate === null ? reading.receivedBeats : `watch-${String(watchBeats)}`} className="arrival-heart" aria-hidden="true" />
               <strong>{heartRate}</strong> <span>{t.common.units.beatsPerMinute}</span>
             </p>
           </>
