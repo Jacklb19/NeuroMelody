@@ -50,7 +50,7 @@ for (const locale of ['es', 'en'] as const) for (const theme of ['light', 'dark'
     await expect(panel.locator('.insight-observations > li')).toHaveCount(3);
     await page.screenshot({ path: testInfo.outputPath('progress.png'), fullPage: true });
     await page.getByRole('button', { name: t.progress.range.last(7), exact: true }).click();
-    await expect(panel.getByText(t.insights.empty(5))).toBeVisible();
+    await expect(panel.getByText(t.insights.needs([t.insights.missing(3, t.plan.instrument.names.piano)], 3, t.plan.goals.names.relax))).toBeVisible();
     await page.getByRole('button', { name: t.progress.range.all, exact: true }).click();
     await expect(panel.locator('.insight-observations > li')).toHaveCount(3);
     await panel.getByText(t.insights.methodTitle, { exact: true }).click();

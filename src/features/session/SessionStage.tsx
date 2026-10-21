@@ -16,6 +16,8 @@ interface SessionStageProps {
   readonly session: AdaptationSession;
   readonly connection: ConnectionState;
   readonly playing: boolean;
+  /** The music played and has stopped: the session is over, so the moment and the estimate give way to its end. */
+  readonly ended?: boolean;
 }
 
 const PERCENT = 100;
@@ -26,21 +28,24 @@ const PERCENT = 100;
  * estimated state with what it means, and the notices that explain why the
  * music holds still. Technical figures live elsewhere.
  */
-export function SessionStage({ session, connection, playing }: SessionStageProps): React.JSX.Element {
+export function SessionStage({ session, connection, playing, ended = false }: SessionStageProps): React.JSX.Element {
   const t = useMessages();
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const titleId = useId();
   // Typed by id, so a situation without words is a compile error.
   const narratives: Readonly<Record<ListeningNarrativeId, NarrativeText>> = t.session.narrative;
-  const narrative = narratives[describeListening({
+  const moment = narratives[describeListening({
     connection,
     state: snapshot.state,
     qualityGood: snapshot.qualityGood,
     musicPlaying: playing,
   })];
+  const narrative = ended ? t.session.stage.ended : moment;
   const connected = connection === 'connected';
   // Says who is estimating: the trained model (with its confidence once it has one) or the fallback rules.
-  const estimateNote = snapshot.estimator === 'rules'
+  const estimateNote = snapshot.estimator === 'heart_rate'
+    ? t.session.stage.heartRateOnly
+    : snapshot.estimator === 'rules'
     ? t.session.stage.confidence
     : snapshot.confidence === null || snapshot.state === null
       ? t.session.stage.modelReady
@@ -48,7 +53,7 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
 
   return (
     <section aria-labelledby={titleId} className="session-stage">
-      <p className="eyebrow">{t.session.stage.eyebrow}</p>
+      {!ended && <p className="eyebrow">{t.session.stage.eyebrow}</p>}
       <h2 id={titleId} className="stage-title">{narrative.title}</h2>
       <p className="stage-detail">{narrative.detail}</p>
 
@@ -63,7 +68,7 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
         </div>
       )}
 
-      <div className="estimated-state">
+      {!ended && <div className="estimated-state">
         <p role="status">
           {t.session.stage.estimatedState}{' '}
           <strong data-testid="activation-state">
@@ -73,10 +78,11 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
         <p className="confidence-note" data-testid="estimate-note">{estimateNote}</p>
         <details className="state-help">
           <summary>{t.session.stage.help.summary}</summary>
-          <p>{t.session.stage.help.text}</p>
+          <p>{snapshot.estimator === 'heart_rate' ? t.session.stage.help.heartRateText : t.session.stage.help.text}</p>
         </details>
-      </div>
+      </div>}
 
+      {!ended && snapshot.estimator === 'heart_rate' && <p className="quiet-notice">{t.session.stage.heartRateOnlyNotice}</p>}
       {connected && playing && !snapshot.qualityGood && (
         <p className="quiet-notice">{t.session.stage.waitingForQuality}</p>
       )}

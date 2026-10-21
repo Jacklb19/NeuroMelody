@@ -1,6 +1,6 @@
 # Guion de demostración — NeuroMelody
 
-Recorrido de unos 10 minutos para presentar la app. Funciona sin banda ni cuenta: el pulso viene del simulador. Conviene hacerlo en Chrome de escritorio, con audífonos o altavoces, y el volumen del sistema moderado.
+Recorrido de unos 12 minutos para presentar la app. Funciona sin banda ni cuenta: el pulso viene del simulador. Conviene hacerlo en Chrome de escritorio, con audífonos o altavoces, y el volumen del sistema moderado.
 
 ## Antes de empezar
 
@@ -14,9 +14,12 @@ Qué es: música que se compone en el navegador y se adapta al pulso. Nació par
 
 ## 2. Preparar la sesión (2 min) · Inicio → «Preparar mi sesión»
 
+- En Inicio, señalar «Tengo 3 minutos» y la línea que dice con qué sonido y ambiente sonará; «Repetir la última» aparece cuando ya hay sesiones.
+
 - Tocar varias intenciones y leer cómo cambia la frase de la tarjeta «Tu sesión»: la intención decide en qué escalón empieza la música y hasta dónde baja. Dejar elegida «Relajarme» (empieza a paso medio, así se ve la música volver un escalón en el paso 3).
 - Duración 10 minutos y ambiente «Lluvia».
 - Con cuenta: «Proponme una duración» muestra el modelo de lenguaje, marcado como texto generado.
+- «Para ti» aparece encima de las elecciones solo cuando el historial permite proponer algo para esa intención.
 
 ## 3. La sesión (4 min) · `/session`
 
@@ -29,21 +32,34 @@ Qué es: música que se compone en el navegador y se adapta al pulso. Nació par
 
 ## 4. El cierre (1 min)
 
-«Detener» (o la tecla Esc): silencio en 50 ms. Aparece «Lo que hizo la música» y, en una sesión medida, el enlace al resumen. En modo de prueba se explica que no se guarda.
+«Detener» (o la tecla Esc): silencio en 50 ms. La pantalla dice «Terminaste tu sesión» y muestra «Lo que hizo la música». En una sesión medida ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba explica que no se guardó y ofrece preparar una sesión con el pulso propio.
 
-## 5. Lo demás (2 min)
+## 5. Un reloj que solo envía el pulso (2 min)
 
-- **Historial y «Tu progreso»:** evolución del pulso, la variación entre latidos y la autovaloración entre sesiones (necesita sesiones medidas guardadas).
-- **«Lo que te funciona» y «Para ti»:** comparaciones locales con al menos cinco sesiones válidas por opción. Si las sesiones antiguas no tenían contexto, explicar el estado sin datos en vez de inventar preferencias. Con cuenta y consentimiento, pedir la explicación automática de las cifras; ante un fallo se mantienen las observaciones locales.
-- **Una nota en el resumen:** escribirla, guardar, recargar y quitarla. El texto queda solo en este dispositivo.
+Muchos relojes envían el pulso pero no el tiempo entre latidos. Para mostrarlo sin reloj:
+
+- Nueva sesión → «No tengo cómo medir mi pulso: probar la app» → Simulador, escenario «Reloj que solo envía el pulso», velocidad ×10. Conectar.
+- En «Cómo llegas» el corazón late al ritmo del pulso que llega.
+- «Iniciar música»: en unos 20 s termina la calibración. El estado dice «Estimado solo con tu pulso», un aviso explica que la estimación es más simple y «¿Qué significa?» explica la regla de ±10 %. El orbe sigue latiendo al ritmo del pulso.
+- Mensaje para el público: la app no inventa la variación que el reloj no envía; el resumen lo dice y el progreso no la muestra.
+
+## 6. Lo demás (2 min)
+
+- **Historial:** las sesiones agrupadas por semana («Esta semana», «La semana pasada»…), con fecha, tiempo, intención y cómo te sentías; tocar una abre su resumen.
+- **«Tu progreso»:** evolución del pulso, la variación entre latidos y la autovaloración entre sesiones (necesita sesiones medidas guardadas).
+- **«Lo que te funciona» y «Para ti»:** comparaciones locales con al menos cinco sesiones válidas por opción. Mientras faltan, el panel dice cuántas sesiones faltan y con qué opción (por ejemplo «te falta 1 sesión con «Piano»»), en vez de inventar preferencias. Con cuenta y consentimiento, pedir la explicación automática de las cifras; ante un fallo se mantienen las observaciones locales.
+- **El resumen:** primero los resultados; la variación entre latidos con nombre llano y LF/HF plegado en «Detalles técnicos». Al final, una nota: escribirla, guardar, recargar y quitarla. El texto queda solo en este dispositivo.
 - **«Tengo 3 minutos»:** entrada rápida desde Inicio con las últimas elecciones; mantiene advertencias, inicio manual y calibración de tres minutos.
 - **Informe** imprimible desde «Tu progreso».
 - **Perfil:** tema e idioma, recordatorio que abre un borrador de Google Calendar para revisar y guardar (archivo como alternativa), privacidad y «Ayuda a mejorar la app» (grabación guiada para reentrenar el clasificador).
 - **Para dormir:** una sesión con «Descansar antes de dormir» atenúa la pantalla a los 20 s y se apaga sola al final.
+- **Cámara (experimental):** en el celular, con el dedo sobre la cámara y la linterna. La guía dice si falta contacto, si busca o recibe latidos, y «Entra demasiada luz» si la imagen se satura; un resbalón breve del dedo no corta la medición.
+- **`/diagnostics`:** la prueba de audio con la pantalla bloqueada compara salida, reverberación y latencia, y descarga un registro local.
 
 ## Preguntas que suelen salir
 
 - **¿La música es grabada?** No: se compone nota a nota en el hilo de audio del navegador; cada sesión es distinta.
-- **¿Qué decide la música?** Un clasificador entrenado con WESAD estima si la activación sube, baja o no cambia respecto a tus primeros minutos; con tres estimaciones iguales seguidas la música cambia un escalón, siempre de forma gradual.
+- **¿Qué decide la música?** Un clasificador entrenado con WESAD estima si la activación sube, baja o no cambia respecto a tus primeros minutos; con tres estimaciones iguales seguidas la música cambia un escalón, siempre de forma gradual. Con un reloj que solo envía el pulso, una regla más simple usa solo el pulso, y la pantalla lo dice.
+- **¿Qué dispositivos sirven?** Bandas de pecho con Bluetooth (variabilidad completa), relojes que emiten el pulso por Bluetooth (solo pulso) y la cámara del celular (experimental).
 - **¿Qué sale del dispositivo?** Nada de la señal. Con cuenta, dos pasos y consentimiento, solo resúmenes de sesión.
 - **¿Y sin internet?** La sesión completa funciona sin red.

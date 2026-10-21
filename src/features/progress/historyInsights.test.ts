@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sample, sessionRecord } from '../../test/sessionRecords';
 import type { SessionRecord } from '../records/sessionRecord';
 import { createSessionContext } from '../records/sessionContext';
-import { historyInsights, personalComparisons } from './historyInsights';
+import { historyInsights, nextComparison, personalComparisons } from './historyInsights';
 
 const CONTEXT = createSessionContext('piano', 'rain', new Date(2026, 9, 19, 10));
 function group(count: number, overrides: Partial<SessionRecord> = {}): SessionRecord[] {
@@ -81,5 +81,15 @@ describe('historyInsights', () => {
     expect(result.unknownDates).toBe(1);
     expect(result.observations.length).toBeLessThanOrEqual(3);
     expect(historyInsights([])).toEqual({ comparisons: [], observations: [], knownDays: 0, unknownDates: 0 });
+  });
+});
+
+describe('nextComparison', () => {
+  const needs = (records: SessionRecord[]) => nextComparison(historyInsights(records));
+  it('tells what the two most used sounds still lack, and nothing once a comparison is complete or impossible', () => {
+    expect(needs([...group(5), ...other(3)])?.needs).toEqual([{ value: 'warm', missing: 2 }]);
+    expect(needs([...group(3), ...other(4)])?.needs).toEqual([{ value: 'warm', missing: 1 }, { value: 'piano', missing: 2 }]);
+    expect(needs(group(4))).toBeNull();
+    expect(needs([...group(5, { ratingAfter: 5 }), ...other()])).toBeNull();
   });
 });

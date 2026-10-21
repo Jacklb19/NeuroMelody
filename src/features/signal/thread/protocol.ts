@@ -1,4 +1,5 @@
 import type { BeatNotification } from '../../acquisition/contract';
+import { isSignalMode } from '../processing/signalMode';
 import type { DrawingContext, CanvasDimensions } from '../drawing/drawTachogram';
 import { VALUE_SLOT, type ChartLabels } from '../drawing/chartLabels';
 import { PALETTE_LENGTH_VARIABLES, PALETTE_VARIABLES, type ChartPalette } from '../drawing/palette';
@@ -139,7 +140,8 @@ function isResult(value: unknown): value is IndicesResult {
     SIGNAL_QUALITIES.some((quality) => quality === value.quality) &&
     isNumberOrNull(value.lfPower) &&
     isNumberOrNull(value.hfPower) &&
-    isNumberOrNull(value.lfHfRatio)
+    isNumberOrNull(value.lfHfRatio) &&
+    (value.signalMode === undefined || isSignalMode(value.signalMode))
   );
 }
 

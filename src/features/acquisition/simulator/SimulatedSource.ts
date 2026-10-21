@@ -130,7 +130,8 @@ export class SimulatedSource implements SignalSource {
     return {
       timeMs,
       heartRate: this.#heartRate(pending),
-      rrIntervalsMs,
+      // A watch computes the pulse from the beats but keeps their intervals to itself.
+      rrIntervalsMs: SCENARIOS[this.#options.scenario].pulseOnly === true ? [] : rrIntervalsMs,
       sensorContact: true,
     };
   }

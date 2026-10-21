@@ -23,6 +23,21 @@ export const SAMPLE_HEIGHT = 30;
 export const MIN_FINGER_RED = 100;
 export const MIN_RED_TO_GREEN = 2;
 
+/**
+ * A finger that slips off the lens for less than this keeps its signal: the
+ * missing frames are skipped instead of starting over, which would lose the
+ * next beats while the baseline refills.
+ */
+export const CONTACT_GRACE_MS = 300;
+/**
+ * Brightest value of a camera channel. A frame whose pixels sit there has
+ * lost the pulse in them: the torch or uncovered light is too strong.
+ */
+export const CHANNEL_MAX = 255;
+/** Share of clipped pixels, averaged over the window below, from which the image counts as too bright. */
+export const SATURATED_SHARE = 0.5;
+export const SATURATION_WINDOW_MS = 1000;
+
 /** Window of the moving mean removed from the signal: slower changes are not pulse. */
 export const BASELINE_WINDOW_MS = 1500;
 /** Frames averaged to smooth sensor noise: about 100 ms at CAMERA_FRAME_RATE. */

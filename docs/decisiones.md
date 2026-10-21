@@ -400,6 +400,37 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Explicación opcional | Amplía ADR-08/36 con `POST /v1/progress/summary`, sin almacenamiento ni migraciones. Cuenta y consentimiento por petición, como el resumen agregado existente. Envía hasta 3 comparaciones, con catálogos, conteos y cifras cerrados. Para validar completamente lenguaje y referencias, el proveedor solo elige una presentación entre frases revisadas, sin prosa libre ni cifras nuevas. La interfaz conserva las cifras locales y marca el resultado automático. Contrato y errores en `contrato-progress-summary.md`. Se invalida ante cualquier cambio de historial, filtro, idioma o cuenta; las respuestas tardías no reaparecen. |
 | Límites | Código local en ambos repositorios, sin dependencias nuevas. La publicación, el teléfono físico, BLE, el guardado real en Google Calendar y las llamadas reales a Groq se verifican por separado. El corte al bloquear y el calentamiento continúan abiertos; este ADR no los da por resueltos. |
 
+## ADR-49. Revisión de la experiencia
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026, tras la revisión de 14 pantallas en celular (claro y oscuro) y escritorio, con historial de ejemplo, y de una sesión de prueba completa. |
+| Problemas | Textos de método donde la persona espera una respuesta («Lo que te funciona» sin datos, sesión rápida), una tarjeta «Para ti» vacía antes de elegir, jerga (RMSSD, LF/HF, «Calibrando: no hay datos suficientes»), un historial de unos 450 px por sesión en el celular y un final de sesión que seguía mostrando la calibración sin un paso siguiente. |
+| Decisión | Los cambios de `pantallas.md`, «Revisión de la experiencia». Lo que falta para una comparación se calcula en el dispositivo con las mismas reglas de ADR-48 (valoración, contexto actual, sonido o ambiente, dos opciones más usadas, mínimo de 5) y no añade observaciones ni recomendaciones. El historial agrupa por semana local empezando en lunes, en los dos idiomas. |
+| Límites | Solo front, sin dependencias, sin cambios de datos ni del contrato con la API. Las cifras de pulso y variación siguen en el resumen, el progreso, el informe y el CSV. |
+
+## ADR-50. Cámara: margen de contacto, exceso de luz y un solo reloj
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026 dentro de P-05 A (mejorar la cámara). La cámara sigue experimental (P-01) hasta la prueba física. |
+| Medición | Antes de cambiar nada se ampliaron las grabaciones sintéticas: 15, 24, 30 y 60 fotogramas por segundo, una forma de pulso con onda sistólica y diastólica, fotogramas perdidos o repetidos, más variación de tiempos, un dedo que resbala un fotograma y una imagen saturada. El detector ya acertaba en frecuencia, forma, pérdidas y repeticiones (error medio de 3 a 8 ms en 39 intervalos). Fallaba en dos casos: tres resbalones de un fotograma perdían 6 de 39 latidos, porque cada uno reiniciaba el detector, y la imagen saturada perdía de 10 a 12 sin avisar. |
+| Decisión | 1) Hasta 300 ms sin dedo se saltan los fotogramas en lugar de reiniciar; con más, se reinicia como antes y la guía dice que se perdió el contacto. 2) La captura cuenta la parte de píxeles con el rojo al máximo; si en el último segundo es la mitad o más, la guía dice «Entra demasiada luz…». No se intenta recuperar latidos ocultos por la saturación. 3) El tiempo de cada fotograma usa siempre el mismo reloj, elegido con el primero (captura de la cámara o, si no existe, la visualización); un fotograma sin ese dato se salta. |
+| Resultado | Con resbalones, 39 de 39 latidos a 15, 24, 30 y 60 fotogramas por segundo, con menos de 20 ms de error por intervalo en las pruebas. La saturación se detecta y se avisa. |
+| Límites | Nada de esto se ha comparado con una banda ni con un teléfono real; los umbrales (300 ms, mitad de píxeles, 1 s) son de producto. No se cambió el filtrado ni el punto del latido, porque las mediciones no mostraron un problema allí. |
+
+## ADR-51. Modo solo pulso para relojes
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026 (P-05 B): regla simple por pulso y sesiones también en la nube, con migración que aplica el usuario. Sin reloj físico para probar: se verifica con pruebas automáticas y con nRF Connect enviando pulso sin intervalos. |
+| Problema | Muchos relojes (Garmin, Huawei, Amazfit) emiten el servicio estándar de frecuencia cardíaca solo con el pulso, sin el tiempo entre latidos. Hoy se conectan, pero el análisis no recibe latidos: la señal queda «baja», nunca termina la calibración y la música no se adapta, sin explicar por qué. |
+| Detección | En el hilo de señal, por conexión. En cuanto llega un intervalo, la conexión es de variabilidad. Si llegan 5 notificaciones seguidas con contacto y pulso pero sin intervalos, la conexión pasa a «solo pulso». Si después llegan intervalos, vuelve a variabilidad. |
+| Análisis | En solo pulso, una pausa es el tiempo sin notificaciones con contacto, con el mismo umbral de 3 s. El pulso medio se calcula con los valores que envía el reloj en la ventana de 5 minutos y se publica tras 60 s de señal, como antes. Variación, SDNN y LF/HF quedan vacíos. El resultado lleva el modo. |
+| Adaptación | Misma calibración (3 min y 12 lecturas), histéresis de 3 estimaciones, permanencia y tempo inicial a partir del pulso. El estado sale de una regla solo de pulso respecto a la referencia: «Alta» con una subida del 10 %, «Baja» con una bajada del 10 % e «Incierta» en otro caso. Es más simple que la de ADR-12 y la interfaz lo dice («Estimado solo con tu pulso»). El modelo entrenado no se usa, porque necesita la variación. |
+| Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
+| Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

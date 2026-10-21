@@ -60,6 +60,9 @@ export const session = {
     /** After a session made with a trial source. */
     trialEnded: 'Era una sesión de prueba y no se guardó.',
     trialEndedDetail: 'Para guardar tus sesiones y ver tu progreso, mide tu pulso con una banda o con la cámara.',
+    /** Ways on once the session is over. */
+    home: 'Volver al inicio',
+    measure: 'Preparar una sesión con mi pulso',
     saveFailed: (reason: string): string => `No se pudo guardar la sesión en este dispositivo (${reason}).`,
   },
   /** Guided breathing under the orb (ADR-33): a pace to follow, never a promise of an effect. */
@@ -86,12 +89,16 @@ export const session = {
   },
   stage: {
     eyebrow: 'Ahora',
+    /** Once the music has stopped, instead of the moment of the session. */
+    ended: { title: 'Terminaste tu sesión', detail: 'La música se detuvo. Abajo tienes lo que hizo durante este rato.' },
     estimatedState: 'Estado estimado:',
     /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
     pace: (tempo: number, personal: boolean): string =>
       `La música va a ${String(tempo)} pulsos por minuto${personal ? ', ajustada a tu pulso' : ''}.`,
     help: {
       summary: '¿Qué significa?',
+      /** With a watch that sends only the pulse, the estimate leaves the variability out (ADR-51). */
+      heartRateText: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que subió al menos un 10 %: la música vuelve un paso para acompañarte. «Baja» es que bajó al menos un 10 %, e «Incierta», que no cambió tanto: en ambos casos la música sigue bajando poco a poco. Tu reloj no envía el tiempo entre latidos, así que esta estimación es más simple. No mide el dolor ni es un diagnóstico.',
       text: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que el pulso subió y la variación entre latidos bajó: la música vuelve un paso para acompañarte. «Baja» es lo contrario, e «Incierta», que no cambió lo bastante: en ambos casos la música sigue bajando poco a poco. Es una estimación para guiar la música; no mide el dolor ni es un diagnóstico.',
     },
     /** Shown while the rules estimate the state, because the trained model could not be loaded. */
@@ -101,6 +108,9 @@ export const session = {
     /** The model's calibrated probability for the state shown, as a whole percentage. */
     modelConfidence: (percent: number): string => `Estimado por un modelo entrenado · confianza del ${String(percent)} %`,
     waitingForQuality: 'La adaptación espera datos de buena calidad.',
+    /** With a watch that sends only the pulse (ADR-51). */
+    heartRateOnly: 'Estimado solo con tu pulso',
+    heartRateOnlyNotice: 'Tu reloj envía el pulso, pero no el tiempo entre latidos. La música se adapta con una estimación más simple, solo con tu pulso.',
     /** Why the music holds its step; the minutes come from the adaptation rules (ADR-12). */
     dwell: (minutes: number): string =>
       `Se conserva el escalón hasta completar su duración mínima de ${String(minutes)} minutos.`,

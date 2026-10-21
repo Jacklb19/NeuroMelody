@@ -251,6 +251,10 @@ describe('cloud API client', () => {
     expect(wire).not.toHaveProperty('music');
     // The API answers instants with another notation; the record must come back identical.
     expect(fromWire({ ...(wire as object), started_at: '2026-10-07T10:00:00+00:00' })).toEqual(record);
+    // Intervals are implicit both ways; only a pulse-only session says so (ADR-51).
+    expect(wire).not.toHaveProperty('signal_mode');
+    expect(fromWire({ ...(wire as object), signal_mode: 'hrv' })).toEqual(record);
+    expect(fromWire({ ...(wire as object), signal_mode: 'hr_only' })).toEqual({ ...record, signalMode: 'hr_only' });
   });
 
   it('turns the answers of the API into error codes and never trusts a malformed session', async () => {

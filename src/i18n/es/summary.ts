@@ -17,9 +17,13 @@ export const summary = {
   figures: {
     title: 'Al inicio y al final',
     heartRate: 'Frecuencia cardíaca media',
-    rmssd: 'Variabilidad entre latidos (RMSSD)',
+    rmssd: 'Variación entre latidos',
     rmssdTrend: 'Variabilidad entre latidos a lo largo de la sesión',
     lfHfAtEnd: 'Razón LF/HF al final',
+    /** Figures only a specialist reads, folded under the main ones. */
+    technical: 'Detalles técnicos',
+    /** In place of the variability, for a watch that sent only the pulse (ADR-51). */
+    heartRateOnly: 'Tu reloj solo envió el pulso, así que esta sesión no tiene la variación entre latidos.',
     /** The seconds come from the samples averaged at each end of the session. */
     footnote: (edgeSeconds: number): string =>
       `Cada valor promedia hasta ${String(edgeSeconds)} s de señal de buena calidad al principio y al final. ` +

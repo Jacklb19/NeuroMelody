@@ -151,9 +151,32 @@ Desarrollo autorizado e implementado en local el 19 oct. El plan está en `plan-
 | `/plan` | «Para ti» | Encima de las elecciones. Propone sonido, ambiente y duración cuando hay datos suficientes, con un motivo por campo y «Usar esta propuesta»; se puede cambiar todo. |
 | `/summary/:id` | Nota opcional | Junto a la valoración final. Hasta 200 caracteres guardables, editables y eliminables; solo en el dispositivo. |
 | `/app` | «Tengo 3 minutos» | Acción secundaria en la tarjeta de preparar la sesión, con lo último conocido. Lleva a las mismas diapositivas, conserva las advertencias y no inicia música automáticamente. |
-| `/session` | Guía de cámara | En «Tu pulso», junto al control de cámara: contacto, búsqueda de latidos, recepción y pérdida. Indicación de apoyar sin apretar; no mide presión. |
+| `/session` | Guía de cámara | En «Tu pulso», junto al control de cámara: contacto, búsqueda de latidos, recepción y pérdida. Indicación de apoyar sin apretar; no mide presión. Desde ADR-50 también «Entra demasiada luz…» cuando la imagen se satura, y un resbalón de menos de 300 ms no cuenta como pérdida. |
 
 No se añaden rutas de pantalla. La sesión rápida es una excepción aprobada de 3 minutos y explica que puede terminar antes de disponer de una estimación adaptada; la calibración no se acorta. La explicación del progreso requiere aceptación explícita y cuenta; el modelo solo elige frases verificadas, sin alterar cifras. Los estados sin datos y de fallo conservan el recorrido manual.
+
+## Revisión de la experiencia (ADR-49, 20 oct 2026)
+
+Ajustes aprobados tras recorrer todas las pantallas en celular y escritorio. No añaden rutas ni paneles nuevos.
+
+| Pantalla | Cambio |
+|---|---|
+| `/app` | «Preparar mi sesión» queda sola en la primera fila; «Tengo 3 minutos» y «Repetir la última» van debajo, más pequeñas, con una línea que dice qué usará la sesión rápida («3 minutos con piano y lluvia»). |
+| `/progress` | Mientras no hay observaciones, «Lo que te funciona» dice solo cuántas sesiones faltan para la primera comparación de sonido o ambiente (o qué hace falta en general) y en cuántos días has escuchado. La introducción y la advertencia aparecen con las observaciones. |
+| `/plan` | «Para ti» solo aparece cuando tiene una propuesta (o si falla la lectura del historial). |
+| `/summary/:id` | Primero los resultados; la nota va después del texto automático. «Variación entre latidos» sustituye a «RMSSD» y la razón LF/HF pasa a «Detalles técnicos», plegados. |
+| `/history` | Filas compactas agrupadas por semana («Esta semana», «La semana pasada», «Semana del…»), lunes primero. Cada fila abre el resumen y muestra fecha, tiempo, intención y cómo te sentías; las cifras de pulso quedan en el resumen. |
+| `/session` | Al detener la música, la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
+
+## Modo solo pulso (ADR-51, 20 oct 2026)
+
+No añade pantallas.
+
+| Pantalla | Cambio |
+|---|---|
+| `/session` | Con un reloj que solo envía el pulso, la nota del estado estimado dice «Estimado solo con tu pulso» y un aviso explica que el reloj no envía el tiempo entre latidos. |
+| `/summary/:id` | En lugar de la variación entre latidos, una nota: este reloj solo envió el pulso. |
+| `/progress` y `/report` | El pulso aparece como siempre; la variación queda vacía en esas sesiones. «Lo que te funciona» no compara su pulso con el de una banda. |
 
 ## `/report`, informe para compartir (ADR-33, solo en el dispositivo)
 
@@ -222,6 +245,8 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 ## Diagnóstico de audio al bloquear (P-08, aprobado el 19 oct)
 
 En `/diagnostics`, después de las capacidades y antes del prototipo de cámara, un panel de prueba de audio de hasta 3 minutos, con advertencias de uso si faltan. Permite elegir sonido, ambiente y salida actual o alternativa; muestra el último estado real del contexto, reloj, latencias, contadores disponibles y lecturas. Detener sigue fijo y Esc funciona; la prueba se apaga sola. La descarga del registro es explícita y local; no guarda una sesión ni transmite datos. Un contador no disponible se declara sin medición; en la salida alternativa advierte que no mide el último tramo audible. Detalle y limitaciones en `plan-audio-bloqueo.md`.
+
+Desde el 20 oct el mismo panel compara también reverberación (con o sin) y la latencia pedida al navegador (para escuchar, equilibrada o interactiva); las dos primeras de cada lista son las de la sesión. Muestra el ritmo del reloj de audio frente al real con la pantalla encendida y bloqueada, y el tramo más lento. Los pasos guían cuatro pruebas cambiando una sola cosa cada vez.
 
 En `/session`, una interrupción del contexto deja de mostrarse como «Sonando»: se explica y permite iniciar de nuevo o detener. La música no se reinicia por un cambio de visibilidad. La salida alternativa no se activa en las sesiones normales.
 

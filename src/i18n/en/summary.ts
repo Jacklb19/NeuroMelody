@@ -17,9 +17,13 @@ export const summary = {
   figures: {
     title: 'At the start and at the end',
     heartRate: 'Mean heart rate',
-    rmssd: 'Beat-to-beat variability (RMSSD)',
+    rmssd: 'Variation between heartbeats',
     rmssdTrend: 'Beat-to-beat variability throughout the session',
     lfHfAtEnd: 'LF/HF ratio at the end',
+    /** Figures only a specialist reads, folded under the main ones. */
+    technical: 'Technical details',
+    /** In place of the variability, for a watch that sent only the pulse (ADR-51). */
+    heartRateOnly: 'Your watch sent only your pulse, so this session has no variation between heartbeats.',
     /** The seconds come from the samples averaged at each end of the session. */
     footnote: (edgeSeconds: number): string =>
       `Each value averages up to ${String(edgeSeconds)} s of good-quality signal at the start and at the end. ` +

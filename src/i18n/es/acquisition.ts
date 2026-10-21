@@ -47,6 +47,7 @@ export const acquisition = {
     rest: 'Reposo',
     activation: 'Activación',
     progressive_relaxation: 'Relajación progresiva',
+    pulse_only: 'Reloj que solo envía el pulso',
     progressive_activation: 'Activación creciente',
     // Describes the device, not the body: the interface does not interpret the signal.
     artifacts: 'Reposo con fallos de lectura',

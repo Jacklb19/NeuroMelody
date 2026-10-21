@@ -25,6 +25,9 @@ interface ActiveSession extends SessionStart {
   /** Signal second that maps to the session's second 0. */
   offsetS: number | null;
   lastSecond: number;
+  /** Whether any reading came from a pulse-only connection, and whether any carried variability. */
+  pulseOnly: boolean;
+  variability: boolean;
 }
 
 /**
@@ -50,7 +53,7 @@ export class SessionRecorder {
 
   start(start: SessionStart): void {
     const startedAtMs = this.#nowMs();
-    this.#session = { ...start, id: uuidv7(startedAtMs), startedAtMs, samples: [], offsetS: null, lastSecond: 0 };
+    this.#session = { ...start, id: uuidv7(startedAtMs), startedAtMs, samples: [], offsetS: null, lastSecond: 0, pulseOnly: false, variability: false };
   }
 
   /** Records the source actually used; the last one connected wins. */
@@ -68,6 +71,8 @@ export class SessionRecorder {
     }
     const second = signalS - session.offsetS;
     session.lastSecond = second;
+    if (result.signalMode === 'hr_only') session.pulseOnly = true;
+    if (result.rmssd !== null) session.variability = true;
     session.samples.push({
       second,
       meanHr: result.meanHr,
@@ -100,6 +105,8 @@ export class SessionRecorder {
       ratingBefore: session.ratingBefore,
       ratingAfter: null,
       samples: session.samples,
+      // A session is pulse-only when a watch was used and no reading had variability (ADR-51).
+      ...(session.pulseOnly && !session.variability ? { signalMode: 'hr_only' as const } : {}),
       ...(music === null ? {} : { music }),
       ...(session.context === undefined ? {} : { context: session.context }),
     };

@@ -10,7 +10,9 @@
 .start-copy h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); letter-spacing: var(--tracking-heading); margin-bottom: var(--space-4); text-wrap: balance; }
 .start-copy > p:not(.eyebrow) { color: var(--color-text-secondary); font-size: var(--text-lg); margin-bottom: var(--space-8); max-width: var(--stage-detail-max-width); }
 .start-copy .eyebrow { color: var(--color-accent); }
-.start-actions { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.start-actions, .start-shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.start-shortcuts { margin-top: var(--space-5); }
+.start-copy > p.start-quick-hint { font-size: var(--text-sm); margin: var(--space-3) 0 0; }
 .start-orb { font-size: var(--orb-size-large); margin-right: var(--space-6); }
 
 .home-section h2 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-metric); margin-bottom: var(--space-2); }

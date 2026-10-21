@@ -27,7 +27,10 @@ export interface AdaptationSnapshot {
   readonly calibrated: boolean;
   readonly baselineReadings: number;
   readonly qualityGood: boolean;
-  /** Who estimated the accepted state: the trained model, or the rules when no model is loaded. */
+  /**
+   * Who estimated the accepted state: the trained model, the rules when no
+   * model is loaded, or the pulse-only rule with a watch that sends no intervals (ADR-51).
+   */
   readonly estimator: EstimatorKind;
   /** Calibrated probability the model gives the accepted state; `null` with the rules, which have none. */
   readonly confidence: number | null;
@@ -38,7 +41,7 @@ export interface AdaptationSnapshot {
   readonly lastTransition: TransitionTiming | null;
 }
 
-export type EstimatorKind = 'model' | 'rules';
+export type EstimatorKind = 'model' | 'rules' | 'heart_rate';
 
 /** The stretch of the ladder a session moves in (ADR-38). */
 export interface GuidanceRange {
@@ -61,6 +64,18 @@ export function estimateState(hr: number, rmssd: number, baseHr: number, baseRms
 }
 
 /**
+ * Simpler rule for a watch that sends only the pulse (ADR-51): the same
+ * change of heart rate against the baseline, without the variability that
+ * would confirm it.
+ */
+export function estimateStateFromHeartRate(hr: number, baseHr: number): ActivationState {
+  const hrRatio = hr / baseHr;
+  if (hrRatio >= 1 + HEART_RATE_CHANGE) return 'high';
+  if (hrRatio <= 1 - HEART_RATE_CHANGE) return 'low';
+  return 'uncertain';
+}
+
+/**
  * Pure guidance: signal time calibrates; the audio clock governs dwell time.
  * The state of each reading comes from the trained classifier (ADR-32) when
  * one is given, and from the rules otherwise; hysteresis, dwell and the
@@ -71,6 +86,9 @@ export class AdaptationEngine {
   #lastTimeMs = -1;
   #sumHr = 0;
   #sumRmssd = 0;
+  #rmssdCount = 0;
+  /** The latest reading came from a connection that sends only the pulse. */
+  #heartRateOnly = false;
   #sumSdnn = 0;
   #sdnnCount = 0;
   #count = 0;
@@ -108,7 +126,7 @@ export class AdaptationEngine {
     return { state: this.#accepted, calibrated: this.#calibrated,
       baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
       tempoOffsetBpm: this.#tempoOffsetBpm,
-      estimator: this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
+      estimator: this.#heartRateOnly ? 'heart_rate' : this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
         this.#accepted !== 'high' && this.#calmerLevel() !== null &&
         this.#audioTimeS < this.#levelStartS + MIN_LEVEL_DURATION_S,
@@ -139,12 +157,17 @@ export class AdaptationEngine {
     this.#lastTimeMs = result.timeMs;
     this.#audioTimeS = audioTime;
     const { meanHr, rmssd, sdnn } = result;
-    this.#qualityGood = result.quality === 'good' && meanHr !== null && rmssd !== null &&
-      Number.isFinite(meanHr) && Number.isFinite(rmssd) && meanHr > 0 && rmssd > 0;
+    this.#heartRateOnly = result.signalMode === 'hr_only';
+    const validRmssd = rmssd !== null && Number.isFinite(rmssd) && rmssd > 0;
+    this.#qualityGood = result.quality === 'good' && meanHr !== null && Number.isFinite(meanHr) && meanHr > 0 &&
+      (this.#heartRateOnly || validRmssd);
     if (!this.#calibrated) {
-      if (this.#qualityGood && meanHr !== null && rmssd !== null) {
+      if (this.#qualityGood && meanHr !== null) {
         this.#sumHr += meanHr;
-        this.#sumRmssd += rmssd;
+        if (validRmssd) {
+          this.#sumRmssd += rmssd;
+          this.#rmssdCount++;
+        }
         this.#count++;
         if (sdnn !== null && Number.isFinite(sdnn) && sdnn > 0) {
           this.#sumSdnn += sdnn;
@@ -159,8 +182,8 @@ export class AdaptationEngine {
       }
       if (!this.#calibrated) return null;
     }
-    const state = this.#qualityGood && meanHr !== null && rmssd !== null
-      ? this.#estimate(meanHr, rmssd, sdnn)
+    const state = this.#qualityGood && meanHr !== null
+      ? this.#estimate(meanHr, validRmssd ? rmssd : null, sdnn)
       : 'uncertain';
     if (!this.#qualityGood) this.#confidence = null;
     if (!this.#qualityGood) {
@@ -205,10 +228,17 @@ export class AdaptationEngine {
     return this.#level === this.#calmestLevel ? null : nextLevel(this.#level);
   }
 
-  /** The model's estimate when it can give one; the rules otherwise. */
-  #estimate(meanHr: number, rmssd: number, sdnn: number | null): ActivationState {
+  /**
+   * The model's estimate when it can give one; the rules otherwise; and the
+   * pulse-only rule when there is no variability to compare (ADR-51).
+   */
+  #estimate(meanHr: number, rmssd: number | null, sdnn: number | null): ActivationState {
     const baseHr = this.#sumHr / this.#count;
-    const baseRmssd = this.#sumRmssd / this.#count;
+    if (rmssd === null || this.#rmssdCount === 0) {
+      this.#confidence = null;
+      return estimateStateFromHeartRate(meanHr, baseHr);
+    }
+    const baseRmssd = this.#sumRmssd / this.#rmssdCount;
     if (this.#model !== null && sdnn !== null && this.#sdnnCount > 0) {
       const prediction = predictActivation(
         this.#model,

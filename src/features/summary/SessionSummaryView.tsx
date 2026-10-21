@@ -38,6 +38,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
   const musicId = useId();
   const trendValues = record.samples.map((sample) => (sample.goodQuality ? sample.rmssd : null));
   const { figures } = t.summary;
+  const heartRateOnly = record.signalMode === 'hr_only';
 
   return (
     <div className="summary-page">
@@ -46,7 +47,6 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       </PageHeading>
 
       {record.ratingAfter === null && <AfterRating record={record} onSaved={onRecordChange} />}
-      <SessionNote key={record.id} record={record} onSaved={onRecordChange} />
 
       <section aria-labelledby={figuresId} className="summary-section">
         <h2 id={figuresId}>{figures.title}</h2>
@@ -64,19 +64,29 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
             <dt>{figures.heartRate}</dt>
             <dd data-testid="summary-heart-rate">{format.change(summary.heartRate, t.common.units.beatsPerMinute)}</dd>
           </div>
-          <div>
-            <dt>{figures.rmssd}</dt>
-            <dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd>
-            <dd className="figure-trend">
-              <Sparkline values={trendValues} label={figures.rmssdTrend} />
-            </dd>
-          </div>
-          <div>
-            <dt>{figures.lfHfAtEnd}</dt>
-            <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
-          </div>
+          {!heartRateOnly && (
+            <div>
+              <dt>{figures.rmssd}</dt>
+              <dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd>
+              <dd className="figure-trend">
+                <Sparkline values={trendValues} label={figures.rmssdTrend} />
+              </dd>
+            </div>
+          )}
         </dl>
+        {heartRateOnly && <p className="panel-footnote">{figures.heartRateOnly}</p>}
         <p className="panel-footnote">{figures.footnote(EDGE_SECONDS)}</p>
+        {!heartRateOnly && (
+          <details className="summary-technical">
+            <summary>{figures.technical}</summary>
+            <dl className="summary-figures">
+              <div>
+                <dt>{figures.lfHfAtEnd}</dt>
+                <dd>{format.ratio(summary.lfHfAtEnd)}</dd>
+              </div>
+            </dl>
+          </details>
+        )}
       </section>
 
       <StateTimeShare secondsByState={summary.secondsByState} />
@@ -88,6 +98,7 @@ export function SessionSummaryView({ record, onRecordChange }: SessionSummaryVie
       )}
 
       <AutomaticSummary record={record} />
+      <SessionNote key={record.id} record={record} onSaved={onRecordChange} />
 
       <div className="action-row summary-actions">
         <button

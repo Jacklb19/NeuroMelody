@@ -11,6 +11,7 @@ import {
   ANALYSIS_WINDOW_MS,
 } from './thresholds';
 import { SlidingWindow } from './SlidingWindow';
+import { HR_ONLY_AFTER_NOTIFICATIONS, type SignalMode } from './signalMode';
 
 /** Result published every {@link COMPUTE_PERIOD_MS} of signal (RF-05). */
 export interface IndicesResult {
@@ -29,6 +30,17 @@ export interface IndicesResult {
   readonly lfPower: number | null;
   readonly hfPower: number | null;
   readonly lfHfRatio: number | null;
+  /**
+   * Whether the connection sends beat intervals or only the pulse (ADR-51).
+   * Absent means intervals, as before the mode existed.
+   */
+  readonly signalMode?: SignalMode;
+}
+
+/** A pulse value a watch sent, kept for the pulse-only indices. */
+interface PulseReading {
+  readonly timeMs: number;
+  readonly heartRate: number;
 }
 
 /** Window contents, for drawing. */
@@ -58,6 +70,12 @@ export class SignalProcessor {
   /** There was a gap or contact loss since the last beat. */
   #continuityBroken = false;
   #lowNow = false;
+  #mode: SignalMode = 'hrv';
+  /** Consecutive notifications with contact and pulse but no intervals. */
+  #withoutIntervals = 0;
+  /** Last notification with contact: in pulse-only mode it is what a gap is measured from. */
+  #lastPulseMs = 0;
+  #pulses: PulseReading[] = [];
 
   constructor(onIndices: (result: IndicesResult) => void) {
     this.#onIndices = onIndices;
@@ -75,9 +93,11 @@ export class SignalProcessor {
     const { timeMs } = notification;
     const previousMs = this.#lastTimeMs;
     let low = false;
+    this.#observeMode(notification);
 
-    if (timeMs - this.#lastRrMs > MAX_GAP_MS) {
-      this.#slidingWindow.addSegment({ startMs: this.#lastRrMs, endMs: timeMs });
+    const lastSignalMs = this.#mode === 'hr_only' ? this.#lastPulseMs : this.#lastRrMs;
+    if (timeMs - lastSignalMs > MAX_GAP_MS) {
+      this.#slidingWindow.addSegment({ startMs: lastSignalMs, endMs: timeMs });
       this.#continuityBroken = true;
       low = true;
     }
@@ -90,9 +110,13 @@ export class SignalProcessor {
         accepted: false,
         discardReason: 'no_contact',
       }));
-    } else if (notification.rrIntervalsMs.length > 0) {
-      this.#addBeats(notification, (rr) => this.#filter.classify(rr));
-      this.#lastRrMs = timeMs;
+    } else {
+      this.#lastPulseMs = timeMs;
+      this.#pulses.push({ timeMs, heartRate: notification.heartRate });
+      if (notification.rrIntervalsMs.length > 0) {
+        this.#addBeats(notification, (rr) => this.#filter.classify(rr));
+        this.#lastRrMs = timeMs;
+      }
     }
 
     if (isAcceptanceLow(this.#slidingWindow.beats, timeMs)) {
@@ -103,6 +127,7 @@ export class SignalProcessor {
     this.#lowNow = low;
     this.#lastTimeMs = timeMs;
     this.#slidingWindow.prune(timeMs);
+    while ((this.#pulses[0]?.timeMs ?? timeMs) < timeMs - ANALYSIS_WINDOW_MS) this.#pulses.shift();
 
     if (timeMs >= this.#nextComputeMs) {
       this.#onIndices(this.#compute(timeMs));
@@ -121,6 +146,22 @@ export class SignalProcessor {
     this.#nextComputeMs = COMPUTE_PERIOD_MS;
     this.#continuityBroken = false;
     this.#lowNow = false;
+    this.#mode = 'hrv';
+    this.#withoutIntervals = 0;
+    this.#lastPulseMs = 0;
+    this.#pulses = [];
+  }
+
+  /** Any interval makes the connection one of intervals; a run of pulse-only notifications, pulse only. */
+  #observeMode(notification: BeatNotification): void {
+    if (notification.rrIntervalsMs.length > 0) {
+      this.#mode = 'hrv';
+      this.#withoutIntervals = 0;
+      return;
+    }
+    if (notification.sensorContact === false) return;
+    this.#withoutIntervals++;
+    if (this.#withoutIntervals >= HR_ONLY_AFTER_NOTIFICATIONS) this.#mode = 'hr_only';
   }
 
   /**
@@ -147,6 +188,40 @@ export class SignalProcessor {
   }
 
   #compute(timeMs: number): IndicesResult {
+    return this.#mode === 'hr_only' ? this.#computePulseOnly(timeMs) : this.#computeIntervals(timeMs);
+  }
+
+  /**
+   * With only the pulse, the mean comes from the values the watch sent in the
+   * window; the variability indices stay empty. Signal time counts the
+   * stretches between pulses no longer apart than a gap.
+   */
+  #computePulseOnly(timeMs: number): IndicesResult {
+    let durationMs = 0;
+    for (let i = 1; i < this.#pulses.length; i++) {
+      const step = (this.#pulses[i]?.timeMs ?? 0) - (this.#pulses[i - 1]?.timeMs ?? 0);
+      if (step <= MAX_GAP_MS) durationMs += step;
+    }
+    const enough = durationMs >= MIN_NN_FOR_INDICES_MS;
+    const meanHr = this.#pulses.reduce((sum, pulse) => sum + pulse.heartRate, 0) / Math.max(1, this.#pulses.length);
+    return {
+      timeMs,
+      meanHr: enough ? meanHr : null,
+      rmssd: null,
+      sdnn: null,
+      nnDurationMs: durationMs,
+      coverageMs: Math.min(timeMs, ANALYSIS_WINDOW_MS),
+      acceptedBeats: 0,
+      discardedBeats: 0,
+      quality: this.#lowNow ? 'low' : enough ? 'good' : 'collecting',
+      lfPower: null,
+      hfPower: null,
+      lfHfRatio: null,
+      signalMode: 'hr_only',
+    };
+  }
+
+  #computeIntervals(timeMs: number): IndicesResult {
     const beats = this.#slidingWindow.beats;
     const indices = computeTimeDomainIndices(beats);
     const spectrum = computeFrequencyIndices(beats);
@@ -168,6 +243,7 @@ export class SignalProcessor {
       lfPower: spectrum?.lfPower ?? null,
       hfPower: spectrum?.hfPower ?? null,
       lfHfRatio: spectrum?.lfHfRatio ?? null,
+      signalMode: 'hrv',
     };
   }
 }

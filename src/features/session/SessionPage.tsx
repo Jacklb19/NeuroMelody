@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { QUERY_PARAMS } from '../../config/routes';
@@ -34,6 +34,7 @@ import { SessionCheckIn } from './SessionCheckIn';
 import { SessionOrb } from './SessionOrb';
 import { SessionRecap } from './SessionRecap';
 import { ArrivalSlide } from './ArrivalSlide';
+import { useHeartRateBeats } from './useHeartRateBeats';
 import { SessionStepper } from './SessionStepper';
 import { AUTO_ADVANCE_MS, SLIDE_IDS, useSlides, type SlideId } from './sessionSlides';
 import { SleepDimmer } from './SleepDimmer';
@@ -154,10 +155,17 @@ export function SessionPage(): React.JSX.Element {
     recorder.add(result, adaptation.getSnapshot().state);
   }, [adaptation, recorder]);
 
+  // A watch that sends only the pulse (ADR-51) has no beats to follow: the orb beats at its pace instead.
+  const pulseOnly = useSyncExternalStore(adaptation.subscribe, adaptation.getSnapshot).estimator === 'heart_rate';
+  const pulseOnlyRef = useRef(false);
+  useEffect(() => { pulseOnlyRef.current = pulseOnly; }, [pulseOnly]);
+  const watchHeartRate = pulseOnly && reading.state === 'connected' && reading.last?.sensorContact !== false ? reading.last?.heartRate ?? null : null;
+  useHeartRateBeats(watchHeartRate, () => { orbRef.current?.beat(); });
+
   // Each beat keeps the adaptation alive and makes the orb swell; stable, so the Worker is not restarted.
   const handlePulse = useCallback((): void => {
     adaptation.pulse();
-    orbRef.current?.beat();
+    if (!pulseOnlyRef.current) orbRef.current?.beat();
   }, [adaptation]);
 
   const handleSourceChange = useCallback((next: SignalSource): void => {
@@ -244,6 +252,7 @@ export function SessionPage(): React.JSX.Element {
           <p className="slide-lead">{t.session.slides.leads.arrival}</p>
           <ArrivalSlide
             reading={reading}
+            watchHeartRate={watchHeartRate}
             goals={goals}
             instrument={instrument}
             ambience={ambience}
@@ -272,7 +281,7 @@ export function SessionPage(): React.JSX.Element {
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
-          <SessionStage session={adaptation} connection={connection} playing={playing} />
+          <SessionStage session={adaptation} connection={connection} playing={playing} ended={everPlayed && !playing} />
           <SessionCheckIn
             playing={playing}
             ratingBefore={ratingBefore}

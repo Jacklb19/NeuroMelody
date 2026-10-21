@@ -1,7 +1,11 @@
 export const insights = {
   title: 'Lo que te funciona',
   intro: 'Compara lo que quedó registrado en este dispositivo. Cada elección se analiza por separado.',
-  empty: (minimum: number): string => `Para comparar hacen falta al menos ${String(minimum)} sesiones válidas en cada una de dos opciones. Puedes completar las valoraciones al terminar; no rellenamos los datos que faltan en las sesiones antiguas.`,
+  empty: (minimum: number): string => `Para comparar hacen falta ${String(minimum)} sesiones con cada una de dos opciones, por ejemplo dos sonidos o dos ambientes, valorando cómo te sientes al empezar y al terminar.`,
+  /** How far the closest first comparison is; `parts` come from `missing`. */
+  needs: (parts: readonly string[], total: number, goal: string): string =>
+    `Para tu primera comparación (${goal}) te ${total === 1 ? 'falta' : 'faltan'} ${parts.join(' y ')}.`,
+  missing: (count: number, option: string): string => `${String(count)} ${count === 1 ? 'sesión' : 'sesiones'} con «${option}»`,
   caution: 'Son observaciones de tus sesiones; no demuestran que una elección haya causado el cambio.',
   methodTitle: 'Cómo se calculó y todos los grupos',
   method: (minimum: number): string => `Usamos la mediana del cambio entre el final y el inicio, con al menos ${String(minimum)} sesiones por opción. Comparamos dentro de la misma intención y versión del programa; el pulso también exige la misma fuente y lecturas de buena calidad. Los empates visibles no dan una preferencia. No usamos el pulso para recomendar elecciones. El orden es sonido, ambiente, hora, tiempo escuchado, intención y plan. Los datos de prueba no cuentan.`,
@@ -18,11 +22,10 @@ export const insights = {
   option: 'Opción',
   scope: 'Comparación',
   observation: (left: string, count: number, value: string, right: string, otherCount: number, otherValue: string): string => `${left}: ${String(count)} sesiones, mediana ${value}; ${right}: ${String(otherCount)} sesiones, mediana ${otherValue}.`,
-  days: (days: number, unknown: number): string => `${String(days)} días con sesiones cuya fecha local quedó registrada. ${String(unknown)} sesiones sin fecha local conocida. Los minutos del periodo se muestran arriba.`,
+  days: (days: number, unknown: number): string => `Has escuchado en ${days === 1 ? 'un día' : `${String(days)} días distintos`}.${unknown === 0 ? '' : ` ${String(unknown)} ${unknown === 1 ? 'sesión antigua no guardó' : 'sesiones antiguas no guardaron'} la fecha.`}`,
   forYou: {
     title: 'Para ti, según tus sesiones',
     intro: 'Estas opciones acompañaron un cambio positivo mayor en tu valoración. Se compararon por separado: la combinación completa puede no haberse probado.',
-    empty: 'Todavía no hay suficientes valoraciones comparables para proponer opciones para esta intención. Puedes elegirlas abajo.',
     accept: 'Usar esta propuesta',
     applied: 'Propuesta aplicada. Puedes cambiar cualquier elección.',
     linked: 'Respetamos las elecciones que trae este enlace.',
@@ -41,12 +44,16 @@ export const insights = {
   },
   quick: {
     action: 'Tengo 3 minutos',
-    hint: 'La sesión rápida conserva la última intención, sonido y ambiente del dispositivo. Sin elecciones anteriores empieza sin intención, con sonido cálido y sin ambiente.',
+    /** What the quick session will use, from the last choices on this device or the defaults. */
+    hint: (sound: string, ambience: string, goal: string | null): string =>
+      `${goal === null ? '' : `${goal}: `}3 minutos con ${sound} y ${ambience}.`,
+    sounds: { warm: 'sonido cálido', piano: 'piano', bowls: 'cuencos' },
+    ambiences: { none: 'sin ambiente', rain: 'lluvia', sea: 'mar', wind: 'viento' },
     calibration: 'Sesión rápida: la calibración sigue durando 3 minutos. El plan puede terminar antes de que haya una estimación adaptada.',
   },
   camera: {
     instruction: 'Cubre la cámara con el dedo, apóyalo sin apretar y mantenlo quieto. La cámara no mide la presión.',
-    states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', inactive: 'La cámara está desconectada.' },
+    states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', bright: 'Entra demasiada luz. Cubre por completo la cámara y la linterna con la yema del dedo.', inactive: 'La cámara está desconectada.' },
   },
   automatic: {
     title: 'Una explicación de estas observaciones',

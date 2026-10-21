@@ -182,3 +182,34 @@ describe('SignalProcessor', () => {
     expect(activation?.lfHfRatio).toBeGreaterThan(1);
   });
 });
+
+describe('SignalProcessor with a watch that sends only the pulse (ADR-51)', () => {
+  const pulseOnly = (timeMs: number, heartRate = 72): BeatNotification => ({ timeMs, heartRate, rrIntervalsMs: [], sensorContact: true });
+
+  it('switches to pulse only after five notifications without intervals and publishes the mean pulse after a minute', () => {
+    const { processor, results } = createProcessor();
+    for (let ms = 1000; ms <= 70_000; ms += 1000) processor.process(pulseOnly(ms, ms < 35_000 ? 70 : 74));
+    const last = results.at(-1);
+    expect(last?.signalMode).toBe('hr_only');
+    expect(last?.quality).toBe('good');
+    expect(last?.meanHr).toBeCloseTo(72, 0);
+    expect([last?.rmssd, last?.sdnn, last?.lfHfRatio]).toEqual([null, null, null]);
+    expect(results.find((result) => result.timeMs === 30_000)?.meanHr).toBeNull();
+  });
+
+  it('marks a pause in the pulse as a gap and goes back to intervals when they arrive', () => {
+    const { processor, results } = createProcessor();
+    for (let ms = 1000; ms <= 70_000; ms += 1000) processor.process(pulseOnly(ms));
+    processor.process(pulseOnly(75_000));
+    expect(results.at(-1)?.quality).toBe('low');
+    processor.process(notification(80_000, [1000]));
+    expect(results.at(-1)?.signalMode).toBe('hrv');
+  });
+
+  it('does not take a strap that skips intervals in its first notifications for a watch', () => {
+    const { processor, results } = createProcessor();
+    for (let ms = 1000; ms <= 4000; ms += 1000) processor.process(pulseOnly(ms));
+    for (let ms = 5000; ms <= 70_000; ms += 1000) processor.process(notification(ms, [1000]));
+    expect(results.every((result) => result.signalMode === 'hrv')).toBe(true);
+  });
+});

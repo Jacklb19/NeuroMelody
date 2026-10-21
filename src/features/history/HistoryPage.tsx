@@ -4,15 +4,15 @@ import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
 import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ArrowRightIcon } from '../../shared/icons';
-import { useMessages } from '../../i18n/messages';
+import { useFormatters, useMessages } from '../../i18n/messages';
 import { CloudSyncNotice } from '../cloud/CloudSyncNotice';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import type { SessionRecord } from '../records/sessionRecord';
 import { useSessionStore } from '../records/sessionStoreContext';
 import { storeErrorMessage } from '../records/storeErrorMessage';
-import { summarizeSession } from '../records/summarizeSession';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { PageHeading } from '../../shared/PageHeading';
+import { groupByWeek, type HistoryWeek } from './historyWeeks';
 
 type Loaded =
   | { readonly kind: 'loading' }
@@ -61,11 +61,9 @@ export function HistoryPage(): React.JSX.Element {
       {loaded.kind === 'ready' && (loaded.records.length === 0 ? <EmptyHistory /> : (
         <>
           <ProgressInvite />
-          <ol className="history-list">
-            {loaded.records.map((record) => (
-              <HistoryItem key={record.id} record={record} onDelete={remove} />
-            ))}
-          </ol>
+          {groupByWeek(loaded.records, new Date()).map((week) => (
+            <HistoryWeekList key={week.key} week={week} onDelete={remove} />
+          ))}
           <ConfirmButton
             label={t.history.clearAll}
             confirmLabel={t.history.confirmClearAll}
@@ -107,28 +105,40 @@ interface HistoryItemProps {
   readonly onDelete: (id: string) => void;
 }
 
+/** One week of sessions under its heading; each row opens the session's summary. */
+function HistoryWeekList({ week, onDelete }: { readonly week: HistoryWeek; readonly onDelete: (id: string) => void }): React.JSX.Element {
+  const t = useMessages();
+  const formatters = useFormatters();
+  const titleId = useId();
+  const { weeks } = t.history;
+  const title = week.label.kind === 'of' ? weeks.of(formatters.shortDate(week.label.start.toISOString())) : weeks[week.label.kind];
+  return (
+    <section aria-labelledby={titleId} className="history-week">
+      <h2 id={titleId}>{title}</h2>
+      <ol className="history-list">
+        {week.records.map((record) => <HistoryItem key={record.id} record={record} onDelete={onDelete} />)}
+      </ol>
+    </section>
+  );
+}
+
 function HistoryItem({ record, onDelete }: HistoryItemProps): React.JSX.Element {
   const t = useMessages();
   const format = useRecordFormatter();
-  const summary = summarizeSession(record);
-  const titleId = useId();
+  const formatters = useFormatters();
   const { item } = t.history;
   return (
-    <li className="history-item" aria-labelledby={titleId}>
-      <div className="history-heading">
-        <h3 id={titleId}>{format.sessionDate(record.startedAt)}</h3>
-        <span className="secondary-text">{item.listenedOf(format.listened(record.listenedSeconds), record.plannedMinutes)}</span>
-      </div>
-      <dl className="history-figures">
-        <div><dt>{t.records.goalsLabel}</dt><dd>{format.goals(record.goals)}</dd></div>
-        <div><dt>{t.records.ratingLabel}</dt><dd>{format.ratings(record.ratingBefore, record.ratingAfter)}</dd></div>
-        <div><dt>{item.heartRate}</dt><dd>{format.change(summary.heartRate, t.common.units.beatsPerMinute)}</dd></div>
-        <div><dt>{item.rmssd}</dt><dd>{format.change(summary.rmssd, t.common.units.milliseconds)}</dd></div>
-      </dl>
-      <div className="history-actions">
-        <Link to={summaryPath(record.id)} className="button button-secondary">{item.viewSummary}</Link>
-        <ConfirmButton label={item.delete} confirmLabel={item.confirmDelete} onConfirm={() => { onDelete(record.id); }} />
-      </div>
+    <li className="history-item">
+      <Link to={summaryPath(record.id)} className="history-row">
+        <span className="history-row-date">{formatters.dayTime(record.startedAt)}</span>
+        <span className="history-row-detail">
+          {item.listenedOf(format.listened(record.listenedSeconds), record.plannedMinutes)} · {format.goals(record.goals)}
+        </span>
+        <span className="history-row-feeling">
+          {item.feeling} <strong>{format.ratings(record.ratingBefore, record.ratingAfter)}</strong>
+        </span>
+      </Link>
+      <ConfirmButton label={item.delete} confirmLabel={item.confirmDelete} onConfirm={() => { onDelete(record.id); }} />
     </li>
   );
 }

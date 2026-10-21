@@ -10,40 +10,44 @@ import type { AudioFactory } from '../engine/AudioEngine';
 
 export const SAMPLE_RATE = 48_000;
 /** Long listening sessions favour stable playback over low latency. */
-const LATENCY_HINT: AudioContextLatencyCategory = 'playback';
+export const DEFAULT_LATENCY_HINT: AudioContextLatencyCategory = 'playback';
 
-/** An output opened ahead of time and not yet handed to an engine. */
-let warm: AudioContext | null = null;
-
-function openContext(): AudioContext {
-  return new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: LATENCY_HINT });
+/**
+ * A factory whose outputs ask for the given latency. Sessions use the default
+ * one below; `/diagnostics` builds others only to compare them (P-08).
+ */
+export function createBrowserFactory(latencyHint: AudioContextLatencyCategory = DEFAULT_LATENCY_HINT): AudioFactory {
+  /** An output opened ahead of time and not yet handed to an engine. */
+  let warm: AudioContext | null = null;
+  const openContext = (): AudioContext => new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint });
+  return {
+    createAudioContext: () => {
+      const ready = warm;
+      warm = null;
+      return ready !== null && ready.state !== 'closed' ? ready : openContext();
+    },
+    // Created without a user gesture it stays suspended and silent; the start resumes it.
+    prewarm: () => {
+      try {
+        warm ??= openContext();
+      } catch {
+        // A browser that refuses Web Audio says so when the person presses start, with its own message.
+      }
+    },
+    release: () => {
+      void warm?.close();
+      warm = null;
+    },
+    modules: [synthesizerUrl, clipperUrl],
+    createWorkletNode: (context, name, options) => new AudioWorkletNode(context, name, options),
+    // SharedArrayBuffer only exists with cross-origin isolation (COOP and COEP).
+    createTelemetryBuffer: () => (globalThis.crossOriginIsolated ? createTelemetryBuffer() : null),
+    createAudioElement: () => document.createElement('audio'),
+    wait: (ms) =>
+      new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      }),
+  };
 }
 
-export const browserFactory: AudioFactory = {
-  createAudioContext: () => {
-    const ready = warm;
-    warm = null;
-    return ready !== null && ready.state !== 'closed' ? ready : openContext();
-  },
-  // Created without a user gesture it stays suspended and silent; the start resumes it.
-  prewarm: () => {
-    try {
-      warm ??= openContext();
-    } catch {
-      // A browser that refuses Web Audio says so when the person presses start, with its own message.
-    }
-  },
-  release: () => {
-    void warm?.close();
-    warm = null;
-  },
-  modules: [synthesizerUrl, clipperUrl],
-  createWorkletNode: (context, name, options) => new AudioWorkletNode(context, name, options),
-  // SharedArrayBuffer only exists with cross-origin isolation (COOP and COEP).
-  createTelemetryBuffer: () => (globalThis.crossOriginIsolated ? createTelemetryBuffer() : null),
-  createAudioElement: () => document.createElement('audio'),
-  wait: (ms) =>
-    new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    }),
-};
+export const browserFactory: AudioFactory = createBrowserFactory();

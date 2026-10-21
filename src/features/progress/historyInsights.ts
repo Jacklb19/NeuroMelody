@@ -91,6 +91,8 @@ export function historyInsights(records: readonly SessionRecord[], range: Progre
       const scopes = new Map<string, { goal: string; version: number; source: SourceKind | null; values: Map<string, number[]> }>();
       for (const { record, summary } of prepared) {
         if (metric === 'pulse' && record.sourceKind !== 'ble' && record.sourceKind !== 'camera') continue;
+        // A watch's pulse is not compared with a strap's, even though both arrive over Bluetooth (ADR-51).
+        if (metric === 'pulse' && record.signalMode === 'hr_only') continue;
         const value = valueOf(record, dimension);
         const change = metric === 'rating' ? summary.ratingChange : summary.heartRate === null ? null : summary.heartRate.end - summary.heartRate.start;
         if (value === null || change === null) continue;
@@ -121,6 +123,37 @@ export function historyInsights(records: readonly SessionRecord[], range: Progre
     knownDays: new Set(knownDates).size,
     unknownDates: selected.length - knownDates.length,
   };
+}
+
+/** Choices the person makes before listening: the ones worth telling how close a first comparison is. */
+const CHOSEN_DIMENSIONS: ReadonlySet<InsightDimension> = new Set(['instrument', 'ambience']);
+
+export interface MissingSessions {
+  readonly comparison: InsightComparison;
+  /** The two most used options that still lack sessions, each with how many are missing. */
+  readonly needs: readonly { readonly value: string; readonly missing: number }[];
+}
+
+/**
+ * The rating comparison of a sound or ambience that needs the fewest sessions
+ * to reach the minimum in its two most used options, or null when none is close.
+ */
+export function nextComparison(insights: HistoryInsights): MissingSessions | null {
+  let best: MissingSessions | null = null;
+  let fewest = Number.POSITIVE_INFINITY;
+  for (const comparison of insights.comparisons) {
+    if (comparison.metric !== 'rating' || comparison.version !== SESSION_CONTEXT_VERSION || !CHOSEN_DIMENSIONS.has(comparison.dimension)) continue;
+    const top = [...comparison.groups].sort((left, right) => right.count - left.count || left.value.localeCompare(right.value)).slice(0, 2);
+    if (top.length < 2) continue;
+    const needs = top.map((group) => ({ value: group.value, missing: Math.max(0, MIN_INSIGHT_SESSIONS - group.count) }))
+      .filter((need) => need.missing > 0);
+    const missing = needs.reduce((total, need) => total + need.missing, 0);
+    if (missing > 0 && missing < fewest) {
+      best = { comparison, needs };
+      fewest = missing;
+    }
+  }
+  return best;
 }
 
 /** Only a positive, uniquely higher rating change can support an editable plan choice. */

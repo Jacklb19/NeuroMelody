@@ -37,13 +37,11 @@ describe('HistoryPage', () => {
     expect(screen.getByRole('link', { name: history.planSession })).toHaveAttribute('href', ROUTES.plan);
   });
 
-  it('lists sessions newest first with their indicators', async () => {
+  it('lists sessions newest first, grouped by week, with how the person felt', async () => {
     renderWithStore(ROUTES.history, ROUTES.history, <HistoryPage />, await storeWith(FIRST, SECOND));
     const items = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[1] as HTMLElement).getByText(es.records.change('4', '7'))).toBeVisible();
-    expect(within(items[1] as HTMLElement).getByText(es.common.withUnit(es.records.change('20', '30'), es.common.units.milliseconds)))
-      .toBeVisible();
     expect(within(items[0] as HTMLElement).getByText(es.records.noAnswer)).toBeVisible();
     expect(screen.getByRole('link', { name: history.progress.action })).toHaveAttribute('href', ROUTES.progress);
   });
