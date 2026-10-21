@@ -1,7 +1,11 @@
 export const insights = {
   title: 'What works for you',
   intro: 'Compare what was recorded on this device. Each choice is analysed separately.',
-  empty: (minimum: number): string => `A comparison needs at least ${String(minimum)} valid sessions in each of two options. You can complete both ratings after listening; we do not fill in missing details from older sessions.`,
+  empty: (minimum: number): string => `A comparison needs ${String(minimum)} sessions with each of two options, for example two sounds or two ambiences, rating how you feel at the start and at the end.`,
+  /** How far the closest first comparison is; `parts` come from `missing`. */
+  needs: (parts: readonly string[], _total: number, goal: string): string =>
+    `For your first comparison (${goal}) you need ${parts.join(' and ')} more.`,
+  missing: (count: number, option: string): string => `${String(count)} ${count === 1 ? 'session' : 'sessions'} with “${option}”`,
   caution: 'These are observations of your sessions; they do not show that a choice caused a change.',
   methodTitle: 'How this was calculated and all groups',
   method: (minimum: number): string => `We use the median change from start to end, with at least ${String(minimum)} sessions per option. Comparisons share an intention and program version; pulse comparisons also share a source and require good-quality readings. Visible ties do not favour an option. Pulse is never used to recommend choices. The order is sound, ambience, hour, listening time, intention and plan. Trial data do not count.`,
@@ -18,11 +22,10 @@ export const insights = {
   option: 'Option',
   scope: 'Comparison',
   observation: (left: string, count: number, value: string, right: string, otherCount: number, otherValue: string): string => `${left}: ${String(count)} sessions, median ${value}; ${right}: ${String(otherCount)} sessions, median ${otherValue}.`,
-  days: (days: number, unknown: number): string => `${String(days)} days with sessions whose local date was recorded. ${String(unknown)} sessions have no known local date. Minutes for this range are shown above.`,
+  days: (days: number, unknown: number): string => `You have listened on ${days === 1 ? 'one day' : `${String(days)} different days`}.${unknown === 0 ? '' : ` ${String(unknown)} older ${unknown === 1 ? 'session did' : 'sessions did'} not keep the date.`}`,
   forYou: {
     title: 'For you, from your sessions',
     intro: 'These choices accompanied a larger positive change in your rating. They were compared separately: the full combination may not have been tried.',
-    empty: 'There are not enough comparable ratings to suggest choices for this intention yet. You can choose them below.',
     accept: 'Use this suggestion',
     applied: 'Suggestion applied. You can change any choice.',
     linked: 'Choices carried by this link are respected.',
@@ -41,7 +44,11 @@ export const insights = {
   },
   quick: {
     action: 'I have 3 minutes',
-    hint: 'The quick session keeps the last intention, sound and ambience on this device. Without earlier choices it starts without an intention, with a warm sound and no ambience.',
+    /** What the quick session will use, from the last choices on this device or the defaults. */
+    hint: (sound: string, ambience: string, goal: string | null): string =>
+      `${goal === null ? '' : `${goal}: `}3 minutes with ${sound} and ${ambience}.`,
+    sounds: { warm: 'the warm sound', piano: 'the piano', bowls: 'the bowls' },
+    ambiences: { none: 'no ambience', rain: 'rain', sea: 'sea', wind: 'wind' },
     calibration: 'Quick session: calibration still takes 3 minutes. The plan may end before an adapted estimate is available.',
   },
   camera: {

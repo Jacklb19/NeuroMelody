@@ -123,6 +123,37 @@ export function historyInsights(records: readonly SessionRecord[], range: Progre
   };
 }
 
+/** Choices the person makes before listening: the ones worth telling how close a first comparison is. */
+const CHOSEN_DIMENSIONS: ReadonlySet<InsightDimension> = new Set(['instrument', 'ambience']);
+
+export interface MissingSessions {
+  readonly comparison: InsightComparison;
+  /** The two most used options that still lack sessions, each with how many are missing. */
+  readonly needs: readonly { readonly value: string; readonly missing: number }[];
+}
+
+/**
+ * The rating comparison of a sound or ambience that needs the fewest sessions
+ * to reach the minimum in its two most used options, or null when none is close.
+ */
+export function nextComparison(insights: HistoryInsights): MissingSessions | null {
+  let best: MissingSessions | null = null;
+  let fewest = Number.POSITIVE_INFINITY;
+  for (const comparison of insights.comparisons) {
+    if (comparison.metric !== 'rating' || comparison.version !== SESSION_CONTEXT_VERSION || !CHOSEN_DIMENSIONS.has(comparison.dimension)) continue;
+    const top = [...comparison.groups].sort((left, right) => right.count - left.count || left.value.localeCompare(right.value)).slice(0, 2);
+    if (top.length < 2) continue;
+    const needs = top.map((group) => ({ value: group.value, missing: Math.max(0, MIN_INSIGHT_SESSIONS - group.count) }))
+      .filter((need) => need.missing > 0);
+    const missing = needs.reduce((total, need) => total + need.missing, 0);
+    if (missing > 0 && missing < fewest) {
+      best = { comparison, needs };
+      fewest = missing;
+    }
+  }
+  return best;
+}
+
 /** Only a positive, uniquely higher rating change can support an editable plan choice. */
 export function personalComparisons(insights: HistoryInsights, goals: readonly string[]): readonly InsightComparison[] {
   const goal = goalKey(goals);

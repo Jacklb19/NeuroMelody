@@ -400,6 +400,15 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Explicación opcional | Amplía ADR-08/36 con `POST /v1/progress/summary`, sin almacenamiento ni migraciones. Cuenta y consentimiento por petición, como el resumen agregado existente. Envía hasta 3 comparaciones, con catálogos, conteos y cifras cerrados. Para validar completamente lenguaje y referencias, el proveedor solo elige una presentación entre frases revisadas, sin prosa libre ni cifras nuevas. La interfaz conserva las cifras locales y marca el resultado automático. Contrato y errores en `contrato-progress-summary.md`. Se invalida ante cualquier cambio de historial, filtro, idioma o cuenta; las respuestas tardías no reaparecen. |
 | Límites | Código local en ambos repositorios, sin dependencias nuevas. La publicación, el teléfono físico, BLE, el guardado real en Google Calendar y las llamadas reales a Groq se verifican por separado. El corte al bloquear y el calentamiento continúan abiertos; este ADR no los da por resueltos. |
 
+## ADR-49. Revisión de la experiencia
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 20 oct 2026, tras la revisión de 14 pantallas en celular (claro y oscuro) y escritorio, con historial de ejemplo, y de una sesión de prueba completa. |
+| Problemas | Textos de método donde la persona espera una respuesta («Lo que te funciona» sin datos, sesión rápida), una tarjeta «Para ti» vacía antes de elegir, jerga (RMSSD, LF/HF, «Calibrando: no hay datos suficientes»), un historial de unos 450 px por sesión en el celular y un final de sesión que seguía mostrando la calibración sin un paso siguiente. |
+| Decisión | Los cambios de `pantallas.md`, «Revisión de la experiencia». Lo que falta para una comparación se calcula en el dispositivo con las mismas reglas de ADR-48 (valoración, contexto actual, sonido o ambiente, dos opciones más usadas, mínimo de 5) y no añade observaciones ni recomendaciones. El historial agrupa por semana local empezando en lunes, en los dos idiomas. |
+| Límites | Solo front, sin dependencias, sin cambios de datos ni del contrato con la API. Las cifras de pulso y variación siguen en el resumen, el progreso, el informe y el CSV. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

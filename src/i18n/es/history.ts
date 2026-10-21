@@ -14,11 +14,15 @@ export const history = {
     text: 'Tu pulso y cómo te sentías, sesión a sesión.',
     action: 'Ver tu progreso',
   },
+  /** Headings of the weeks the list is grouped in, Monday first. */
+  weeks: {
+    this: 'Esta semana',
+    last: 'La semana pasada',
+    of: (date: string): string => `Semana del ${date}`,
+  },
   item: {
     listenedOf: (listened: string, plannedMinutes: number): string => `${listened} de ${String(plannedMinutes)} min`,
-    heartRate: 'Frecuencia media',
-    rmssd: 'RMSSD',
-    viewSummary: 'Ver resumen',
+    feeling: 'Cómo te sentías',
     delete: 'Borrar',
     confirmDelete: 'Sí, borrar esta sesión',
   },

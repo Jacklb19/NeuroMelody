@@ -37,6 +37,14 @@ export function HomePage(): React.JSX.Element {
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const goalTaglines: Readonly<Record<GoalId, string>> = copy.goals.taglines;
   const totals = sessionTotals(records ?? []);
+  // Read once, like the greeting: what the quick session will use, said in plain words next to it.
+  const [quick] = useState(() => ({ goals: readLastGoals(), ambience: readAmbience(null), instrument: readInstrument(null) }));
+  const quickGoal = quick.goals[0];
+  const quickHint = t.insights.quick.hint(
+    t.insights.quick.sounds[quick.instrument],
+    t.insights.quick.ambiences[quick.ambience],
+    quickGoal === undefined ? null : goalNames[quickGoal],
+  );
 
   return (
     <div className="home-page">
@@ -54,19 +62,21 @@ export function HomePage(): React.JSX.Element {
             <Link to={ROUTES.plan} className="pill-button pill-button-primary pill-button-large">
               <PlayIcon /> {copy.start.action}
             </Link>
-            <Link to={sessionPath(QUICK_DURATION_MIN, readLastGoals(), readAmbience(null), readInstrument(null))} className="pill-button pill-button-ghost pill-button-large">
+          </div>
+          <div className="start-shortcuts">
+            <Link to={sessionPath(QUICK_DURATION_MIN, quick.goals, quick.ambience, quick.instrument)} className="pill-button pill-button-ghost">
               {t.insights.quick.action}
             </Link>
             {totals.last !== null && (
               <Link
                 to={sessionPath(totals.last.plannedMinutes, totals.last.goals, totals.last.context?.ambience, totals.last.context?.instrument)}
-                className="pill-button pill-button-ghost pill-button-large"
+                className="pill-button pill-button-ghost"
               >
                 {copy.start.repeat}
               </Link>
             )}
           </div>
-          <p className="secondary-text">{t.insights.quick.hint}</p>
+          <p className="start-quick-hint">{quickHint}</p>
         </div>
         <BreathingOrb className="start-orb" />
       </section>

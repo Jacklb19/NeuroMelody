@@ -272,7 +272,7 @@ export function SessionPage(): React.JSX.Element {
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
-          <SessionStage session={adaptation} connection={connection} playing={playing} />
+          <SessionStage session={adaptation} connection={connection} playing={playing} ended={everPlayed && !playing} />
           <SessionCheckIn
             playing={playing}
             ratingBefore={ratingBefore}

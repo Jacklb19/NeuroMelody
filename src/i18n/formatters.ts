@@ -10,6 +10,8 @@ export interface Formatters {
   dateTime(iso: string): string;
   /** "7 oct." */
   shortDate(iso: string): string;
+  /** "mié, 7 oct, 10:00": a session in a list, where the year goes in the heading. */
+  dayTime(iso: string): string;
   /** "7 de octubre de 2026": a date that must still make sense read months later. */
   longDate(iso: string): string;
 }
@@ -23,6 +25,7 @@ function create(locale: Locale): Formatters {
   const dateTime = new Intl.DateTimeFormat(tag, { dateStyle: 'long', timeStyle: 'short' });
   const shortDate = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat(tag, { dateStyle: 'long' });
+  const dayTime = new Intl.DateTimeFormat(tag, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
   return {
     integer: (value) => integer.format(value),
     decimal: (value, fractionDigits) => {
@@ -35,6 +38,7 @@ function create(locale: Locale): Formatters {
     },
     dateTime: (iso) => dateTime.format(new Date(iso)),
     shortDate: (iso) => shortDate.format(new Date(iso)),
+    dayTime: (iso) => dayTime.format(new Date(iso)),
     longDate: (iso) => longDate.format(new Date(iso)),
   };
 }
