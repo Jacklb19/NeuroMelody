@@ -75,7 +75,7 @@ export function SessionStage({ session, connection, playing }: SessionStageProps
         <p className="confidence-note" data-testid="estimate-note">{estimateNote}</p>
         <details className="state-help">
           <summary>{t.session.stage.help.summary}</summary>
-          <p>{t.session.stage.help.text}</p>
+          <p>{snapshot.estimator === 'heart_rate' ? t.session.stage.help.heartRateText : t.session.stage.help.text}</p>
         </details>
       </div>
 

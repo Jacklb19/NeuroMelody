@@ -92,6 +92,8 @@ export const session = {
       `La música va a ${String(tempo)} pulsos por minuto${personal ? ', ajustada a tu pulso' : ''}.`,
     help: {
       summary: '¿Qué significa?',
+      /** With a watch that sends only the pulse, the estimate leaves the variability out (ADR-51). */
+      heartRateText: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que subió al menos un 10 %: la música vuelve un paso para acompañarte. «Baja» es que bajó al menos un 10 %, e «Incierta», que no cambió tanto: en ambos casos la música sigue bajando poco a poco. Tu reloj no envía el tiempo entre latidos, así que esta estimación es más simple. No mide el dolor ni es un diagnóstico.',
       text: 'La app compara tu pulso de ahora con el de tus primeros minutos. «Alta» es que el pulso subió y la variación entre latidos bajó: la música vuelve un paso para acompañarte. «Baja» es lo contrario, e «Incierta», que no cambió lo bastante: en ambos casos la música sigue bajando poco a poco. Es una estimación para guiar la música; no mide el dolor ni es un diagnóstico.',
     },
     /** Shown while the rules estimate the state, because the trained model could not be loaded. */

@@ -92,6 +92,8 @@ export const session = {
       `The music is at ${String(tempo)} beats per minute${personal ? ', adjusted to your pulse' : ''}.`,
     help: {
       summary: 'What does it mean?',
+      /** With a watch that sends only the pulse, the estimate leaves the variability out (ADR-51). */
+      heartRateText: 'The app compares your pulse now with your first minutes. “High” means it rose by at least 10 %: the music steps back to keep you company. “Low” means it fell by at least 10 %, and “Uncertain” that it did not change that much: in both cases the music keeps slowing down little by little. Your watch does not send the time between beats, so this estimate is simpler. It does not measure pain and is not a diagnosis.',
       text: 'The app compares your pulse now with the one of your first minutes. "High" means your pulse rose and the variation between beats fell: the music goes back one step to keep you company. "Low" is the opposite, and "Uncertain" means it did not change enough: in both cases the music keeps coming down little by little. It is an estimate to guide the music; it does not measure pain and it is not a diagnosis.',
     },
     /** Shown while the rules estimate the state, because the trained model could not be loaded. */
