@@ -44,13 +44,10 @@
 .plan-program { font-size: var(--text-sm); }
 .plan-note { font-size: var(--text-sm); color: var(--color-text-secondary); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border-subtle); }
 
-/* The way into the session on a phone: a bar that stays at the bottom while the choices scroll. Hidden where the session card is in view. */
-.plan-start-bar { display: none; }
-
+/* The way into the session on a phone: a bar that stays at the bottom while the choices scroll (mounted only below the breakpoint). */
 @media (max-width: 900px) {
   .plan-layout { grid-template-columns: minmax(0, 1fr); }
   .plan-summary { position: relative; top: auto; }
-  .plan-summary > .pill-button { display: none; }
   .duration-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .plan-start-bar {
     position: sticky; bottom: 0; z-index: var(--stop-layer);
