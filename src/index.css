@@ -571,7 +571,8 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   .source-controls label:first-child { grid-column: 1 / -1; }
   .source-metrics, .signal-metrics { gap: var(--space-3); }
   .capabilities-list li { align-items: flex-start; flex-direction: column; gap: var(--space-3); }
-  .stop-button { right: var(--space-5); }
+  /* On a phone the Stop control spans the width: a floating pill would cover the words it sits over. */
+  .stop-button { left: var(--space-5); right: var(--space-5); width: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
