@@ -75,6 +75,13 @@ Sustituye la organización de arriba. La sesión es un recorrido de tres diaposi
 
 Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página.
 
+### Ajustes de la revisión de usabilidad (22 oct 2026)
+
+- **«Detener» en el celular:** por debajo de 520 px el control fijo ocupa todo el ancho inferior en lugar de flotar a la derecha, para no tapar las palabras sobre las que se posaba. En escritorio no cambia.
+- **«Iniciar música» mientras suena:** el botón desaparece del escenario mientras la música suena (la línea «Estado de la música» ya lo dice) y vuelve al detenerla, para poder retomar.
+- **Aviso de calidad:** «La adaptación espera datos de buena calidad» se muestra solo cuando ya hay un estado estimado; mientras se toma la referencia, el título «Tomando tu referencia» ya lo cuenta y el aviso ámbar solo alarmaba.
+- **Respiración guiada al terminar:** cuando la música se detiene, la guía se apaga sola; la persona puede volver a encenderla.
+
 ## Modo de prueba (simulador y registros de ejemplo)
 
 El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.
@@ -113,6 +120,10 @@ En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Pr
 - **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
 - **Acción principal (ajuste del 19 oct):** «Abrir Google Calendar» abre un borrador con la hora, días, zona horaria y enlace a la app. La persona revisa repetición y aviso y pulsa Guardar allí. No se solicita acceso al calendario ni se comprueba el guardado; cada apertura es un borrador nuevo, así que los cambios de uno ya guardado se hacen en el calendario.
 - **Alternativa:** «Descargar para otro calendario» entrega el archivo `.ics`, con repetición y aviso al inicio. La descarga se nombra explícitamente. Sin días marcados, ambas acciones quedan desactivadas y se explica el motivo.
+
+## Barra de inicio del plan en el celular (22 oct 2026)
+
+En `/plan`, por debajo de 900 px la tarjeta «Tu sesión» queda al final de la página, tras todas las preguntas. Una barra fija al borde inferior muestra la duración elegida, la intención y el botón «Empezar sesión», de modo que empezar está a mano en todo momento; la tarjeta conserva el resumen y deja de repetir el botón. En escritorio no existe: la tarjeta sigue fija a la derecha con su botón. No añade ruta ni panel.
 
 ## Sonido de la sesión (ADR-46)
 

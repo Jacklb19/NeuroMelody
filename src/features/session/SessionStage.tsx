@@ -83,7 +83,8 @@ export function SessionStage({ session, connection, playing, ended = false }: Se
       </div>}
 
       {!ended && snapshot.estimator === 'heart_rate' && <p className="quiet-notice">{t.session.stage.heartRateOnlyNotice}</p>}
-      {connected && playing && !snapshot.qualityGood && (
+      {/* While the reference is still being taken the title already says so; the notice would only alarm. */}
+      {connected && playing && snapshot.state !== null && !snapshot.qualityGood && (
         <p className="quiet-notice">{t.session.stage.waitingForQuality}</p>
       )}
       {snapshot.waitingForDwell && (

@@ -273,16 +273,19 @@ export function PlaybackPanel({
       <p className="panel-footnote">{t.audio.playback.volumeNotice}</p>
 
       <div className="playback-controls">
-        <button
-          type="button"
-          className="button button-primary play-button"
-          disabled={state === 'playing' || state === 'loading'}
-          onClick={() => {
-            void start();
-          }}
-        >
-          <span aria-hidden="true" className="play-symbol">▷</span> {t.audio.playback.start}
-        </button>
+        {/* While the music plays the start button has nothing to offer: the status line says it is sounding. */}
+        {state !== 'playing' && (
+          <button
+            type="button"
+            className="button button-primary play-button"
+            disabled={state === 'loading'}
+            onClick={() => {
+              void start();
+            }}
+          >
+            <span aria-hidden="true" className="play-symbol">▷</span> {t.audio.playback.start}
+          </button>
+        )}
         <label htmlFor={volumeId}>{t.audio.playback.volume}</label>
         <input
           id={volumeId}

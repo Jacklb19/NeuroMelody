@@ -17,8 +17,12 @@ import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin 
 import { PlanSuggestionCard } from './PlanSuggestionCard';
 import { programFor } from './programCatalog';
 import { parseOption } from '../../shared/parseOption';
+import { useMediaQuery } from '../../shared/useMediaQuery';
 import { PersonalPlanCard } from './PersonalPlanCard';
 import './plan.css';
+
+/** Mirrors the breakpoint at which plan.css stacks the layout in one column. */
+const NARROW_SCREEN_QUERY = '(max-width: 900px)';
 
 /**
  * Session plan (HU-07, RF-18): what the person is after and how long they
@@ -49,10 +53,15 @@ export function PlanPage(): React.JSX.Element {
   const goalsHintId = useId();
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const navigate = useNavigate();
+  // Below this width the session card sits under every choice (plan.css), so the way in gets its own bar.
+  const narrow = useMediaQuery(NARROW_SCREEN_QUERY);
 
   // Checking a goal replaces the previous one; unchecking it leaves the session without a goal.
   const toggleGoal = (id: GoalId, chosen: boolean): void => {
     setGoals(chosen ? [id] : []);
+  };
+  const startSession = (): void => {
+    void navigate(sessionPath(duration, goals, ambience, instrument));
   };
 
   return (
@@ -179,17 +188,26 @@ export function PlanPage(): React.JSX.Element {
           <p className="plan-note">
             {t.plan.calibrationNote(t.audio.levels[program.startLevel], CALIBRATION_MIN)}
           </p>
-          <button
-            type="button"
-            className="pill-button pill-button-primary pill-button-large pill-button-block"
-            onClick={() => {
-              void navigate(sessionPath(duration, goals, ambience, instrument));
-            }}
-          >
-            <PlayIcon /> {t.plan.continueToSession}
-          </button>
+          {!narrow && (
+            <button type="button" className="pill-button pill-button-primary pill-button-large pill-button-block" onClick={startSession}>
+              <PlayIcon /> {t.plan.continueToSession}
+            </button>
+          )}
         </section>
       </div>
+
+      {/* On a phone the session card ends up below every choice; this bar keeps the way in at hand and the card drops its button. */}
+      {narrow && (
+        <div className="plan-start-bar">
+          <p>
+            <strong>{t.plan.minutes(duration)}</strong>
+            {goal !== undefined && <span className="secondary-text">{goalNames[goal]}</span>}
+          </p>
+          <button type="button" className="pill-button pill-button-primary" onClick={startSession}>
+            <PlayIcon /> {t.plan.continueToSession}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
