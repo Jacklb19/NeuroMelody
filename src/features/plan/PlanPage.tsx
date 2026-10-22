@@ -54,6 +54,9 @@ export function PlanPage(): React.JSX.Element {
   const toggleGoal = (id: GoalId, chosen: boolean): void => {
     setGoals(chosen ? [id] : []);
   };
+  const startSession = (): void => {
+    void navigate(sessionPath(duration, goals, ambience, instrument));
+  };
 
   return (
     <div className="plan-page">
@@ -179,16 +182,21 @@ export function PlanPage(): React.JSX.Element {
           <p className="plan-note">
             {t.plan.calibrationNote(t.audio.levels[program.startLevel], CALIBRATION_MIN)}
           </p>
-          <button
-            type="button"
-            className="pill-button pill-button-primary pill-button-large pill-button-block"
-            onClick={() => {
-              void navigate(sessionPath(duration, goals, ambience, instrument));
-            }}
-          >
+          <button type="button" className="pill-button pill-button-primary pill-button-large pill-button-block" onClick={startSession}>
             <PlayIcon /> {t.plan.continueToSession}
           </button>
         </section>
+      </div>
+
+      {/* On a phone the session card ends up below every choice; this bar keeps the way in at hand (plan.css). */}
+      <div className="plan-start-bar">
+        <p>
+          <strong>{t.plan.minutes(duration)}</strong>
+          <span className="secondary-text">{goal === undefined ? t.plan.noGoals : goalNames[goal]}</span>
+        </p>
+        <button type="button" className="pill-button pill-button-primary" onClick={startSession}>
+          <PlayIcon /> {t.plan.continueToSession}
+        </button>
       </div>
     </div>
   );

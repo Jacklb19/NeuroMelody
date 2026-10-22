@@ -44,10 +44,24 @@
 .plan-program { font-size: var(--text-sm); }
 .plan-note { font-size: var(--text-sm); color: var(--color-text-secondary); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border-subtle); }
 
+/* The way into the session on a phone: a bar that stays at the bottom while the choices scroll. Hidden where the session card is in view. */
+.plan-start-bar { display: none; }
+
 @media (max-width: 900px) {
   .plan-layout { grid-template-columns: minmax(0, 1fr); }
   .plan-summary { position: relative; top: auto; }
+  .plan-summary > .pill-button { display: none; }
   .duration-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .plan-start-bar {
+    position: sticky; bottom: 0; z-index: var(--stop-layer);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+    margin-top: var(--space-8); padding: var(--space-3) var(--space-5) max(var(--space-3), env(safe-area-inset-bottom));
+    background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-bottom: 0; border-radius: var(--radius-card) var(--radius-card) 0 0; box-shadow: var(--card-shadow);
+  }
+  .plan-start-bar p { display: grid; min-width: 0; line-height: 1.3; }
+  .plan-start-bar strong { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
+  .plan-start-bar .secondary-text { font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-start-bar .pill-button { flex-shrink: 0; }
 }
 @media (max-width: 600px) {
   .goal-options { grid-template-columns: minmax(0, 1fr); }
