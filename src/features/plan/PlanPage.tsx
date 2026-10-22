@@ -192,7 +192,7 @@ export function PlanPage(): React.JSX.Element {
       <div className="plan-start-bar">
         <p>
           <strong>{t.plan.minutes(duration)}</strong>
-          <span className="secondary-text">{goal === undefined ? t.plan.noGoals : goalNames[goal]}</span>
+          {goal !== undefined && <span className="secondary-text">{goalNames[goal]}</span>}
         </p>
         <button type="button" className="pill-button pill-button-primary" onClick={startSession}>
           <PlayIcon /> {t.plan.continueToSession}
