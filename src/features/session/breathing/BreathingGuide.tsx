@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useMessages } from '../../../i18n/messages';
 import type { OrbHandle } from '../../../shared/BreathingOrb';
 import { WindIcon } from '../../../shared/icons';
@@ -24,6 +24,18 @@ interface BreathingGuideProps {
 export function BreathingGuide({ startActive, engine, orbRef }: BreathingGuideProps): React.JSX.Element {
   const { breathing } = useMessages().session;
   const [active, setActive] = useState(startActive);
+  // When the music ends the guide stops with it: nobody should keep breathing to a session that is over.
+  const hadEngine = useRef(false);
+  useEffect(() => {
+    if (engine !== null) {
+      hadEngine.current = true;
+      return;
+    }
+    if (hadEngine.current) {
+      hadEngine.current = false;
+      setActive(false);
+    }
+  }, [engine]);
   const phase = useBreathingGuide(active, engine, orbRef);
   // Typed by id, so a phase without a word is a compile error.
   const phases: Readonly<Record<BreathPhase, string>> = breathing.phases;
