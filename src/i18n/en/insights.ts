@@ -52,6 +52,8 @@ export const insights = {
     calibration: 'Quick session: calibration still takes 3 minutes. The plan may end before an adapted estimate is available.',
   },
   camera: {
+    finger: 'Place the tip of your index finger on the back camera, covering the flashlight too.',
+    figure: "Index finger covering the phone's back camera and flashlight",
     instruction: 'Cover the camera with your finger, rest it gently and keep it still. The camera does not measure pressure.',
     states: { cover: 'Cover the camera with your finger.', searching: 'Looking for heartbeats.', receiving: 'Receiving heartbeats.', lost: 'Contact was lost. Cover the camera again.', bright: 'Too much light is getting in. Cover the camera and the flashlight completely with your fingertip.', inactive: 'The camera is disconnected.' },
   },

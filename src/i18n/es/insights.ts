@@ -52,6 +52,8 @@ export const insights = {
     calibration: 'Sesión rápida: la calibración sigue durando 3 minutos. El plan puede terminar antes de que haya una estimación adaptada.',
   },
   camera: {
+    finger: 'Usa la yema del dedo índice sobre la cámara trasera, tapando también la linterna.',
+    figure: 'Dedo índice cubriendo la cámara trasera y la linterna del teléfono',
     instruction: 'Cubre la cámara con el dedo, apóyalo sin apretar y mantenlo quieto. La cámara no mide la presión.',
     states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', bright: 'Entra demasiada luz. Cubre por completo la cámara y la linterna con la yema del dedo.', inactive: 'La cámara está desconectada.' },
   },

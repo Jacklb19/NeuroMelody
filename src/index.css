@@ -488,6 +488,21 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .session-note label { display: grid; gap: var(--space-3); }
 .session-note textarea { width: 100%; min-height: var(--control-height); padding: var(--space-3); color: var(--color-text); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); font: inherit; resize: vertical; }
 .camera-guidance { display: grid; gap: var(--space-3); margin-block: var(--space-4); }
+.camera-guidance-figure { display: flex; align-items: center; gap: var(--space-4); }
+.finger-placement { flex: none; width: 7rem; height: auto; overflow: hidden; }
+.finger-placement-phone { fill: var(--color-surface); stroke: var(--color-border); stroke-width: 2; }
+.finger-placement-module { fill: var(--color-paper); stroke: var(--color-border-subtle); stroke-width: 1.5; }
+.finger-placement-lens { fill: var(--color-text); }
+.finger-placement-flash { fill: var(--color-accent); }
+.finger-placement-finger path { fill: var(--color-state-high); fill-opacity: 0.9; stroke: var(--color-text); stroke-width: 1.5; }
+.finger-placement-finger .finger-placement-nail { fill: var(--color-paper); fill-opacity: 0.7; stroke-width: 1; }
+/* The finger rests over the lens; the loop only brings it there from above. */
+.finger-placement-finger { animation: finger-cover 3.2s ease-in-out infinite; }
+@keyframes finger-cover {
+  0%, 12% { transform: translateY(-60px); }
+  45%, 88% { transform: translateY(0); }
+  100% { transform: translateY(-60px); }
+}
 .automatic-insights { display: grid; gap: var(--space-4); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); }
 .automatic-insights > div { display: grid; gap: var(--space-3); }
 .automatic-insights ul { display: grid; gap: var(--space-3); padding-left: var(--space-5); }
