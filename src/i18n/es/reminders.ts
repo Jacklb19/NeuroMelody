@@ -2,15 +2,15 @@
 export const reminders = {
   time: 'Hora',
   daysLabel: 'Días',
-  /** Keys mirror `WeekdayId`: the letter on each button and the full name for screen readers. */
+  /** Keys mirror `WeekdayId`: the abbreviation on each button and the full name for screen readers. */
   days: {
-    MO: { short: 'L', long: 'Lunes' },
-    TU: { short: 'M', long: 'Martes' },
-    WE: { short: 'X', long: 'Miércoles' },
-    TH: { short: 'J', long: 'Jueves' },
-    FR: { short: 'V', long: 'Viernes' },
-    SA: { short: 'S', long: 'Sábado' },
-    SU: { short: 'D', long: 'Domingo' },
+    MO: { short: 'Lu', long: 'Lunes' },
+    TU: { short: 'Ma', long: 'Martes' },
+    WE: { short: 'Mi', long: 'Miércoles' },
+    TH: { short: 'Ju', long: 'Jueves' },
+    FR: { short: 'Vi', long: 'Viernes' },
+    SA: { short: 'Sá', long: 'Sábado' },
+    SU: { short: 'Do', long: 'Domingo' },
   },
   explanation: 'Abre Google Calendar con la hora y los días elegidos. Revisa la repetición y el aviso, y pulsa Guardar allí. Cada vez que lo abras será un evento nuevo; para cambiar uno ya guardado, edítalo en tu calendario.',
   noDays: 'Marca al menos un día para crear el recordatorio.',
