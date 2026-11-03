@@ -84,6 +84,7 @@
   --control-height: 48px;
   --checkbox-size: 20px;
   --brand-size: 34px;
+  --brand-size-compact: 28px;
   --stop-symbol-size: 12px;
   --stop-width: 164px;
   --stop-height: 56px;
@@ -154,6 +155,8 @@
   --orb-guided-max: 1.1;
   --orb-guided-settle: 300ms;
   --avatar-size: 2.75rem;
+  /* Still above the 24 px minimum target size (WCAG 2.5.8). */
+  --avatar-size-compact: 2.5rem;
   --avatar-size-large: 5rem;
   --auth-card-width: 27rem;
   --ring-size: 20rem;
@@ -573,6 +576,15 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   .capabilities-list li { align-items: flex-start; flex-direction: column; gap: var(--space-3); }
   /* On a phone the Stop control spans the width: a floating pill would cover the words it sits over. */
   .stop-button { left: var(--space-5); right: var(--space-5); width: auto; }
+}
+/* The narrowest phones (360 px is the most common Android width): brand, theme, language and profile keep to one row. */
+@media (max-width: 389px) {
+  .app-shell { padding: 0 var(--space-4); }
+  .app-header { column-gap: var(--space-2); }
+  .app-header .brand { font-size: var(--text-lg); gap: var(--space-1); }
+  .app-header .quick-preferences { gap: var(--space-1); }
+  .app-header .brand-mark { width: var(--brand-size-compact); height: var(--brand-size-compact); }
+  .app-header .icon-button, .app-header .avatar { width: var(--avatar-size-compact); height: var(--avatar-size-compact); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
