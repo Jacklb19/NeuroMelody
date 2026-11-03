@@ -27,6 +27,7 @@ export const cloud = {
     not_found: 'the session is no longer in the cloud.',
     invalid_request: 'a session is not in a format the service accepts.',
     language_model_unavailable: 'the automatic text is not available right now.',
+    rate_limited: 'you reached the limit of automatic texts for today; try again tomorrow.',
     storage_unavailable: 'the service is not responding right now.',
     network: 'there is no connection.',
     unknown: 'an unexpected error occurred.',

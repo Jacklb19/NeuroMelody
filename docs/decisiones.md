@@ -431,6 +431,17 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
 | Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
 
+## ADR-54. Cuota diaria del modelo de lenguaje y API más cerrada
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 5 de la auditoría de calidad (SEC-P2 y SEC-P7): 30 llamadas al día por cuenta, compartidas. |
+| Problema | Los tres puntos que llaman al modelo (propuesta de plan, resumen de sesión y explicación del progreso) no tenían límite, y el registro no confirma el correo (ADR-30). Un programa con una o varias cuentas podía agotar la cuota gratuita del proveedor para todos. Además, producción publicaba `/docs`, `/redoc` y `/openapi.json`, y sus respuestas, con datos de salud, no prohibían guardarse en caché. |
+| Contrato | Cada llamada consume una de las 30 diarias (día UTC) de la cuenta, después de sus comprobaciones (consentimiento y forma de la petición) y antes del modelo; una petición rechazada no consume. Agotada la cuota, la API responde `429` con `{"code":"rate_limited"}` sin llamar al proveedor. El front lo muestra como «llegaste al límite de textos automáticos de hoy; vuelve a intentarlo mañana» dentro del aviso de fallo de cada pantalla. |
+| Datos | Migración `20261102000000_language_model_quota.sql`: la tabla `language_model_usage` (cuenta, día, llamadas) tiene RLS y ninguna política, así que nadie la lee ni la reescribe con su propio token. Solo la cambia `consume_language_model_quota(p_daily_limit)`, una función `security definer` con `search_path = ''`, concedida a `authenticated` y no a `anon`. Suma de forma atómica, no cuenta más allá del límite y borra los días anteriores de la cuenta. Probada en PostgreSQL 18 local. |
+| Endurecimiento | Con `VERCEL_ENV=production` la API no sirve su documentación. Todas las respuestas llevan `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`. |
+| Despliegue | Primero aplicar la migración en Supabase y después publicar el back: sin la función, los tres puntos responden `storage_unavailable`. El front puede ir antes o después. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

@@ -24,6 +24,8 @@ export const CLOUD_ERROR_CODES = [
   'storage_unavailable',
   /** The language model did not answer, or answered something the API refused. */
   'language_model_unavailable',
+  /** The account used up today's calls to the language model (ADR-54). */
+  'rate_limited',
   'network',
   'unknown',
 ] as const;
