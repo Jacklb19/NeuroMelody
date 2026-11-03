@@ -31,6 +31,14 @@ export const app = {
       names: { es: 'Español', en: 'English' },
     },
   },
+  /** Screen of an address no screen claims. */
+  notFound: {
+    eyebrow: 'Page not found',
+    title: 'We could not find this page',
+    text: 'The address does not exist or has changed. You can carry on from the app home or from the front page.',
+    app: 'Go to the app home',
+    landing: 'Go to the front page',
+  },
   /** Document title of a screen, e.g. "Session plan · NeuroMelody" (WCAG 2.4.2). */
   documentTitle: (page: string, appName: string): string => `${page} · ${appName}`,
 };

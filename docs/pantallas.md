@@ -23,6 +23,7 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
 | `/collect` | Ayuda a mejorar la app | Grabación guiada (ADR-33): reposo, respiración lenta y tarea de concentración, cada tramo guardado con su etiqueta, con consentimiento explícito, en el dispositivo; exportar y borrar. El modelo no se entrena aquí. | — | RF-07 | Bloque 14 | No (pide las advertencias aceptadas, como la sesión) | `/app`, `/warnings` |
+| `*` (cualquier otra ruta) | Página no encontrada | Decir que la dirección no existe, dentro del `Layout` de la app, en lugar de llevar a la portada en silencio. | — | — | Auditoría de calidad (nov. 2026) | No | `/app`, `/` |
 | `/diagnostics` | Diagnóstico de la plataforma | Verificar el aislamiento de origen cruzado y las capacidades del navegador. Herramienta técnica, no forma parte del recorrido del paciente. | — | — | S0 | No | `/` |
 
 ## Paneles existentes y su ubicación
