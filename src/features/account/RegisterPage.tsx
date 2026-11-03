@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
+import { accessReturnPath, accessReturnState } from './accessReturn';
 import { useAuth } from './authContext';
 import { EmailField, PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
@@ -25,6 +26,8 @@ export function RegisterPage(): React.JSX.Element {
   usePageTitle(copy.pageTitle);
   const { state, service, refresh } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = accessReturnPath(location.state);
   const fieldText = useFieldErrorText();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +36,7 @@ export function RegisterPage(): React.JSX.Element {
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
   const { pending, error, run } = useAccountAction();
 
-  if (state.kind === 'signed_in') return <Navigate to={ROUTES.app} replace />;
+  if (state.kind === 'signed_in') return <Navigate to={returnTo} replace />;
 
   const submit = async (event: React.SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -48,7 +51,7 @@ export function RegisterPage(): React.JSX.Element {
       return;
     }
     await refresh();
-    await navigate(ROUTES.app);
+    await navigate(returnTo);
   };
 
   // The mismatch belongs to the second field; every other password problem to the first.
@@ -58,7 +61,7 @@ export function RegisterPage(): React.JSX.Element {
     <AuthLayout
       title={copy.title}
       subtitle={copy.subtitle}
-      footer={<>{copy.haveAccount} <Link to={ROUTES.login}>{copy.login}</Link></>}
+      footer={<>{copy.haveAccount} <Link to={ROUTES.login} state={accessReturnState(returnTo)}>{copy.login}</Link></>}
     >
       {state.kind === 'unavailable' && <p className="account-notice">{auth.unavailable}</p>}
       {confirmationSentTo !== null && <p role="status" className="account-notice">{copy.confirmationSent(confirmationSentTo)}</p>}

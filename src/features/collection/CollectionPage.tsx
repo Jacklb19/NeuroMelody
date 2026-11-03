@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { DOWNLOAD_FILE_PREFIX } from '../../config/app';
 import { ROUTES } from '../../config/routes';
+import { AccessLink } from '../account/AccessLink';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb, type OrbHandle } from '../../shared/BreathingOrb';
 import { ConfirmButton } from '../../shared/ConfirmButton';
@@ -466,7 +467,7 @@ function SavedRecordings({ recordings, sharing, onExport, onDelete }: SavedRecor
       {sharing.availability !== 'ready' && sharing.availability !== 'unavailable' && (
         <p className="secondary-text">
           {share.needs[sharing.availability]}
-          {nextStep !== null && <> <Link to={nextStep}>{t.cloud.actions[sharing.availability]}</Link></>}
+          {nextStep !== null && <> <AccessLink to={nextStep}>{t.cloud.actions[sharing.availability]}</AccessLink></>}
         </p>
       )}
       {sharing.error !== null && <p className="quiet-notice" role="alert">{share.failed(errors[sharing.error])}</p>}

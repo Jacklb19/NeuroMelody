@@ -1,6 +1,6 @@
 import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
 import { ROUTES } from '../../config/routes';
+import { AccessLink } from '../account/AccessLink';
 import { useLocale, useMessages } from '../../i18n/messages';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import { AuthContext } from '../account/authContext';
@@ -53,7 +53,7 @@ export function AutomaticInsights({ comparisons, records, range }: {
           <p className="generated-mark">{copy.generated}</p>
         </>}
       </div>
-      {api === null ? <p className="secondary-text">{status === 'unavailable' ? t.summary.automatic.unavailable : <>{copy.needsAccount} <Link to={ROUTES.login}>{t.cloud.actions.signed_out}</Link></>}</p>
+      {api === null ? <p className="secondary-text">{status === 'unavailable' ? t.summary.automatic.unavailable : <>{copy.needsAccount} <AccessLink to={ROUTES.login}>{t.cloud.actions.signed_out}</AccessLink></>}</p>
         : current?.state !== 'done' && <>
           <p className="secondary-text">{copy.notice}</p>
           <button type="button" className="button button-secondary" disabled={current?.state === 'working'} onClick={ask}>{copy.ask}</button>

@@ -1,11 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthError, type SupabaseClient } from '@supabase/supabase-js';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation, type InitialEntry } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { ROUTE_SEGMENTS, ROUTES } from '../../config/routes';
+import { planPath, ROUTE_SEGMENTS, ROUTES } from '../../config/routes';
 import { es } from '../../i18n/es';
 import { fakeAuthService as fakeService } from '../../test/fakeAuthService';
+import { accessReturnState, rememberAccessReturn, rememberedAccessReturn } from './accessReturn';
 import { AuthProvider } from './AuthProvider';
 import { AccountError, type AuthService, type AuthUser } from './authService';
 import { LoginPage } from './LoginPage';
@@ -20,7 +21,13 @@ const typing = (): ReturnType<typeof userEvent.setup> => userEvent.setup({ delay
 const USER: AuthUser = { id: 'user-1', email: 'persona@example.test', name: null };
 const PASSWORD = 'una-contraseña-larga';
 
-function renderAt(route: string, service: AuthService, sessionKept = false) {
+/** The plan screen as reached, with its query, to see where a sign-in comes back to. */
+function PlanHere(): React.JSX.Element {
+  const { pathname, search } = useLocation();
+  return <p>{`at ${pathname}${search}`}</p>;
+}
+
+function renderAt(route: InitialEntry, service: AuthService, sessionKept = false) {
   render(
     <MemoryRouter initialEntries={[route]}>
       <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept}>
@@ -29,6 +36,7 @@ function renderAt(route: string, service: AuthService, sessionKept = false) {
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
           <Route element={<RequireSecondStep paths={[ROUTES.app]} />}>
             <Route path={ROUTE_SEGMENTS.app} element={<p>app</p>} />
+            <Route path={ROUTE_SEGMENTS.plan} element={<PlanHere />} />
           </Route>
         </Routes>
       </AuthProvider>
@@ -107,6 +115,30 @@ describe('sign-in screens', () => {
     await user.click(form.getByRole('button', { name: copy.register.submit }));
     expect(signUp).toHaveBeenCalledWith(USER.email, PASSWORD);
     expect(await screen.findByText('app')).toBeInTheDocument();
+  });
+
+  it('comes back to the screen that sent the person to sign in, with what was chosen there', async () => {
+    const user = typing();
+    let signedIn = false;
+    const service = fakeService({
+      currentUser: () => Promise.resolve(signedIn ? USER : null),
+      signIn: () => { signedIn = true; return Promise.resolve(); },
+    });
+    const plan = planPath(['relax'], 30);
+    renderAt({ pathname: ROUTES.login, state: accessReturnState(plan) }, service);
+
+    const form = within(await screen.findByRole('form', { name: copy.login.pageTitle }));
+    await user.type(form.getByLabelText(copy.auth.email), USER.email);
+    await user.type(form.getByLabelText(copy.auth.password), PASSWORD);
+    await user.click(form.getByRole('button', { name: copy.login.submit }));
+    expect(await screen.findByText(`at ${plan}`)).toBeInTheDocument();
+  });
+
+  it('after Google, goes on once from the app start to the screen kept before leaving', async () => {
+    rememberAccessReturn(ROUTES.plan);
+    renderAt(ROUTES.app, fakeService({}, USER));
+    expect(await screen.findByText(`at ${ROUTES.plan}`)).toBeInTheDocument();
+    expect(rememberedAccessReturn()).toBeNull();
   });
 
   it('explains that Google is not available instead of leaving the page', async () => {
