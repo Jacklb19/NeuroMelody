@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
+import { accessReturnPath, accessReturnState, forgetAccessReturn } from './accessReturn';
 import { isCheckingSession, needsSecondFactor, useAuth } from './authContext';
 import { EmailField, PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
@@ -25,6 +26,9 @@ export function LoginPage(): React.JSX.Element {
   usePageTitle(copy.pageTitle);
   const { state, service, refresh } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Back to the screen that sent the person here, or the app's start.
+  const returnTo = accessReturnPath(location.state);
   const fieldText = useFieldErrorText();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,10 +37,10 @@ export function LoginPage(): React.JSX.Element {
 
   const enter = async (): Promise<void> => {
     await refresh();
-    await navigate(ROUTES.app);
+    await navigate(returnTo);
   };
 
-  if (state.kind === 'signed_in' && !needsSecondFactor(state.assurance)) return <Navigate to={ROUTES.app} replace />;
+  if (state.kind === 'signed_in' && !needsSecondFactor(state.assurance)) return <Navigate to={returnTo} replace />;
 
   // Someone already signed in is about to leave this screen or be asked for the code: the form would only flash.
   if (isCheckingSession(state)) {
@@ -61,6 +65,8 @@ export function LoginPage(): React.JSX.Element {
     setFieldErrors(errors);
     if (errors.email !== null || errors.password !== null || service === null) return;
     // The session event moves this screen on: to the code step or into the app.
+    // A return kept for an abandoned Google attempt is not this sign-in's.
+    forgetAccessReturn();
     await run(async () => {
       await service.signIn(email.trim(), password);
       await refresh();
@@ -71,7 +77,7 @@ export function LoginPage(): React.JSX.Element {
     <AuthLayout
       title={copy.title}
       subtitle={copy.subtitle}
-      footer={<>{copy.noAccount} <Link to={ROUTES.register}>{copy.register}</Link></>}
+      footer={<>{copy.noAccount} <Link to={ROUTES.register} state={accessReturnState(returnTo)}>{copy.register}</Link></>}
     >
       {state.kind === 'unavailable' && <p className="account-notice">{auth.unavailable}</p>}
       {service !== null && (

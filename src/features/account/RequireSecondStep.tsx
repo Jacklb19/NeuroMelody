@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { matchPath, Navigate, Outlet, useLocation } from 'react-router';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
+import { forgetAccessReturn, rememberedAccessReturn } from './accessReturn';
 import { isCheckingSession, needsSecondFactor, useAuth } from './authContext';
 import './account.css';
 
@@ -19,6 +21,8 @@ interface RequireSecondStepProps {
  * It stands above the app layout: while a kept session is still being read
  * nothing of the app is drawn, not even its header, so the app never shows
  * for an instant before the code. Whoever keeps no session is not held back.
+ * Once past the code, a sign-in with Google goes on to the screen it was
+ * started from (`accessReturn.ts`).
  */
 export function RequireSecondStep({ paths }: RequireSecondStepProps): React.ReactNode {
   const { state } = useAuth();
@@ -27,5 +31,13 @@ export function RequireSecondStep({ paths }: RequireSecondStepProps): React.Reac
   if (!paths.some((path) => matchPath({ path, end: true }, pathname) !== null)) return <Outlet />;
   if (isCheckingSession(state)) return <p role="status" className="session-check">{working}</p>;
   if (state.kind === 'signed_in' && needsSecondFactor(state.assurance)) return <Navigate to={ROUTES.login} replace />;
+  const kept = state.kind === 'signed_in' ? rememberedAccessReturn() : null;
+  if (kept !== null) return <ReturnAfterSignIn to={kept} />;
   return <Outlet />;
+}
+
+/** Goes on to the screen kept before Google, and forgets it so it is followed once. */
+function ReturnAfterSignIn({ to }: { readonly to: string }): React.JSX.Element {
+  useEffect(() => { forgetAccessReturn(); }, []);
+  return <Navigate to={to} replace />;
 }

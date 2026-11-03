@@ -129,6 +129,14 @@ Ajustes de la auditoría de calidad del 2 nov. No añaden rutas ni paneles.
 - **`/session`, diapositiva «Tu pulso», por debajo de 520 px:** la etiqueta superior, el título «Sesión» y el título del panel «Fuente de señal» quedan solo para lectores de pantalla, porque el indicador de pasos ya nombra la diapositiva. El plan y la intención siguen visibles. A 360×740, el selector de fuente y su botón de conectar aparecen sin desplazarse, por encima de «Detener». En escritorio no cambia nada.
 - **Modo de prueba:** «No tengo cómo medir mi pulso: probar la app» y su nota pasan debajo del botón de conectar, en `/session` y en `/collect`, para que la fuente y su botón queden juntos.
 
+## Volver tras iniciar sesión y aviso del registro (2 nov 2026)
+
+Ajustes de la auditoría de calidad del 2 nov. No añaden rutas.
+
+- **Volver a donde estabas:** los enlaces para entrar o crear una cuenta llevan la pantalla de origen y, al entrar, la persona vuelve allí en lugar de ir a `/app`. Esos enlaces están en el plan, «Tu progreso», el resumen, los avisos de la nube, `/collect` y el perfil. Desde el plan, el enlace lleva también la intención y la duración elegidas. Pasar de «Iniciar sesión» a «Crear cuenta» conserva el destino, y la portada sigue llevando a `/app`. Solo se aceptan rutas internas de la app: nunca otra dirección, la portada ni las pantallas de acceso.
+- **Con Google**, que siempre vuelve a `/app` (la dirección autorizada en el proyecto), la pantalla de origen se guarda 10 minutos en la pestaña. Después del código de dos pasos, si la cuenta lo tiene, la app sigue hasta ella una sola vez.
+- **Registro:** bajo el subtítulo, el aviso «Para guardar tus sesiones en la nube te pediremos después activar la verificación en dos pasos, porque son datos de tu salud».
+
 ## Barra de inicio del plan en el celular (22 oct 2026)
 
 En `/plan`, por debajo de 900 px la tarjeta «Tu sesión» queda al final de la página, tras todas las preguntas. Una barra fija al borde inferior muestra la duración elegida, la intención y el botón «Empezar sesión», de modo que empezar está a mano en todo momento; la tarjeta conserva el resumen y deja de repetir el botón. En escritorio no existe: la tarjeta sigue fija a la derecha con su botón. No añade ruta ni panel.

@@ -4,6 +4,7 @@ import { PreferencePickers } from '../../app/preferences/PreferenceControls';
 import { ReminderCard } from '../reminders/ReminderCard';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
+import { AccessLink } from './AccessLink';
 import { useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
@@ -76,8 +77,8 @@ function ProfileHeader({ user }: { readonly user: AuthUser | null }): React.JSX.
       </div>
       {user === null && (
         <div className="profile-guest-actions">
-          <Link to={ROUTES.register} className="pill-button pill-button-primary">{copy.createAccount}</Link>
-          <Link to={ROUTES.login} className="pill-button pill-button-ghost">{copy.signIn}</Link>
+          <AccessLink to={ROUTES.register} className="pill-button pill-button-primary">{copy.createAccount}</AccessLink>
+          <AccessLink to={ROUTES.login} className="pill-button pill-button-ghost">{copy.signIn}</AccessLink>
         </div>
       )}
     </header>

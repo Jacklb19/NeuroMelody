@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
-import { ROUTES } from '../../config/routes';
+import { planPath, ROUTES } from '../../config/routes';
 import { useLocale, useMessages } from '../../i18n/messages';
 import { SparkIcon } from '../../shared/icons';
+import { AccessLink } from '../account/AccessLink';
 import { CloudError, type CloudErrorCode, type PlanSuggestion } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import type { GoalId } from './goalCatalog';
@@ -39,7 +39,7 @@ export function PlanSuggestionCard({ goals, duration, onAccept }: PlanSuggestion
   if (api === null) {
     return (
       <p className="plan-suggestion secondary-text">
-        {copy.signedOut} <Link to={ROUTES.login}>{copy.signIn}</Link>
+        {copy.signedOut} <AccessLink to={ROUTES.login} returnTo={planPath(goals, duration)}>{copy.signIn}</AccessLink>
       </p>
     );
   }
