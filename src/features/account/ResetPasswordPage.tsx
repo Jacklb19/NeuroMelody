@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
@@ -15,7 +15,9 @@ import { validateNewPassword, type AuthFieldError } from './validateAuth';
 
 /**
  * Where the recovery link lands: the link signs the person in and this
- * screen asks for the new password, typed twice. A dead link says so.
+ * screen asks for the new password, typed twice. A dead link says so. An
+ * ordinary session never gets the form: it changes the password from the
+ * profile instead.
  */
 export function ResetPasswordPage(): React.JSX.Element {
   const t = useMessages();
@@ -43,7 +45,9 @@ export function ResetPasswordPage(): React.JSX.Element {
     return <AuthLayout title={copy.title} subtitle={auth.working}>{null}</AuthLayout>;
   }
 
-  if ((state.kind !== 'recovery' && state.kind !== 'signed_in') || service === null) {
+  if (state.kind === 'signed_in') return <Navigate to={ROUTES.account} replace />;
+
+  if (state.kind !== 'recovery' || service === null) {
     return (
       <AuthLayout title={copy.expiredTitle} subtitle={copy.expired}>
         <Link to={ROUTES.forgotPassword} className="pill-button pill-button-primary pill-button-block pill-button-large">{copy.requestAgain}</Link>

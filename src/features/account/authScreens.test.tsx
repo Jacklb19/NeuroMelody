@@ -11,7 +11,8 @@ import { AccountError, type AuthService, type AuthUser } from './authService';
 import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
 import { RequireSecondStep } from './RequireSecondStep';
-import { sessionMayExist, sessionStorageKey } from './sessionHint';
+import { ResetPasswordPage } from './ResetPasswordPage';
+import { openedFromRecoveryLink, sessionMayExist, sessionStorageKey } from './sessionHint';
 import { createSupabaseAuthService, googleEnabled, toAccountError } from './supabaseAuthService';
 
 const copy = es.account;
@@ -20,13 +21,15 @@ const typing = (): ReturnType<typeof userEvent.setup> => userEvent.setup({ delay
 const USER: AuthUser = { id: 'user-1', email: 'persona@example.test', name: null };
 const PASSWORD = 'una-contraseña-larga';
 
-function renderAt(route: string, service: AuthService, sessionKept = false) {
+function renderAt(route: string, service: AuthService, sessionKept = false, recoveryLink = false) {
   render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept}>
+      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept} recoveryLink={() => recoveryLink}>
         <Routes>
           <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
+          <Route path={ROUTE_SEGMENTS.resetPassword} element={<ResetPasswordPage />} />
+          <Route path={ROUTE_SEGMENTS.account} element={<p>account</p>} />
           <Route element={<RequireSecondStep paths={[ROUTES.app]} />}>
             <Route path={ROUTE_SEGMENTS.app} element={<p>app</p>} />
           </Route>
@@ -120,6 +123,19 @@ describe('sign-in screens', () => {
   });
 });
 
+describe('new password screen', () => {
+  it('asks for the new password when the page comes from a recovery link', async () => {
+    renderAt(ROUTES.resetPassword, fakeService({}, USER), true, true);
+    expect(await screen.findByRole('form', { name: copy.reset.pageTitle })).toBeInTheDocument();
+  });
+
+  it('sends an ordinary session to the profile instead of offering the form', async () => {
+    renderAt(ROUTES.resetPassword, fakeService({}, USER), true);
+    expect(await screen.findByText('account')).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: copy.reset.pageTitle })).not.toBeInTheDocument();
+  });
+});
+
 describe('Supabase boundary', () => {
   it('maps Supabase codes and never keeps the server text', () => {
     const error = toAccountError(new AuthError('Invalid login credentials', 400, 'invalid_credentials'));
@@ -153,6 +169,16 @@ describe('Supabase boundary', () => {
     expect(sessionMayExist(url, storage([]), '?code=abc')).toBe(false);
     // A deployment without accounts never makes anyone wait.
     expect(sessionMayExist(null, storage([key]), '?code=abc')).toBe(false);
+  });
+
+  it('tells a recovery link from any other code coming back', () => {
+    const url = 'https://project.supabase.co';
+    const verifier = `${sessionStorageKey(url)}-code-verifier`;
+    const storage = (kept: string): Pick<Storage, 'getItem'> => ({ getItem: (name) => (name === verifier ? kept : null) });
+    // Supabase keeps the secret as JSON and marks the one of a recovery link.
+    expect(openedFromRecoveryLink(url, storage('"abc/PASSWORD_RECOVERY"'), '?code=abc')).toBe(true);
+    expect(openedFromRecoveryLink(url, storage('"abc"'), '?code=abc')).toBe(false);
+    expect(openedFromRecoveryLink(url, storage('"abc/PASSWORD_RECOVERY"'), '')).toBe(false);
   });
 
   it('reads Google as enabled only when the project settings say so', () => {
