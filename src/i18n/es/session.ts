@@ -33,7 +33,7 @@ export const session = {
   },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {
-    label: 'Recorrido de la música',
+    label: 'Paso de la música',
     levels: { high: 'Con movimiento', intermediate: 'A paso medio', target: 'En calma', sleep: 'Para dormir' },
   },
   /** What the music did, shown when the session ends (ADR-42). */
@@ -91,7 +91,7 @@ export const session = {
     eyebrow: 'Ahora',
     /** Once the music has stopped, instead of the moment of the session. */
     ended: { title: 'Terminaste tu sesión', detail: 'La música se detuvo. Abajo tienes lo que hizo durante este rato.' },
-    estimatedState: 'Estado estimado:',
+    estimatedState: 'Tu activación estimada:',
     /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
     pace: (tempo: number, personal: boolean): string =>
       `La música va a ${String(tempo)} pulsos por minuto${personal ? ', ajustada a tu pulso' : ''}.`,

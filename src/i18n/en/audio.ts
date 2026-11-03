@@ -20,6 +20,8 @@ export const audio = {
     volumeNotice: 'Use a moderate volume on your device.',
     start: 'Start music',
     volume: 'Volume',
+    /** Position of the volume slider, e.g. "70%". */
+    volumeValue: (percent: number): string => `${String(percent)}%`,
     stop: 'Stop',
     statusLabel: 'Music status:',
     /** Keys mirror `AudioState`. */

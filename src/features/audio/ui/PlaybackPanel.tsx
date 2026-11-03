@@ -26,6 +26,8 @@ import {
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
 
+const PERCENT = 100;
+
 /** What the session screen can ask of the panel from outside it (ADR-47). */
 export interface PlaybackHandle {
   /** Starts the music, as the panel's own button does; call it inside a click. */
@@ -260,7 +262,8 @@ export function PlaybackPanel({
 
   const stateLabels: Readonly<Record<AudioState, string>> = t.audio.playback.states;
   const stateText = finished && state !== 'playing' ? t.audio.playback.finished : stateLabels[state];
-  const volumeText = t.common.withUnit(String(volumeDb), t.common.units.decibels);
+  // The engine works in decibels; people read the slider position as a percentage.
+  const volumeText = t.audio.playback.volumeValue(Math.round((volumeDb - MIN_VOLUME_DB) / (MAX_VOLUME_DB - MIN_VOLUME_DB) * PERCENT));
 
   return (
     <section

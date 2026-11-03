@@ -66,6 +66,6 @@ export const plan = {
   summaryLabel: 'Tu sesión',
   noGoals: 'Sin intención elegida',
   calibrationNote: (level: string, minutes: number): string =>
-    `La música empieza en el nivel ${level} durante los primeros ${String(minutes)} minutos, mientras aprende tu ritmo de hoy.`,
+    `Los primeros ${String(minutes)} minutos la música va ${level.toLocaleLowerCase('es')} y no cambia mientras aprende tu ritmo de hoy. Después se adapta a ti.`,
   continueToSession: 'Empezar sesión',
 };

@@ -99,7 +99,7 @@ test('loading and error messages remain usable on a narrow screen', async ({ pag
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
   await page.getByRole('button', { name: acquisition.trial.enter }).click();
-  await page.getByRole('combobox', { name: acquisition.sourceLabel, exact: true }).selectOption(RECORDING_SOURCE);
+  await page.getByRole('combobox', { name: acquisition.title, exact: true }).selectOption(RECORDING_SOURCE);
   await page.getByRole('button', { name: acquisition.connect.recording }).click();
   await expect(page.getByRole('combobox', { name: acquisition.recordingLabel, exact: true })).toBeDisabled();
   await expect(page.getByText(acquisition.connectionStates.connecting, { exact: true })).toBeVisible();

@@ -7,7 +7,6 @@ export const common = {
     milliseconds: 'ms',
     squaredMilliseconds: 'ms²',
     minutes: 'min',
-    decibels: 'dB',
     tempo: 'BPM',
   },
   /** Value with its unit, e.g. "62 lpm". */

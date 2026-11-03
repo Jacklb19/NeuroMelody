@@ -105,8 +105,9 @@ describe('PlaybackPanel', () => {
     const { volume } = setup();
     await start();
     fireEvent.change(screen.getByLabelText(copy.volume), { target: { value: '-20' } });
-    const shown = es.common.withUnit('-20', es.common.units.decibels);
-    expect(shown).toBe('-20 dB');
+    // -20 dB sits halfway along the -40..0 dB slider.
+    const shown = es.audio.playback.volumeValue(50);
+    expect(shown).toBe('50 %');
     expect(screen.getByText(shown)).toBeInTheDocument();
     expect(screen.getByLabelText(copy.volume)).toHaveAttribute('aria-valuetext', shown);
     expect(volume()?.last('target')?.value).toBeCloseTo(dbToGain(-20), 10);
