@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Route, Routes } from 'react-router';
 import { ROUTE_SEGMENTS, ROUTES } from '../config/routes';
 import { WarningsPage } from '../features/warnings/WarningsPage';
 import { RequireWarnings } from '../features/warnings/RequireWarnings';
@@ -12,6 +12,8 @@ import { RequireSecondStep } from '../features/account/RequireSecondStep';
 import { ResetPasswordPage } from '../features/account/ResetPasswordPage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { Layout } from './Layout';
+import { NotFoundPage } from './NotFoundPage';
+import { PendingScreen } from './PendingScreen';
 
 /*
  * Screens loaded when first visited (RNF-04, RNF-05): the first screen a
@@ -29,7 +31,7 @@ const DiagnosticsPage = lazy(() => import('../features/diagnostics/DiagnosticsPa
 const AccountPage = lazy(() => import('../features/account/AccountPage').then((m) => ({ default: m.AccountPage })));
 const PrivacyPage = lazy(() => import('../features/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
 
-/** react-router pattern for any path no screen claims; it leads back home. */
+/** react-router pattern for any path no screen claims; it says so inside the layout. */
 const UNKNOWN_PATH = '*';
 
 /** Where a sign-in lands (Google comes back here), so where the code of two-step verification is asked. */
@@ -37,9 +39,9 @@ const SECOND_STEP_PATHS = [ROUTES.app];
 
 /** Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in screens have their own layouts. */
 export function AppRoutes(): React.JSX.Element {
-  // Nothing is drawn for the instant a screen takes to load: its file is usually already cached.
+  // The layout keeps its own boundary so the header stays while a screen loads; this one covers the rest.
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PendingScreen />}>
     <Routes>
       <Route index element={<LandingPage />} />
       <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
@@ -75,7 +77,7 @@ export function AppRoutes(): React.JSX.Element {
           <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
           <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
           <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
-          <Route path={UNKNOWN_PATH} element={<Navigate to={ROUTES.home} replace />} />
+          <Route path={UNKNOWN_PATH} element={<NotFoundPage />} />
         </Route>
       </Route>
     </Routes>

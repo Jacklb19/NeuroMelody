@@ -3,6 +3,9 @@
 /** Shortest password the forms accept; Supabase applies its own rules too. */
 export const MIN_PASSWORD_LENGTH = 8;
 
+/** Longest password in UTF-8 bytes: bcrypt, behind Supabase Auth, ignores whatever comes after. */
+export const MAX_PASSWORD_BYTES = 72;
+
 /** Digits of a TOTP code (RFC 6238 default, what authenticator apps show). */
 export const TOTP_CODE_LENGTH = 6;
 

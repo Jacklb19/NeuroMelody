@@ -30,7 +30,6 @@ const SAME_IN_BOTH = new Set([
   'common.units.milliseconds',
   'common.units.squaredMilliseconds',
   'common.units.minutes',
-  'common.units.decibels',
   'common.units.tempo',
   'plan.minutesUnit',
   // "Piano" is the same word.

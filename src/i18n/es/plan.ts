@@ -2,7 +2,7 @@
 export const plan = {
   pageTitle: 'Prepara tu sesión',
   eyebrow: 'Antes de escuchar',
-  introduction: 'Elige lo que buscas, el tiempo y cómo quieres que suene. Puedes cambiarlo la próxima vez.',
+  introduction: 'Elige tu intención, el tiempo y cómo quieres que suene. Puedes cambiarlo la próxima vez.',
   durationLegend: '¿Cuánto tiempo tienes?',
   /** A duration in words, e.g. "20 minutos": name of each option and the chosen plan. */
   minutes: (minutes: number): string => `${String(minutes)} minutos`,
@@ -10,7 +10,7 @@ export const plan = {
   minutesUnit: 'min',
   /** Optional goal (HU-07, ADR-38); `names` and `programs` keys mirror `GoalId`. */
   goals: {
-    legend: '¿Qué buscas hoy?',
+    legend: '¿Cuál es tu intención hoy?',
     hint: 'Opcional. Elige una: cambia cómo empieza la música y hasta dónde baja.',
     /** What the music does in a session with each goal (`programCatalog.ts`). */
     programs: {
@@ -34,9 +34,9 @@ export const plan = {
   suggestion: {
     ask: 'Proponme una duración',
     /** What travels, said next to the button. */
-    notice: 'Un modelo de lenguaje recibe solo los objetivos que marcaste y la hora que es. Tú decides si usas lo que proponga.',
-    needsGoal: 'Marca al menos un objetivo para pedir una propuesta.',
-    signedOut: 'Con una cuenta, la app puede proponerte la duración según lo que buscas.',
+    notice: 'Un modelo de lenguaje recibe solo la intención que elegiste y la hora que es. Tú decides si usas lo que proponga.',
+    needsGoal: 'Elige una intención para pedir una propuesta.',
+    signedOut: 'Con una cuenta, la app puede proponerte la duración según tu intención.',
     signIn: 'Entrar',
     working: 'Pensando la propuesta…',
     /** The proposed length, in the words of `minutes`. */
@@ -66,6 +66,6 @@ export const plan = {
   summaryLabel: 'Tu sesión',
   noGoals: 'Sin intención elegida',
   calibrationNote: (level: string, minutes: number): string =>
-    `La música empieza en el nivel ${level} durante los primeros ${String(minutes)} minutos, mientras aprende tu ritmo de hoy.`,
+    `Los primeros ${String(minutes)} minutos la música va ${level.toLocaleLowerCase('es')} y no cambia mientras aprende tu ritmo de hoy. Después se adapta a ti.`,
   continueToSession: 'Empezar sesión',
 };

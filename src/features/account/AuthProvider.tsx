@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext, type AuthState } from './authContext';
 import type { AuthService } from './authService';
 import { SESSION_CHECK_TIMEOUT_MS } from './config';
-import { sessionMayExistHere } from './sessionHint';
+import { openedFromRecoveryLinkHere, sessionMayExistHere } from './sessionHint';
 
 
 type ServiceLoader = () => Promise<AuthService | null>;
@@ -15,6 +15,8 @@ interface AuthProviderProps {
   readonly loadService?: ServiceLoader;
   /** Whether this browser seems to keep a session; injectable for the same reason. */
   readonly expectSession?: () => boolean;
+  /** Whether this page was opened from a password recovery link; injectable for the same reason. */
+  readonly recoveryLink?: () => boolean;
 }
 
 /**
@@ -23,11 +25,13 @@ interface AuthProviderProps {
  * for it; with one, the screens that depend on who is signed in hold back
  * until it answers, for a bounded time (`isCheckingSession`).
  */
-export function AuthProvider({ children, loadService = defaultLoader, expectSession = sessionMayExistHere }: AuthProviderProps): React.JSX.Element {
+export function AuthProvider({ children, loadService = defaultLoader, expectSession = sessionMayExistHere, recoveryLink = openedFromRecoveryLinkHere }: AuthProviderProps): React.JSX.Element {
   const [service, setService] = useState<AuthService | null>(null);
   const [state, setState] = useState<AuthState>(() => ({ kind: 'loading', sessionExpected: expectSession() }));
-  // Recovery lasts until the password changes, whatever session events arrive meanwhile.
-  const recoveryRef = useRef(false);
+  // Read before the client loads: it consumes the code of the link. Recovery lasts until the
+  // password changes, whatever session events arrive meanwhile.
+  const [openedForRecovery] = useState(recoveryLink);
+  const recoveryRef = useRef(openedForRecovery);
 
   const read = useCallback(async (target: AuthService): Promise<void> => {
     try {

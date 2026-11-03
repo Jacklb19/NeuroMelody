@@ -20,8 +20,7 @@ const cameraInstructions =
 
 /** Spanish copy of the acquisition area: the signal source panel and the camera prototype (ADR-25). */
 export const acquisition = {
-  title: 'Fuente de señal',
-  sourceLabel: 'Origen de la señal',
+  title: '¿Cómo medimos tu pulso?',
   /** Source names; keys mirror `SourceKind`. */
   sources: {
     simulator: 'Simulador',

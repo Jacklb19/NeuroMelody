@@ -26,6 +26,9 @@ export const account = {
       email_invalid: 'Ese correo no parece válido. Revísalo.',
       password_required: 'Escribe tu contraseña.',
       password_too_short: (minLength: number): string => `La contraseña debe tener al menos ${String(minLength)} caracteres.`,
+      /** The limit is in bytes: accented letters, ñ and emoji take more than one. */
+      password_too_long: (maxBytes: number): string =>
+        `La contraseña es demasiado larga. Usa como máximo ${String(maxBytes)} caracteres; las letras con tilde, la ñ y los emojis cuentan como más de uno.`,
       passwords_differ: 'Las dos contraseñas no coinciden.',
     },
   },

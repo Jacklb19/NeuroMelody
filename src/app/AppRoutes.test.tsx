@@ -133,9 +133,12 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: es.diagnostics.pageTitle }, LAZY_SCREEN)).toBeInTheDocument();
   });
 
-  it('an unknown route goes back home', () => {
+  it('an unknown route says so and offers the ways back, without moving the person', () => {
     renderWith('/does-not-exist');
-    expect(currentPath()).toBe(ROUTES.home);
+    expect(currentPath()).toBe('/does-not-exist');
+    expect(screen.getByRole('heading', { level: 1, name: es.app.notFound.title })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: es.app.notFound.app })).toHaveAttribute('href', ROUTES.app);
+    expect(screen.getByRole('link', { name: es.app.notFound.landing })).toHaveAttribute('href', ROUTES.home);
   });
 
   it('sets a document title per screen', () => {

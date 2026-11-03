@@ -29,6 +29,30 @@ export function sessionMayExist(supabaseUrl: string | null, storage: Pick<Storag
   return new URLSearchParams(search).has(AUTH_CODE_PARAM) && storage.getItem(`${key}${CODE_VERIFIER_SUFFIX}`) !== null;
 }
 
+/** Ending Supabase adds to the kept secret when the code on its way back comes from a password recovery link. */
+const RECOVERY_VERIFIER_MARK = '/PASSWORD_RECOVERY';
+
+/**
+ * Whether this page was opened from a password recovery link. Under PKCE
+ * Supabase announces that landing only as a sign-in, so the app reads it
+ * from the code in the address and the kept secret, which Supabase marks
+ * for recovery, before the client exchanges and forgets them.
+ */
+export function openedFromRecoveryLink(supabaseUrl: string | null, storage: Pick<Storage, 'getItem'>, search: string): boolean {
+  if (supabaseUrl === null || !new URLSearchParams(search).has(AUTH_CODE_PARAM)) return false;
+  const kept = storage.getItem(`${sessionStorageKey(supabaseUrl)}${CODE_VERIFIER_SUFFIX}`);
+  return kept?.includes(RECOVERY_VERIFIER_MARK) ?? false;
+}
+
+/** `openedFromRecoveryLink` for this deployment and this page. */
+export function openedFromRecoveryLinkHere(): boolean {
+  try {
+    return openedFromRecoveryLink(env.supabaseUrl, window.localStorage, window.location.search);
+  } catch {
+    return false;
+  }
+}
+
 /** `sessionMayExist` for this deployment and this page. Without storage nothing is kept, so nobody is expected. */
 export function sessionMayExistHere(): boolean {
   try {

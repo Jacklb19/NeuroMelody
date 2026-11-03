@@ -3,6 +3,7 @@ import { planPath, ROUTES } from '../../config/routes';
 import { useLocale, useMessages } from '../../i18n/messages';
 import { SparkIcon } from '../../shared/icons';
 import { AccessLink } from '../account/AccessLink';
+import { isCheckingSession, useAuth } from '../account/authContext';
 import { CloudError, type CloudErrorCode, type PlanSuggestion } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import type { GoalId } from './goalCatalog';
@@ -32,10 +33,13 @@ export function PlanSuggestionCard({ goals, duration, onAccept }: PlanSuggestion
   const copy = t.plan.suggestion;
   const locale = useLocale();
   const { status, api } = useCloudSync();
+  const { state } = useAuth();
   const [request, setRequest] = useState<Request>({ kind: 'idle' });
   const errors: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
 
   if (status === 'unavailable') return null;
+  // While a kept session is read, the invitation to sign in would flash at someone already signed in.
+  if (isCheckingSession(state)) return null;
   if (api === null) {
     return (
       <p className="plan-suggestion secondary-text">

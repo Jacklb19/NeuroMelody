@@ -82,6 +82,8 @@
   --report-hint-max-width: 44ch;
   --plan-suggestion-text-min-width: 16rem;
   --control-height: 48px;
+  /* Smallest tap area of a text link (WCAG 2.5.8). */
+  --target-min-size: 24px;
   --checkbox-size: 20px;
   --brand-size: 34px;
   --brand-size-compact: 28px;

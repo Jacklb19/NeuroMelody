@@ -46,7 +46,7 @@ export const insights = {
     action: 'Tengo 3 minutos',
     /** What the quick session will use, from the last choices on this device or the defaults. */
     hint: (sound: string, ambience: string, goal: string | null): string =>
-      `${goal === null ? '' : `${goal}: `}3 minutos con ${sound} y ${ambience}.`,
+      `3 minutos con ${sound} y ${ambience}${goal === null ? '' : `, con tu última intención: «${goal}»`}.`,
     sounds: { warm: 'sonido cálido', piano: 'piano', bowls: 'cuencos' },
     ambiences: { none: 'sin ambiente', rain: 'lluvia', sea: 'mar', wind: 'viento' },
     calibration: 'Sesión rápida: la calibración sigue durando 3 minutos. El plan puede terminar antes de que haya una estimación adaptada.',

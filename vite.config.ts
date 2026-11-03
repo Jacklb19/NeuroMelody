@@ -11,12 +11,14 @@ const productionHeaders: Readonly<Record<string, string>> = Object.fromEntries(d
 ));
 
 /**
- * Cross-origin isolation, which SharedArrayBuffer needs. The dev server takes
- * these headers from vercel.json too, so it cannot drift from production.
+ * Cross-origin isolation, which SharedArrayBuffer needs, and the browser
+ * features the app may use (the camera, never the microphone; Bluetooth keeps
+ * its default). The dev server takes these headers from vercel.json too, so
+ * it cannot drift from production.
  */
-const ISOLATION_HEADER_NAMES = ['Cross-Origin-Opener-Policy', 'Cross-Origin-Embedder-Policy'];
+const DEV_HEADER_NAMES = ['Cross-Origin-Opener-Policy', 'Cross-Origin-Embedder-Policy', 'Permissions-Policy'];
 
-const isolationHeaders = Object.fromEntries(ISOLATION_HEADER_NAMES.map(name => {
+const devHeaders = Object.fromEntries(DEV_HEADER_NAMES.map(name => {
   const value = productionHeaders[name];
   if (value === undefined) throw new Error(`vercel.json must declare the ${name} header.`);
   return [name, value];
@@ -27,7 +29,7 @@ export default defineConfig({
   plugins: [react(), staticShell(), buildPwa()],
   server: {
     port: DEV_SERVER_PORT,
-    headers: isolationHeaders,
+    headers: devHeaders,
   },
   preview: {
     port: PREVIEW_SERVER_PORT,

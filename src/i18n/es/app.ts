@@ -31,6 +31,16 @@ export const app = {
       names: { es: 'Español', en: 'English' },
     },
   },
+  /** Said while a screen loaded on first visit arrives, if it takes a moment. */
+  loadingScreen: 'Cargando…',
+  /** Screen of an address no screen claims. */
+  notFound: {
+    eyebrow: 'Página no encontrada',
+    title: 'No encontramos esta página',
+    text: 'La dirección no existe o cambió. Puedes seguir desde el inicio de la app o desde la portada.',
+    app: 'Ir al inicio',
+    landing: 'Ir a la portada',
+  },
   /** Document title of a screen, e.g. "Plan de sesión · NeuroMelody" (WCAG 2.4.2). */
   documentTitle: (page: string, appName: string): string => `${page} · ${appName}`,
 };

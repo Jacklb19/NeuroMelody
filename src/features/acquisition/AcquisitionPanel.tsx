@@ -154,7 +154,8 @@ export function AcquisitionPanel({
 
       <div className="source-controls">
         <label>
-          {t.acquisition.sourceLabel}
+          {/* Same words as the heading above: one visible name for the source. */}
+          <span className="visually-hidden">{t.acquisition.title}</span>
           <select value={kind} disabled={active} onChange={event => {
             setKind(parseOption(offered, event.target.value, firstOf(trial)));
           }}>

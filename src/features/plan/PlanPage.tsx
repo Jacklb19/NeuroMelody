@@ -186,7 +186,7 @@ export function PlanPage(): React.JSX.Element {
           )}
           <p className="plan-program">{goal === undefined ? t.plan.goals.defaultProgram : programTexts[goal]}</p>
           <p className="plan-note">
-            {t.plan.calibrationNote(t.audio.levels[program.startLevel], CALIBRATION_MIN)}
+            {t.plan.calibrationNote(t.session.journey.levels[program.startLevel], CALIBRATION_MIN)}
           </p>
           {!narrow && (
             <button type="button" className="pill-button pill-button-primary pill-button-large pill-button-block" onClick={startSession}>

@@ -65,7 +65,7 @@ describe('AcquisitionPanel', () => {
       load: () => Promise.resolve(JSON.parse(readFileSync(join('public', RECORDINGS_DIRECTORY, recordingFileName(options.recordId)), 'utf8')) as unknown),
     }));
     render(<StatefulPanel createSource={options => new SimulatedSource(options)} createRecording={createRecording} />);
-    await user.selectOptions(combobox(text.sourceLabel), 'recording');
+    await user.selectOptions(combobox(text.title), 'recording');
     await user.selectOptions(combobox(text.recordingLabel), 'nsr002');
     await user.selectOptions(combobox(text.speedLabel), String(speed));
     await user.click(screen.getByRole('button', { name: text.connect.recording }));
@@ -106,7 +106,7 @@ describe('AcquisitionPanel', () => {
 
   it('opens on the camera where the browser has no Bluetooth', () => {
     render(<AcquisitionPanel source={null} onSourceChange={vi.fn()} bluetooth={null} cameraAvailable />);
-    expect(screen.getByRole('combobox', { name: text.sourceLabel })).toHaveValue('camera');
+    expect(screen.getByRole('combobox', { name: text.title })).toHaveValue('camera');
   });
 
   it('offers the two trial sources, the six scenarios and the four speeds', () => {
@@ -230,7 +230,7 @@ describe('AcquisitionPanel', () => {
     const onSourceChange = vi.fn();
     render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} bluetooth={bluetooth} createBle={createBle} />);
 
-    await user.selectOptions(combobox(text.sourceLabel), 'ble');
+    await user.selectOptions(combobox(text.title), 'ble');
     expect(screen.queryByRole('combobox', { name: text.speedLabel })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: text.connect.ble }));
     await user.click(screen.getByRole('button', { name: text.reconnectRemembered }));
@@ -251,7 +251,7 @@ describe('AcquisitionPanel', () => {
     const onSourceChange = vi.fn();
     render(<AcquisitionPanel source={null} onSourceChange={onSourceChange} cameraAvailable createCamera={createCamera} />);
 
-    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    await user.selectOptions(combobox(text.title), 'camera');
     expect(screen.queryByRole('combobox', { name: text.scenarioLabel })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: text.speedLabel })).not.toBeInTheDocument();
     expect(screen.getByText(text.cameraNote)).toBeInTheDocument();
@@ -271,7 +271,7 @@ describe('AcquisitionPanel', () => {
     }
     render(<CameraPanel />);
 
-    await user.selectOptions(combobox(text.sourceLabel), 'camera');
+    await user.selectOptions(combobox(text.title), 'camera');
     await user.click(screen.getByRole('button', { name: text.connect.camera }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
