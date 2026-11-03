@@ -57,7 +57,7 @@ De arriba abajo:
 2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar cómo se mide el pulso (banda Bluetooth o cámara del celular, esta última marcada como experimental, P-01), con su estado y la última lectura. Debajo, «No tengo cómo medir mi pulso: probar la app» pasa al **modo de prueba** (ver más abajo).
 3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
 
-Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
+Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda en pausa con «Reanudar música» y «Terminar sesión» (ADR-52); al terminarla queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
 
 ### Cambios de ADR-42 (13 oct 2026)
 
@@ -177,7 +177,7 @@ Ajustes aprobados tras recorrer todas las pantallas en celular y escritorio. No 
 | `/plan` | «Para ti» solo aparece cuando tiene una propuesta (o si falla la lectura del historial). |
 | `/summary/:id` | Primero los resultados; la nota va después del texto automático. «Variación entre latidos» sustituye a «RMSSD» y la razón LF/HF pasa a «Detalles técnicos», plegados. |
 | `/history` | Filas compactas agrupadas por semana («Esta semana», «La semana pasada», «Semana del…»), lunes primero. Cada fila abre el resumen y muestra fecha, tiempo, intención y cómo te sentías; las cifras de pulso quedan en el resumen. |
-| `/session` | Al detener la música, la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
+| `/session` | Al terminar la sesión (desde el 2 nov, ADR-52: detener solo la pausa), la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
 
 ## Modo solo pulso (ADR-51, 20 oct 2026)
 

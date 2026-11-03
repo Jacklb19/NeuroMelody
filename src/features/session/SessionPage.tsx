@@ -41,12 +41,19 @@ import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
 import './session.css';
 
+/** A pause longer than this ends the session on its own (ADR-52): what was heard is kept, not left open. */
+const PAUSE_LIMIT_MIN = 5;
+const PAUSE_LIMIT_MS = PAUSE_LIMIT_MIN * SECONDS_PER_MINUTE * 1000;
+
 /**
  * Listening session at /session (docs/pantallas.md). The simple view comes
  * first: what is happening, the music controls and the session progress.
  * Signal figures and musical parameters stay one click away (ADR-24).
  * Every session that plays music with the person's own pulse is recorded
  * on the device (RF-14); one made with a trial source is not, and says so.
+ * Stopping the music pauses the session: resuming continues the same one,
+ * and it ends when the person finishes it, the plan ends, the pause runs
+ * out or the page is left (ADR-52).
  */
 export function SessionPage(): React.JSX.Element {
   const t = useMessages();
@@ -74,6 +81,10 @@ export function SessionPage(): React.JSX.Element {
   const [ratingBefore, setRatingBefore] = useState<number | null>(null);
   // Before the first note the screen is a short path of steps; afterwards it is the listening space.
   const [everPlayed, setEverPlayed] = useState(false);
+  // Whether the session is over; until then, music that stopped is only paused.
+  const [ended, setEnded] = useState(false);
+  const paused = everPlayed && !playing && !ended;
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The session that just ended was a trial of the app, so nothing was kept.
   const [trialEnded, setTrialEnded] = useState(false);
@@ -100,10 +111,17 @@ export function SessionPage(): React.JSX.Element {
   const orbRef = useRef<OrbHandle | null>(null);
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
 
+  const clearPauseTimer = useCallback((): void => {
+    if (pauseTimerRef.current !== null) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = null;
+  }, []);
+
   const finishRecording = useCallback((): void => {
-    // The adaptation has just been handed the end of the music, so its story is complete.
+    clearPauseTimer();
+    // The adaptation has been handed the end of the music, so its story is complete.
     const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current, adaptation.getSnapshot().recap);
     if (record === null) return;
+    setEnded(true);
     if (isTrialSource(record.sourceKind)) {
       setTrialEnded(true);
       return;
@@ -115,13 +133,15 @@ export function SessionPage(): React.JSX.Element {
         setSaveFailure({ cause: error });
       },
     );
-  }, [adaptation, recorder, store]);
+  }, [adaptation, recorder, store, clearPauseTimer]);
 
   const handleEngineChange = useCallback((next: AudioEngine | null): void => {
-    adaptation.setAudio(next);
+    clearPauseTimer();
+    // Music that starts again while a session is open resumes it: same record, same story of the music.
+    adaptation.setAudio(next, next !== null && recorder.active ? elapsedRef.current - sessionStartElapsedRef.current : undefined);
     setEngine(next);
     if (next === null) {
-      finishRecording();
+      if (recorder.active) pauseTimerRef.current = setTimeout(finishRecording, PAUSE_LIMIT_MS);
       return;
     }
     setEverPlayed(true);
@@ -139,11 +159,12 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
         context: createSessionContext(instrument, ambience),
       });
+      setEnded(false);
       setSavedId(null);
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, instrument, ambience, finishRecording, goTo]);
+  }, [adaptation, recorder, durationMin, goals, instrument, ambience, finishRecording, clearPauseTimer, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -156,7 +177,8 @@ export function SessionPage(): React.JSX.Element {
   }, [adaptation, recorder]);
 
   // A watch that sends only the pulse (ADR-51) has no beats to follow: the orb beats at its pace instead.
-  const pulseOnly = useSyncExternalStore(adaptation.subscribe, adaptation.getSnapshot).estimator === 'heart_rate';
+  const adaptationSnapshot = useSyncExternalStore(adaptation.subscribe, adaptation.getSnapshot);
+  const pulseOnly = adaptationSnapshot.estimator === 'heart_rate';
   const pulseOnlyRef = useRef(false);
   useEffect(() => { pulseOnlyRef.current = pulseOnly; }, [pulseOnly]);
   const watchHeartRate = pulseOnly && reading.state === 'connected' && reading.last?.sensorContact !== false ? reading.last?.heartRate ?? null : null;
@@ -281,7 +303,17 @@ export function SessionPage(): React.JSX.Element {
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
-          <SessionStage session={adaptation} connection={connection} playing={playing} ended={everPlayed && !playing} />
+          <SessionStage session={adaptation} connection={connection} playing={playing} ended={ended} />
+          {paused && (
+            <div className="session-saved session-paused" role="status">
+              <p><strong>{t.session.paused.title}</strong> {t.session.paused.detail(PAUSE_LIMIT_MIN)}</p>
+              <div className="action-row">
+                {/* Started inside the click, as browsers require. */}
+                <button type="button" className="button button-primary" onClick={() => { playbackRef.current?.start(); }}>{t.session.paused.resume}</button>
+                <button type="button" className="button button-secondary" onClick={finishRecording}>{t.session.paused.finish}</button>
+              </div>
+            </div>
+          )}
           <SessionCheckIn
             playing={playing}
             ratingBefore={ratingBefore}
@@ -291,9 +323,23 @@ export function SessionPage(): React.JSX.Element {
             saveError={saveFailure === null ? null : storeErrorMessage(saveFailure.cause, t)}
             askRating={false}
           />
-          <SessionRecap session={adaptation} playing={playing} />
+          {/* What the music did is told once the session is over, not at every pause. */}
+          <SessionRecap session={adaptation} playing={!ended} />
         </div>
-        <PlaybackPanel ref={playbackRef} durationMin={durationMin} initialLevel={program.startLevel} ambience={ambience} instrument={instrument} quietEnding={program.quietEnding} onEngineChange={handleEngineChange} onElapsedChange={handleElapsedChange} />
+        <PlaybackPanel
+          ref={playbackRef}
+          durationMin={durationMin}
+          // A resumed session picks the music up at the level where it paused.
+          initialLevel={paused ? adaptationSnapshot.level : program.startLevel}
+          ambience={ambience}
+          instrument={instrument}
+          quietEnding={program.quietEnding}
+          // While paused, resuming is offered next to finishing, above; once over, nothing is.
+          hideStart={paused || ended}
+          onEngineChange={handleEngineChange}
+          onElapsedChange={handleElapsedChange}
+          onFinished={finishRecording}
+        />
         <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
       </div>
         </section>

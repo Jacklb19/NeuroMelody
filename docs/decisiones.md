@@ -431,6 +431,15 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
 | Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
 
+## ADR-52. Detener pausa la sesión; terminarla es otra acción
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026, tras la auditoría de calidad: opción «Pausa + Terminar». |
+| Problema | «Detener» cerraba el registro y la pantalla decía «Terminaste tu sesión», pero «Iniciar música» seguía disponible. Al pulsarlo se abría otro registro: una sesión detenida sin querer (o con Esc) quedaba partida en dos, la segunda sin su propia referencia, y «Tu progreso» comparaba mitades. Además, el reloj del plan mezclaba los relojes de dos salidas de audio. |
+| Decisión | 1) «Detener», Esc y los controles del sistema siguen silenciando al instante. 2) Con la música detenida, la sesión queda en pausa: la diapositiva «Escuchando» dice «Música en pausa» y ofrece, juntos, «Reanudar música» y «Terminar sesión»; el botón de inicio del panel de música no se repite. 3) Al reanudar sigue el mismo registro: el plan cuenta desde donde se pausó (las pausas no cuentan como tiempo escuchado), la música vuelve al nivel en que estaba y «Lo que hizo la música» sigue la misma historia. 4) La sesión termina, y se guarda como antes, al pulsar «Terminar sesión», al acabar el plan, tras 5 minutos de pausa o al salir de la pantalla. Después ya no se ofrece iniciar música. |
+| Límites | Los 5 minutos son una cifra de producto. Mientras dura la pausa el registro sigue abierto, igual que mientras suena: si el sistema cierra la pestaña sin aviso, se pierde lo mismo que antes. Al reanudar, la respiración guiada queda apagada, como al empezar. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

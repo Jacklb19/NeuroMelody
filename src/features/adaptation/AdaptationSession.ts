@@ -71,18 +71,27 @@ export class AdaptationSession {
     return () => { this.#listeners.delete(listener); };
   };
 
-  setAudio = (audio: AudioEngine | null): void => {
+  /**
+   * Hands the session the engine that plays, or `null` when the music stops.
+   * `resumedAtS`, the seconds of music already played, continues the story of
+   * a paused session (ADR-52) instead of starting a new one.
+   */
+  setAudio = (audio: AudioEngine | null, resumedAtS?: number): void => {
     if (audio === null) {
       // The music stopped: what it did is now a finished story.
       if (this.#audio !== null) {
         this.#recap = { startTempoBpm: this.#startTempoBpm, endTempoBpm: this.#endTempoBpm, steps: this.#steps };
       }
-    } else {
+    } else if (resumedAtS === undefined) {
       this.#recap = null;
       this.#startedAtS = audio.audioTime;
       this.#startTempoBpm = null;
       this.#endTempoBpm = null;
       this.#steps = [];
+    } else {
+      // The new engine's clock starts again: its steps keep counting from where the music paused.
+      this.#recap = null;
+      this.#startedAtS = audio.audioTime - resumedAtS;
     }
     this.#audio = audio;
     if (audio !== null) {

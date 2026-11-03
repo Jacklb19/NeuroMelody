@@ -49,6 +49,14 @@ export const session = {
     title: 'Technical details',
     hint: 'Signal chart, indicators and musical parameters',
   },
+  /** The music stopped but the session goes on until the person finishes it (ADR-52). */
+  paused: {
+    title: 'Music paused',
+    detail: (minutes: number): string =>
+      `You can resume it or finish the session here. If you do not come back within ${String(minutes)} minutes, the session ends on its own.`,
+    resume: 'Resume music',
+    finish: 'Finish session',
+  },
   checkIn: {
     ratingBeforeLegend: 'How do you feel before starting?',
     /** Reminder of the rating given before starting, out of the scale's maximum. */

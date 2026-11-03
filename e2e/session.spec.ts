@@ -21,7 +21,14 @@ test('requires warnings before starting and stops playback from the keyboard', a
   await expect(page.getByRole('button', { name: playback.stop, exact: true })).toBeInViewport();
   await page.keyboard.press(STOP_SHORTCUT_KEY);
   await expect(page.getByText(playback.states.stopped, { exact: true })).toBeVisible();
+  // Stopping pauses the session (ADR-52): resuming goes on with it, finishing ends it.
+  await page.getByRole('button', { name: es.session.paused.resume }).click();
+  await expect(page.getByText(playback.states.playing, { exact: true })).toBeVisible();
+  await page.keyboard.press(STOP_SHORTCUT_KEY);
+  await page.getByRole('button', { name: es.session.paused.finish }).click();
   // The simulator only tries the app: the session says it was not kept.
   await expect(page.getByTestId('trial-ended')).toBeVisible();
+  await expect(page.getByRole('button', { name: es.session.paused.resume })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: playback.start })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
