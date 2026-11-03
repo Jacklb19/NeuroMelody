@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { APP_NAME } from '../config/app';
 import { ROUTES } from '../config/routes';
@@ -6,6 +7,7 @@ import { BrandMark } from '../shared/BrandMark';
 import { UserIcon } from '../shared/icons';
 import { useMessages } from '../i18n/messages';
 import { NAVIGATION_ITEMS } from './navigation';
+import { PendingScreen } from './PendingScreen';
 import { QuickPreferences } from './preferences/PreferenceControls';
 
 /** Target of the skip link, so keyboard users can jump past the navigation (WCAG 2.4.1). */
@@ -51,7 +53,9 @@ export function Layout(): React.JSX.Element {
         </NavLink>
       </header>
       <main id={MAIN_CONTENT_ID} tabIndex={-1} className="app-main">
-        <Outlet />
+        <Suspense fallback={<PendingScreen />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

@@ -31,6 +31,8 @@ export const app = {
       names: { es: 'Español', en: 'English' },
     },
   },
+  /** Said while a screen loaded on first visit arrives, if it takes a moment. */
+  loadingScreen: 'Cargando…',
   /** Screen of an address no screen claims. */
   notFound: {
     eyebrow: 'Página no encontrada',

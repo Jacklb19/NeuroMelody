@@ -13,6 +13,7 @@ import { ResetPasswordPage } from '../features/account/ResetPasswordPage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { Layout } from './Layout';
 import { NotFoundPage } from './NotFoundPage';
+import { PendingScreen } from './PendingScreen';
 
 /*
  * Screens loaded when first visited (RNF-04, RNF-05): the first screen a
@@ -38,9 +39,9 @@ const SECOND_STEP_PATHS = [ROUTES.app];
 
 /** Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in screens have their own layouts. */
 export function AppRoutes(): React.JSX.Element {
-  // Nothing is drawn for the instant a screen takes to load: its file is usually already cached.
+  // The layout keeps its own boundary so the header stays while a screen loads; this one covers the rest.
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PendingScreen />}>
     <Routes>
       <Route index element={<LandingPage />} />
       <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
