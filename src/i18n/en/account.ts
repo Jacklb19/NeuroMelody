@@ -42,6 +42,7 @@ export const account = {
     pageTitle: 'Create account',
     title: 'Create your account',
     subtitle: 'Save your sessions and take them with you. It is free.',
+    cloudNote: 'To keep your sessions in the cloud we will then ask you to turn on two-step verification, because they are health data.',
     submit: 'Create account',
     haveAccount: 'Already have an account?',
     login: 'Sign in',

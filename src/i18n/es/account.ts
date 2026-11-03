@@ -42,6 +42,7 @@ export const account = {
     pageTitle: 'Crear cuenta',
     title: 'Crea tu cuenta',
     subtitle: 'Guarda tus sesiones y llévalas contigo. Es gratis.',
+    cloudNote: 'Para guardar tus sesiones en la nube te pediremos después activar la verificación en dos pasos, porque son datos de tu salud.',
     submit: 'Crear cuenta',
     haveAccount: '¿Ya tienes cuenta?',
     login: 'Iniciar sesión',

@@ -103,6 +103,8 @@ describe('sign-in screens', () => {
     renderAt(ROUTES.register, fakeService({ signUp }));
 
     const form = within(await screen.findByRole('form', { name: copy.register.pageTitle }));
+    // What keeping sessions in the cloud will ask is said before the account is created.
+    expect(screen.getByText(copy.register.cloudNote)).toBeInTheDocument();
     await user.type(form.getByLabelText(copy.auth.email), USER.email);
     await user.type(form.getByLabelText(copy.auth.password), PASSWORD);
     await user.type(form.getByLabelText(copy.auth.confirmPassword), 'otra-distinta');

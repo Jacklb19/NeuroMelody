@@ -67,6 +67,7 @@ export function RegisterPage(): React.JSX.Element {
       {confirmationSentTo !== null && <p role="status" className="account-notice">{copy.confirmationSent(confirmationSentTo)}</p>}
       {service !== null && confirmationSentTo === null && (
         <>
+          <p className="field-hint auth-cloud-note">{copy.cloudNote}</p>
           <GoogleButton service={service} />
           <p className="auth-divider"><span>{auth.or}</span></p>
           <form className="auth-form" aria-label={copy.pageTitle} onSubmit={(event) => { void submit(event); }} noValidate>
