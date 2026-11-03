@@ -26,6 +26,9 @@ export const account = {
       email_invalid: 'That email does not look valid. Check it.',
       password_required: 'Enter your password.',
       password_too_short: (minLength: number): string => `The password must be at least ${String(minLength)} characters long.`,
+      /** The limit is in bytes: accented letters and emoji take more than one. */
+      password_too_long: (maxBytes: number): string =>
+        `The password is too long. Use at most ${String(maxBytes)} characters; accented letters and emoji count as more than one.`,
       passwords_differ: 'The two passwords do not match.',
     },
   },
