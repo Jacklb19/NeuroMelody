@@ -86,7 +86,7 @@ Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») m
 
 El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.
 
-- **Entrar y salir:** un enlace bajo el selector de fuente, «No tengo cómo medir mi pulso: probar la app» y «Volver a medir mi pulso». No se puede cambiar con una fuente conectada. Al abrir, el panel ofrece solo banda y cámara, y elige la primera que el navegador pueda usar.
+- **Entrar y salir:** un enlace bajo el botón de conectar (desde el 2 nov; antes, bajo el selector de fuente), «No tengo cómo medir mi pulso: probar la app» y «Volver a medir mi pulso». No se puede cambiar con una fuente conectada. Al abrir, el panel ofrece solo banda y cámara, y elige la primera que el navegador pueda usar.
 - **Mientras está activo:** el selector ofrece simulador y registro de ejemplo (con escenario y velocidad), y una nota dice «Modo de prueba: este pulso no es el tuyo… lo que escuches así no se guarda».
 - **Al terminar una sesión de prueba:** no se guarda. En lugar de «Sesión guardada» aparece «Era una sesión de prueba y no se guardó», con la invitación a medir el pulso. No va al historial, al progreso, al informe ni a la nube.
 - **En `/collect`:** el protocolo se puede recorrer en modo de prueba, lo avisa antes de empezar y al final dice «Prueba terminada»: no guarda ni exporta nada.
@@ -120,6 +120,14 @@ En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Pr
 - **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
 - **Acción principal (ajuste del 19 oct):** «Abrir Google Calendar» abre un borrador con la hora, días, zona horaria y enlace a la app. La persona revisa repetición y aviso y pulsa Guardar allí. No se solicita acceso al calendario ni se comprueba el guardado; cada apertura es un borrador nuevo, así que los cambios de uno ya guardado se hacen en el calendario.
 - **Alternativa:** «Descargar para otro calendario» entrega el archivo `.ics`, con repetición y aviso al inicio. La descarga se nombra explícitamente. Sin días marcados, ambas acciones quedan desactivadas y se explica el motivo.
+
+## Primera pantalla de la sesión y cabecera en el celular (2 nov 2026)
+
+Ajustes de la auditoría de calidad del 2 nov. No añaden rutas ni paneles.
+
+- **Cabecera:** por debajo de 390 px (360 px es el ancho más común en Android), la marca, el tema, el idioma y el perfil caben en una fila. Antes, el avatar bajaba solo a una segunda fila y la cabecera ocupaba 169 px.
+- **`/session`, diapositiva «Tu pulso», por debajo de 520 px:** la etiqueta superior, el título «Sesión» y el título del panel «Fuente de señal» quedan solo para lectores de pantalla, porque el indicador de pasos ya nombra la diapositiva. El plan y la intención siguen visibles. A 360×740, el selector de fuente y su botón de conectar aparecen sin desplazarse, por encima de «Detener». En escritorio no cambia nada.
+- **Modo de prueba:** «No tengo cómo medir mi pulso: probar la app» y su nota pasan debajo del botón de conectar, en `/session` y en `/collect`, para que la fuente y su botón queden juntos.
 
 ## Barra de inicio del plan en el celular (22 oct 2026)
 
