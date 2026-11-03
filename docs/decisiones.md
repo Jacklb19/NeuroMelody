@@ -431,6 +431,16 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
 | Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
 
+## ADR-53. Cada sesión del dispositivo tiene dueño
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 4 de la auditoría de calidad (SEC-P1). |
+| Problema | Las marcas de «ya sincronizada» eran por cuenta, pero el historial del dispositivo es uno solo. Si una segunda persona entraba con su cuenta, con verificación en dos pasos y consentimiento, la sincronización subía a esa cuenta todas las sesiones locales que no tuviera marcadas, incluidas las de la primera persona, también las que se habían bajado de su nube. Y al cerrar sesión, esos datos de salud seguían legibles sin cuenta. |
+| Decisión | 1) Cada sesión guarda, solo en el dispositivo, `ownerId`: la cuenta dentro al grabarla, la cuenta de la que se bajó o la primera que la subió si se hizo sin cuenta. Nunca viaja a la API. 2) La sincronización y los envíos en segundo plano solo tocan las sesiones de la cuenta dentro y las que no tienen dueño. Una sesión sin dueño que figure en las marcas de otra cuenta (sesiones anteriores a este cambio) es de esa cuenta. 3) Al cerrar sesión, con la sincronización activa, la persona puede marcar que se borren del dispositivo, y solo de él, las sesiones de su cuenta que su nube ya guarda. Las que no se subieron se quedan para no perder datos. |
+| Se mantiene | Una sesión hecha sin cuenta pasa a la primera cuenta que la sincroniza, como antes. El historial, «Tu progreso» y el informe siguen mostrando todas las sesiones del dispositivo, sin filtrar por cuenta. |
+| Límites | Las grabaciones de `/collect` (otra base) no cambian. No se verificó con dos cuentas reales; está cubierto con pruebas automáticas de sincronización, del proveedor y del perfil. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

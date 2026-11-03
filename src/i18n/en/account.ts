@@ -118,7 +118,11 @@ export const account = {
       privacy: { title: 'Privacy and consent', text: 'What is saved and where.' },
       history: { title: 'Session history', text: 'Review or delete your sessions.' },
       collect: { title: 'Help improve the app', text: 'A guided recording so the model can learn from you. Optional.' },
-      signOut: { title: 'Sign out', text: 'Your sessions will stay on this device.' },
+      signOut: {
+        title: 'Sign out',
+        text: 'Your sessions will stay on this device.',
+        forget: 'Also remove from this device the sessions of this account that are already in the cloud. Useful if someone else uses this device; those not uploaded yet stay.',
+      },
       deleteAccount: {
         title: 'Delete the account',
         text: 'Deletes your account and everything it keeps in the cloud. Sessions on this device are left alone.',

@@ -9,6 +9,7 @@ import { createSessionContext } from '../records/sessionContext';
 import {
   createPendingDeletions,
   createSyncMarks,
+  markedByOtherAccounts,
   SYNC_MARKS_STORAGE_PREFIX,
   syncSessions,
   type PendingDeletions,
@@ -16,7 +17,11 @@ import {
 
 const ID_A = '017f22e2-79b0-7000-8000-00000000000a';
 const ID_B = '017f22e2-79b0-7000-8000-00000000000b';
+const ID_C = '017f22e2-79b0-7000-8000-00000000000c';
 const USER = 'user-1';
+const OTHER = 'user-2';
+/** No other account has used this device. */
+const NOBODY_ELSE: ReadonlySet<string> = new Set();
 
 /** A cloud in memory that behaves like the API: idempotent saves that only update the later rating. */
 function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonly sessions: Map<string, SessionRecord> } {
@@ -54,10 +59,12 @@ async function storeWith(...records: SessionRecord[]): Promise<MemorySessionStor
   return store;
 }
 
-function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> & { readonly items: Map<string, string> } {
+function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'> & { readonly items: Map<string, string> } {
   const items = new Map<string, string>();
   return {
     items,
+    get length() { return items.size; },
+    key: (index) => [...items.keys()][index] ?? null,
     getItem: (key) => items.get(key) ?? null,
     setItem: (key, value) => { items.set(key, value); },
     removeItem: (key) => { items.delete(key); },
@@ -70,7 +77,7 @@ describe('syncSessions', () => {
     const record = sessionRecord({ context, note: 'local only', ratingAfter: null });
     const store = await storeWith(record);
     const api = fakeCloud([sessionRecord({ ratingAfter: 9 })]);
-    await syncSessions({ api, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions() });
+    await syncSessions({ api, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
     expect(await store.get(record.id)).toMatchObject({ context, note: 'local only', ratingAfter: 9 });
   });
   it('uploads what only the device has and downloads what only the cloud has', async () => {
@@ -80,22 +87,23 @@ describe('syncSessions', () => {
     const api = fakeCloud([theirs]);
     const marks = createSyncMarks(USER, memoryStorage());
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions() })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0 });
     expect(api.sessions.get(ID_A)).toEqual(mine);
-    expect(await store.get(ID_B)).toEqual(theirs);
+    // Brought from this account's cloud, it belongs to this account on the device.
+    expect(await store.get(ID_B)).toEqual({ ...theirs, ownerId: USER });
     // A second pass finds both sides equal: sending again would be harmless, but nothing is sent.
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions() })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
   });
 
   it('removes from the device a session that was sent before and is gone from the cloud', async () => {
     const store = await storeWith(sessionRecord({ id: ID_A }));
     const api = fakeCloud();
     const marks = createSyncMarks(USER, memoryStorage());
-    await syncSessions({ api, store, marks, deletions: noDeletions() });
+    await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
 
     api.sessions.delete(ID_A); // deleted from another device
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions() })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0 });
     expect(await store.list()).toEqual([]);
     expect(api.sessions.size).toBe(0);
   });
@@ -103,20 +111,39 @@ describe('syncSessions', () => {
   it('never deletes for one account what another account synced', async () => {
     const storage = memoryStorage();
     const store = await storeWith(sessionRecord({ id: ID_A }));
-    await syncSessions({ api: fakeCloud(), store, marks: createSyncMarks(USER, storage), deletions: noDeletions() });
+    await syncSessions({ api: fakeCloud(), store, marks: createSyncMarks(USER, storage), deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
     expect(storage.items.has(`${SYNC_MARKS_STORAGE_PREFIX}${USER}`)).toBe(true);
 
-    const result = await syncSessions({ api: fakeCloud(), store, marks: createSyncMarks('user-2', storage), deletions: noDeletions() });
+    const otherCloud = fakeCloud();
+    const result = await syncSessions({ api: otherCloud, store, marks: createSyncMarks(OTHER, storage), deletions: noDeletions(), owner: OTHER, others: markedByOtherAccounts(OTHER, storage) });
 
-    expect(result.removed).toBe(0);
+    expect(result).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
     expect(await store.list()).toHaveLength(1);
+    expect(otherCloud.sessions.size).toBe(0);
+  });
+
+  it('never sends the sessions of one account to the cloud of another, and gives a session without an account to the first that syncs it', async () => {
+    const storage = memoryStorage();
+    // A session of the first account; another saved before owners existed, known only by that account's marks;
+    // and one made without an account.
+    createSyncMarks(USER, storage).add(ID_B);
+    const store = await storeWith(sessionRecord({ id: ID_A, ownerId: USER }), sessionRecord({ id: ID_B }), sessionRecord({ id: ID_C }));
+    const otherCloud = fakeCloud();
+
+    const result = await syncSessions({ api: otherCloud, store, marks: createSyncMarks(OTHER, storage), deletions: noDeletions(), owner: OTHER, others: markedByOtherAccounts(OTHER, storage) });
+
+    expect(result.uploaded).toBe(1);
+    expect([...otherCloud.sessions.keys()]).toEqual([ID_C]);
+    expect((await store.get(ID_C))?.ownerId).toBe(OTHER);
+    expect((await store.get(ID_A))?.ownerId).toBe(USER);
+    expect((await store.get(ID_B))?.ownerId).toBeUndefined();
   });
 
   it('makes the rating given after listening equal on both sides', async () => {
     const store = await storeWith(sessionRecord({ id: ID_A, ratingAfter: 8 }), sessionRecord({ id: ID_B, ratingAfter: null }));
     const api = fakeCloud([sessionRecord({ id: ID_A, ratingAfter: null }), sessionRecord({ id: ID_B, ratingAfter: 6 })]);
 
-    await syncSessions({ api, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions() });
+    await syncSessions({ api, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
 
     expect(api.sessions.get(ID_A)?.ratingAfter).toBe(8);
     expect((await store.get(ID_B))?.ratingAfter).toBe(6);
@@ -124,7 +151,7 @@ describe('syncSessions', () => {
 });
 
 describe('mirrored session store', () => {
-  const setup = async (api: CloudApi | null) => {
+  const setup = async (api: CloudApi | null, owner: string | null = USER) => {
     const local = await storeWith(sessionRecord({ id: ID_A }));
     const storage = memoryStorage();
     const marks = createSyncMarks(USER, storage);
@@ -132,7 +159,7 @@ describe('mirrored session store', () => {
     const onUploadError = vi.fn();
     const onPendingChange = vi.fn();
     const store = createMirroredSessionStore({
-      local, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
+      local, owner: () => owner, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
     });
     return { local, marks, deletions, storage, store, onUploadError, onPendingChange };
   };
@@ -170,12 +197,12 @@ describe('mirrored session store', () => {
     expect(createPendingDeletions(USER, storage).list()).toEqual([ID_A]);
     expect(onPendingChange).toHaveBeenCalledOnce();
     // Still without a connection: the pass stops before reading the cloud, so nothing is downloaded back.
-    await expect(syncSessions({ api: { ...offline, listSessions: () => cloudCopy.listSessions() }, store: local, marks, deletions }))
+    await expect(syncSessions({ api: { ...offline, listSessions: () => cloudCopy.listSessions() }, store: local, marks, deletions, owner: USER, others: NOBODY_ELSE }))
       .rejects.toBeInstanceOf(CloudError);
     expect(await local.list()).toEqual([]);
 
     // With a connection again the deletion is delivered first.
-    const result = await syncSessions({ api: cloudCopy, store: local, marks, deletions });
+    const result = await syncSessions({ api: cloudCopy, store: local, marks, deletions, owner: USER, others: NOBODY_ELSE });
     expect(result).toMatchObject({ deleted: 1, downloaded: 0 });
     expect(cloudCopy.sessions.has(ID_A)).toBe(false);
     expect(deletions.size).toBe(0);
@@ -208,12 +235,29 @@ describe('mirrored session store', () => {
     await vi.waitFor(() => { expect(onUploadError).toHaveBeenCalledOnce(); });
 
     const online = { ...cloudCopy, saveSession };
-    await syncSessions({ api: online, store: local, marks, deletions });
-    await syncSessions({ api: online, store: local, marks, deletions });
+    await syncSessions({ api: online, store: local, marks, deletions, owner: USER, others: NOBODY_ELSE });
+    await syncSessions({ api: online, store: local, marks, deletions, owner: USER, others: NOBODY_ELSE });
 
     // The session of the setup and the new one, each sent by the first pass only.
     expect(saveSession.mock.calls.map(([record]) => record.id).sort()).toEqual([ID_A, ID_B].sort());
     expect(cloudCopy.sessions.size).toBe(2);
+  });
+
+  it('writes down the account of a new session and never uploads a session of another account', async () => {
+    const api = fakeCloud();
+    const saveSession = vi.spyOn(api, 'saveSession');
+    const { local, store } = await setup(api, OTHER);
+    await local.setOwner(ID_A, USER);
+
+    await store.save(sessionRecord({ id: ID_B }));
+    expect((await local.get(ID_B))?.ownerId).toBe(OTHER);
+    await vi.waitFor(() => { expect(saveSession).toHaveBeenCalledOnce(); });
+
+    // Rating the first account's session on this device keeps it here.
+    await store.setRatingAfter(ID_A, 7);
+    expect((await local.get(ID_A))?.ratingAfter).toBe(7);
+    expect(saveSession).toHaveBeenCalledOnce();
+    expect(api.sessions.has(ID_A)).toBe(false);
   });
 
   it('works on the device alone while syncing is off', async () => {

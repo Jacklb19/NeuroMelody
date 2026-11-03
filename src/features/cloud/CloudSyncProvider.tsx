@@ -6,7 +6,7 @@ import { SessionStoreContext, useSessionStore } from '../records/sessionStoreCon
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
 import { createMirroredSessionStore } from './mirroredSessionStore';
-import { createPendingDeletions, createSyncMarks, syncSessions, type PendingDeletions, type SyncMarks } from './syncSessions';
+import { belongsTo, createPendingDeletions, createSyncMarks, markedByOtherAccounts, syncSessions, type PendingDeletions, type SyncMarks } from './syncSessions';
 
 interface CloudSyncProviderProps {
   readonly children: React.ReactNode;
@@ -116,6 +116,7 @@ export function CloudSyncProvider({
       link: created,
       mirrored: createMirroredSessionStore({
         local,
+        owner: () => created.userId,
         marks: () => created.marks,
         deletions: () => created.deletions,
         cloud: () => created.api,
@@ -136,7 +137,9 @@ export function CloudSyncProvider({
     if (current === null || !link.begin()) return;
     setProgress('syncing');
     try {
-      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions });
+      const owner = link.userId;
+      if (owner === null) return;
+      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions, owner });
       if (result.downloaded > 0 || result.removed > 0) setRevision((value) => value + 1);
       setError(null);
       setProgress('synced');
@@ -165,6 +168,21 @@ export function CloudSyncProvider({
     return () => { window.removeEventListener(ONLINE_EVENT, catchUp); };
   }, [active, syncNow]);
 
+  const forgetDeviceCopies = useCallback(async (): Promise<number> => {
+    const owner = link.userId;
+    if (owner === null) return 0;
+    const others = markedByOtherAccounts(owner);
+    let removed = 0;
+    // The device's own store: deleting through the mirror would delete from the cloud too.
+    for (const record of await local.list()) {
+      if (!belongsTo(record, owner, others) || !link.marks.has(record.id)) continue;
+      await local.delete(record.id);
+      removed++;
+    }
+    if (removed > 0) setRevision((value) => value + 1);
+    return removed;
+  }, [link, local]);
+
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();
     if (service === null || userId === null) {
@@ -184,8 +202,8 @@ export function CloudSyncProvider({
   else status = progress === 'idle' ? 'syncing' : progress;
 
   const value = useMemo<CloudSyncValue>(() => ({
-    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, api: userId === null ? null : api,
-  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, api, userId]);
+    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api: userId === null ? null : api,
+  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api, userId]);
 
   return (
     <CloudSyncContext value={value}>

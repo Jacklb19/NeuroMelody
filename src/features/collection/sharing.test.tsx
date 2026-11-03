@@ -31,7 +31,7 @@ const RECORDING: CollectionRecording = {
 function cloud(status: CloudSyncStatus, api: Partial<CloudApi> | null): CloudSyncValue {
   return {
     status, error: null, revision: 0, pendingDeletions: 0, consentAt: null,
-    setConsent: () => Promise.resolve(), syncNow: () => Promise.resolve(), api: api as CloudApi | null,
+    setConsent: () => Promise.resolve(), syncNow: () => Promise.resolve(), forgetDeviceCopies: () => Promise.resolve(0), api: api as CloudApi | null,
   };
 }
 

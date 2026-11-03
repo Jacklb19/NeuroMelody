@@ -118,7 +118,11 @@ export const account = {
       privacy: { title: 'Privacidad y consentimiento', text: 'Qué se guarda y dónde.' },
       history: { title: 'Historial de sesiones', text: 'Revisa o borra tus sesiones.' },
       collect: { title: 'Ayuda a mejorar la app', text: 'Una grabación guiada para que el modelo aprenda de ti. Opcional.' },
-      signOut: { title: 'Cerrar sesión', text: 'Tus sesiones seguirán en este dispositivo.' },
+      signOut: {
+        title: 'Cerrar sesión',
+        text: 'Tus sesiones seguirán en este dispositivo.',
+        forget: 'Borrar también de este dispositivo las sesiones de esta cuenta que ya están en la nube. Útil si otra persona usa este dispositivo; las que aún no se subieron se quedan.',
+      },
       deleteAccount: {
         title: 'Borrar la cuenta',
         text: 'Borra tu cuenta y todo lo que guarda en la nube. Las sesiones de este dispositivo no se tocan.',
