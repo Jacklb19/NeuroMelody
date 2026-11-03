@@ -236,16 +236,33 @@ function PreferencesSection(): React.JSX.Element {
 function SessionSection({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
   const copy = useMessages().account.profile;
   const { pending, error, run } = useAccountAction();
+  const { status, forgetDeviceCopies } = useCloudSync();
+  const [forget, setForget] = useState(false);
   const titleId = useId();
+  const forgetId = useId();
+  // Only while syncing is on does the cloud keep the copies that make removing them here safe.
+  const canForget = status === 'synced' || status === 'syncing' || status === 'failed';
+  const signOut = (): void => {
+    void run(async () => {
+      if (canForget && forget) await forgetDeviceCopies();
+      await service.signOut();
+    }).then(onChanged);
+  };
   return (
     <section aria-labelledby={titleId} className="profile-section">
       <h2 id={titleId}>{copy.sections.session}</h2>
       <div className="setting-list glass-card">
         <SettingRow icon={<LogOutIcon />} title={copy.rows.signOut.title} text={copy.rows.signOut.text}>
-          <button type="button" className="pill-button pill-button-ghost" disabled={pending} onClick={() => { void run(() => service.signOut()).then(onChanged); }}>
+          <button type="button" className="pill-button pill-button-ghost" disabled={pending} onClick={signOut}>
             {copy.rows.signOut.title}
           </button>
         </SettingRow>
+        {canForget && (
+          <div className="confirmation-control sign-out-forget">
+            <input id={forgetId} type="checkbox" checked={forget} onChange={(event) => { setForget(event.target.checked); }} />
+            <label htmlFor={forgetId}>{copy.rows.signOut.forget}</label>
+          </div>
+        )}
         <FormError code={error} />
         <DeleteAccountRow service={service} onChanged={onChanged} />
       </div>

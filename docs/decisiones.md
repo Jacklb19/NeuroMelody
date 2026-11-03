@@ -440,6 +440,16 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Decisión | 1) «Detener», Esc y los controles del sistema siguen silenciando al instante. 2) Con la música detenida, la sesión queda en pausa: la diapositiva «Escuchando» dice «Música en pausa» y ofrece, juntos, «Reanudar música» y «Terminar sesión»; el botón de inicio del panel de música no se repite. 3) Al reanudar sigue el mismo registro: el plan cuenta desde donde se pausó (las pausas no cuentan como tiempo escuchado), la música vuelve al nivel en que estaba y «Lo que hizo la música» sigue la misma historia. 4) La sesión termina, y se guarda como antes, al pulsar «Terminar sesión», al acabar el plan, tras 5 minutos de pausa o al salir de la pantalla. Después ya no se ofrece iniciar música. |
 | Límites | Los 5 minutos son una cifra de producto. Mientras dura la pausa el registro sigue abierto, igual que mientras suena: si el sistema cierra la pestaña sin aviso, se pierde lo mismo que antes. Al reanudar, la respiración guiada queda apagada, como al empezar. |
 
+## ADR-53. Cada sesión del dispositivo tiene dueño
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 4 de la auditoría de calidad (SEC-P1). |
+| Problema | Las marcas de «ya sincronizada» eran por cuenta, pero el historial del dispositivo es uno solo. Si una segunda persona entraba con su cuenta, con verificación en dos pasos y consentimiento, la sincronización subía a esa cuenta todas las sesiones locales que no tuviera marcadas, incluidas las de la primera persona, también las que se habían bajado de su nube. Y al cerrar sesión, esos datos de salud seguían legibles sin cuenta. |
+| Decisión | 1) Cada sesión guarda, solo en el dispositivo, `ownerId`: la cuenta dentro al grabarla, la cuenta de la que se bajó o la primera que la subió si se hizo sin cuenta. Nunca viaja a la API. 2) La sincronización y los envíos en segundo plano solo tocan las sesiones de la cuenta dentro y las que no tienen dueño. Una sesión sin dueño que figure en las marcas de otra cuenta (sesiones anteriores a este cambio) es de esa cuenta. 3) Al cerrar sesión, con la sincronización activa, la persona puede marcar que se borren del dispositivo, y solo de él, las sesiones de su cuenta que su nube ya guarda. Las que no se subieron se quedan para no perder datos. |
+| Se mantiene | Una sesión hecha sin cuenta pasa a la primera cuenta que la sincroniza, como antes. El historial, «Tu progreso» y el informe siguen mostrando todas las sesiones del dispositivo, sin filtrar por cuenta. |
+| Límites | Las grabaciones de `/collect` (otra base) no cambian. No se verificó con dos cuentas reales; está cubierto con pruebas automáticas de sincronización, del proveedor y del perfil. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

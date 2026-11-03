@@ -29,6 +29,8 @@ export interface SessionStore {
   setRatingAfter(id: string, rating: number | null): Promise<SessionRecord>;
   /** Saves or removes a local note, without sending it to the cloud. */
   setNote(id: string, note: string): Promise<SessionRecord>;
+  /** Writes down which account a session belongs to on this device; kept here, never sent. */
+  setOwner(id: string, ownerId: string): Promise<SessionRecord>;
   delete(id: string): Promise<void>;
   clear(): Promise<void>;
 }
@@ -71,6 +73,11 @@ abstract class ValidatingStore implements SessionStore {
   async setNote(id: string, note: string): Promise<SessionRecord> {
     if (!isSessionNote(note)) throw new SessionStoreError('invalid_note', 'The note exceeds its length limit.');
     return this.update(id, (record) => ({ ...record, note: note.trim() }));
+  }
+
+  async setOwner(id: string, ownerId: string): Promise<SessionRecord> {
+    if (ownerId === '') throw new SessionStoreError('invalid_record', 'A session owner needs an account id.');
+    return this.update(id, (record) => ({ ...record, ownerId }));
   }
 }
 

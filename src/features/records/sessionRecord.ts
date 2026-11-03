@@ -49,6 +49,12 @@ export interface SessionRecord {
   /** Local-only context and optional personal note (ADR-48). */
   readonly context?: SessionContext;
   readonly note?: string;
+  /**
+   * Account the session belongs to on this device: set when it is recorded
+   * with an account signed in, brought from its cloud or first sent there.
+   * Absent for a session made without an account. Never sent to the cloud.
+   */
+  readonly ownerId?: string;
 }
 
 /** Bounds of the optional self-rating scale (ADR-23); every check and text about the range reads them. */
@@ -120,5 +126,6 @@ export function isSessionRecord(value: unknown): value is SessionRecord {
     && (value.signalMode === undefined || isSignalMode(value.signalMode))
     && (value.music === undefined || isMusicRecap(value.music))
     && (value.context === undefined || isSessionContext(value.context))
-    && (value.note === undefined || isSessionNote(value.note));
+    && (value.note === undefined || isSessionNote(value.note))
+    && (value.ownerId === undefined || (typeof value.ownerId === 'string' && value.ownerId !== ''));
 }

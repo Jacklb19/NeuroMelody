@@ -26,6 +26,7 @@ function cloud(status: CloudSyncStatus, api: Partial<CloudApi> | null): CloudSyn
     consentAt: null,
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
+    forgetDeviceCopies: () => Promise.resolve(0),
     api: api as CloudApi | null,
   };
 }

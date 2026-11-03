@@ -9,6 +9,7 @@ import { SessionStoreContext, useSessionStore } from '../records/sessionStoreCon
 import { sessionRecord } from '../../test/sessionRecords';
 import { CloudSyncNotice } from './CloudSyncNotice';
 import { CloudSyncProvider } from './CloudSyncProvider';
+import { useCloudSync, type CloudSyncValue } from './cloudSyncContext';
 
 const { status } = es.cloud;
 const API = 'https://api.example.test';
@@ -34,8 +35,16 @@ function StoreProbe({ seen }: { readonly seen: Set<unknown> }): null {
   return null;
 }
 
-async function renderSync(auth: AuthContextValue, requests: string[], seen = new Set<unknown>()): Promise<Set<unknown>> {
-  const local = new MemorySessionStore();
+/** Hands the test what the screens receive from the provider. */
+function SyncProbe({ found }: { readonly found: Map<'sync', CloudSyncValue> }): null {
+  found.set('sync', useCloudSync());
+  return null;
+}
+
+async function renderSync(
+  auth: AuthContextValue, requests: string[], seen = new Set<unknown>(),
+  local = new MemorySessionStore(), found = new Map<'sync', CloudSyncValue>(),
+): Promise<Set<unknown>> {
   await local.save(LOCAL);
   const send: typeof fetch = (input, init) => {
     requests.push(`${init?.method ?? 'GET'} ${input instanceof Request ? input.url : input.toString()}`);
@@ -48,6 +57,7 @@ async function renderSync(auth: AuthContextValue, requests: string[], seen = new
           <CloudSyncProvider apiBaseUrl={API} fetch={send}>
             <CloudSyncNotice />
             <StoreProbe seen={seen} />
+            <SyncProbe found={found} />
           </CloudSyncProvider>
         </SessionStoreContext>
       </AuthContext>
@@ -76,6 +86,26 @@ describe('CloudSyncProvider', () => {
 
     // The session was sent by the first pass; this one only asks what the cloud has.
     await waitFor(() => { expect(requests.slice(before)).toEqual([`GET ${API}/v1/sessions`]); });
+  });
+
+  it('before signing out, removes from this device only what this account already keeps in its cloud', async () => {
+    const requests: string[] = [];
+    const local = new MemorySessionStore();
+    const found = new Map<'sync', CloudSyncValue>();
+    await renderSync(account({ current: 'aal2', next: 'aal2' }, '2026-10-07T10:00:00.000Z'), requests, new Set(), local, found);
+    await screen.findByText(status.synced);
+    const notSentYet = sessionRecord({ id: '017f22e2-79b0-7000-8000-00000000000b', ownerId: 'user-1' });
+    const ofSomeoneElse = sessionRecord({ id: '017f22e2-79b0-7000-8000-00000000000c', ownerId: 'user-2' });
+    await local.save(notSentYet);
+    await local.save(ofSomeoneElse);
+    const before = requests.length;
+
+    const removed = await act(() => found.get('sync')?.forgetDeviceCopies() ?? Promise.resolve(-1));
+
+    expect(removed).toBe(1);
+    expect((await local.list()).map((record) => record.id).sort()).toEqual([notSentYet.id, ofSomeoneElse.id]);
+    // Only this device forgets: nothing is deleted from the cloud.
+    expect(requests.slice(before).filter((request) => request.startsWith('DELETE'))).toEqual([]);
   });
 
   it.each([

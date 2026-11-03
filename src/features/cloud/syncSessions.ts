@@ -1,3 +1,4 @@
+import type { SessionRecord } from '../records/sessionRecord';
 import type { SessionStore } from '../records/sessionStore';
 import type { CloudApi } from './cloudApi';
 
@@ -68,6 +69,46 @@ function storedIds(prefix: string, userId: string | null, available: MarkStorage
   return { ids, persist };
 }
 
+type ListableStorage = Pick<Storage, 'length' | 'key' | 'getItem'>;
+
+function listableStorage(): ListableStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sessions that other accounts of this device have in their cloud, read from
+ * their marks. Sessions saved before owners were written down carry none, so
+ * these marks are the only trace of whose they are.
+ */
+export function markedByOtherAccounts(userId: string, available: ListableStorage | null = listableStorage()): ReadonlySet<string> {
+  const ids = new Set<string>();
+  if (available === null) return ids;
+  try {
+    for (let index = 0; index < available.length; index++) {
+      const key = available.key(index);
+      if (key === null || !key.startsWith(SYNC_MARKS_STORAGE_PREFIX) || key === `${SYNC_MARKS_STORAGE_PREFIX}${userId}`) continue;
+      const stored: unknown = JSON.parse(available.getItem(key) ?? '[]');
+      if (Array.isArray(stored)) for (const id of stored) if (typeof id === 'string') ids.add(id);
+    }
+  } catch {
+    // Unreadable marks: only the owners written in the sessions decide.
+  }
+  return ids;
+}
+
+/**
+ * Whether a session of this device belongs to the account `userId`, so it may
+ * go to its cloud. A session made without an account belongs to whoever syncs
+ * it first, unless another account of this device already has it.
+ */
+export function belongsTo(record: SessionRecord, userId: string, others: ReadonlySet<string>): boolean {
+  return record.ownerId === undefined ? !others.has(record.id) : record.ownerId === userId;
+}
+
 /**
  * Sessions already deleted from this device whose deletion the cloud has not
  * confirmed yet (HU-09). They wait here, per account, until a sync delivers
@@ -109,6 +150,10 @@ interface SyncContext {
   readonly store: SessionStore;
   readonly marks: SyncMarks;
   readonly deletions: PendingDeletions;
+  /** The account signed in: only its sessions, and those made without an account, take part. */
+  readonly owner: string;
+  /** Sessions other accounts of this device have in their cloud; read from their marks by default. */
+  readonly others?: ReadonlySet<string>;
 }
 
 /**
@@ -121,10 +166,14 @@ interface SyncContext {
  * - in the cloud only: it is downloaded;
  * - on both: the rating given after listening, the one field filled in later, is made equal.
  *
+ * Only the sessions of the account signed in take part. Those of another
+ * account of this device are never sent to this one nor removed by its pass,
+ * and a session made without an account becomes this account's when sent.
+ *
  * Sending and deleting are idempotent (ADR-18): a pass interrupted halfway simply
  * runs again, and nothing is stored twice.
  */
-export async function syncSessions({ api, store, marks, deletions }: SyncContext): Promise<SyncResult> {
+export async function syncSessions({ api, store, marks, deletions, owner, others = markedByOtherAccounts(owner) }: SyncContext): Promise<SyncResult> {
   let deleted = 0;
   for (const id of deletions.list()) {
     // A failure stops the pass here, before the list: the session must not be downloaded again.
@@ -140,6 +189,7 @@ export async function syncSessions({ api, store, marks, deletions }: SyncContext
   let removed = 0;
 
   for (const record of local) {
+    if (!belongsTo(record, owner, others)) continue;
     const summary = remote.get(record.id);
     if (summary === undefined) {
       if (marks.has(record.id)) {
@@ -149,11 +199,13 @@ export async function syncSessions({ api, store, marks, deletions }: SyncContext
       } else {
         await api.saveSession(record);
         marks.add(record.id);
+        if (record.ownerId === undefined) await store.setOwner(record.id, owner);
         uploaded++;
       }
       continue;
     }
     marks.add(record.id);
+    if (record.ownerId === undefined) await store.setOwner(record.id, owner);
     if (record.ratingAfter !== null && record.ratingAfter !== summary.ratingAfter) {
       await api.saveSession(record);
       uploaded++;
@@ -169,7 +221,7 @@ export async function syncSessions({ api, store, marks, deletions }: SyncContext
     const record = await api.getSession(id);
     // Deleted between the list and this request: nothing to bring.
     if (record === null) continue;
-    await store.save(record);
+    await store.save({ ...record, ownerId: owner });
     marks.add(id);
     downloaded++;
   }
