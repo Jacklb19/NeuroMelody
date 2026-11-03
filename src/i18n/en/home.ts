@@ -13,13 +13,13 @@ export const home = {
   start: {
     eyebrow: 'New session',
     title: 'Set up your session in three steps',
-    text: 'Choose what you are after, how long you have and which ambience. The music starts from your pulse and keeps you company from there.',
+    text: 'Choose your intention, how long you have and which ambience. The music starts from your pulse and keeps you company from there.',
     action: 'Set up my session',
     /** Starts a session like the last one: same goal and length, and the ambience kept on the device. */
     repeat: 'Repeat the last one',
   },
   goals: {
-    title: 'Or start from what you are after',
+    title: 'Or start from an intention',
     hint: 'Each intention changes how the music starts and how far it comes down.',
     /** What the music does with each goal, in a few words; keys mirror `GoalId`. */
     taglines: {
@@ -45,7 +45,7 @@ export const home = {
   },
   /** Shown instead of the activity until there is a first session; keys mirror `FIRST_SESSION_STEP_IDS`. */
   first: {
-    title: 'Your first session, in three steps',
+    title: 'How your first session goes',
     steps: {
       connect: { title: 'Connect your pulse', text: 'With a chest strap, with the camera or with a sample pulse.' },
       listen: { title: 'Start the music', text: 'It begins gently while it learns your rhythm for today.' },

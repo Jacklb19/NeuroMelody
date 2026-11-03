@@ -2,7 +2,7 @@
 export const plan = {
   pageTitle: 'Set up your session',
   eyebrow: 'Before you listen',
-  introduction: 'Choose what you are after, the time and how you want it to sound. You can change it next time.',
+  introduction: 'Choose your intention, the time and how you want it to sound. You can change it next time.',
   durationLegend: 'How much time do you have?',
   /** A duration in words, e.g. "20 minutes": name of each option and the chosen plan. */
   minutes: (minutes: number): string => `${String(minutes)} minutes`,
@@ -10,7 +10,7 @@ export const plan = {
   minutesUnit: 'min',
   /** Optional goal (HU-07, ADR-38); `names` and `programs` keys mirror `GoalId`. */
   goals: {
-    legend: 'What are you looking for today?',
+    legend: 'What is your intention today?',
     hint: 'Optional. Pick one: it changes how the music starts and how far it comes down.',
     /** What the music does in a session with each goal (`programCatalog.ts`). */
     programs: {
@@ -34,9 +34,9 @@ export const plan = {
   suggestion: {
     ask: 'Suggest a length',
     /** What travels, said next to the button. */
-    notice: 'A language model receives only the goals you ticked and the time of day. You decide whether to use what it suggests.',
-    needsGoal: 'Tick at least one goal to ask for a suggestion.',
-    signedOut: 'With an account, the app can suggest a length for what you are after.',
+    notice: 'A language model receives only the intention you chose and the time of day. You decide whether to use what it suggests.',
+    needsGoal: 'Choose an intention to ask for a suggestion.',
+    signedOut: 'With an account, the app can suggest a length for your intention.',
     signIn: 'Sign in',
     working: 'Working on the suggestion…',
     /** The proposed length, in the words of `minutes`. */

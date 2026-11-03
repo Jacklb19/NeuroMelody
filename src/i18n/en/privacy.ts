@@ -10,7 +10,7 @@ export const privacy = {
       title: 'On your device',
       /** `seconds` is how often a session stores its indicators. */
       text: (seconds: number): string =>
-        `The signal is analyzed in the browser. Sessions (indicators every ${String(seconds)} seconds, ratings and goals) are saved on this device and you can delete them from the history. New sessions also store the sound, ambience and local date and hour at the start to calculate history observations. That context, the music recap and your optional notes stay on this device only; they are not synced.`,
+        `The signal is analyzed in the browser. Sessions (indicators every ${String(seconds)} seconds, ratings and intentions) are saved on this device and you can delete them from the history. New sessions also store the sound, ambience and local date and hour at the start to calculate history observations. That context, the music recap and your optional notes stay on this device only; they are not synced.`,
     },
     camera: {
       title: 'Camera',
