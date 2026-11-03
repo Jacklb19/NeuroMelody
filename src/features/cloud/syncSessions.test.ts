@@ -309,6 +309,7 @@ describe('cloud API client', () => {
     });
 
     await expect(answering(403, { code: 'second_factor_required' }).listSessions()).rejects.toMatchObject({ code: 'second_factor_required' });
+    await expect(answering(429, { code: 'rate_limited' }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'rate_limited' });
     await expect(answering(500, '<html>').listSessions()).rejects.toMatchObject({ code: 'unknown' });
     await expect(answering(200, { id: ID_A, samples: [{ second: -1 }] }).getSession(ID_A)).rejects.toMatchObject({ code: 'unknown' });
     expect(await answering(404, { code: 'not_found' }).getSession(ID_A)).toBeNull();
