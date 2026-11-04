@@ -27,7 +27,7 @@ export function Layout(): React.JSX.Element {
       <a href={`#${MAIN_CONTENT_ID}`} className="skip-link">
         {t.app.skipToContent}
       </a>
-      <header className="app-header">
+      <header className={user === null ? 'app-header app-header-public' : 'app-header'}>
         <Link to={user === null ? ROUTES.home : ROUTES.app} className="brand" aria-label={APP_NAME}>
           <BrandMark />
           {APP_NAME}
