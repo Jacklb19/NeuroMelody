@@ -470,6 +470,15 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Decisión | 1) Bajo cada contraseña nueva (registro, contraseña nueva y perfil) una lista dice lo que necesita: 8 caracteres, una minúscula, una mayúscula, un número y un símbolo; cada punto se marca al cumplirse y el formulario no se envía hasta cumplirlos todos. 2) Los conjuntos son los de Supabase con «Lowercase, uppercase letters, digits and symbols», que el usuario activa en el panel para que el servidor exija lo mismo. 3) Un correo con cuenta se dice claramente, con enlaces a iniciar sesión y a recuperar la contraseña; con Confirm email encendido se reconoce por el usuario sin identidades que devuelve Supabase. 4) Un correo que el servidor rechaza tiene su propio mensaje. |
 | Límites | Decir que un correo tiene cuenta permite comprobar si alguien está registrado; el usuario lo acepta por claridad, y el límite de intentos de Supabase lo frena. Las letras con tilde y la ñ no cuentan como minúscula o mayúscula, igual que en el servidor. Las cuentas existentes conservan su contraseña hasta que la cambien. |
 
+## ADR-56. Cambiar la contraseña desde el perfil pide la actual
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 4 nov 2026, en lugar de «Secure password change» con código por correo, que necesita SMTP propio. |
+| Problema | Quien tuviera delante una sesión abierta podía cambiar la contraseña sin conocerla y quedarse con la cuenta. |
+| Decisión | 1) En el perfil, «Contraseña actual» va antes de la nueva y es obligatoria; se envía a Supabase como `current_password` en la misma petición. 2) Supabase la comprueba con «Require current password when updating» encendido en el panel; una contraseña que falta o no coincide (`current_password_required`, `current_password_mismatch`) se explica como «La contraseña actual no es correcta». 3) Una cuenta creada solo con Google no tiene contraseña que confirmar y no ve el campo. 4) El enlace de recuperación sigue sin pedirla. |
+| Límites | Mientras la opción del panel esté apagada, el servidor ignora el campo y la comprobación no existe. Al encenderla hay que probar el enlace de recuperación; si Supabase lo rechazara, se apaga y se revisa. No se cambió la versión de supabase-js: la actual ya envía el campo tal cual. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

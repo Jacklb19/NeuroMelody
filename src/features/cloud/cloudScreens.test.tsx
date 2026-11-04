@@ -91,6 +91,41 @@ describe('screens that act on the cloud', () => {
     expect(order).toEqual(['forget', 'sign out']);
   });
 
+  it('asks for the current password before saving a new one, unless the account has none', async () => {
+    const user = userEvent.setup();
+    const auth = es.account.auth;
+    const updatePassword = vi.fn(() => Promise.resolve());
+    renderScreen(<AccountPage />, signedIn({ updatePassword }), cloud());
+
+    await user.click(await screen.findByRole('button', { name: es.account.profile.rows.password.action }));
+    await user.type(screen.getByLabelText(auth.newPassword), 'Nueva-clave1');
+    await user.type(screen.getByLabelText(auth.confirmPassword), 'Nueva-clave1');
+    await user.click(screen.getByRole('button', { name: es.account.reset.submit }));
+    expect(updatePassword).not.toHaveBeenCalled();
+    expect(screen.getByText(auth.fieldErrors.password_required)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(auth.currentPassword), 'Clave-actual1');
+    await user.click(screen.getByRole('button', { name: es.account.reset.submit }));
+    expect(updatePassword).toHaveBeenCalledWith('Nueva-clave1', 'Clave-actual1');
+    expect(await screen.findByText(es.account.profile.passwordChanged)).toBeInTheDocument();
+  });
+
+  it('does not ask an account made only with Google for a current password', async () => {
+    const user = userEvent.setup();
+    const auth = es.account.auth;
+    const updatePassword = vi.fn(() => Promise.resolve());
+    const context = signedIn({ updatePassword });
+    const google = { ...context, state: { ...context.state, user: { id: 'user-1', email: 'persona@example.test', name: null, hasPassword: false } } } as AuthContextValue;
+    renderScreen(<AccountPage />, google, cloud());
+
+    await user.click(await screen.findByRole('button', { name: es.account.profile.rows.password.action }));
+    expect(screen.queryByLabelText(auth.currentPassword)).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(auth.newPassword), 'Nueva-clave1');
+    await user.type(screen.getByLabelText(auth.confirmPassword), 'Nueva-clave1');
+    await user.click(screen.getByRole('button', { name: es.account.reset.submit }));
+    expect(updatePassword).toHaveBeenCalledWith('Nueva-clave1', undefined);
+  });
+
   it('does not offer removing device copies while syncing is off', async () => {
     renderScreen(<AccountPage />, signedIn(), cloud({ status: 'needs_second_factor' }));
     await screen.findByRole('button', { name: es.account.profile.rows.signOut.title });
