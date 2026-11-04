@@ -10,7 +10,7 @@ export const privacy = {
       title: 'En tu dispositivo',
       /** `seconds` is how often a session stores its indicators. */
       text: (seconds: number): string =>
-        `La señal se analiza en el navegador. Las sesiones (indicadores cada ${String(seconds)} segundos, valoraciones y objetivos) se guardan en este dispositivo y puedes borrarlas desde el historial. Las sesiones nuevas guardan también el sonido, ambiente y fecha y hora local al empezar para calcular observaciones del historial. Ese contexto, el relato musical y tus notas opcionales se quedan solo en este dispositivo; no se sincronizan.`,
+        `La señal se analiza en el navegador. Las sesiones (indicadores cada ${String(seconds)} segundos, valoraciones e intenciones) se guardan en este dispositivo y puedes borrarlas desde el historial. Las sesiones nuevas guardan también el sonido, ambiente y fecha y hora local al empezar para calcular observaciones del historial. Ese contexto, el relato musical y tus notas opcionales se quedan solo en este dispositivo; no se sincronizan.`,
     },
     camera: {
       title: 'Cámara',

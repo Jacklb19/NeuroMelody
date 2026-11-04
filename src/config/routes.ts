@@ -83,9 +83,11 @@ function planParams(goals: readonly string[]): URLSearchParams {
   return params;
 }
 
-/** The plan screen with some goals already chosen. */
-export function planPath(goals: readonly string[] = []): string {
-  const query = planParams(goals).toString();
+/** The plan screen with some goals, and optionally its duration, already chosen. */
+export function planPath(goals: readonly string[] = [], durationMin?: number): string {
+  const params = planParams(goals);
+  if (durationMin !== undefined) params.set(QUERY_PARAMS.duration, String(durationMin));
+  const query = params.toString();
   return query === '' ? ROUTES.plan : `${ROUTES.plan}?${query}`;
 }
 

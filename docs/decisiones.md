@@ -431,6 +431,45 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
 | Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
 
+## ADR-52. Detener pausa la sesión; terminarla es otra acción
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026, tras la auditoría de calidad: opción «Pausa + Terminar». |
+| Problema | «Detener» cerraba el registro y la pantalla decía «Terminaste tu sesión», pero «Iniciar música» seguía disponible. Al pulsarlo se abría otro registro: una sesión detenida sin querer (o con Esc) quedaba partida en dos, la segunda sin su propia referencia, y «Tu progreso» comparaba mitades. Además, el reloj del plan mezclaba los relojes de dos salidas de audio. |
+| Decisión | 1) «Detener», Esc y los controles del sistema siguen silenciando al instante. 2) Con la música detenida, la sesión queda en pausa: la diapositiva «Escuchando» dice «Música en pausa» y ofrece, juntos, «Reanudar música» y «Terminar sesión»; el botón de inicio del panel de música no se repite. 3) Al reanudar sigue el mismo registro: el plan cuenta desde donde se pausó (las pausas no cuentan como tiempo escuchado), la música vuelve al nivel en que estaba y «Lo que hizo la música» sigue la misma historia. 4) La sesión termina, y se guarda como antes, al pulsar «Terminar sesión», al acabar el plan, tras 5 minutos de pausa o al salir de la pantalla. Después ya no se ofrece iniciar música. |
+| Límites | Los 5 minutos son una cifra de producto. Mientras dura la pausa el registro sigue abierto, igual que mientras suena: si el sistema cierra la pestaña sin aviso, se pierde lo mismo que antes. Al reanudar, la respiración guiada queda apagada, como al empezar. |
+
+## ADR-53. Cada sesión del dispositivo tiene dueño
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 4 de la auditoría de calidad (SEC-P1). |
+| Problema | Las marcas de «ya sincronizada» eran por cuenta, pero el historial del dispositivo es uno solo. Si una segunda persona entraba con su cuenta, con verificación en dos pasos y consentimiento, la sincronización subía a esa cuenta todas las sesiones locales que no tuviera marcadas, incluidas las de la primera persona, también las que se habían bajado de su nube. Y al cerrar sesión, esos datos de salud seguían legibles sin cuenta. |
+| Decisión | 1) Cada sesión guarda, solo en el dispositivo, `ownerId`: la cuenta dentro al grabarla, la cuenta de la que se bajó o la primera que la subió si se hizo sin cuenta. Nunca viaja a la API. 2) La sincronización y los envíos en segundo plano solo tocan las sesiones de la cuenta dentro y las que no tienen dueño. Una sesión sin dueño que figure en las marcas de otra cuenta (sesiones anteriores a este cambio) es de esa cuenta. 3) Al cerrar sesión, con la sincronización activa, la persona puede marcar que se borren del dispositivo, y solo de él, las sesiones de su cuenta que su nube ya guarda. Las que no se subieron se quedan para no perder datos. |
+| Se mantiene | Una sesión hecha sin cuenta pasa a la primera cuenta que la sincroniza, como antes. El historial, «Tu progreso» y el informe siguen mostrando todas las sesiones del dispositivo, sin filtrar por cuenta. |
+| Límites | Las grabaciones de `/collect` (otra base) no cambian. No se verificó con dos cuentas reales; está cubierto con pruebas automáticas de sincronización, del proveedor y del perfil. |
+
+## ADR-54. Cuota diaria del modelo de lenguaje y API más cerrada
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 5 de la auditoría de calidad (SEC-P2 y SEC-P7): 30 llamadas al día por cuenta, compartidas. |
+| Problema | Los tres puntos que llaman al modelo (propuesta de plan, resumen de sesión y explicación del progreso) no tenían límite, y el registro no confirma el correo (ADR-30). Un programa con una o varias cuentas podía agotar la cuota gratuita del proveedor para todos. Además, producción publicaba `/docs`, `/redoc` y `/openapi.json`, y sus respuestas, con datos de salud, no prohibían guardarse en caché. |
+| Contrato | Cada llamada consume una de las 30 diarias (día UTC) de la cuenta, después de sus comprobaciones (consentimiento y forma de la petición) y antes del modelo; una petición rechazada no consume. Agotada la cuota, la API responde `429` con `{"code":"rate_limited"}` sin llamar al proveedor. El front lo muestra como «llegaste al límite de textos automáticos de hoy; vuelve a intentarlo mañana» dentro del aviso de fallo de cada pantalla. |
+| Datos | Migración `20261102000000_language_model_quota.sql`: la tabla `language_model_usage` (cuenta, día, llamadas) tiene RLS y ninguna política, así que nadie la lee ni la reescribe con su propio token. Solo la cambia `consume_language_model_quota(p_daily_limit)`, una función `security definer` con `search_path = ''`, concedida a `authenticated` y no a `anon`. Suma de forma atómica, no cuenta más allá del límite y borra los días anteriores de la cuenta. Probada en PostgreSQL 18 local. |
+| Endurecimiento | Con `VERCEL_ENV=production` la API no sirve su documentación. Todas las respuestas llevan `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`. |
+| Despliegue | Primero aplicar la migración en Supabase y después publicar el back: sin la función, los tres puntos responden `storage_unavailable`. El front puede ir antes o después. |
+
+## ADR-55. El registro dice si el correo ya tiene cuenta y pide una contraseña segura
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 3 nov 2026: el registro debe informar de lo básico (correo ya registrado, correo válido y contraseña con los caracteres necesarios). Cierra la decisión abierta de la auditoría sobre la enumeración en el registro. |
+| Problema | El registro solo pedía 8 caracteres y Supabase aceptaba cualquier contraseña de esa longitud. El correo ya registrado se explicaba con Confirm email apagado, pero con él encendido Supabase lo oculta. |
+| Decisión | 1) Bajo cada contraseña nueva (registro, contraseña nueva y perfil) una lista dice lo que necesita: 8 caracteres, una minúscula, una mayúscula, un número y un símbolo; cada punto se marca al cumplirse y el formulario no se envía hasta cumplirlos todos. 2) Los conjuntos son los de Supabase con «Lowercase, uppercase letters, digits and symbols», que el usuario activa en el panel para que el servidor exija lo mismo. 3) Un correo con cuenta se dice claramente, con enlaces a iniciar sesión y a recuperar la contraseña; con Confirm email encendido se reconoce por el usuario sin identidades que devuelve Supabase. 4) Un correo que el servidor rechaza tiene su propio mensaje. |
+| Límites | Decir que un correo tiene cuenta permite comprobar si alguien está registrado; el usuario lo acepta por claridad, y el límite de intentos de Supabase lo frena. Las letras con tilde y la ñ no cuentan como minúscula o mayúscula, igual que en el servidor. Las cuentas existentes conservan su contraseña hasta que la cambien. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

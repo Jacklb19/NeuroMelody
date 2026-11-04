@@ -91,6 +91,7 @@
 
 /* While it plays: the steps the music can take and its pace. */
 .music-now { margin-bottom: var(--space-6); }
+.journey-label { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-2); }
 .session-journey { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
 .journey-step { padding: var(--space-1) var(--space-4); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .journey-step + .journey-step { position: relative; margin-left: var(--space-4); }
@@ -124,4 +125,15 @@
   .listening-stage .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: var(--space-5); }
   .listening-stage .play-button { grid-column: 1 / -1; justify-self: center; margin: 0; }
   .session-page .acquisition-panel, .session-page .technical-details { padding-left: var(--space-5); padding-right: var(--space-5); }
+}
+@media (max-width: 520px) {
+  /* The first screen on a phone reaches how the pulse is measured and its button. The steps already name the slide,
+     so the page and panel titles stay for screen readers only. */
+  .session-page .page-heading .eyebrow, .session-page .page-heading h1, .session-page .acquisition-panel > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .session-page .page-heading { margin-bottom: var(--space-4); }
+  .session-stepper ol { margin-bottom: var(--space-4); }
+  .app-main:has(> .session-page) { padding-top: var(--space-5); }
+  .session-slide { gap: var(--space-3); }
+  .slide-title { font-size: var(--text-xl); }
+  .session-page .acquisition-panel { margin-top: 0; padding-top: var(--space-5); }
 }

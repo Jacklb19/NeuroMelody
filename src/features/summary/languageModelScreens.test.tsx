@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTES } from '../../config/routes';
+import { AuthContext, type AuthState } from '../account/authContext';
 import { es } from '../../i18n/es';
 import { CloudError, type CloudApi } from '../cloud/cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from '../cloud/cloudSyncContext';
@@ -26,15 +27,18 @@ function cloud(status: CloudSyncStatus, api: Partial<CloudApi> | null): CloudSyn
     consentAt: null,
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
+    forgetDeviceCopies: () => Promise.resolve(0),
     api: api as CloudApi | null,
   };
 }
 
-function renderWith(value: CloudSyncValue, screenUnderTest: React.ReactNode): void {
+function renderWith(value: CloudSyncValue, screenUnderTest: React.ReactNode, auth: AuthState = { kind: 'signed_out' }): void {
   render(
-    <CloudSyncContext value={value}>
-      <MemoryRouter>{screenUnderTest}</MemoryRouter>
-    </CloudSyncContext>,
+    <AuthContext value={{ state: auth, service: null, refresh: () => Promise.resolve(), finishRecovery: () => Promise.resolve() }}>
+      <CloudSyncContext value={value}>
+        <MemoryRouter>{screenUnderTest}</MemoryRouter>
+      </CloudSyncContext>
+    </AuthContext>,
   );
 }
 
@@ -78,6 +82,16 @@ describe('plan proposed by the language model (RF-13)', () => {
     renderWith(cloud('unavailable', null), <PlanPage />);
     expect(screen.queryByRole('button', { name: plan.suggestion.ask })).not.toBeInTheDocument();
     expect(screen.queryByText(plan.suggestion.signedOut)).not.toBeInTheDocument();
+  });
+
+  it('invites to sign in only once it is clear that nobody is', () => {
+    // A kept session is still being read: the person is probably signed in.
+    renderWith(cloud('signed_out', null), <PlanPage />, { kind: 'loading', sessionExpected: true });
+    expect(screen.queryByText(plan.suggestion.signedOut)).not.toBeInTheDocument();
+    cleanup();
+
+    renderWith(cloud('signed_out', null), <PlanPage />);
+    expect(screen.getByText(plan.suggestion.signedOut)).toBeVisible();
   });
 });
 

@@ -154,7 +154,8 @@ export function AcquisitionPanel({
 
       <div className="source-controls">
         <label>
-          {t.acquisition.sourceLabel}
+          {/* Same words as the heading above: one visible name for the source. */}
+          <span className="visually-hidden">{t.acquisition.title}</span>
           <select value={kind} disabled={active} onChange={event => {
             setKind(parseOption(offered, event.target.value, firstOf(trial)));
           }}>
@@ -208,12 +209,6 @@ export function AcquisitionPanel({
           </select>
         </label>}
       </div>
-      <div className="trial-switch">
-        {trial && <p className="recording-note" data-testid="trial-note">{t.acquisition.trial.note}</p>}
-        <button type="button" className="text-button" disabled={active} onClick={toggleTrial}>
-          {trial ? t.acquisition.trial.leave : t.acquisition.trial.enter}
-        </button>
-      </div>
       {kind === 'recording' && <p className="recording-note">
         {t.acquisition.recordingNote}{' '}
         <a href={RECORDINGS_CREDITS_URL}>{t.acquisition.recordingCredits}</a>
@@ -243,6 +238,13 @@ export function AcquisitionPanel({
         {canRemember && !active && <button type="button" className="button button-secondary" onClick={reconnectRemembered}>
           {t.acquisition.reconnectRemembered}
         </button>}
+      </div>
+      {/* The way to try the app without a sensor comes after connecting, so on a phone the source and its button stay together. */}
+      <div className="trial-switch">
+        {trial && <p className="recording-note" data-testid="trial-note">{t.acquisition.trial.note}</p>}
+        <button type="button" className="text-button" disabled={active} onClick={toggleTrial}>
+          {trial ? t.acquisition.trial.leave : t.acquisition.trial.enter}
+        </button>
       </div>
 
       <p role="status" className="connection-status" data-state={reading.state}>

@@ -12,8 +12,8 @@ export const records = {
   /** Both self-ratings were skipped. */
   noAnswer: 'Not answered',
   /** Label of the session goals, shared by the summary and the history. */
-  goalsLabel: 'Goals',
-  noGoals: 'No goals chosen',
+  goalsLabel: 'Intention',
+  noGoals: 'No intention chosen',
   /** Goal names joined for one line, e.g. "Relax, Take a break for myself". */
   goalList: (names: readonly string[]): string => names.join(', '),
   /** A value at the start and at the end of the session, e.g. "78 → 68". */

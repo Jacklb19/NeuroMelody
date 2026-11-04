@@ -23,6 +23,7 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
 | `/collect` | Ayuda a mejorar la app | Grabación guiada (ADR-33): reposo, respiración lenta y tarea de concentración, cada tramo guardado con su etiqueta, con consentimiento explícito, en el dispositivo; exportar y borrar. El modelo no se entrena aquí. | — | RF-07 | Bloque 14 | No (pide las advertencias aceptadas, como la sesión) | `/app`, `/warnings` |
+| `*` (cualquier otra ruta) | Página no encontrada | Decir que la dirección no existe, dentro del `Layout` de la app, en lugar de llevar a la portada en silencio. | — | — | Auditoría de calidad (nov. 2026) | No | `/app`, `/` |
 | `/diagnostics` | Diagnóstico de la plataforma | Verificar el aislamiento de origen cruzado y las capacidades del navegador. Herramienta técnica, no forma parte del recorrido del paciente. | — | — | S0 | No | `/` |
 
 ## Paneles existentes y su ubicación
@@ -57,7 +58,7 @@ De arriba abajo:
 2. **Fuente de señal** (`AcquisitionPanel`): elegir y conectar cómo se mide el pulso (banda Bluetooth o cámara del celular, esta última marcada como experimental, P-01), con su estado y la última lectura. Debajo, «No tengo cómo medir mi pulso: probar la app» pasa al **modo de prueba** (ver más abajo).
 3. **Detalles técnicos**, plegados por defecto (`<details>` nativo): gráfica e índices (`SignalPanel`) y parámetros musicales programados (`MusicalStatePanel`). RF-12 se cumple al desplegarlos.
 
-Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
+Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 0 a 10 (ADR-23). Al detener, la sesión queda en pausa con «Reanudar música» y «Terminar sesión» (ADR-52); al terminarla queda guardada en el dispositivo y aparece «Ver resumen de la sesión»; no se redirige sola. El botón fijo «Detener» y la tecla Esc siguen disponibles en toda la página.
 
 ### Cambios de ADR-42 (13 oct 2026)
 
@@ -86,7 +87,7 @@ Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») m
 
 El simulador y los registros de ejemplo no miden a la persona: existen para conocer la app sin sensor (y para la demostración). Por eso están aparte de las fuentes reales.
 
-- **Entrar y salir:** un enlace bajo el selector de fuente, «No tengo cómo medir mi pulso: probar la app» y «Volver a medir mi pulso». No se puede cambiar con una fuente conectada. Al abrir, el panel ofrece solo banda y cámara, y elige la primera que el navegador pueda usar.
+- **Entrar y salir:** un enlace bajo el botón de conectar (desde el 2 nov; antes, bajo el selector de fuente), «No tengo cómo medir mi pulso: probar la app» y «Volver a medir mi pulso». No se puede cambiar con una fuente conectada. Al abrir, el panel ofrece solo banda y cámara, y elige la primera que el navegador pueda usar.
 - **Mientras está activo:** el selector ofrece simulador y registro de ejemplo (con escenario y velocidad), y una nota dice «Modo de prueba: este pulso no es el tuyo… lo que escuches así no se guarda».
 - **Al terminar una sesión de prueba:** no se guarda. En lugar de «Sesión guardada» aparece «Era una sesión de prueba y no se guardó», con la invitación a medir el pulso. No va al historial, al progreso, al informe ni a la nube.
 - **En `/collect`:** el protocolo se puede recorrer en modo de prueba, lo avisa antes de empezar y al final dice «Prueba terminada»: no guarda ni exporta nada.
@@ -120,6 +121,27 @@ En `/account`, una tarjeta «Recordatorio» entre «Apariencia e idioma» y «Pr
 - **Qué se elige:** la hora (campo de hora del sistema) y los días de la semana, como siete botones en píldora (L M X J V S D, con el nombre completo para lectores de pantalla). Empieza en las 21:00 todos los días. La elección se recuerda en el dispositivo.
 - **Acción principal (ajuste del 19 oct):** «Abrir Google Calendar» abre un borrador con la hora, días, zona horaria y enlace a la app. La persona revisa repetición y aviso y pulsa Guardar allí. No se solicita acceso al calendario ni se comprueba el guardado; cada apertura es un borrador nuevo, así que los cambios de uno ya guardado se hacen en el calendario.
 - **Alternativa:** «Descargar para otro calendario» entrega el archivo `.ics`, con repetición y aviso al inicio. La descarga se nombra explícitamente. Sin días marcados, ambas acciones quedan desactivadas y se explica el motivo.
+
+## Primera pantalla de la sesión y cabecera en el celular (2 nov 2026)
+
+Ajustes de la auditoría de calidad del 2 nov. No añaden rutas ni paneles.
+
+- **Cabecera:** por debajo de 390 px (360 px es el ancho más común en Android), la marca, el tema, el idioma y el perfil caben en una fila. Antes, el avatar bajaba solo a una segunda fila y la cabecera ocupaba 169 px.
+- **`/session`, diapositiva «Tu pulso», por debajo de 520 px:** la etiqueta superior, el título «Sesión» y el título del panel «Fuente de señal» quedan solo para lectores de pantalla, porque el indicador de pasos ya nombra la diapositiva. El plan y la intención siguen visibles. A 360×740, el selector de fuente y su botón de conectar aparecen sin desplazarse, por encima de «Detener». En escritorio no cambia nada.
+- **Modo de prueba:** «No tengo cómo medir mi pulso: probar la app» y su nota pasan debajo del botón de conectar, en `/session` y en `/collect`, para que la fuente y su botón queden juntos.
+
+## Volver tras iniciar sesión y aviso del registro (2 nov 2026)
+
+Ajustes de la auditoría de calidad del 2 nov. No añaden rutas.
+
+- **Volver a donde estabas:** los enlaces para entrar o crear una cuenta llevan la pantalla de origen y, al entrar, la persona vuelve allí en lugar de ir a `/app`. Esos enlaces están en el plan, «Tu progreso», el resumen, los avisos de la nube, `/collect` y el perfil. Desde el plan, el enlace lleva también la intención y la duración elegidas. Pasar de «Iniciar sesión» a «Crear cuenta» conserva el destino, y la portada sigue llevando a `/app`. Solo se aceptan rutas internas de la app: nunca otra dirección, la portada ni las pantallas de acceso.
+- **Con Google**, que siempre vuelve a `/app` (la dirección autorizada en el proyecto), la pantalla de origen se guarda 10 minutos en la pestaña. Después del código de dos pasos, si la cuenta lo tiene, la app sigue hasta ella una sola vez.
+- **Registro:** bajo el subtítulo, el aviso «Para guardar tus sesiones en la nube te pediremos después activar la verificación en dos pasos, porque son datos de tu salud».
+
+## Registro con requisitos de contraseña (ADR-55, 3 nov 2026)
+
+- **Contraseña nueva** (en `/register`, en la contraseña nueva tras el enlace de recuperación y en el perfil): bajo el campo, «Tu contraseña necesita:» y la lista de 8 caracteres, minúscula, mayúscula, número y símbolo. Cada punto pasa de círculo a marca verde al cumplirse; los lectores de pantalla oyen «cumplido» o «falta». Si falta algo al enviar: «A la contraseña le falta algo de la lista».
+- **Correo con cuenta:** «Ya existe una cuenta con ese correo.» y, debajo, «Iniciar sesión con ese correo» (conserva la pantalla de origen) y «No recuerdo la contraseña».
 
 ## Barra de inicio del plan en el celular (22 oct 2026)
 
@@ -177,7 +199,7 @@ Ajustes aprobados tras recorrer todas las pantallas en celular y escritorio. No 
 | `/plan` | «Para ti» solo aparece cuando tiene una propuesta (o si falla la lectura del historial). |
 | `/summary/:id` | Primero los resultados; la nota va después del texto automático. «Variación entre latidos» sustituye a «RMSSD» y la razón LF/HF pasa a «Detalles técnicos», plegados. |
 | `/history` | Filas compactas agrupadas por semana («Esta semana», «La semana pasada», «Semana del…»), lunes primero. Cada fila abre el resumen y muestra fecha, tiempo, intención y cómo te sentías; las cifras de pulso quedan en el resumen. |
-| `/session` | Al detener la música, la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
+| `/session` | Al terminar la sesión (desde el 2 nov, ADR-52: detener solo la pausa), la diapositiva «Escuchando» dice «Terminaste tu sesión» y oculta el estado estimado. Con la sesión guardada ofrece «Ver resumen» y «Volver al inicio»; en modo de prueba, «Preparar una sesión con mi pulso» y «Volver al inicio». Durante la calibración el estado se lee «Aprendiendo tu ritmo de partida». |
 
 ## Modo solo pulso (ADR-51, 20 oct 2026)
 
@@ -251,6 +273,10 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 - **Qué hace:** sube las sesiones del dispositivo que la nube no tiene, baja las que solo tiene la nube y las guarda en el dispositivo, e iguala la valoración final. Historial, resumen y «Tu progreso» siguen leyendo del dispositivo.
 - **Guardar:** al terminar una sesión se guarda primero en el dispositivo y se envía después; si el envío falla, no se pierde nada y se reintenta en la siguiente sincronización.
 - **Borrar:** una sesión se borra del dispositivo al instante, con o sin conexión. Si ya estaba en la cuenta, su borrado queda anotado en una cola (por cuenta, en el dispositivo) hasta que la nube lo confirme; la siguiente sincronización entrega la cola antes de leer la nube, así que una sesión borrada sin conexión no vuelve a aparecer. Mientras quede algún borrado en camino, la línea del historial lo dice. Una sesión borrada desde otro dispositivo desaparece de este en la siguiente sincronización.
+- **Varias cuentas en un dispositivo (ADR-53, 2 nov 2026):**
+  - Cada sesión anota en el dispositivo a qué cuenta pertenece: la que estaba dentro al grabarla, la cuenta de la que se bajó o la primera que la subió si se hizo sin cuenta. Este dato no se envía.
+  - La sincronización y los envíos en segundo plano solo tocan las sesiones de la cuenta dentro y las hechas sin cuenta. Nunca suben a una cuenta las sesiones de otra, tampoco las anteriores a este cambio que la otra cuenta ya tenía en su nube.
+  - En el perfil, junto a «Cerrar sesión», y solo mientras la sincronización está activa, hay una casilla para «Borrar también de este dispositivo las sesiones de esta cuenta que ya están en la nube». No borra nada de la nube, y las sesiones que aún no se subieron se quedan.
 - **Sin conexión (HU-09, bloque 16):** la sesión completa funciona sin red. Lo que se guardó, valoró o borró sin conexión sale solo cuando la conexión vuelve (el navegador avisa y la app sincroniza), y también al abrir el historial o con «Reintentar». Reenviar no duplica nada: cada sesión viaja con el id que le dio el dispositivo.
 
 ## Diagnóstico de audio al bloquear (P-08, aprobado el 19 oct)

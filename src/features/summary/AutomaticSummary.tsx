@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
-import { Link } from 'react-router';
 import { ROUTES } from '../../config/routes';
+import { AccessLink } from '../account/AccessLink';
 import { useLocale, useMessages } from '../../i18n/messages';
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
@@ -66,7 +66,7 @@ export function AutomaticSummary({ record }: { readonly record: SessionRecord })
       </div>
       {!canAsk && text === null && (
         <p className="pending-note">
-          {status === 'unavailable' ? copy.unavailable : <>{copy.needsAccount} <Link to={ROUTES.login}>{t.cloud.actions.signed_out}</Link></>}
+          {status === 'unavailable' ? copy.unavailable : <>{copy.needsAccount} <AccessLink to={ROUTES.login}>{t.cloud.actions.signed_out}</AccessLink></>}
         </p>
       )}
       {canAsk && request.kind !== 'working' && (

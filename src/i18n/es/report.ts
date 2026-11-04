@@ -29,8 +29,8 @@ export const report = {
   /** Dates of the oldest and the most recent session of the sheet. */
   period: (since: string, until: string): string => (since === until ? since : `Del ${since} al ${until}`),
   goals: {
-    label: 'Lo que buscaba',
-    none: 'Sin objetivos elegidos',
+    label: 'Intenciones',
+    none: 'Sin intención elegida',
     /** A goal and the sessions it was chosen in, e.g. "Relajarme · 4 sesiones". */
     count: (name: string, count: number): string => `${name} · ${sessions(count)}`,
   },

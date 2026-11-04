@@ -2,7 +2,7 @@
 export const reminders = {
   time: 'Time',
   daysLabel: 'Days',
-  /** Keys mirror `WeekdayId`: the letter on each button and the full name for screen readers. */
+  /** Keys mirror `WeekdayId`: the abbreviation on each button and the full name for screen readers. */
   days: {
     MO: { short: 'Mo', long: 'Monday' },
     TU: { short: 'Tu', long: 'Tuesday' },

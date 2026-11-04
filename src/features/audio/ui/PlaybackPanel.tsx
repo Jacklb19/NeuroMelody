@@ -26,6 +26,8 @@ import {
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
 
+const PERCENT = 100;
+
 /** What the session screen can ask of the panel from outside it (ADR-47). */
 export interface PlaybackHandle {
   /** Starts the music, as the panel's own button does; call it inside a click. */
@@ -51,8 +53,12 @@ interface PlaybackPanelProps {
   /** Diagnostic comparison only; sessions keep the reverb. */
   readonly reverb?: boolean;
   readonly onEngineChange?: (engine: AudioEngine | null) => void;
-  /** Listening time since the first start, read from the audio clock once per second. */
+  /** Listening time since the first start, read from the audio clock once per second; pauses do not count. */
   readonly onElapsedChange?: (seconds: number) => void;
+  /** The plan came to its end (its fade finished, or the person chose to finish at the warning). */
+  readonly onFinished?: () => void;
+  /** The page offers starting elsewhere, or the session is over and there is nothing left to start. */
+  readonly hideStart?: boolean;
 }
 
 /** Seeds are drawn from [0, 2^31): non-negative integers that fit the 32-bit seed of the PRNG (mulberry32). */
@@ -98,6 +104,8 @@ export function PlaybackPanel({
   reverb = true,
   onEngineChange,
   onElapsedChange,
+  onFinished,
+  hideStart = false,
 }: PlaybackPanelProps): React.JSX.Element {
   const t = useMessages();
   const control = useAudioEngine(factory);
@@ -106,7 +114,10 @@ export function PlaybackPanel({
   // Index of the open warning (0 = end of plan); `null` when there is none.
   const [warning, setWarning] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
+  // Where the session would have started on the current engine's clock, had it never paused.
   const sessionStartRef = useRef<number | null>(null);
+  // Listening time before the current engine: each start opens a new audio context whose clock begins again.
+  const listenedRef = useRef(0);
   const warningIndexRef = useRef(0);
   const fadeEndRef = useRef<number | null>(null);
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -148,7 +159,8 @@ export function PlaybackPanel({
     if (engine === null) {
       return;
     }
-    sessionStartRef.current ??= engine.audioTime;
+    if (finished) listenedRef.current = 0;
+    sessionStartRef.current = engine.audioTime - listenedRef.current;
     setFinished(false);
     scheduleFade(engine);
     onEngineChange?.(engine);
@@ -161,10 +173,13 @@ export function PlaybackPanel({
   }));
 
   const stopNow = useCallback((): void => {
+    const engine = getEngine();
+    const startTime = sessionStartRef.current;
+    if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
     setWarning(null);
     onEngineChange?.(null);
     void stop();
-  }, [stop, onEngineChange]);
+  }, [getEngine, stop, onEngineChange]);
 
   // Failed playback or a system-closed context also ends the parent's recording.
   useEffect(() => {
@@ -185,6 +200,7 @@ export function PlaybackPanel({
   const finishSession = (): void => {
     setFinished(true);
     stopNow();
+    onFinished?.();
   };
 
   // Checks the audio clock to show the warning and to close the session once
@@ -199,7 +215,8 @@ export function PlaybackPanel({
       if (engine === null || startTime === null) {
         return;
       }
-      onElapsedChange?.(engine.audioTime - startTime);
+      listenedRef.current = engine.audioTime - startTime;
+      onElapsedChange?.(listenedRef.current);
       // A quiet ending never opens a warning: nobody should have to answer it half asleep.
       if (!quietEnding && engine.audioTime - startTime >= warningInstantS(planDurationS, warningIndexRef.current)) {
         setWarning(warningIndexRef.current);
@@ -208,12 +225,13 @@ export function PlaybackPanel({
       if (end !== null && engine.audioTime >= end) {
         setFinished(true);
         stopNow();
+        onFinished?.();
       }
     }, CLOCK_CHECK_INTERVAL_MS);
     return () => {
       clearInterval(id);
     };
-  }, [state, getEngine, planDurationS, quietEnding, stopNow, onElapsedChange]);
+  }, [state, getEngine, planDurationS, quietEnding, stopNow, onElapsedChange, onFinished]);
 
   // Escape key: stops the music unless a dialog is open.
   useEffect(() => {
@@ -260,7 +278,8 @@ export function PlaybackPanel({
 
   const stateLabels: Readonly<Record<AudioState, string>> = t.audio.playback.states;
   const stateText = finished && state !== 'playing' ? t.audio.playback.finished : stateLabels[state];
-  const volumeText = t.common.withUnit(String(volumeDb), t.common.units.decibels);
+  // The engine works in decibels; people read the slider position as a percentage.
+  const volumeText = t.audio.playback.volumeValue(Math.round((volumeDb - MIN_VOLUME_DB) / (MAX_VOLUME_DB - MIN_VOLUME_DB) * PERCENT));
 
   return (
     <section
@@ -273,8 +292,9 @@ export function PlaybackPanel({
       <p className="panel-footnote">{t.audio.playback.volumeNotice}</p>
 
       <div className="playback-controls">
-        {/* While the music plays the start button has nothing to offer: the status line says it is sounding. */}
-        {state !== 'playing' && (
+        {/* While the music plays the start button has nothing to offer: the status line says it is sounding.
+            Nor is it shown when the page offers starting elsewhere or the session is over. */}
+        {state !== 'playing' && !hideStart && (
           <button
             type="button"
             className="button button-primary play-button"

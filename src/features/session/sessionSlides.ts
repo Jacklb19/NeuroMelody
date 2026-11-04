@@ -38,9 +38,15 @@ export function useSlides(initial: SlideId): Slides {
     currentRef.current = next;
     if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) {
       // The transition photographs the page before and after a synchronous update.
-      document.startViewTransition(() => {
+      const transition = document.startViewTransition(() => {
         flushSync(() => { setSlide(next); });
       });
+      // A transition cut short (another one starts, the tab is hidden) rejects these promises;
+      // the slide has changed anyway, so there is nothing to report.
+      const ignore = (): void => undefined;
+      transition.ready.catch(ignore);
+      transition.finished.catch(ignore);
+      transition.updateCallbackDone.catch(ignore);
     } else {
       setSlide(next);
     }

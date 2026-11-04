@@ -1,5 +1,5 @@
-import { Link } from 'react-router';
 import { ROUTES } from '../../config/routes';
+import { AccessLink } from '../account/AccessLink';
 import { useMessages } from '../../i18n/messages';
 import type { CloudErrorCode } from './cloudApi';
 import { useCloudSync, type CloudSyncStatus } from './cloudSyncContext';
@@ -26,7 +26,7 @@ export function CloudSyncNotice(): React.JSX.Element {
   return (
     <p className="cloud-notice" role="status" data-status={status}>
       {status === 'failed' ? copy.failed(errors[error ?? 'unknown']) : statuses[status]}
-      {nextStep !== undefined && <> <Link to={nextStep}>{actions[status]}</Link></>}
+      {nextStep !== undefined && <> <AccessLink to={nextStep}>{actions[status]}</AccessLink></>}
       {status === 'failed' && (
         <> <button type="button" className="text-button" onClick={() => { void syncNow(); }}>{copy.retry}</button></>
       )}

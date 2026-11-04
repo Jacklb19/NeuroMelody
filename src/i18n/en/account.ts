@@ -12,8 +12,18 @@ export const account = {
     newPassword: 'New password',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
-    /** Hint under a new password; the length comes from `MIN_PASSWORD_LENGTH`. */
-    passwordHint: (minLength: number): string => `At least ${String(minLength)} characters.`,
+    /** List under a new password; keys mirror `PASSWORD_REQUIREMENTS`, the length comes from `MIN_PASSWORD_LENGTH`. */
+    passwordRequirements: {
+      title: 'Your password needs:',
+      length: (minLength: number): string => `At least ${String(minLength)} characters`,
+      lowercase: 'A lowercase letter',
+      uppercase: 'An uppercase letter',
+      digit: 'A number',
+      symbol: 'A symbol, such as ! ? # or @',
+      /** Read after each item by screen readers. */
+      met: 'done',
+      missing: 'missing',
+    },
     working: 'One moment…',
     or: 'or',
     google: 'Continue with Google',
@@ -26,6 +36,10 @@ export const account = {
       email_invalid: 'That email does not look valid. Check it.',
       password_required: 'Enter your password.',
       password_too_short: (minLength: number): string => `The password must be at least ${String(minLength)} characters long.`,
+      /** The limit is in bytes: accented letters and emoji take more than one. */
+      password_too_long: (maxBytes: number): string =>
+        `The password is too long. Use at most ${String(maxBytes)} characters; accented letters and emoji count as more than one.`,
+      password_needs_characters: 'The password is missing something from the list.',
       passwords_differ: 'The two passwords do not match.',
     },
   },
@@ -42,11 +56,17 @@ export const account = {
     pageTitle: 'Create account',
     title: 'Create your account',
     subtitle: 'Save your sessions and take them with you. It is free.',
+    cloudNote: 'To keep your sessions in the cloud we will then ask you to turn on two-step verification, because they are health data.',
     submit: 'Create account',
     haveAccount: 'Already have an account?',
     login: 'Sign in',
     consent: 'By creating your account you accept the data handling described in',
     privacyLink: 'Privacy',
+    /** Links under the error when the email already has an account. */
+    existingAccount: {
+      signIn: 'Sign in with that email',
+      reset: 'I do not remember the password',
+    },
     confirmationSent: (email: string): string =>
       `We sent a link to ${email}. Open it to activate your account, then sign in.`,
   },
@@ -76,8 +96,9 @@ export const account = {
   errors: {
     invalid_credentials: 'The email or the password does not match.',
     email_not_confirmed: 'First activate your account with the link we sent to your email.',
-    user_already_exists: 'There is already an account with that email. Try signing in.',
-    weak_password: 'That password is too easy to guess. Try a longer one.',
+    user_already_exists: 'There is already an account with that email.',
+    email_invalid: 'The service does not accept that email. Check that it is spelled right.',
+    weak_password: 'That password is not strong enough. Check the list or choose another one.',
     same_password: 'The new password must be different from the previous one.',
     rate_limited: 'Too many attempts in a row. Wait a few minutes and try again.',
     invalid_code: 'The code is not correct. Enter the one your app is showing now.',
@@ -118,7 +139,11 @@ export const account = {
       privacy: { title: 'Privacy and consent', text: 'What is saved and where.' },
       history: { title: 'Session history', text: 'Review or delete your sessions.' },
       collect: { title: 'Help improve the app', text: 'A guided recording so the model can learn from you. Optional.' },
-      signOut: { title: 'Sign out', text: 'Your sessions will stay on this device.' },
+      signOut: {
+        title: 'Sign out',
+        text: 'Your sessions will stay on this device.',
+        forget: 'Also remove from this device the sessions of this account that are already in the cloud. Useful if someone else uses this device; those not uploaded yet stay.',
+      },
       deleteAccount: {
         title: 'Delete the account',
         text: 'Deletes your account and everything it keeps in the cloud. Sessions on this device are left alone.',

@@ -12,8 +12,18 @@ export const account = {
     newPassword: 'Contraseña nueva',
     showPassword: 'Mostrar contraseña',
     hidePassword: 'Ocultar contraseña',
-    /** Hint under a new password; the length comes from `MIN_PASSWORD_LENGTH`. */
-    passwordHint: (minLength: number): string => `Al menos ${String(minLength)} caracteres.`,
+    /** List under a new password; keys mirror `PASSWORD_REQUIREMENTS`, the length comes from `MIN_PASSWORD_LENGTH`. */
+    passwordRequirements: {
+      title: 'Tu contraseña necesita:',
+      length: (minLength: number): string => `Al menos ${String(minLength)} caracteres`,
+      lowercase: 'Una letra minúscula',
+      uppercase: 'Una letra mayúscula',
+      digit: 'Un número',
+      symbol: 'Un símbolo, como ! ? # o @',
+      /** Read after each item by screen readers. */
+      met: 'cumplido',
+      missing: 'falta',
+    },
     working: 'Un momento…',
     or: 'o',
     google: 'Continuar con Google',
@@ -26,6 +36,10 @@ export const account = {
       email_invalid: 'Ese correo no parece válido. Revísalo.',
       password_required: 'Escribe tu contraseña.',
       password_too_short: (minLength: number): string => `La contraseña debe tener al menos ${String(minLength)} caracteres.`,
+      /** The limit is in bytes: accented letters, ñ and emoji take more than one. */
+      password_too_long: (maxBytes: number): string =>
+        `La contraseña es demasiado larga. Usa como máximo ${String(maxBytes)} caracteres; las letras con tilde, la ñ y los emojis cuentan como más de uno.`,
+      password_needs_characters: 'A la contraseña le falta algo de la lista.',
       passwords_differ: 'Las dos contraseñas no coinciden.',
     },
   },
@@ -42,11 +56,17 @@ export const account = {
     pageTitle: 'Crear cuenta',
     title: 'Crea tu cuenta',
     subtitle: 'Guarda tus sesiones y llévalas contigo. Es gratis.',
+    cloudNote: 'Para guardar tus sesiones en la nube te pediremos después activar la verificación en dos pasos, porque son datos de tu salud.',
     submit: 'Crear cuenta',
     haveAccount: '¿Ya tienes cuenta?',
     login: 'Iniciar sesión',
     consent: 'Al crear tu cuenta aceptas el tratamiento de datos descrito en',
     privacyLink: 'Privacidad',
+    /** Links under the error when the email already has an account. */
+    existingAccount: {
+      signIn: 'Iniciar sesión con ese correo',
+      reset: 'No recuerdo la contraseña',
+    },
     confirmationSent: (email: string): string =>
       `Te enviamos un enlace a ${email}. Ábrelo para activar tu cuenta y después inicia sesión.`,
   },
@@ -76,8 +96,9 @@ export const account = {
   errors: {
     invalid_credentials: 'El correo o la contraseña no coinciden.',
     email_not_confirmed: 'Primero activa tu cuenta con el enlace que te enviamos por correo.',
-    user_already_exists: 'Ya existe una cuenta con ese correo. Prueba a iniciar sesión.',
-    weak_password: 'Esa contraseña es demasiado fácil de adivinar. Prueba con una más larga.',
+    user_already_exists: 'Ya existe una cuenta con ese correo.',
+    email_invalid: 'El servicio no acepta ese correo. Revisa que esté bien escrito.',
+    weak_password: 'Esa contraseña no es lo bastante segura. Revisa la lista o elige otra.',
     same_password: 'La contraseña nueva debe ser distinta de la anterior.',
     rate_limited: 'Demasiados intentos seguidos. Espera unos minutos y vuelve a probar.',
     invalid_code: 'El código no es correcto. Escribe el que muestra ahora tu aplicación.',
@@ -118,7 +139,11 @@ export const account = {
       privacy: { title: 'Privacidad y consentimiento', text: 'Qué se guarda y dónde.' },
       history: { title: 'Historial de sesiones', text: 'Revisa o borra tus sesiones.' },
       collect: { title: 'Ayuda a mejorar la app', text: 'Una grabación guiada para que el modelo aprenda de ti. Opcional.' },
-      signOut: { title: 'Cerrar sesión', text: 'Tus sesiones seguirán en este dispositivo.' },
+      signOut: {
+        title: 'Cerrar sesión',
+        text: 'Tus sesiones seguirán en este dispositivo.',
+        forget: 'Borrar también de este dispositivo las sesiones de esta cuenta que ya están en la nube. Útil si otra persona usa este dispositivo; las que aún no se subieron se quedan.',
+      },
       deleteAccount: {
         title: 'Borrar la cuenta',
         text: 'Borra tu cuenta y todo lo que guarda en la nube. Las sesiones de este dispositivo no se tocan.',

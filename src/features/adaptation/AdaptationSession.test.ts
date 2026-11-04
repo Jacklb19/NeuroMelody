@@ -166,3 +166,27 @@ it('keeps what the music did and hands it over when the music stops (ADR-42)', a
   session.setAudio(audio);
   expect(session.getSnapshot().recap).toBeNull();
 });
+
+it('resuming a paused session continues its story on the new engine clock (ADR-52)', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'intermediate', outputThroughAudioElement: false });
+  await audio.start();
+  const session = new AdaptationSession();
+  session.setAudio(audio);
+  for (let ms = 60_000; ms <= 180_000; ms += 5000) session.receive(reading(ms));
+  env.context.currentTime = 200;
+  for (let ms = 185_000; ms <= 195_000; ms += 5000) session.receive(reading(ms));
+  session.setAudio(null);
+
+  // The resumed music plays on an output whose clock starts again, 210 s into the session.
+  const resumed = await AudioEngine.create(env.factory, { seed: 2, initialLevel: 'target', outputThroughAudioElement: false });
+  env.context.currentTime = 4;
+  session.setAudio(resumed, 210);
+  expect(session.getSnapshot().recap).toBeNull();
+  session.setAudio(null);
+  expect(session.getSnapshot().recap).toEqual({
+    startTempoBpm: 66,
+    endTempoBpm: 59,
+    steps: [{ atS: 200, level: 'target', calmer: true }],
+  });
+});

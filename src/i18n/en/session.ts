@@ -33,7 +33,7 @@ export const session = {
   },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {
-    label: 'Path of the music',
+    label: 'Step of the music',
     levels: { high: 'With movement', intermediate: 'At a middle pace', target: 'Calm', sleep: 'For sleep' },
   },
   /** What the music did, shown when the session ends (ADR-42). */
@@ -48,6 +48,14 @@ export const session = {
   technicalDetails: {
     title: 'Technical details',
     hint: 'Signal chart, indicators and musical parameters',
+  },
+  /** The music stopped but the session goes on until the person finishes it (ADR-52). */
+  paused: {
+    title: 'Music paused',
+    detail: (minutes: number): string =>
+      `You can resume it or finish the session here. If you do not come back within ${String(minutes)} minutes, the session ends on its own.`,
+    resume: 'Resume music',
+    finish: 'Finish session',
   },
   checkIn: {
     ratingBeforeLegend: 'How do you feel before starting?',
@@ -91,7 +99,7 @@ export const session = {
     eyebrow: 'Now',
     /** Once the music has stopped, instead of the moment of the session. */
     ended: { title: 'Your session is over', detail: 'The music has stopped. Below is what it did during this time.' },
-    estimatedState: 'Estimated state:',
+    estimatedState: 'Your estimated activation:',
     /** The pace of the music now; `personal` when the person's pulse moved it (ADR-39). */
     pace: (tempo: number, personal: boolean): string =>
       `The music is at ${String(tempo)} beats per minute${personal ? ', adjusted to your pulse' : ''}.`,

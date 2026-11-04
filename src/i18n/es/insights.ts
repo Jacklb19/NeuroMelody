@@ -46,12 +46,14 @@ export const insights = {
     action: 'Tengo 3 minutos',
     /** What the quick session will use, from the last choices on this device or the defaults. */
     hint: (sound: string, ambience: string, goal: string | null): string =>
-      `${goal === null ? '' : `${goal}: `}3 minutos con ${sound} y ${ambience}.`,
+      `3 minutos con ${sound} y ${ambience}${goal === null ? '' : `, con tu última intención: «${goal}»`}.`,
     sounds: { warm: 'sonido cálido', piano: 'piano', bowls: 'cuencos' },
     ambiences: { none: 'sin ambiente', rain: 'lluvia', sea: 'mar', wind: 'viento' },
     calibration: 'Sesión rápida: la calibración sigue durando 3 minutos. El plan puede terminar antes de que haya una estimación adaptada.',
   },
   camera: {
+    finger: 'Usa la yema del dedo índice sobre la cámara trasera, tapando también la linterna.',
+    figure: 'Dedo índice cubriendo la cámara trasera y la linterna del teléfono',
     instruction: 'Cubre la cámara con el dedo, apóyalo sin apretar y mantenlo quieto. La cámara no mide la presión.',
     states: { cover: 'Cubre la cámara con el dedo.', searching: 'Estamos buscando los latidos.', receiving: 'Estamos recibiendo latidos.', lost: 'Se perdió el contacto. Vuelve a cubrir la cámara.', bright: 'Entra demasiada luz. Cubre por completo la cámara y la linterna con la yema del dedo.', inactive: 'La cámara está desconectada.' },
   },

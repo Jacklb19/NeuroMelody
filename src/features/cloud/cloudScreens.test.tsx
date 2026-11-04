@@ -38,6 +38,7 @@ function cloud(overrides: Partial<CloudSyncValue> = {}): CloudSyncValue {
     consentAt: null,
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
+    forgetDeviceCopies: () => Promise.resolve(0),
     api: null,
     ...overrides,
   };
@@ -73,6 +74,27 @@ describe('screens that act on the cloud', () => {
     await vi.waitFor(() => { expect(auth.refresh).toHaveBeenCalled(); });
     expect(deleteAccount).toHaveBeenCalledOnce();
     expect(signOut).toHaveBeenCalledOnce();
+  });
+
+  it('signs out keeping the sessions on the device, unless the person asks to remove the ones already in the cloud', async () => {
+    const user = userEvent.setup();
+    const order: string[] = [];
+    const signOut = vi.fn(() => { order.push('sign out'); return Promise.resolve(); });
+    const forgetDeviceCopies = vi.fn(() => { order.push('forget'); return Promise.resolve(2); });
+    const copy = es.account.profile.rows.signOut;
+    renderScreen(<AccountPage />, signedIn({ signOut }), cloud({ forgetDeviceCopies }));
+
+    await user.click(await screen.findByLabelText(copy.forget));
+    await user.click(screen.getByRole('button', { name: copy.title }));
+
+    await vi.waitFor(() => { expect(signOut).toHaveBeenCalledOnce(); });
+    expect(order).toEqual(['forget', 'sign out']);
+  });
+
+  it('does not offer removing device copies while syncing is off', async () => {
+    renderScreen(<AccountPage />, signedIn(), cloud({ status: 'needs_second_factor' }));
+    await screen.findByRole('button', { name: es.account.profile.rows.signOut.title });
+    expect(screen.queryByLabelText(es.account.profile.rows.signOut.forget)).not.toBeInTheDocument();
   });
 
   it('deletes a session at once and says when its deletion is still on its way to the account', async () => {

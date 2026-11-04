@@ -105,8 +105,9 @@ describe('PlaybackPanel', () => {
     const { volume } = setup();
     await start();
     fireEvent.change(screen.getByLabelText(copy.volume), { target: { value: '-20' } });
-    const shown = es.common.withUnit('-20', es.common.units.decibels);
-    expect(shown).toBe('-20 dB');
+    // -20 dB sits halfway along the -40..0 dB slider.
+    const shown = es.audio.playback.volumeValue(50);
+    expect(shown).toBe('50 %');
     expect(screen.getByText(shown)).toBeInTheDocument();
     expect(screen.getByLabelText(copy.volume)).toHaveAttribute('aria-valuetext', shown);
     expect(volume()?.last('target')?.value).toBeCloseTo(dbToGain(-20), 10);
@@ -211,6 +212,49 @@ describe('PlaybackPanel', () => {
     advanceOneCheck();
     fireEvent.click(screen.getByRole('button', { name: copy.finish }));
     expect(state()).toContain(copy.finished);
+  });
+
+  it('resuming after Stop goes on with the same plan: pauses do not count and the warning keeps its place (ADR-52)', async () => {
+    const env = createFakeAudioEnvironment();
+    const elapsed: number[] = [];
+    const onFinished = vi.fn();
+    render(
+      <PlaybackPanel durationMin={10} factory={env.factory} generateSeed={() => 42} onElapsedChange={(s) => elapsed.push(s)} onFinished={onFinished} />,
+    );
+    await start();
+    env.context.currentTime = 100;
+    advanceOneCheck();
+    fireEvent.click(stopButton());
+    expect(onFinished).not.toHaveBeenCalled();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // The music starts again on an output whose clock begins anew.
+    env.context.state = 'suspended';
+    env.context.currentTime = 5;
+    fireEvent.click(screen.getByRole('button', { name: copy.start }));
+    await waitFor(() => { expect(state()).toContain(copy.states.playing); }, { timeout: 5000 });
+    await act(async () => { await Promise.resolve(); });
+    env.context.currentTime = 15;
+    advanceOneCheck();
+    expect(elapsed.at(-1)).toBe(110);
+
+    // 600 s of plan: 100 s before the pause, so the warning comes 500 s after resuming.
+    env.context.currentTime = 504;
+    advanceOneCheck();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    env.context.currentTime = 505;
+    advanceOneCheck();
+    fireEvent.click(screen.getByRole('button', { name: copy.finish }));
+    expect(onFinished).toHaveBeenCalledOnce();
+  });
+
+  it('leaves starting to the page when asked, and keeps Stop in sight', () => {
+    const env = createFakeAudioEnvironment();
+    render(<PlaybackPanel durationMin={10} factory={env.factory} hideStart />);
+    expect(screen.queryByRole('button', { name: copy.start })).not.toBeInTheDocument();
+    expect(stopButton()).toBeVisible();
   });
 
   it('reports when the audio cannot start', async () => {

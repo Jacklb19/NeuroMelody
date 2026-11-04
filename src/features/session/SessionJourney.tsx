@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useMessages } from '../../i18n/messages';
 import type { GuidanceRange } from '../adaptation/AdaptationEngine';
 import { LEVEL_IDS, type LevelId } from '../audio/engine/levels';
@@ -18,13 +19,18 @@ export function SessionJourney({ range, level }: SessionJourneyProps): React.JSX
   const current = LEVEL_IDS.indexOf(level);
   const first = Math.min(LEVEL_IDS.indexOf(range.startLevel), current);
   const last = Math.max(LEVEL_IDS.indexOf(range.calmestLevel), current);
+  const labelId = useId();
+  // The visible label keeps the steps apart from the estimate about the person shown below.
   return (
-    <ol className="session-journey" aria-label={copy.label}>
-      {LEVEL_IDS.slice(first, last + 1).map((id) => (
-        <li key={id} className="journey-step" aria-current={id === level ? 'step' : undefined}>
-          {names[id]}
-        </li>
-      ))}
-    </ol>
+    <>
+      <p id={labelId} className="journey-label">{copy.label}</p>
+      <ol className="session-journey" aria-labelledby={labelId}>
+        {LEVEL_IDS.slice(first, last + 1).map((id) => (
+          <li key={id} className="journey-step" aria-current={id === level ? 'step' : undefined}>
+            {names[id]}
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }

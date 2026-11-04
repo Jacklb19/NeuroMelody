@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
+import { accessReturnPath, accessReturnState } from './accessReturn';
 import { useAuth } from './authContext';
 import { EmailField, PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
 import type { SignUpResult } from './authService';
-import { MIN_PASSWORD_LENGTH } from './config';
 import { FormError } from './FormError';
 import { GoogleButton } from './GoogleButton';
 import { useAccountAction } from './useAccountAction';
@@ -16,7 +16,8 @@ import { validateEmail, validateNewPassword, type AuthFieldError } from './valid
 
 /**
  * Create an account with an email and a password typed twice, or with
- * Google (ADR-30). The account works at once; no confirmation email.
+ * Google (ADR-30). The account works at once; no confirmation email. An email
+ * that already has an account is said so, with the way to sign in (ADR-55).
  */
 export function RegisterPage(): React.JSX.Element {
   const t = useMessages();
@@ -25,6 +26,8 @@ export function RegisterPage(): React.JSX.Element {
   usePageTitle(copy.pageTitle);
   const { state, service, refresh } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = accessReturnPath(location.state);
   const fieldText = useFieldErrorText();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +36,7 @@ export function RegisterPage(): React.JSX.Element {
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
   const { pending, error, run } = useAccountAction();
 
-  if (state.kind === 'signed_in') return <Navigate to={ROUTES.app} replace />;
+  if (state.kind === 'signed_in') return <Navigate to={returnTo} replace />;
 
   const submit = async (event: React.SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -48,7 +51,7 @@ export function RegisterPage(): React.JSX.Element {
       return;
     }
     await refresh();
-    await navigate(ROUTES.app);
+    await navigate(returnTo);
   };
 
   // The mismatch belongs to the second field; every other password problem to the first.
@@ -58,12 +61,13 @@ export function RegisterPage(): React.JSX.Element {
     <AuthLayout
       title={copy.title}
       subtitle={copy.subtitle}
-      footer={<>{copy.haveAccount} <Link to={ROUTES.login}>{copy.login}</Link></>}
+      footer={<>{copy.haveAccount} <Link to={ROUTES.login} state={accessReturnState(returnTo)}>{copy.login}</Link></>}
     >
       {state.kind === 'unavailable' && <p className="account-notice">{auth.unavailable}</p>}
       {confirmationSentTo !== null && <p role="status" className="account-notice">{copy.confirmationSent(confirmationSentTo)}</p>}
       {service !== null && confirmationSentTo === null && (
         <>
+          <p className="field-hint auth-cloud-note">{copy.cloudNote}</p>
           <GoogleButton service={service} />
           <p className="auth-divider"><span>{auth.or}</span></p>
           <form className="auth-form" aria-label={copy.pageTitle} onSubmit={(event) => { void submit(event); }} noValidate>
@@ -73,7 +77,7 @@ export function RegisterPage(): React.JSX.Element {
               value={password}
               onChange={setPassword}
               autoComplete="new-password"
-              hint={auth.passwordHint(MIN_PASSWORD_LENGTH)}
+              requirements
               error={mismatch ? null : fieldText(fieldErrors.password)}
             />
             <PasswordField
@@ -84,6 +88,12 @@ export function RegisterPage(): React.JSX.Element {
               error={mismatch ? fieldText(fieldErrors.password) : null}
             />
             <FormError code={error} />
+            {error === 'user_already_exists' && (
+              <p className="auth-existing">
+                <Link to={ROUTES.login} state={accessReturnState(returnTo)}>{copy.existingAccount.signIn}</Link>
+                <Link to={ROUTES.forgotPassword}>{copy.existingAccount.reset}</Link>
+              </p>
+            )}
             <button type="submit" className="pill-button pill-button-primary pill-button-block pill-button-large" disabled={pending}>
               {pending ? auth.working : copy.submit}
             </button>

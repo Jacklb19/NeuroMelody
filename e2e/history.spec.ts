@@ -66,6 +66,10 @@ test('keeps nothing of a trial session, and rates and deletes a measured one fro
   await page.getByText(es.session.technicalDetails.title, { exact: true }).click();
   await expect(page.getByTestId('rmssd')).not.toHaveText(es.common.noValue, { timeout: 20_000 });
   await page.getByRole('button', { name: playback.stop, exact: true }).click();
+  // Stopping pauses the session (ADR-52); finishing it is what ends it.
+  await expect(page.getByText(es.session.paused.title)).toBeVisible();
+  await expect(page.getByTestId('trial-ended')).toHaveCount(0);
+  await page.getByRole('button', { name: es.session.paused.finish }).click();
   await expect(page.getByTestId('trial-ended')).toContainText(es.session.checkIn.trialEnded);
   await expect(page.getByRole('link', { name: es.session.checkIn.viewSummary })).toHaveCount(0);
   await page.goto(ROUTES.history);

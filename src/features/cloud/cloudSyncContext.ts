@@ -38,6 +38,12 @@ export interface CloudSyncValue {
   readonly setConsent: (given: boolean) => Promise<void>;
   /** Brings this device and the cloud up to date; does nothing while syncing is off. */
   readonly syncNow: () => Promise<void>;
+  /**
+   * Removes from this device, and from nowhere else, the sessions of the account
+   * signed in that its cloud already keeps; resolves with how many. Sessions
+   * not sent yet stay, so nothing is lost. Used before signing out.
+   */
+  readonly forgetDeviceCopies: () => Promise<number>;
   /** The API for account actions; `null` when this deployment has none or nobody is signed in. */
   readonly api: CloudApi | null;
 }
@@ -51,6 +57,7 @@ const DEVICE_ONLY: CloudSyncValue = {
   consentAt: null,
   setConsent: () => Promise.resolve(),
   syncNow: () => Promise.resolve(),
+  forgetDeviceCopies: () => Promise.resolve(0),
   api: null,
 };
 

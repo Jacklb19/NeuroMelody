@@ -4,6 +4,7 @@ import { PreferencePickers } from '../../app/preferences/PreferenceControls';
 import { ReminderCard } from '../reminders/ReminderCard';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
+import { AccessLink } from './AccessLink';
 import { useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
@@ -14,7 +15,6 @@ import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { needsSecondFactor, useAuth } from './authContext';
 import { PasswordField } from './AuthFields';
 import type { AuthService, AuthUser } from './authService';
-import { MIN_PASSWORD_LENGTH } from './config';
 import { FormError } from './FormError';
 import { SecondFactorChallenge } from './SecondFactorChallenge';
 import { TotpSection } from './TotpSection';
@@ -76,8 +76,8 @@ function ProfileHeader({ user }: { readonly user: AuthUser | null }): React.JSX.
       </div>
       {user === null && (
         <div className="profile-guest-actions">
-          <Link to={ROUTES.register} className="pill-button pill-button-primary">{copy.createAccount}</Link>
-          <Link to={ROUTES.login} className="pill-button pill-button-ghost">{copy.signIn}</Link>
+          <AccessLink to={ROUTES.register} className="pill-button pill-button-primary">{copy.createAccount}</AccessLink>
+          <AccessLink to={ROUTES.login} className="pill-button pill-button-ghost">{copy.signIn}</AccessLink>
         </div>
       )}
     </header>
@@ -202,7 +202,7 @@ function ChangePasswordForm({ service }: { readonly service: AuthService }): Rea
   const mismatch = fieldError === 'passwords_differ';
   return (
     <form className="auth-form setting-panel" aria-label={t.account.profile.rows.password.title} onSubmit={(event) => { void submit(event); }} noValidate>
-      <PasswordField label={auth.newPassword} value={password} onChange={setPassword} autoComplete="new-password" hint={auth.passwordHint(MIN_PASSWORD_LENGTH)} error={mismatch ? null : fieldText(fieldError)} />
+      <PasswordField label={auth.newPassword} value={password} onChange={setPassword} autoComplete="new-password" requirements error={mismatch ? null : fieldText(fieldError)} />
       <PasswordField label={auth.confirmPassword} value={confirmation} onChange={setConfirmation} autoComplete="new-password" error={mismatch ? fieldText(fieldError) : null} />
       <FormError code={error} />
       {saved && <p role="status" className="account-notice">{t.account.profile.passwordChanged}</p>}
@@ -235,16 +235,33 @@ function PreferencesSection(): React.JSX.Element {
 function SessionSection({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
   const copy = useMessages().account.profile;
   const { pending, error, run } = useAccountAction();
+  const { status, forgetDeviceCopies } = useCloudSync();
+  const [forget, setForget] = useState(false);
   const titleId = useId();
+  const forgetId = useId();
+  // Only while syncing is on does the cloud keep the copies that make removing them here safe.
+  const canForget = status === 'synced' || status === 'syncing' || status === 'failed';
+  const signOut = (): void => {
+    void run(async () => {
+      if (canForget && forget) await forgetDeviceCopies();
+      await service.signOut();
+    }).then(onChanged);
+  };
   return (
     <section aria-labelledby={titleId} className="profile-section">
       <h2 id={titleId}>{copy.sections.session}</h2>
       <div className="setting-list glass-card">
         <SettingRow icon={<LogOutIcon />} title={copy.rows.signOut.title} text={copy.rows.signOut.text}>
-          <button type="button" className="pill-button pill-button-ghost" disabled={pending} onClick={() => { void run(() => service.signOut()).then(onChanged); }}>
+          <button type="button" className="pill-button pill-button-ghost" disabled={pending} onClick={signOut}>
             {copy.rows.signOut.title}
           </button>
         </SettingRow>
+        {canForget && (
+          <div className="confirmation-control sign-out-forget">
+            <input id={forgetId} type="checkbox" checked={forget} onChange={(event) => { setForget(event.target.checked); }} />
+            <label htmlFor={forgetId}>{copy.rows.signOut.forget}</label>
+          </div>
+        )}
         <FormError code={error} />
         <DeleteAccountRow service={service} onChanged={onChanged} />
       </div>

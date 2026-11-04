@@ -28,6 +28,7 @@ export const cloud = {
     invalid_request: 'una sesión no tiene un formato que el servicio acepte.',
     storage_unavailable: 'el servicio no responde ahora mismo.',
     language_model_unavailable: 'el texto automático no está disponible ahora mismo.',
+    rate_limited: 'llegaste al límite de textos automáticos de hoy; vuelve a intentarlo mañana.',
     network: 'no hay conexión.',
     unknown: 'ocurrió un error inesperado.',
   },
