@@ -45,9 +45,7 @@ export function LoginPage(): React.JSX.Element {
   // Someone already signed in is about to leave this screen or be asked for the code: the form would only flash.
   if (isCheckingSession(state)) {
     return (
-      <AuthLayout title={copy.title} subtitle={auth.working}>
-        <Link to={ROUTES.app} className="auth-skip">{auth.withoutAccount}</Link>
-      </AuthLayout>
+      <AuthLayout title={copy.title} subtitle={auth.working}>{null}</AuthLayout>
     );
   }
 
@@ -95,7 +93,6 @@ export function LoginPage(): React.JSX.Element {
           </form>
         </>
       )}
-      <Link to={ROUTES.app} className="auth-skip">{auth.withoutAccount}</Link>
     </AuthLayout>
   );
 }

@@ -479,6 +479,16 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Decisión | 1) En el perfil, «Contraseña actual» va antes de la nueva y es obligatoria; se envía a Supabase como `current_password` en la misma petición. 2) Supabase la comprueba con «Require current password when updating» encendido en el panel; una contraseña que falta o no coincide (`current_password_required`, `current_password_mismatch`) se explica como «La contraseña actual no es correcta». 3) Una cuenta creada solo con Google no tiene contraseña que confirmar y no ve el campo. 4) El enlace de recuperación sigue sin pedirla. |
 | Límites | Mientras la opción del panel esté apagada, el servidor ignora el campo y la comprobación no existe. Al encenderla hay que probar el enlace de recuperación; si Supabase lo rechazara, se apaga y se revisa. No se cambió la versión de supabase-js: la actual ya envía el campo tal cual. |
 
+## ADR-57. La app solo se usa con cuenta
+
+| Campo | Contenido |
+|---|---|
+| Estado | Ordenado por el usuario el 4 nov 2026: «solo se podrá usar con cuenta», con el límite bien marcado, como una página profesional. Sustituye lo que ADR-10, ADR-18, ADR-30 y la definición decían sobre usar la app sin cuenta. |
+| Decisión | 1) Públicas: la portada, entrar, crear cuenta, recuperar la contraseña, privacidad y la página de dirección desconocida. 2) Toda pantalla de la app (inicio, plan, sesión, resumen, historial, progreso, informe, grabación, diagnóstico y perfil) está bajo `RequireAccount`: sin sesión se va a entrar y, después, vuelve a la pantalla pedida; con verificación en dos pasos se pide el código antes de mostrar nada. 3) Desaparecen «Continuar sin cuenta», el perfil de invitado y los textos que decían que la app funciona sin cuenta. 4) En las pantallas públicas, quien no ha entrado ve «Iniciar sesión» en lugar de la navegación de la app. 5) Si el servicio de cuentas no responde, la app no se abre: lo dice y ofrece intentarlo de nuevo. |
+| Se mantiene | La señal, el análisis y la música siguen en el navegador (ADR-19) y las sesiones se guardan primero en el dispositivo; la nube sigue pidiendo segundo factor y consentimiento (ADR-18). Con una sesión guardada, la app abre sin conexión. |
+| Pruebas | Las E2E entran con una cuenta simulada (`e2e/fixtures.ts`) sobre una compilación que apunta a servicios que nadie escucha; nunca tocan el proyecto real. |
+| Límites | Una sesión de dispositivo hecha antes sin cuenta pasa, como antes, a la primera cuenta que la sincroniza. Quien abre la app por primera vez sin conexión no puede entrar. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

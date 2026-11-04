@@ -14,6 +14,8 @@ export const app = {
   },
   /** Accessible name of the avatar that opens the profile. */
   profile: 'Perfil',
+  /** Way in shown on the public screens to someone not signed in. */
+  signIn: 'Iniciar sesión',
   /** Appearance and language controls, in the header and the profile. */
   settings: {
     theme: {

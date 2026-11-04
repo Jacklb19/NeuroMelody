@@ -4,7 +4,6 @@ import { PreferencePickers } from '../../app/preferences/PreferenceControls';
 import { ReminderCard } from '../reminders/ReminderCard';
 import { usePageTitle } from '../../app/usePageTitle';
 import { ROUTES, summaryPath } from '../../config/routes';
-import { AccessLink } from './AccessLink';
 import { useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
@@ -25,8 +24,8 @@ import './account.css';
 
 /**
  * Profile (RF-14, ADR-30): who is listening, their activity on this device
- * and their settings. It works without an account, where it offers to
- * create one; signing in and registering have their own screens.
+ * and their settings. It stands below `RequireAccount`, so someone is always
+ * signed in here.
  */
 export function AccountPage(): React.JSX.Element {
   const t = useMessages();
@@ -47,39 +46,29 @@ export function AccountPage(): React.JSX.Element {
     );
   }
 
-  const user = state.kind === 'signed_in' ? state.user : null;
+  if (state.kind !== 'signed_in' || service === null) return <p role="status" className="profile-page">{copy.loading}</p>;
   return (
     <div className="profile-page">
-      <ProfileHeader user={user} />
+      <ProfileHeader user={state.user} />
       <ActivitySummary />
-      {user !== null && service !== null && state.kind === 'signed_in' && (
-        <SecuritySection service={service} hasPassword={state.user.hasPassword !== false} secondFactorOn={state.assurance.current === 'aal2'} onChanged={refresh} />
-      )}
+      <SecuritySection service={service} hasPassword={state.user.hasPassword !== false} secondFactorOn={state.assurance.current === 'aal2'} onChanged={refresh} />
       <PreferencesSection />
-      {user !== null && service !== null && <SessionSection service={service} onChanged={refresh} />}
+      <SessionSection service={service} onChanged={refresh} />
     </div>
   );
 }
 
-function ProfileHeader({ user }: { readonly user: AuthUser | null }): React.JSX.Element {
+function ProfileHeader({ user }: { readonly user: AuthUser }): React.JSX.Element {
   const copy = useMessages().account.profile;
-  const name = user === null ? copy.guestName : user.name ?? user.email;
+  const name = user.name ?? user.email;
   return (
     <header className="profile-header glass-card paper">
-      <span className="avatar avatar-large" aria-hidden="true">
-        {user === null ? <UserIcon /> : name.charAt(0).toUpperCase()}
-      </span>
+      <span className="avatar avatar-large" aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
       <div className="profile-identity">
-        <p className="eyebrow">{user === null ? copy.eyebrow : copy.accountLabel}</p>
+        <p className="eyebrow">{copy.accountLabel}</p>
         <h1>{name}</h1>
-        {user === null ? <p className="secondary-text">{copy.guestText}</p> : user.name !== null && <p className="secondary-text">{user.email}</p>}
+        {user.name !== null && <p className="secondary-text">{user.email}</p>}
       </div>
-      {user === null && (
-        <div className="profile-guest-actions">
-          <AccessLink to={ROUTES.register} className="pill-button pill-button-primary">{copy.createAccount}</AccessLink>
-          <AccessLink to={ROUTES.login} className="pill-button pill-button-ghost">{copy.signIn}</AccessLink>
-        </div>
-      )}
     </header>
   );
 }

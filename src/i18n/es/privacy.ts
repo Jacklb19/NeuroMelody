@@ -3,7 +3,7 @@ export const privacy = {
   pageTitle: 'Privacidad',
   eyebrow: 'Tus datos',
   introduction:
-    'NeuroMelody trata datos relacionados con tu salud: el ritmo de tu corazón y cómo te sientes. Por eso todo funciona sin cuenta y nada sale del dispositivo sin tu permiso.',
+    'NeuroMelody trata datos relacionados con tu salud: el ritmo de tu corazón y cómo te sientes. Por eso tu cuenta está protegida y nada de tus sesiones sale del dispositivo sin tu permiso.',
   /** Sections in order; keys mirror `PRIVACY_SECTION_IDS`. */
   sections: {
     device: {

@@ -43,7 +43,6 @@
 .password-requirements li::before { content: '○'; flex: none; width: 1.5em; color: var(--color-text-muted); }
 .password-requirements li[data-met='true'] { color: var(--color-text); }
 .password-requirements li[data-met='true']::before { content: '✓'; color: var(--color-success-text); }
-.auth-skip { display: flex; align-items: center; justify-content: center; width: fit-content; min-height: var(--target-min-size); margin: var(--space-4) auto 0; padding: var(--space-1) var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .auth-footer { color: var(--color-text-secondary); font-size: var(--text-sm); }
 .auth-footer a, .auth-forgot { color: var(--color-accent); font-weight: var(--font-weight-strong); }
 /* Small links of the sign-in screens: padding brings their tap area to the minimum without moving the text. */
