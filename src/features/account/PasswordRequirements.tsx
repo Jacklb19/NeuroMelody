@@ -7,7 +7,7 @@ export function PasswordRequirements({ id, password }: { readonly id: string; re
   const copy = useMessages().account.auth.passwordRequirements;
   const met = passwordRequirements(password);
   return (
-    <div id={id} className="password-requirements">
+    <div id={id} className="password-requirements" data-empty={password === ''}>
       <p className="field-hint">{copy.title}</p>
       <ul>
         {PASSWORD_REQUIREMENTS.map((requirement) => (

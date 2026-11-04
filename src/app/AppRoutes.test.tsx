@@ -12,6 +12,7 @@ import { WarningsContext } from '../features/warnings/warningsContext';
 import { WarningsRegistry } from '../features/warnings/warningsRegistry';
 import { DEFAULT_DURATION_MIN, readDuration } from '../features/plan/plan';
 import { STOP_SHORTCUT_KEY } from '../features/audio/ui/stopShortcut';
+import { AuthContext, type AuthContextValue } from '../features/account/authContext';
 import { AuthProvider } from '../features/account/AuthProvider';
 import type { AuthService } from '../features/account/authService';
 import { SESSION_CHECK_TIMEOUT_MS } from '../features/account/config';
@@ -25,13 +26,21 @@ function CurrentLocation() {
 }
 
 interface AccountSetup {
-  /** No account service by default: the screens behave as for someone without an account. */
-  readonly loadService?: () => Promise<AuthService | null>;
+  readonly loadService: () => Promise<AuthService | null>;
   /** Whether this browser seems to keep a session, so the app waits to know who it is. */
   readonly expectSession?: () => boolean;
 }
 
-function renderWith(route: string, accepted = false, account: AccountSetup = {}) {
+/** Someone signed in, known at once: the app needs an account (ADR-57). */
+const SIGNED_IN: AuthContextValue = {
+  state: { kind: 'signed_in', user: { id: 'user-1', email: 'persona@example.test', name: null }, assurance: { current: 'aal1', next: 'aal1' } },
+  service: null,
+  refresh: () => Promise.resolve(),
+  finishRecovery: () => Promise.resolve(),
+};
+
+/** Renders the routes for someone signed in, or through the real provider when `account` is given. */
+function renderWith(route: string, accepted = false, account?: AccountSetup) {
   const registry = new WarningsRegistry(null);
   if (accepted) {
     registry.accept(new Date());
@@ -39,9 +48,13 @@ function renderWith(route: string, accepted = false, account: AccountSetup = {})
   render(
     <WarningsContext.Provider value={registry}>
       <MemoryRouter initialEntries={[route]}>
-        <AuthProvider loadService={account.loadService ?? (() => Promise.resolve(null))} expectSession={account.expectSession ?? (() => false)}>
-          <AppRoutes />
-        </AuthProvider>
+        {account === undefined ? (
+          <AuthContext.Provider value={SIGNED_IN}><AppRoutes /></AuthContext.Provider>
+        ) : (
+          <AuthProvider loadService={account.loadService} expectSession={account.expectSession ?? (() => false)}>
+            <AppRoutes />
+          </AuthProvider>
+        )}
         <CurrentLocation />
       </MemoryRouter>
     </WarningsContext.Provider>,
@@ -147,7 +160,7 @@ describe('routes', () => {
   });
 });
 
-describe('two-step verification on the way into the app', () => {
+describe('the account on the way into the app (ADR-57)', () => {
   const homeTitle = es.home.start.title;
   const appIsHidden = (): void => {
     expect(screen.queryByRole('heading', { level: 2, name: homeTitle })).not.toBeInTheDocument();
@@ -170,18 +183,34 @@ describe('two-step verification on the way into the app', () => {
     appIsHidden();
   });
 
-  it('stops waiting when the account service does not answer', () => {
+  it('stops waiting when the account service does not answer, and sends to signing in', () => {
     vi.useFakeTimers();
     renderWith(ROUTES.app, false, { loadService: () => new Promise(() => undefined), expectSession: () => true });
     appIsHidden();
 
     act(() => { vi.advanceTimersByTime(SESSION_CHECK_TIMEOUT_MS); });
-    expect(screen.getByRole('heading', { level: 2, name: homeTitle })).toBeInTheDocument();
+    expect(currentPath()).toBe(ROUTES.login);
+    appIsHidden();
   });
 
-  it('never waits when this browser keeps no session', () => {
-    renderWith(ROUTES.app, false, { loadService: () => new Promise(() => undefined) });
-    expect(screen.getByRole('heading', { level: 2, name: homeTitle })).toBeInTheDocument();
+  it('sends to signing in at once when this browser keeps no session, on any screen of the app', () => {
+    renderWith(ROUTES.plan, false, { loadService: () => new Promise(() => undefined) });
+    expect(currentPath()).toBe(ROUTES.login);
+    appIsHidden();
+  });
+
+  it('opens nothing of the app when the account service cannot be reached', async () => {
+    renderWith(ROUTES.history, false, { loadService: () => Promise.resolve(null), expectSession: () => true });
+    expect(await screen.findByRole('heading', { level: 1, name: es.account.auth.unavailableTitle })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: es.account.auth.retry })).toBeInTheDocument();
+    appIsHidden();
+  });
+
+  it('keeps privacy public, with the way in instead of the app navigation', async () => {
+    renderWith(ROUTES.privacy, false, { loadService: () => Promise.resolve(fakeAuthService()) });
+    expect(await screen.findByRole('heading', { level: 1, name: es.privacy.pageTitle }, LAZY_SCREEN)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: es.app.signIn })).toHaveAttribute('href', ROUTES.login);
+    appIsHidden();
   });
 });
 

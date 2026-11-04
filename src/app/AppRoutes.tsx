@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
-import { ROUTE_SEGMENTS, ROUTES } from '../config/routes';
+import { ROUTE_SEGMENTS } from '../config/routes';
 import { WarningsPage } from '../features/warnings/WarningsPage';
 import { RequireWarnings } from '../features/warnings/RequireWarnings';
 import { HomePage } from '../features/home/HomePage';
@@ -8,7 +8,7 @@ import { LandingPage } from '../features/landing/LandingPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { RegisterPage } from '../features/account/RegisterPage';
-import { RequireSecondStep } from '../features/account/RequireSecondStep';
+import { RequireAccount } from '../features/account/RequireAccount';
 import { ResetPasswordPage } from '../features/account/ResetPasswordPage';
 import { PlanPage } from '../features/plan/PlanPage';
 import { Layout } from './Layout';
@@ -34,10 +34,11 @@ const PrivacyPage = lazy(() => import('../features/privacy/PrivacyPage').then((m
 /** react-router pattern for any path no screen claims; it says so inside the layout. */
 const UNKNOWN_PATH = '*';
 
-/** Where a sign-in lands (Google comes back here), so where the code of two-step verification is asked. */
-const SECOND_STEP_PATHS = [ROUTES.app];
-
-/** Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in screens have their own layouts. */
+/**
+ * Routes from docs/pantallas.md (react-router in declarative mode). The landing page and the sign-in
+ * screens have their own layouts; privacy and unknown addresses are public; every screen of the app
+ * needs an account (ADR-57).
+ */
 export function AppRoutes(): React.JSX.Element {
   // The layout keeps its own boundary so the header stays while a screen loads; this one covers the rest.
   return (
@@ -48,8 +49,8 @@ export function AppRoutes(): React.JSX.Element {
       <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
       <Route path={ROUTE_SEGMENTS.forgotPassword} element={<ForgotPasswordPage />} />
       <Route path={ROUTE_SEGMENTS.resetPassword} element={<ResetPasswordPage />} />
-      {/* The code of two-step verification is asked above the layout, so nothing of the app shows before it. */}
-      <Route element={<RequireSecondStep paths={SECOND_STEP_PATHS} />}>
+      {/* The account and its second step are asked above the layout, so nothing of the app shows before them. */}
+      <Route element={<RequireAccount />}>
         <Route element={<Layout />}>
           <Route path={ROUTE_SEGMENTS.app} element={<HomePage />} />
           <Route path={ROUTE_SEGMENTS.warnings} element={<WarningsPage />} />
@@ -76,9 +77,11 @@ export function AppRoutes(): React.JSX.Element {
           />
           <Route path={ROUTE_SEGMENTS.diagnostics} element={<DiagnosticsPage />} />
           <Route path={ROUTE_SEGMENTS.account} element={<AccountPage />} />
-          <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
-          <Route path={UNKNOWN_PATH} element={<NotFoundPage />} />
         </Route>
+      </Route>
+      <Route element={<Layout />}>
+        <Route path={ROUTE_SEGMENTS.privacy} element={<PrivacyPage />} />
+        <Route path={UNKNOWN_PATH} element={<NotFoundPage />} />
       </Route>
     </Routes>
     </Suspense>

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { sessionPath } from '../src/config/routes';
 import { MAX_DURATION_MIN } from '../src/features/plan/plan';
 import { es } from '../src/i18n/es';

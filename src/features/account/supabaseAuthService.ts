@@ -160,6 +160,14 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
       }
       forgetStoredSession(project.storageKey);
     },
+    endRecovery: async () => {
+      try {
+        await auth.signOut({ scope: 'local' });
+      } catch {
+        // Forgotten below all the same.
+      }
+      forgetStoredSession(project.storageKey);
+    },
     requestPasswordReset: (email, resetUrl) => attempt(async () => {
       unwrap(await auth.resetPasswordForEmail(email, { redirectTo: resetUrl }));
     }),

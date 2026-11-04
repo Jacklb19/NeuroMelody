@@ -103,7 +103,6 @@ export function RegisterPage(): React.JSX.Element {
           </form>
         </>
       )}
-      <Link to={ROUTES.app} className="auth-skip">{auth.withoutAccount}</Link>
     </AuthLayout>
   );
 }

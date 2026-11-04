@@ -29,8 +29,10 @@ export const account = {
     or: 'o',
     google: 'Continuar con Google',
     googleUnavailable: 'Entrar con Google todavía no está disponible. Usa tu correo y contraseña.',
-    withoutAccount: 'Continuar sin cuenta',
-    unavailable: 'Las cuentas no están disponibles en esta versión. Puedes usar la app sin cuenta.',
+    /** Shown when the account service cannot be reached; the app needs it (ADR-57). */
+    unavailableTitle: 'No pudimos abrir tu cuenta',
+    unavailable: 'No pudimos conectar con el servicio de cuentas. Revisa tu conexión y vuelve a intentarlo.',
+    retry: 'Intentar de nuevo',
     /** Keys mirror `AuthFieldError`. */
     fieldErrors: {
       email_required: 'Escribe tu correo electrónico.',
@@ -115,11 +117,6 @@ export const account = {
     pageTitle: 'Perfil',
     eyebrow: 'Tu espacio',
     loading: 'Cargando tu perfil…',
-    /** Name shown when the person listens without an account. */
-    guestName: 'Sin cuenta',
-    guestText: 'Tus sesiones se guardan solo en este dispositivo. Crea una cuenta para llevarlas contigo.',
-    createAccount: 'Crear cuenta',
-    signIn: 'Iniciar sesión',
     accountLabel: 'Cuenta',
     stats: {
       title: 'Tu actividad',
@@ -181,7 +178,7 @@ export const account = {
     added: 'Dispositivo añadido.',
     challengeTitle: 'Confirma que eres tú',
     challengeText: 'Escribe el código que muestra tu aplicación de autenticación.',
-    /** Way out of the code step: the app works without an account. */
+    /** Way out of the code step: back to signing in with another account. */
     signOutInstead: 'No tengo el código: cerrar sesión',
     invalidFormat: (digits: number): string => `Escribe los ${String(digits)} dígitos del código.`,
   },

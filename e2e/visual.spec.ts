@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { ROUTES } from '../src/config/routes';
 import { DEFAULT_RECORDING_ID, recordingUrl } from '../src/features/acquisition/recording/recordingCatalog';
 import type { SourceKind } from '../src/features/acquisition/sourceCatalog';

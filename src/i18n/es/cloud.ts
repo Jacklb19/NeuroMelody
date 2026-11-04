@@ -3,7 +3,7 @@ export const cloud = {
   /** Keys mirror `CloudSyncStatus`, except `failed`, which carries its reason. */
   status: {
     unavailable: 'Tus sesiones se guardan solo en este dispositivo.',
-    signed_out: 'Tus sesiones están solo en este dispositivo. Con una cuenta puedes tenerlas también en la nube.',
+    signed_out: 'Tus sesiones están solo en este dispositivo. Inicia sesión para guardarlas también en la nube.',
     needs_second_factor: 'Tus sesiones están solo en este dispositivo. Para guardarlas en la nube hace falta la verificación en dos pasos.',
     needs_consent: 'Tus sesiones están solo en este dispositivo. Para guardarlas en la nube falta tu consentimiento.',
     syncing: 'Sincronizando con tu cuenta…',

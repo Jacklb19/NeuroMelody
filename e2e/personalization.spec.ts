@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { ROUTES, summaryPath } from '../src/config/routes';
 import { es } from '../src/i18n/es';
 import { en } from '../src/i18n/en';

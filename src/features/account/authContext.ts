@@ -33,8 +33,8 @@ export function needsSecondFactor(assurance: Assurance): boolean {
 
 /**
  * Whether a screen that depends on who is signed in should hold back: the answer is on its
- * way and somebody probably is. Without a kept session nobody waits (the app works without
- * an account), and the provider stops expecting one after `SESSION_CHECK_TIMEOUT_MS`.
+ * way and somebody probably is. Without a kept session nobody waits (it goes straight to
+ * signing in), and the provider stops expecting one after `SESSION_CHECK_TIMEOUT_MS`.
  */
 export function isCheckingSession(state: AuthState): boolean {
   return state.kind === 'loading' && state.sessionExpected;

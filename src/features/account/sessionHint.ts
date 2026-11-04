@@ -44,6 +44,40 @@ export function openedFromRecoveryLink(supabaseUrl: string | null, storage: Pick
   return kept?.includes(RECOVERY_VERIFIER_MARK) ?? false;
 }
 
+/** Remembers, across reloads and tabs, that a recovery link's session still waits for its new password. */
+export interface RecoveryMarker {
+  readonly kept: () => boolean;
+  readonly keep: () => void;
+  readonly forget: () => void;
+}
+
+const RECOVERY_PENDING_KEY = 'neuromelody-recovery-pending';
+
+/** `RecoveryMarker` in this browser's storage; without storage nothing is remembered. */
+export const recoveryMarkerHere: RecoveryMarker = {
+  kept: () => {
+    try {
+      return window.localStorage.getItem(RECOVERY_PENDING_KEY) !== null;
+    } catch {
+      return false;
+    }
+  },
+  keep: () => {
+    try {
+      window.localStorage.setItem(RECOVERY_PENDING_KEY, '1');
+    } catch {
+      // Without storage a reload of the new password screen asks for a new link.
+    }
+  },
+  forget: () => {
+    try {
+      window.localStorage.removeItem(RECOVERY_PENDING_KEY);
+    } catch {
+      // Nothing was kept.
+    }
+  },
+};
+
 /** `openedFromRecoveryLink` for this deployment and this page. */
 export function openedFromRecoveryLinkHere(): boolean {
   try {
