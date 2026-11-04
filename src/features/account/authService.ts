@@ -12,6 +12,7 @@ export const ACCOUNT_ERROR_CODES = [
   'email_invalid',
   'weak_password',
   'same_password',
+  'wrong_current_password',
   'rate_limited',
   'invalid_code',
   'code_expired',
@@ -47,6 +48,8 @@ export interface AuthUser {
   readonly email: string;
   /** Name from the identity provider (Google), when it gave one. */
   readonly name: string | null;
+  /** Whether the account signs in with a password; one made only with Google has none to confirm. Absent means it does. */
+  readonly hasPassword?: boolean;
 }
 
 /** How a sign-up ended: with a session, or waiting for the confirmation email when the project requires it. */
@@ -82,7 +85,11 @@ export interface AuthService {
   signOut(): Promise<void>;
   /** Sends a link that opens `resetUrl` in recovery mode. */
   requestPasswordReset(email: string, resetUrl: string): Promise<void>;
-  updatePassword(password: string): Promise<void>;
+  /**
+   * Saves a new password. From the profile `currentPassword` goes along, for the project to check
+   * it (ADR-56); a recovery link has no current password to give.
+   */
+  updatePassword(password: string, currentPassword?: string): Promise<void>;
   assurance(): Promise<Assurance>;
   listTotpFactors(): Promise<TotpFactor[]>;
   /** Starts adding an authenticator; it only counts once `verifyTotp` succeeds. */

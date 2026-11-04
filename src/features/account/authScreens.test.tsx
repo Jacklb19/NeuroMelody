@@ -218,6 +218,7 @@ describe('Supabase boundary', () => {
     const error = toAccountError(new AuthError('Invalid login credentials', 400, 'invalid_credentials'));
     expect(error.code).toBe('invalid_credentials');
     expect(error.message).not.toContain('Invalid login');
+    expect(toAccountError(new AuthError('?', 400, 'current_password_mismatch')).code).toBe('wrong_current_password');
     expect(toAccountError(new AuthError('?', 500, 'something_new')).code).toBe('unknown');
   });
 

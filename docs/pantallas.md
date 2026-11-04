@@ -141,6 +141,7 @@ Ajustes de la auditoría de calidad del 2 nov. No añaden rutas.
 ## Registro con requisitos de contraseña (ADR-55, 3 nov 2026)
 
 - **Contraseña nueva** (en `/register`, en la contraseña nueva tras el enlace de recuperación y en el perfil): bajo el campo, «Tu contraseña necesita:» y la lista de 8 caracteres, minúscula, mayúscula, número y símbolo. Cada punto pasa de círculo a marca verde al cumplirse; los lectores de pantalla oyen «cumplido» o «falta». Si falta algo al enviar: «A la contraseña le falta algo de la lista».
+- **Perfil, cambiar contraseña (ADR-56):** primero «Contraseña actual», obligatoria; después la nueva con su lista y la repetición. Una cuenta creada solo con Google no ve el primer campo.
 - **Correo con cuenta:** «Ya existe una cuenta con ese correo.» y, debajo, «Iniciar sesión con ese correo» (conserva la pantalla de origen) y «No recuerdo la contraseña».
 
 ## Barra de inicio del plan en el celular (22 oct 2026)

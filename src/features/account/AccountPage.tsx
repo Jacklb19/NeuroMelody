@@ -53,7 +53,7 @@ export function AccountPage(): React.JSX.Element {
       <ProfileHeader user={user} />
       <ActivitySummary />
       {user !== null && service !== null && state.kind === 'signed_in' && (
-        <SecuritySection service={service} secondFactorOn={state.assurance.current === 'aal2'} onChanged={refresh} />
+        <SecuritySection service={service} hasPassword={state.user.hasPassword !== false} secondFactorOn={state.assurance.current === 'aal2'} onChanged={refresh} />
       )}
       <PreferencesSection />
       {user !== null && service !== null && <SessionSection service={service} onChanged={refresh} />}
@@ -139,13 +139,15 @@ function LinkRow({ to, ...row }: SettingRowProps & { readonly to: string }): Rea
 
 interface SecuritySectionProps {
   readonly service: AuthService;
+  /** Whether there is a current password to ask for before setting a new one. */
+  readonly hasPassword: boolean;
   readonly secondFactorOn: boolean;
   readonly onChanged: () => Promise<void>;
 }
 
 type SecurityPanel = 'password' | 'secondFactor' | null;
 
-function SecuritySection({ service, secondFactorOn, onChanged }: SecuritySectionProps): React.JSX.Element {
+function SecuritySection({ service, hasPassword, secondFactorOn, onChanged }: SecuritySectionProps): React.JSX.Element {
   const copy = useMessages().account.profile;
   const [open, setOpen] = useState<SecurityPanel>(null);
   const titleId = useId();
@@ -161,7 +163,7 @@ function SecuritySection({ service, secondFactorOn, onChanged }: SecuritySection
             {actionLabel('password', copy.rows.password.action)}
           </button>
         </SettingRow>
-        {open === 'password' && <ChangePasswordForm service={service} />}
+        {open === 'password' && <ChangePasswordForm service={service} askCurrent={hasPassword} />}
         <SettingRow
           icon={<ShieldIcon />}
           title={copy.rows.secondFactor.title}
@@ -177,10 +179,13 @@ function SecuritySection({ service, secondFactorOn, onChanged }: SecuritySection
   );
 }
 
-function ChangePasswordForm({ service }: { readonly service: AuthService }): React.JSX.Element {
+/** New password from the profile; the current one is asked first, when the account has one (ADR-56). */
+function ChangePasswordForm({ service, askCurrent }: { readonly service: AuthService; readonly askCurrent: boolean }): React.JSX.Element {
   const t = useMessages();
   const auth = t.account.auth;
   const fieldText = useFieldErrorText();
+  const [current, setCurrent] = useState('');
+  const [currentError, setCurrentError] = useState<AuthFieldError | null>(null);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [fieldError, setFieldError] = useState<AuthFieldError | null>(null);
@@ -189,11 +194,14 @@ function ChangePasswordForm({ service }: { readonly service: AuthService }): Rea
 
   const submit = async (event: React.SyntheticEvent): Promise<void> => {
     event.preventDefault();
+    const missingCurrent = askCurrent && current === '' ? 'password_required' : null;
     const invalid = validateNewPassword(password, confirmation);
+    setCurrentError(missingCurrent);
     setFieldError(invalid);
-    if (invalid !== null) return;
-    if (await run(() => service.updatePassword(password))) {
+    if (missingCurrent !== null || invalid !== null) return;
+    if (await run(() => service.updatePassword(password, askCurrent ? current : undefined))) {
       setSaved(true);
+      setCurrent('');
       setPassword('');
       setConfirmation('');
     }
@@ -202,6 +210,9 @@ function ChangePasswordForm({ service }: { readonly service: AuthService }): Rea
   const mismatch = fieldError === 'passwords_differ';
   return (
     <form className="auth-form setting-panel" aria-label={t.account.profile.rows.password.title} onSubmit={(event) => { void submit(event); }} noValidate>
+      {askCurrent && (
+        <PasswordField label={auth.currentPassword} value={current} onChange={setCurrent} autoComplete="current-password" error={fieldText(currentError)} />
+      )}
       <PasswordField label={auth.newPassword} value={password} onChange={setPassword} autoComplete="new-password" requirements error={mismatch ? null : fieldText(fieldError)} />
       <PasswordField label={auth.confirmPassword} value={confirmation} onChange={setConfirmation} autoComplete="new-password" error={mismatch ? fieldText(fieldError) : null} />
       <FormError code={error} />
