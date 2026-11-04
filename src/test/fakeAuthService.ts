@@ -14,6 +14,7 @@ export function fakeAuthService(
     signInWithGoogle: () => Promise.resolve(),
     signIn: () => Promise.resolve(),
     signOut: () => Promise.resolve(),
+    endRecovery: () => Promise.resolve(),
     requestPasswordReset: () => Promise.resolve(),
     updatePassword: () => Promise.resolve(),
     assurance: () => Promise.resolve(assurance),

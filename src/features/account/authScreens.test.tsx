@@ -13,7 +13,7 @@ import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
 import { RequireSecondStep } from './RequireSecondStep';
 import { ResetPasswordPage } from './ResetPasswordPage';
-import { openedFromRecoveryLink, sessionMayExist, sessionStorageKey } from './sessionHint';
+import { openedFromRecoveryLink, sessionMayExist, sessionStorageKey, type RecoveryMarker } from './sessionHint';
 import { createSupabaseAuthService, googleEnabled, toAccountError } from './supabaseAuthService';
 
 const copy = es.account;
@@ -28,10 +28,16 @@ function PlanHere(): React.JSX.Element {
   return <p>{`at ${pathname}${search}`}</p>;
 }
 
-function renderAt(route: InitialEntry, service: AuthService, sessionKept = false, recoveryLink = false) {
+/** A recovery marker that lives only as long as the test. */
+function memoryMarker(kept = false): RecoveryMarker {
+  let value = kept;
+  return { kept: () => value, keep: () => { value = true; }, forget: () => { value = false; } };
+}
+
+function renderAt(route: InitialEntry, service: AuthService, sessionKept = false, recoveryLink = false, marker = memoryMarker()) {
   render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept} recoveryLink={() => recoveryLink}>
+      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept} recoveryLink={() => recoveryLink} recoveryMarker={marker}>
         <Routes>
           <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
@@ -204,6 +210,24 @@ describe('new password screen', () => {
   it('asks for the new password when the page comes from a recovery link', async () => {
     renderAt(ROUTES.resetPassword, fakeService({}, USER), true, true);
     expect(await screen.findByRole('form', { name: copy.reset.pageTitle })).toBeInTheDocument();
+  });
+
+  it('keeps asking for the new password after a reload of that screen', async () => {
+    renderAt(ROUTES.resetPassword, fakeService({}, USER), true, false, memoryMarker(true));
+    expect(await screen.findByRole('form', { name: copy.reset.pageTitle })).toBeInTheDocument();
+  });
+
+  it('closes the session of a recovery link left without a new password, without asking for the second step', async () => {
+    let session: AuthUser | null = USER;
+    const endRecovery = vi.fn(() => { session = null; return Promise.resolve(); });
+    const marker = memoryMarker(true);
+    const service = fakeService({ currentUser: () => Promise.resolve(session), endRecovery }, USER, { current: 'aal1', next: 'aal2' });
+    renderAt(ROUTES.app, service, true, false, marker);
+
+    expect(await screen.findByText('app')).toBeInTheDocument();
+    await vi.waitFor(() => { expect(endRecovery).toHaveBeenCalledOnce(); });
+    expect(marker.kept()).toBe(false);
+    expect(screen.queryByRole('heading', { name: copy.totp.challengeTitle })).not.toBeInTheDocument();
   });
 
   it('sends an ordinary session to the profile instead of offering the form', async () => {
