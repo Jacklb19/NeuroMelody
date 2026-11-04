@@ -15,7 +15,6 @@ import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { needsSecondFactor, useAuth } from './authContext';
 import { PasswordField } from './AuthFields';
 import type { AuthService, AuthUser } from './authService';
-import { MIN_PASSWORD_LENGTH } from './config';
 import { FormError } from './FormError';
 import { SecondFactorChallenge } from './SecondFactorChallenge';
 import { TotpSection } from './TotpSection';
@@ -203,7 +202,7 @@ function ChangePasswordForm({ service }: { readonly service: AuthService }): Rea
   const mismatch = fieldError === 'passwords_differ';
   return (
     <form className="auth-form setting-panel" aria-label={t.account.profile.rows.password.title} onSubmit={(event) => { void submit(event); }} noValidate>
-      <PasswordField label={auth.newPassword} value={password} onChange={setPassword} autoComplete="new-password" hint={auth.passwordHint(MIN_PASSWORD_LENGTH)} error={mismatch ? null : fieldText(fieldError)} />
+      <PasswordField label={auth.newPassword} value={password} onChange={setPassword} autoComplete="new-password" requirements error={mismatch ? null : fieldText(fieldError)} />
       <PasswordField label={auth.confirmPassword} value={confirmation} onChange={setConfirmation} autoComplete="new-password" error={mismatch ? fieldText(fieldError) : null} />
       <FormError code={error} />
       {saved && <p role="status" className="account-notice">{t.account.profile.passwordChanged}</p>}

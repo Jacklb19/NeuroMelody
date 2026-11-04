@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { useMessages } from '../../i18n/messages';
+import { PasswordRequirements } from './PasswordRequirements';
 
 interface FieldProps {
   readonly label: string;
@@ -35,14 +36,16 @@ export function EmailField({ label, value, onChange, error = null }: FieldProps)
 interface PasswordFieldProps extends FieldProps {
   /** `new-password` when the person is choosing one, so password managers offer to save it. */
   readonly autoComplete: 'current-password' | 'new-password';
+  /** Shows, in place of the hint, what a new password needs and what the typed one already has. */
+  readonly requirements?: boolean;
 }
 
 /** Password input with a button to reveal what was typed. */
-export function PasswordField({ label, value, onChange, error = null, hint, autoComplete }: PasswordFieldProps): React.JSX.Element {
+export function PasswordField({ label, value, onChange, error = null, hint, autoComplete, requirements = false }: PasswordFieldProps): React.JSX.Element {
   const copy = useMessages().account.auth;
   const [visible, setVisible] = useState(false);
   const id = useId();
-  const described = [error !== null ? `${id}-error` : null, hint !== undefined ? `${id}-hint` : null].filter((part) => part !== null).join(' ');
+  const described = [error !== null ? `${id}-error` : null, hint !== undefined || requirements ? `${id}-hint` : null].filter((part) => part !== null).join(' ');
   return (
     <div className="auth-field">
       <label htmlFor={id}>{label}</label>
@@ -60,7 +63,8 @@ export function PasswordField({ label, value, onChange, error = null, hint, auto
           {visible ? copy.hidePassword : copy.showPassword}
         </button>
       </div>
-      {hint !== undefined && error === null && <p id={`${id}-hint`} className="field-hint">{hint}</p>}
+      {requirements && <PasswordRequirements id={`${id}-hint`} password={value} />}
+      {!requirements && hint !== undefined && error === null && <p id={`${id}-hint`} className="field-hint">{hint}</p>}
       {error !== null && <p id={`${id}-error`} role="alert" className="field-error">{error}</p>}
     </div>
   );

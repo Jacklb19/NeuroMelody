@@ -7,7 +7,6 @@ import { ShieldIcon } from '../../shared/icons';
 import { useAuth } from './authContext';
 import { PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
-import { MIN_PASSWORD_LENGTH } from './config';
 import { FormError } from './FormError';
 import { useAccountAction } from './useAccountAction';
 import { useFieldErrorText } from './useFieldErrorText';
@@ -76,7 +75,7 @@ export function ResetPasswordPage(): React.JSX.Element {
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
-          hint={auth.passwordHint(MIN_PASSWORD_LENGTH)}
+          requirements
           error={mismatch ? null : fieldText(fieldError)}
         />
         <PasswordField

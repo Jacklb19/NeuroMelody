@@ -33,6 +33,13 @@
 .google-button { background: var(--color-paper); }
 .auth-consent { text-align: center; }
 .auth-cloud-note { margin-bottom: var(--space-5); }
+.auth-existing { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: var(--text-sm); }
+.auth-existing a { display: inline-block; min-height: var(--target-min-size); padding-block: var(--space-1); color: var(--color-accent); font-weight: var(--font-weight-strong); }
+.password-requirements { display: grid; gap: var(--space-1); }
+.password-requirements ul { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.password-requirements li::before { content: '○'; display: inline-block; width: 1.5em; color: var(--color-text-muted); }
+.password-requirements li[data-met='true'] { color: var(--color-text); }
+.password-requirements li[data-met='true']::before { content: '✓'; color: var(--color-success-text); }
 .auth-skip { display: flex; align-items: center; justify-content: center; width: fit-content; min-height: var(--target-min-size); margin: var(--space-5) auto 0; padding: var(--space-1) var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .auth-footer { color: var(--color-text-secondary); font-size: var(--text-sm); }
 .auth-footer a, .auth-forgot { color: var(--color-accent); font-weight: var(--font-weight-strong); }

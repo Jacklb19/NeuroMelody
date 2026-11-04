@@ -3,6 +3,23 @@
 /** Shortest password the forms accept; Supabase applies its own rules too. */
 export const MIN_PASSWORD_LENGTH = 8;
 
+/**
+ * Kinds of character a new password needs, at least one of each (ADR-55). The sets are the ones
+ * Supabase Auth checks with "Lowercase, uppercase letters, digits and symbols". Accented letters
+ * and ñ count for none.
+ */
+export const PASSWORD_CHARACTER_SETS = {
+  lowercase: 'abcdefghijklmnopqrstuvwxyz',
+  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  digit: '0123456789',
+  symbol: '!@#$%^&*()_+-=[]{};\'\\:"|<>?,./`~',
+} as const;
+export type PasswordCharacterKind = keyof typeof PASSWORD_CHARACTER_SETS;
+
+/** Requirements of a new password, in the order its list shows them. */
+export const PASSWORD_REQUIREMENTS = ['length', 'lowercase', 'uppercase', 'digit', 'symbol'] as const;
+export type PasswordRequirement = (typeof PASSWORD_REQUIREMENTS)[number];
+
 /** Longest password in UTF-8 bytes: bcrypt, behind Supabase Auth, ignores whatever comes after. */
 export const MAX_PASSWORD_BYTES = 72;
 

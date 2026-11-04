@@ -138,6 +138,11 @@ Ajustes de la auditoría de calidad del 2 nov. No añaden rutas.
 - **Con Google**, que siempre vuelve a `/app` (la dirección autorizada en el proyecto), la pantalla de origen se guarda 10 minutos en la pestaña. Después del código de dos pasos, si la cuenta lo tiene, la app sigue hasta ella una sola vez.
 - **Registro:** bajo el subtítulo, el aviso «Para guardar tus sesiones en la nube te pediremos después activar la verificación en dos pasos, porque son datos de tu salud».
 
+## Registro con requisitos de contraseña (ADR-55, 3 nov 2026)
+
+- **Contraseña nueva** (en `/register`, en la contraseña nueva tras el enlace de recuperación y en el perfil): bajo el campo, «Tu contraseña necesita:» y la lista de 8 caracteres, minúscula, mayúscula, número y símbolo. Cada punto pasa de círculo a marca verde al cumplirse; los lectores de pantalla oyen «cumplido» o «falta». Si falta algo al enviar: «A la contraseña le falta algo de la lista».
+- **Correo con cuenta:** «Ya existe una cuenta con ese correo.» y, debajo, «Iniciar sesión con ese correo» (conserva la pantalla de origen) y «No recuerdo la contraseña».
+
 ## Barra de inicio del plan en el celular (22 oct 2026)
 
 En `/plan`, por debajo de 900 px la tarjeta «Tu sesión» queda al final de la página, tras todas las preguntas. Una barra fija al borde inferior muestra la duración elegida, la intención y el botón «Empezar sesión», de modo que empezar está a mano en todo momento; la tarjeta conserva el resumen y deja de repetir el botón. En escritorio no existe: la tarjeta sigue fija a la derecha con su botón. No añade ruta ni panel.

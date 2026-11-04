@@ -14,6 +14,7 @@ const ERROR_CODES: Readonly<Record<string, AccountErrorCode>> = {
   email_not_confirmed: 'email_not_confirmed',
   user_already_exists: 'user_already_exists',
   email_exists: 'user_already_exists',
+  email_address_invalid: 'email_invalid',
   weak_password: 'weak_password',
   same_password: 'same_password',
   over_request_rate_limit: 'rate_limited',
@@ -117,7 +118,10 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
       return () => { data.subscription.unsubscribe(); };
     },
     signUp: (email, password) => attempt(async () => {
-      const { session } = unwrap(await auth.signUp({ email, password }));
+      const { session, user } = unwrap(await auth.signUp({ email, password }));
+      // With email confirmation on, Supabase answers an email that already has an account with
+      // a user without identities instead of an error; the person is told all the same (ADR-55).
+      if (user !== null && user.identities?.length === 0) throw new AccountError('user_already_exists');
       // No session means the project still asks to confirm the email first.
       return session === null ? 'confirmation_required' : 'signed_in';
     }),
