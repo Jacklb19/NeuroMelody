@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, test, type TestInfo } from './fixtures';
 import { ROUTES } from '../src/config/routes';
 import type { ScenarioId } from '../src/features/acquisition/simulator/scenarios';
 import type { Speed } from '../src/features/acquisition/speedCatalog';

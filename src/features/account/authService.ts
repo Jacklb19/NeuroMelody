@@ -83,6 +83,8 @@ export interface AuthService {
   signInWithGoogle(returnUrl: string): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
+  /** Closes, on this device only, the session a recovery link opened and the person left without a new password. */
+  endRecovery(): Promise<void>;
   /** Sends a link that opens `resetUrl` in recovery mode. */
   requestPasswordReset(email: string, resetUrl: string): Promise<void>;
   /**

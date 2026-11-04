@@ -11,9 +11,9 @@ import { AuthProvider } from './AuthProvider';
 import { AccountError, type AuthService, type AuthUser } from './authService';
 import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
-import { RequireSecondStep } from './RequireSecondStep';
+import { RequireAccount } from './RequireAccount';
 import { ResetPasswordPage } from './ResetPasswordPage';
-import { openedFromRecoveryLink, sessionMayExist, sessionStorageKey } from './sessionHint';
+import { openedFromRecoveryLink, sessionMayExist, sessionStorageKey, type RecoveryMarker } from './sessionHint';
 import { createSupabaseAuthService, googleEnabled, toAccountError } from './supabaseAuthService';
 
 const copy = es.account;
@@ -28,16 +28,22 @@ function PlanHere(): React.JSX.Element {
   return <p>{`at ${pathname}${search}`}</p>;
 }
 
-function renderAt(route: InitialEntry, service: AuthService, sessionKept = false, recoveryLink = false) {
+/** A recovery marker that lives only as long as the test. */
+function memoryMarker(kept = false): RecoveryMarker {
+  let value = kept;
+  return { kept: () => value, keep: () => { value = true; }, forget: () => { value = false; } };
+}
+
+function renderAt(route: InitialEntry, service: AuthService, sessionKept = false, recoveryLink = false, marker = memoryMarker()) {
   render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept} recoveryLink={() => recoveryLink}>
+      <AuthProvider loadService={() => Promise.resolve(service)} expectSession={() => sessionKept} recoveryLink={() => recoveryLink} recoveryMarker={marker}>
         <Routes>
           <Route path={ROUTE_SEGMENTS.login} element={<LoginPage />} />
           <Route path={ROUTE_SEGMENTS.register} element={<RegisterPage />} />
           <Route path={ROUTE_SEGMENTS.resetPassword} element={<ResetPasswordPage />} />
           <Route path={ROUTE_SEGMENTS.account} element={<p>account</p>} />
-          <Route element={<RequireSecondStep paths={[ROUTES.app]} />}>
+          <Route element={<RequireAccount />}>
             <Route path={ROUTE_SEGMENTS.app} element={<p>app</p>} />
             <Route path={ROUTE_SEGMENTS.plan} element={<PlanHere />} />
           </Route>
@@ -102,8 +108,9 @@ describe('sign-in screens', () => {
 
   it('creates the account only when both passwords match, then enters the app', async () => {
     const user = typing();
-    const signUp = vi.fn(() => Promise.resolve('signed_in' as const));
-    renderAt(ROUTES.register, fakeService({ signUp }));
+    let created = false;
+    const signUp = vi.fn(() => { created = true; return Promise.resolve('signed_in' as const); });
+    renderAt(ROUTES.register, fakeService({ signUp, currentUser: () => Promise.resolve(created ? USER : null) }));
 
     const form = within(await screen.findByRole('form', { name: copy.register.pageTitle }));
     // What keeping sessions in the cloud will ask is said before the account is created.
@@ -204,6 +211,25 @@ describe('new password screen', () => {
   it('asks for the new password when the page comes from a recovery link', async () => {
     renderAt(ROUTES.resetPassword, fakeService({}, USER), true, true);
     expect(await screen.findByRole('form', { name: copy.reset.pageTitle })).toBeInTheDocument();
+  });
+
+  it('keeps asking for the new password after a reload of that screen', async () => {
+    renderAt(ROUTES.resetPassword, fakeService({}, USER), true, false, memoryMarker(true));
+    expect(await screen.findByRole('form', { name: copy.reset.pageTitle })).toBeInTheDocument();
+  });
+
+  it('closes the session of a recovery link left without a new password, without asking for the second step', async () => {
+    let session: AuthUser | null = USER;
+    const endRecovery = vi.fn(() => { session = null; return Promise.resolve(); });
+    const marker = memoryMarker(true);
+    const service = fakeService({ currentUser: () => Promise.resolve(session), endRecovery }, USER, { current: 'aal1', next: 'aal2' });
+    renderAt(ROUTES.app, service, true, false, marker);
+
+    // Once closed, nobody is signed in: the app asks to sign in, never for the second step.
+    expect(await screen.findByRole('form', { name: copy.login.pageTitle })).toBeInTheDocument();
+    expect(endRecovery).toHaveBeenCalledOnce();
+    expect(marker.kept()).toBe(false);
+    expect(screen.queryByRole('heading', { name: copy.totp.challengeTitle })).not.toBeInTheDocument();
   });
 
   it('sends an ordinary session to the profile instead of offering the form', async () => {

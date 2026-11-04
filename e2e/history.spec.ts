@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import { ROUTES, summaryPath } from '../src/config/routes';
 import type { Speed } from '../src/features/acquisition/speedCatalog';
 import type { SessionRecord } from '../src/features/records/sessionRecord';

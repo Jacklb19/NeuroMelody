@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { ROUTES } from '../src/config/routes';
 import { STOP_SHORTCUT_KEY } from '../src/features/audio/ui/stopShortcut';
 import { es } from '../src/i18n/es';
