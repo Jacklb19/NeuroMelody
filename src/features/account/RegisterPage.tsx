@@ -8,7 +8,6 @@ import { useAuth } from './authContext';
 import { EmailField, PasswordField } from './AuthFields';
 import { AuthLayout } from './AuthLayout';
 import type { SignUpResult } from './authService';
-import { MIN_PASSWORD_LENGTH } from './config';
 import { FormError } from './FormError';
 import { GoogleButton } from './GoogleButton';
 import { useAccountAction } from './useAccountAction';
@@ -17,7 +16,8 @@ import { validateEmail, validateNewPassword, type AuthFieldError } from './valid
 
 /**
  * Create an account with an email and a password typed twice, or with
- * Google (ADR-30). The account works at once; no confirmation email.
+ * Google (ADR-30). The account works at once; no confirmation email. An email
+ * that already has an account is said so, with the way to sign in (ADR-55).
  */
 export function RegisterPage(): React.JSX.Element {
   const t = useMessages();
@@ -77,7 +77,7 @@ export function RegisterPage(): React.JSX.Element {
               value={password}
               onChange={setPassword}
               autoComplete="new-password"
-              hint={auth.passwordHint(MIN_PASSWORD_LENGTH)}
+              requirements
               error={mismatch ? null : fieldText(fieldErrors.password)}
             />
             <PasswordField
@@ -88,6 +88,12 @@ export function RegisterPage(): React.JSX.Element {
               error={mismatch ? fieldText(fieldErrors.password) : null}
             />
             <FormError code={error} />
+            {error === 'user_already_exists' && (
+              <p className="auth-existing">
+                <Link to={ROUTES.login} state={accessReturnState(returnTo)}>{copy.existingAccount.signIn}</Link>
+                <Link to={ROUTES.forgotPassword}>{copy.existingAccount.reset}</Link>
+              </p>
+            )}
             <button type="submit" className="pill-button pill-button-primary pill-button-block pill-button-large" disabled={pending}>
               {pending ? auth.working : copy.submit}
             </button>

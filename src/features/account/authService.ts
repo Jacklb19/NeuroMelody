@@ -9,6 +9,7 @@ export const ACCOUNT_ERROR_CODES = [
   'invalid_credentials',
   'email_not_confirmed',
   'user_already_exists',
+  'email_invalid',
   'weak_password',
   'same_password',
   'rate_limited',

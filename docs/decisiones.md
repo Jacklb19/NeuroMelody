@@ -461,6 +461,15 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Endurecimiento | Con `VERCEL_ENV=production` la API no sirve su documentación. Todas las respuestas llevan `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`. |
 | Despliegue | Primero aplicar la migración en Supabase y después publicar el back: sin la función, los tres puntos responden `storage_unavailable`. El front puede ir antes o después. |
 
+## ADR-55. El registro dice si el correo ya tiene cuenta y pide una contraseña segura
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 3 nov 2026: el registro debe informar de lo básico (correo ya registrado, correo válido y contraseña con los caracteres necesarios). Cierra la decisión abierta de la auditoría sobre la enumeración en el registro. |
+| Problema | El registro solo pedía 8 caracteres y Supabase aceptaba cualquier contraseña de esa longitud. El correo ya registrado se explicaba con Confirm email apagado, pero con él encendido Supabase lo oculta. |
+| Decisión | 1) Bajo cada contraseña nueva (registro, contraseña nueva y perfil) una lista dice lo que necesita: 8 caracteres, una minúscula, una mayúscula, un número y un símbolo; cada punto se marca al cumplirse y el formulario no se envía hasta cumplirlos todos. 2) Los conjuntos son los de Supabase con «Lowercase, uppercase letters, digits and symbols», que el usuario activa en el panel para que el servidor exija lo mismo. 3) Un correo con cuenta se dice claramente, con enlaces a iniciar sesión y a recuperar la contraseña; con Confirm email encendido se reconoce por el usuario sin identidades que devuelve Supabase. 4) Un correo que el servidor rechaza tiene su propio mensaje. |
+| Límites | Decir que un correo tiene cuenta permite comprobar si alguien está registrado; el usuario lo acepta por claridad, y el límite de intentos de Supabase lo frena. Las letras con tilde y la ñ no cuentan como minúscula o mayúscula, igual que en el servidor. Las cuentas existentes conservan su contraseña hasta que la cambien. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

@@ -20,7 +20,7 @@ const copy = es.account;
 /** Typing without a pause between keys: these tests type whole addresses and passwords, and the default pause made them run out of time when the machine was busy. */
 const typing = (): ReturnType<typeof userEvent.setup> => userEvent.setup({ delay: null });
 const USER: AuthUser = { id: 'user-1', email: 'persona@example.test', name: null };
-const PASSWORD = 'una-contraseña-larga';
+const PASSWORD = 'Una-contraseña-larga1';
 
 /** The plan screen as reached, with its query, to see where a sign-in comes back to. */
 function PlanHere(): React.JSX.Element {
@@ -120,6 +120,49 @@ describe('sign-in screens', () => {
     await user.click(form.getByRole('button', { name: copy.register.submit }));
     expect(signUp).toHaveBeenCalledWith(USER.email, PASSWORD);
     expect(await screen.findByText('app')).toBeInTheDocument();
+  });
+
+  it('marks what the new password already has and asks for the rest before creating the account', async () => {
+    const user = typing();
+    const signUp = vi.fn(() => Promise.resolve('signed_in' as const));
+    renderAt(ROUTES.register, fakeService({ signUp }));
+
+    const form = within(await screen.findByRole('form', { name: copy.register.pageTitle }));
+    const item = (name: string): HTMLElement => form.getByText(name).closest('li') as HTMLElement;
+    await user.type(form.getByLabelText(copy.auth.email), USER.email);
+    await user.type(form.getByLabelText(copy.auth.password), 'sinmayuscula1');
+    expect(item(copy.auth.passwordRequirements.lowercase)).toHaveAttribute('data-met', 'true');
+    expect(item(copy.auth.passwordRequirements.digit)).toHaveAttribute('data-met', 'true');
+    expect(item(copy.auth.passwordRequirements.uppercase)).toHaveAttribute('data-met', 'false');
+    expect(item(copy.auth.passwordRequirements.symbol)).toHaveAttribute('data-met', 'false');
+    await user.type(form.getByLabelText(copy.auth.confirmPassword), 'sinmayuscula1');
+    await user.click(form.getByRole('button', { name: copy.register.submit }));
+    expect(signUp).not.toHaveBeenCalled();
+    expect(form.getByText(copy.auth.fieldErrors.password_needs_characters)).toBeInTheDocument();
+  });
+
+  it('says when the email already has an account and leads to signing in or recovering it', async () => {
+    const user = typing();
+    const signUp = vi.fn(() => Promise.reject(new AccountError('user_already_exists')));
+    renderAt(ROUTES.register, fakeService({ signUp }));
+
+    const form = within(await screen.findByRole('form', { name: copy.register.pageTitle }));
+    await user.type(form.getByLabelText(copy.auth.email), USER.email);
+    await user.type(form.getByLabelText(copy.auth.password), PASSWORD);
+    await user.type(form.getByLabelText(copy.auth.confirmPassword), PASSWORD);
+    await user.click(form.getByRole('button', { name: copy.register.submit }));
+    expect(await form.findByText(copy.errors.user_already_exists)).toBeInTheDocument();
+    expect(form.getByRole('link', { name: copy.register.existingAccount.reset })).toHaveAttribute('href', ROUTES.forgotPassword);
+    await user.click(form.getByRole('link', { name: copy.register.existingAccount.signIn }));
+    expect(await screen.findByRole('form', { name: copy.login.pageTitle })).toBeInTheDocument();
+  });
+
+  it('tells an existing email apart also when the project asks to confirm emails', async () => {
+    // What Supabase answers then: no error, and a user without identities.
+    const client = { auth: { signUp: () => Promise.resolve({ data: { session: null, user: { id: 'x', identities: [] } }, error: null }) } };
+    const service = createSupabaseAuthService(client as unknown as SupabaseClient, { url: 'https://project.supabase.co', anonKey: 'anon', storageKey: 'key' });
+    await expect(service.signUp(USER.email, PASSWORD)).rejects.toMatchObject({ code: 'user_already_exists' });
+    expect(toAccountError(new AuthError('?', 400, 'email_address_invalid')).code).toBe('email_invalid');
   });
 
   it('comes back to the screen that sent the person to sign in, with what was chosen there', async () => {
