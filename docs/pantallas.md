@@ -142,6 +142,8 @@ Ajustes de la auditoría de calidad del 2 nov. No añaden rutas.
 
 - **Contraseña nueva** (en `/register`, en la contraseña nueva tras el enlace de recuperación y en el perfil): bajo el campo, «Tu contraseña necesita:» y la lista de 8 caracteres, minúscula, mayúscula, número y símbolo. Cada punto pasa de círculo a marca verde al cumplirse; los lectores de pantalla oyen «cumplido» o «falta». Si falta algo al enviar: «A la contraseña le falta algo de la lista».
 - **Perfil, cambiar contraseña (ADR-56):** primero «Contraseña actual», obligatoria; después la nueva con su lista y la repetición. Una cuenta creada solo con Google no ve el primer campo.
+- **Enlace de recuperación (4 nov):** la sesión que abre el enlace solo sirve en `/reset-password`, también tras recargar. Si la persona sale de allí sin guardar una contraseña nueva, esa sesión se cierra en este dispositivo: no queda dentro de la cuenta ni se le pide el código de dos pasos.
+- **Entrar y crear cuenta en portátiles (4 nov):** espacios más ajustados y, en pantallas de menos de 820 px de alto, título y botón más bajos y orbe más pequeño; el panel del orbe se queda fijo. La lista de requisitos sale al usar el campo de contraseña y va en dos columnas cuando cabe. Medido: el login cabe entero de 1280×720 a 1920×960 y a 1366×657; en el registro «Crear cuenta» queda visible sin desplazarse.
 - **Correo con cuenta:** «Ya existe una cuenta con ese correo.» y, debajo, «Iniciar sesión con ese correo» (conserva la pantalla de origen) y «No recuerdo la contraseña».
 
 ## Barra de inicio del plan en el celular (22 oct 2026)
