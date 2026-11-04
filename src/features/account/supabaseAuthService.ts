@@ -1,4 +1,4 @@
-import { AuthError, isAuthRetryableFetchError, type SupabaseClient } from '@supabase/supabase-js';
+import { AuthError, isAuthRetryableFetchError, type SupabaseClient, type UserAttributes } from '@supabase/supabase-js';
 import {
   AccountError,
   type AccountErrorCode,
@@ -17,6 +17,9 @@ const ERROR_CODES: Readonly<Record<string, AccountErrorCode>> = {
   email_address_invalid: 'email_invalid',
   weak_password: 'weak_password',
   same_password: 'same_password',
+  // With "Require current password" on, Supabase refuses a missing or wrong one (ADR-56).
+  current_password_required: 'wrong_current_password',
+  current_password_mismatch: 'wrong_current_password',
   over_request_rate_limit: 'rate_limited',
   over_email_send_rate_limit: 'rate_limited',
   mfa_verification_failed: 'invalid_code',
@@ -107,7 +110,12 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
       const user = session?.user;
       if (user?.email === undefined) return null;
       const name: unknown = user.user_metadata.full_name;
-      return { id: user.id, email: user.email, name: typeof name === 'string' && name.trim() !== '' ? name : null };
+      return {
+        id: user.id,
+        email: user.email,
+        name: typeof name === 'string' && name.trim() !== '' ? name : null,
+        hasPassword: user.identities?.some((identity) => identity.provider === 'email') ?? true,
+      };
     }),
     onChange(listener) {
       const { data } = auth.onAuthStateChange((event) => {
@@ -155,8 +163,11 @@ export function createSupabaseAuthService(client: SupabaseClient, project: Proje
     requestPasswordReset: (email, resetUrl) => attempt(async () => {
       unwrap(await auth.resetPasswordForEmail(email, { redirectTo: resetUrl }));
     }),
-    updatePassword: (password) => attempt(async () => {
-      unwrap(await auth.updateUser({ password }));
+    updatePassword: (password, currentPassword) => attempt(async () => {
+      // Supabase reads `current_password` from the body; this client version passes it on as given.
+      const change: UserAttributes & { current_password?: string } =
+        currentPassword === undefined ? { password } : { password, current_password: currentPassword };
+      unwrap(await auth.updateUser(change));
     }),
     assurance: () => attempt(async () => {
       const { currentLevel, nextLevel } = unwrap(await auth.mfa.getAuthenticatorAssuranceLevel());
