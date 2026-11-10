@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
-import { planPath, ROUTES, sessionPath, summaryPath } from '../../config/routes';
+import { planPath, QUERY_PARAMS, ROUTES, sessionPath, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import { ArrowRightIcon, PlayIcon } from '../../shared/icons';
@@ -69,7 +69,11 @@ export function HomePage(): React.JSX.Element {
             </Link>
             {totals.last !== null && (
               <Link
-                to={sessionPath(totals.last.plannedMinutes, totals.last.goals, totals.last.context?.ambience, totals.last.context?.instrument)}
+                to={sessionPath(totals.last.plannedMinutes, totals.last.goals, totals.last.context?.ambience, totals.last.context?.instrument, {
+                  fixed: totals.last.context?.fixed ?? false,
+                  profile: totals.last.context?.profile ?? 'original',
+                  guide: false,
+                })}
                 className="pill-button pill-button-ghost"
               >
                 {copy.start.repeat}
@@ -91,6 +95,7 @@ export function HomePage(): React.JSX.Element {
                 <span className="icon-badge"><GoalIcon goal={goal} /></span>
                 <span>{goalNames[goal]}</span>
                 <span className="goal-tagline">{goalTaglines[goal]}</span>
+                <ArrowRightIcon className="goal-shortcut-arrow" />
               </Link>
             </li>
           ))}
@@ -108,6 +113,9 @@ export function HomePage(): React.JSX.Element {
               </li>
             ))}
           </ol>
+          <div className="action-row">
+            <Link className="pill-button pill-button-ghost" to={`${ROUTES.plan}?${QUERY_PARAMS.guide}=1`}>{t.listeningTools.guide}</Link>
+          </div>
         </section>
       )}
 

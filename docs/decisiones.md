@@ -489,6 +489,20 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Pruebas | Las E2E entran con una cuenta simulada (`e2e/fixtures.ts`) sobre una compilación que apunta a servicios que nadie escucha; nunca tocan el proyecto real. |
 | Límites | Una sesión de dispositivo hecha antes sin cuenta pasa, como antes, a la primera cuenta que la sincroniza. Quien abre la app por primera vez sin conexión no puede entrar. |
 
+## ADR-58. Biblioteca de escucha y primera sesión
+
+- La primera sesión puede iniciarse con una guía opcional desde Inicio. Se recorren los mismos pasos y advertencias que en una sesión normal.
+- En el plan, cada cuenta puede guardar, actualizar, cargar y quitar favoritos con nombre en el navegador. Incluyen intención, duración, instrumento, ambiente, modo y textura.
+- El historial permite combinar fechas inclusivas, intención, fuente y presencia de notas. El resumen de la semana local cuenta las sesiones guardadas, tiempo escuchado, sesiones con valoración e intenciones más frecuentes. Los filtros solo afectan al listado.
+- En el perfil se descarga un JSON versionado con favoritos y sesiones locales vinculadas a la cuenta, incluidos notas, contexto, indicadores y relato musical. Se valida todo antes de restaurar en la misma cuenta. La restauración conserva los registros existentes y completa los campos privados ausentes. Si falla la escritura de favoritos después de guardar sesiones, se puede reintentar.
+
+## ADR-59. Mezcla, escucha previa y textura
+
+- Los controles de música y ambiente atenúan cada pista con rampas en el reloj de audio. Ambas pistas pasan por el volumen general, la envolvente de sesión y el limitador.
+- El plan permite escuchar ocho segundos del sonido inicial y detener la muestra. La muestra usa un fundido programado en el reloj de audio y el motor se libera al finalizar o salir.
+- El modo se elige antes de empezar. En modo fijo el motor conserva el tempo y las capas iniciales mientras se sigue registrando la señal disponible. Las texturas Original, Mínima y Envolvente varían las capas o la reverberación. El modo y la textura se guardan con el contexto local para repetir la sesión.
+- La fuente Bluetooth se presenta como «Reloj o banda Bluetooth» e indica cómo activar la transmisión. El modo solo pulso y la recepción de intervalos siguen ADR-51. La compatibilidad por modelo requiere pruebas físicas.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

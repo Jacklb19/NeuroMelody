@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioEngine, type AudioFactory, type EngineOptions } from '../engine/AudioEngine';
 import { AudioEngineError } from '../engine/AudioEngineError';
+import type { MixTrack } from '../engine/soundProfile';
 
 export type AudioState = 'idle' | 'loading' | 'playing' | 'interrupted' | 'stopped' | 'error';
 
@@ -18,7 +19,7 @@ export interface AudioEngineControl {
   readonly engine: () => AudioEngine | null;
   readonly state: AudioState;
   readonly error: AudioStartFailure | null;
-  readonly start: (options: EngineOptions, volumeDb: number) => Promise<AudioEngine | null>;
+  readonly start: (options: EngineOptions, volumeDb: number, mix?: Readonly<Record<MixTrack, number>>) => Promise<AudioEngine | null>;
   readonly stop: () => Promise<void>;
   /** Closes the engine so a new one is created on the next start (for example, with another output). */
   readonly discard: () => Promise<void>;
@@ -46,6 +47,7 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const engineRef = useRef<AudioEngine | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const generationRef = useRef(0);
+  const startingRef = useRef(false);
   const [state, setState] = useState<AudioState>('idle');
   const [error, setError] = useState<AudioStartFailure | null>(null);
 
@@ -68,7 +70,9 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   }, [factory]);
 
   const start = useCallback(
-    async (options: EngineOptions, volumeDb: number): Promise<AudioEngine | null> => {
+    async (options: EngineOptions, volumeDb: number, mix?: Readonly<Record<MixTrack, number>>): Promise<AudioEngine | null> => {
+      if (startingRef.current) return null;
+      startingRef.current = true;
       const generation = generationRef.current;
       setState('loading');
       setError(null);
@@ -91,6 +95,10 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
           });
         }
         engine.setVolumeDb(volumeDb);
+        if (mix !== undefined) {
+          engine.setMix('music', mix.music);
+          engine.setMix('ambience', mix.ambience);
+        }
         await engine.start();
         if (generation !== generationRef.current) {
           await engine.close();
@@ -110,6 +118,8 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
         setState('error');
         setError(toStartFailure(cause));
         return null;
+      } finally {
+        startingRef.current = false;
       }
     },
     [factory],

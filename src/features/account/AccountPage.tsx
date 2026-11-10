@@ -10,6 +10,7 @@ import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIc
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import { useRecordFormatter } from '../records/useRecordFormatter';
+import { ListeningBackupPanel } from '../records/ListeningBackupPanel';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { needsSecondFactor, useAuth } from './authContext';
 import { PasswordField } from './AuthFields';
@@ -32,6 +33,7 @@ export function AccountPage(): React.JSX.Element {
   const copy = t.account.profile;
   usePageTitle(copy.pageTitle);
   const { state, service, refresh } = useAuth();
+  const [backupRevision, setBackupRevision] = useState(0);
 
   if (state.kind === 'recovery') return <Navigate to={ROUTES.resetPassword} replace />;
   if (state.kind === 'loading') return <p role="status" className="profile-page">{copy.loading}</p>;
@@ -50,9 +52,10 @@ export function AccountPage(): React.JSX.Element {
   return (
     <div className="profile-page">
       <ProfileHeader user={state.user} />
-      <ActivitySummary />
+      <ActivitySummary key={backupRevision} />
       <SecuritySection service={service} hasPassword={state.user.hasPassword !== false} secondFactorOn={state.assurance.current === 'aal2'} onChanged={refresh} />
       <PreferencesSection />
+      <ListeningBackupPanel key={state.user.id} owner={state.user.id} onRestored={() => { setBackupRevision((revision) => revision + 1); }} />
       <SessionSection service={service} onChanged={refresh} />
     </div>
   );

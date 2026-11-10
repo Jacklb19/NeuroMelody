@@ -25,6 +25,7 @@ import {
 } from '../session/durationWarnings';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
+import type { SoundProfile } from '../engine/soundProfile';
 
 const PERCENT = 100;
 
@@ -43,6 +44,7 @@ interface PlaybackPanelProps {
   readonly ambience?: AmbienceId;
   /** Instrument of the music, chosen before the session (ADR-46). */
   readonly instrument?: InstrumentId;
+  readonly profile?: SoundProfile;
   /** Ends by fading out when the plan does, with no warning to answer (ADR-41). */
   readonly quietEnding?: boolean;
   /** Injectable to test without a browser. */
@@ -96,6 +98,7 @@ export function PlaybackPanel({
   durationMin,
   initialLevel = CALIBRATION_LEVEL,
   ambience = DEFAULT_AMBIENCE_ID,
+  profile = 'original',
   instrument = DEFAULT_INSTRUMENT_ID,
   quietEnding = false,
   factory,
@@ -111,6 +114,7 @@ export function PlaybackPanel({
   const control = useAudioEngine(factory);
   const { state, stop, engine: getEngine } = control;
   const [volumeDb, setVolumeDb] = useState(DEFAULT_VOLUME_DB);
+  const [mix, setMix] = useState({ music: 1, ambience: 1 });
   // Index of the open warning (0 = end of plan); `null` when there is none.
   const [warning, setWarning] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
@@ -151,10 +155,12 @@ export function PlaybackPanel({
         initialLevel,
         ambience,
         instrument,
+        profile,
         outputThroughAudioElement,
         reverb,
       },
       volumeDb,
+      mix,
     );
     if (engine === null) {
       return;
@@ -325,6 +331,23 @@ export function PlaybackPanel({
           {volumeText}
         </span>
       </div>
+
+      {ambience !== DEFAULT_AMBIENCE_ID && (
+        <div className="tool-grid listening-tools">
+          {(['music', 'ambience'] as const).map((track) => (
+            <label key={track}>
+              {track === 'music' ? t.listeningTools.musicMix : t.listeningTools.ambienceMix}
+              <input type="range" min={0} max={PERCENT} value={Math.round(mix[track] * PERCENT)}
+                aria-valuetext={t.audio.playback.volumeValue(Math.round(mix[track] * PERCENT))}
+                disabled={state === 'loading'} onChange={(event) => {
+                  const gain = event.target.valueAsNumber / PERCENT;
+                  getEngine()?.setMix(track, gain);
+                  setMix({ ...mix, [track]: gain });
+                }} />
+            </label>
+          ))}
+        </div>
+      )}
 
       <p role="status" className="playback-status" data-state={state}>
         {t.audio.playback.statusLabel} <strong>{stateText}</strong>
