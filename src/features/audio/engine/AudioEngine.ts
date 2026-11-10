@@ -19,6 +19,7 @@ import { LEVEL_IDS, LEVELS, type LevelId } from './levels';
 import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 import { AudioEngineError } from './AudioEngineError';
+import { profileLayers, profileReverb, type MixTrack, type SoundProfile } from './soundProfile';
 
 /** Default volume, control range and slider step (RF-18). */
 export const DEFAULT_VOLUME_DB = -12;
@@ -78,6 +79,7 @@ export interface EngineOptions {
   readonly ambience?: AmbienceId;
   /** Instrument the music is played with (ADR-46); the warm sound when omitted. */
   readonly instrument?: InstrumentId;
+  readonly profile?: SoundProfile;
   /**
    * Media Session fallback: the output goes through an `<audio>` element.
    * With it, `playbackStats` no longer measures what is actually heard.
@@ -123,6 +125,8 @@ interface Nodes {
   readonly synthesizer: AudioWorkletNode;
   readonly filter: BiquadFilterNode;
   readonly wet: GainNode;
+  readonly music: GainNode;
+  readonly ambience: GainNode;
   readonly volume: GainNode;
   readonly envelope: GainNode;
 }
@@ -160,7 +164,7 @@ function hold(param: AudioParam, t: number): number {
  * synthesizer → low-pass (brightness) → dry + reverb → volume →
  * session envelope → limiter → clipper (−1 dBFS) → output
  *
- * The ambience leaves the synthesizer on a second output and joins at the volume.
+ * Music and ambience each have a mix gain before the shared output controls.
  */
 export class AudioEngine {
   readonly #context: AudioContext;
@@ -168,6 +172,7 @@ export class AudioEngine {
   readonly #factory: AudioFactory;
   readonly #telemetry: TelemetryReader | null;
   readonly #audioElement: HTMLAudioElement | null;
+  readonly #profile: SoundProfile;
   #state: EngineState = 'ready';
   #level: LevelId;
   /** Tempo of each level in this session: the catalogue's until the person's pulse moves them (ADR-39). */
@@ -185,6 +190,7 @@ export class AudioEngine {
     telemetry: SharedArrayBuffer | null,
     audioElement: HTMLAudioElement | null,
     level: LevelId,
+    profile: SoundProfile,
   ) {
     this.#context = context;
     this.#nodes = nodes;
@@ -192,6 +198,7 @@ export class AudioEngine {
     this.#telemetry = telemetry === null ? null : new TelemetryReader(telemetry);
     this.#audioElement = audioElement;
     this.#level = level;
+    this.#profile = profile;
   }
 
   /** Creates the context, loads the worklet modules and builds the graph (silent). */
@@ -213,11 +220,12 @@ export class AudioEngine {
       await context.audioWorklet.addModule(moduleUrl);
     }
     const level = LEVELS[options.initialLevel];
+    const profile = options.profile ?? 'original';
 
     const synthesizerOptions: SynthesizerOptions = {
       seed: options.seed,
       initialMode: level.mode,
-      initialLayers: level.layers,
+      initialLayers: profileLayers(profile, level.layers),
       ambience: options.ambience ?? DEFAULT_AMBIENCE_ID,
       instrument: options.instrument ?? DEFAULT_INSTRUMENT_ID,
     };
@@ -229,7 +237,7 @@ export class AudioEngine {
     });
     getParam(synthesizer, 'tempo').value = level.tempo;
     getParam(synthesizer, 'mode').value = level.mode;
-    getParam(synthesizer, 'layers').value = level.layers;
+    getParam(synthesizer, 'layers').value = profileLayers(profile, level.layers);
 
     // Each heavy step runs in its own task, so none of them holds the page for long (RNF-04).
     await factory.wait(0);
@@ -250,7 +258,7 @@ export class AudioEngine {
     }
 
     const wet = context.createGain();
-    wet.gain.value = level.reverb;
+    wet.gain.value = profileReverb(profile, level.reverb);
     const volume = context.createGain();
     volume.gain.value = dbToGain(DEFAULT_VOLUME_DB);
     const envelope = context.createGain();
@@ -273,16 +281,19 @@ export class AudioEngine {
     });
 
     synthesizer.connect(filter, SYNTHESIZER_OUTPUT.music);
-    // The ambience skips the brightness filter and the reverb, and joins before the
-    // volume: the volume control, the stop and the output limits apply to it too.
-    synthesizer.connect(volume, SYNTHESIZER_OUTPUT.ambience);
-    filter.connect(volume);
+    // Both mix gains feed the same master volume, stop envelope and limiter.
+    const music = context.createGain();
+    const ambience = context.createGain();
+    synthesizer.connect(ambience, SYNTHESIZER_OUTPUT.ambience);
+    ambience.connect(volume);
+    filter.connect(music);
     // Without the reverb the wet gain stays unconnected: its scheduled ramps then have no effect.
     if (reverb !== null) {
       filter.connect(reverb);
       reverb.connect(wet);
-      wet.connect(volume);
+      wet.connect(music);
     }
+    music.connect(volume);
     volume.connect(envelope);
     envelope.connect(limiter);
     limiter.connect(clipper);
@@ -299,11 +310,12 @@ export class AudioEngine {
 
     return new AudioEngine(
       context,
-      { synthesizer, filter, wet, volume, envelope },
+      { synthesizer, filter, wet, music, ambience, volume, envelope },
       factory,
       telemetry,
       audioElement,
       options.initialLevel,
+      profile,
     );
   }
 
@@ -383,12 +395,12 @@ export class AudioEngine {
     hold(getParam(synthesizer, 'mode'), t);
     getParam(synthesizer, 'mode').setValueAtTime(level.mode, t);
     hold(getParam(synthesizer, 'layers'), t);
-    getParam(synthesizer, 'layers').setValueAtTime(level.layers, t);
+    getParam(synthesizer, 'layers').setValueAtTime(profileLayers(this.#profile, level.layers), t);
 
     hold(filter.frequency, t);
     filter.frequency.exponentialRampToValueAtTime(level.brightnessHz, t + TIMBRE_RAMP_DURATION_S);
     hold(wet.gain, t);
-    wet.gain.linearRampToValueAtTime(level.reverb, t + TIMBRE_RAMP_DURATION_S);
+    wet.gain.linearRampToValueAtTime(profileReverb(this.#profile, level.reverb), t + TIMBRE_RAMP_DURATION_S);
 
     this.#level = id;
     return duration;
@@ -429,6 +441,13 @@ export class AudioEngine {
     const clamped = Math.min(MAX_VOLUME_DB, Math.max(MIN_VOLUME_DB, db));
     this.#nodes.volume.gain.setTargetAtTime(dbToGain(clamped), this.#context.currentTime, VOLUME_SMOOTHING_S);
     return clamped;
+  }
+
+  /** Independent attenuation before the shared volume, stop envelope and limiter. */
+  setMix(track: MixTrack, amount: number): void {
+    if (!Number.isFinite(amount)) return;
+    const gain = Math.min(1, Math.max(0, amount));
+    this.#nodes[track].gain.setTargetAtTime(gain, this.audioTime, VOLUME_SMOOTHING_S);
   }
 
   /** Immediate stop: ramp to zero in 50 ms and suspend the context. */

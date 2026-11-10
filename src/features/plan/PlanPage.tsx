@@ -19,6 +19,10 @@ import { programFor } from './programCatalog';
 import { parseOption } from '../../shared/parseOption';
 import { useMediaQuery } from '../../shared/useMediaQuery';
 import { PersonalPlanCard } from './PersonalPlanCard';
+import { FavoritePlans } from './FavoritePlans';
+import { useAuth } from '../account/authContext';
+import { AudioPreview } from '../audio/ui/AudioPreview';
+import { isSoundProfile, SOUND_PROFILES, type SoundProfile } from '../audio/engine/soundProfile';
 import './plan.css';
 
 /** Mirrors the breakpoint at which plan.css stacks the layout in one column. */
@@ -36,6 +40,10 @@ export function PlanPage(): React.JSX.Element {
   const t = useMessages();
   usePageTitle(t.plan.pageTitle);
   const [params] = useSearchParams();
+  const { state: account } = useAuth();
+  const [fixed, setFixed] = useState(false);
+  const [profile, setProfile] = useState<SoundProfile>('original');
+  const guided = params.get(QUERY_PARAMS.guide) === '1';
   const [duration, setDuration] = useState<DurationMin>(() => parseOption(DURATIONS_MIN, Number(params.get(QUERY_PARAMS.duration)), DEFAULT_DURATION_MIN));
   // One goal at most: a link that carries several keeps its first one.
   const [goals, setGoals] = useState<readonly GoalId[]>(() => readGoals(params.get(QUERY_PARAMS.goals)).slice(0, 1));
@@ -61,7 +69,7 @@ export function PlanPage(): React.JSX.Element {
     setGoals(chosen ? [id] : []);
   };
   const startSession = (): void => {
-    void navigate(sessionPath(duration, goals, ambience, instrument));
+    void navigate(sessionPath(duration, goals, ambience, instrument, { fixed, profile, guide: guided }));
   };
 
   return (
@@ -72,13 +80,25 @@ export function PlanPage(): React.JSX.Element {
 
       <div className="plan-layout">
         <div className="plan-choices">
+          {account.kind === 'signed_in' && (
+            <FavoritePlans key={account.user.id} owner={account.user.id}
+              choices={{ duration, goals, ambience, instrument, fixed, profile }}
+              onUse={(plan) => {
+                setDuration(plan.duration);
+                setGoals(plan.goals);
+                setAmbience(plan.ambience);
+                setInstrument(plan.instrument);
+                setFixed(plan.fixed);
+                setProfile(plan.profile);
+              }} />
+          )}
           <PersonalPlanCard key={goals.join(',')} goals={goals} onAccept={(choices) => {
             if (choices.duration !== undefined) setDuration(choices.duration);
             if (choices.instrument !== undefined) { setInstrument(choices.instrument); rememberInstrument(choices.instrument); }
             if (choices.ambience !== undefined) { setAmbience(choices.ambience); rememberAmbience(choices.ambience); }
           }} />
           <fieldset className="plan-fieldset" aria-describedby={goalsHintId}>
-            <legend>{t.plan.goals.legend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">01</span>{t.plan.goals.legend}</legend>
             <p id={goalsHintId} className="secondary-text">{t.plan.goals.hint}</p>
             <div className="goal-options">
               {GOAL_IDS.map((id) => (
@@ -100,7 +120,7 @@ export function PlanPage(): React.JSX.Element {
           </fieldset>
 
           <fieldset className="plan-fieldset">
-            <legend>{t.plan.durationLegend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">02</span>{t.plan.durationLegend}</legend>
             <div className="duration-options" style={{ '--option-count': DURATIONS_MIN.length } as React.CSSProperties}>
               {DURATIONS_MIN.map((minutes) => (
                 <label key={minutes} className="choice-card duration-option">
@@ -123,9 +143,9 @@ export function PlanPage(): React.JSX.Element {
           </fieldset>
 
           <fieldset className="plan-fieldset" aria-describedby={instrumentHintId}>
-            <legend>{t.plan.instrument.legend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">03</span>{t.plan.instrument.legend}</legend>
             <p id={instrumentHintId} className="secondary-text">{t.plan.instrument.hint}</p>
-            <div className="ambience-options" style={{ '--option-count': INSTRUMENT_IDS.length } as React.CSSProperties}>
+            <div className="ambience-options instrument-options" style={{ '--option-count': INSTRUMENT_IDS.length } as React.CSSProperties}>
               {INSTRUMENT_IDS.map((id) => (
                 <label key={id} className="choice-card ambience-option">
                   <input
@@ -146,7 +166,7 @@ export function PlanPage(): React.JSX.Element {
           </fieldset>
 
           <fieldset className="plan-fieldset" aria-describedby={ambienceHintId}>
-            <legend>{t.plan.ambience.legend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">04</span>{t.plan.ambience.legend}</legend>
             <p id={ambienceHintId} className="secondary-text">{t.plan.ambience.hint}</p>
             <div className="ambience-options" style={{ '--option-count': AMBIENCE_IDS.length } as React.CSSProperties}>
               {AMBIENCE_IDS.map((id) => (
@@ -167,6 +187,26 @@ export function PlanPage(): React.JSX.Element {
               ))}
             </div>
           </fieldset>
+          <fieldset className="glass-card listening-tools">
+            <legend>{t.listeningTools.sound}</legend>
+            <div className="tool-grid">
+              <label>{t.listeningTools.mode}
+                <select className="tool-input" value={fixed ? 'fixed' : 'adaptive'} onChange={(event) => { setFixed(event.target.value === 'fixed'); }}>
+                  <option value="adaptive">{t.listeningTools.adaptive}</option>
+                  <option value="fixed">{t.listeningTools.fixed}</option>
+                </select>
+              </label>
+              <label>{t.listeningTools.profile}
+                <select className="tool-input" value={profile} onChange={(event) => {
+                  if (isSoundProfile(event.target.value)) setProfile(event.target.value);
+                }}>
+                  {SOUND_PROFILES.map((id) => <option key={id} value={id}>{t.listeningTools.profiles[id]}</option>)}
+                </select>
+              </label>
+            </div>
+            <AudioPreview key={`${instrument}:${ambience}:${profile}:${program.startLevel}`}
+              options={{ instrument, ambience, profile, initialLevel: program.startLevel }} />
+          </fieldset>
         </div>
 
         <section aria-label={t.plan.summaryLabel} className="plan-summary glass-card paper">
@@ -184,10 +224,10 @@ export function PlanPage(): React.JSX.Element {
           {ambience !== DEFAULT_AMBIENCE_ID && (
             <p className="plan-ambience"><AmbienceIcon ambience={ambience} /> {t.plan.ambience.with(ambienceNames[ambience])}</p>
           )}
-          <p className="plan-program">{goal === undefined ? t.plan.goals.defaultProgram : programTexts[goal]}</p>
-          <p className="plan-note">
+          <p className="plan-program">{fixed ? t.listeningTools.fixedHint : goal === undefined ? t.plan.goals.defaultProgram : programTexts[goal]}</p>
+          {!fixed && <p className="plan-note">
             {t.plan.calibrationNote(t.session.journey.levels[program.startLevel], CALIBRATION_MIN)}
-          </p>
+          </p>}
           {!narrow && (
             <button type="button" className="pill-button pill-button-primary pill-button-large pill-button-block" onClick={startSession}>
               <PlayIcon /> {t.plan.continueToSession}

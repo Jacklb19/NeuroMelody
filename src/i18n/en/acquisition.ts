@@ -4,7 +4,7 @@ import { common } from './common';
 const connect = {
   simulator: 'Connect simulator',
   recording: 'Play recording',
-  ble: 'Connect strap',
+  ble: 'Connect watch or strap',
   camera: 'Connect camera',
 };
 
@@ -25,7 +25,7 @@ export const acquisition = {
   sources: {
     simulator: 'Simulator',
     recording: 'Sample recording',
-    ble: 'Bluetooth strap',
+    ble: 'Bluetooth watch or strap',
     camera: 'Phone camera',
   },
   /** Option of a source not yet validated against a strap, e.g. "Phone camera (experimental)". */
@@ -38,7 +38,7 @@ export const acquisition = {
   },
   connect,
   disconnect: 'Disconnect',
-  reconnectRemembered: 'Reconnect strap',
+  reconnectRemembered: 'Reconnect device',
 
   scenarioLabel: 'Simulator scenario',
   /** Scenario names; keys mirror `ScenarioId`. Descriptive, never clinical. */
@@ -68,8 +68,8 @@ export const acquisition = {
   speedOption: (factor: number): string => `${String(factor)}×`,
 
   bluetoothUnsupported:
-    'This browser cannot connect a Bluetooth strap. Use Chrome or Edge on desktop or Android; in the meantime you can use the simulator.',
-  bleNote: 'Turn the strap on and put it on before connecting. If the connection drops, the app will try to restore it automatically.',
+    'This browser cannot access Bluetooth sensors. You can choose another source or continue without measuring your pulse.',
+  bleNote: 'Put on your strap or turn on heart rate broadcasting on your watch. The model must share heart rate over Bluetooth. If the connection drops, the app will try to restore it.',
   cameraUnsupported:
     `This browser cannot use the camera as a signal source. ${cameraBrowserAdvice} In the meantime you can use the simulator.`,
   cameraNote: `${cameraInstructions} The reading appears after a few seconds with your finger still; keep this screen open while you use it. Experimental source. ${cameraCaveat}`,
@@ -93,7 +93,7 @@ export const acquisition = {
   /** Notice around the reason of a source error, chosen by the kind of error. */
   sourceErrors: {
     recording: (reason: string): string => `The recording could not be played (${reason}). Try connecting it again.`,
-    ble: (reason: string): string => `The strap could not be used: ${reason}`,
+    ble: (reason: string): string => `The device could not be used: ${reason}`,
     camera: (reason: string): string => `The camera could not be used: ${reason}`,
     unexpected: (reason: string): string => `The signal source could not be used (${reason}). Try connecting it again.`,
     discarded: (reason: string): string =>
@@ -118,13 +118,13 @@ export const acquisition = {
   },
   /** Strap connection failures; keys mirror `BleFailure`. */
   bleFailures: {
-    no_remembered_device: `There is no remembered strap in this browser. Use “${connect.ble}”.`,
+    no_remembered_device: `There is no remembered device in this browser. Use “${connect.ble}”.`,
     no_gatt: 'The device does not offer a GATT connection.',
-    link_lost: 'The connection to the strap was lost and could not be restored.',
+    link_lost: 'The connection to the device was lost and could not be restored.',
     permission_denied: 'The browser did not allow the use of Bluetooth.',
-    device_unavailable: 'The strap is not available. Check that it is turned on and nearby.',
-    connect_failed: 'Could not connect to the strap.',
-    attempt_timed_out: 'The strap did not respond in time.',
+    device_unavailable: 'The device is not available. Check that it is turned on and nearby.',
+    connect_failed: 'Could not connect to the device.',
+    attempt_timed_out: 'The device did not respond in time.',
   },
   /** Example recording failures; keys mirror `RecordingErrorCode`. */
   recordingErrors: {

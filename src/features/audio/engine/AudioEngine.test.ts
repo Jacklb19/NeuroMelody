@@ -43,17 +43,29 @@ describe('AudioEngine.create', () => {
     expect(env.context.loadedModules).toEqual(['synthesizer.js', 'clipper.js']);
   });
 
-  it('builds the chain synthesizer → brightness → volume → envelope → limiter → clipper → output', async () => {
+  it('puts the music mix before the shared output controls', async () => {
     const { synthesizer } = await createEngine();
     expect(chain(synthesizer)).toEqual([
       `worklet:${SYNTHESIZER_NAME}`,
       'filter',
       'gain',
       'gain',
+      'gain',
       'compressor',
       `worklet:${CLIPPER_NAME}`,
       'destination',
     ]);
+  });
+
+  it('attenuates only the selected mix track without touching master volume', async () => {
+    const { engine, nodesOfKind, volume } = await createEngine();
+    const [, , , music, ambience] = nodesOfKind('gain') as unknown as { gain: FakeParam }[];
+    engine.setMix('ambience', 0);
+    expect(ambience?.gain.last('target')?.value).toBe(0);
+    expect(music?.gain.last('target')).toBeUndefined();
+    expect(volume?.gain.last('target')).toBeUndefined();
+    engine.setMix('music', 2);
+    expect(music?.gain.last('target')?.value).toBe(1);
   });
 
   it('also sends the brightness filter to the reverb, which returns to the volume', async () => {

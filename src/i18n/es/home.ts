@@ -12,8 +12,8 @@ export const home = {
   question: '¿Qué necesitas ahora?',
   start: {
     eyebrow: 'Nueva sesión',
-    title: 'Prepara tu sesión en tres pasos',
-    text: 'Elige tu intención, cuánto tiempo tienes y con qué ambiente. La música parte de tu pulso y te acompaña desde ahí.',
+    title: 'Prepara tu próxima sesión',
+    text: 'Elige tu intención, el tiempo y cómo quieres que suene. Prepara tu pausa y empieza cuando quieras.',
     action: 'Preparar mi sesión',
     /** Starts a session like the last one: same goal and length, and the ambience kept on the device. */
     repeat: 'Repetir la última',

@@ -1,21 +1,26 @@
 /* Session plan (ADR-30). Values come from index.css tokens. */
 .plan-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: var(--space-10); align-items: start; }
-.plan-choices { display: grid; gap: var(--space-12); }
+.plan-choices { display: grid; gap: var(--space-10); }
 .plan-fieldset { border: 0; min-width: 0; }
 .plan-fieldset legend { font-family: var(--font-display); font-size: var(--text-metric); padding-bottom: var(--space-2); }
+.plan-step-number { display: inline-grid; place-items: center; width: var(--choice-number-size); height: var(--choice-number-size); margin-right: var(--space-3); border-radius: var(--radius-control); background: var(--color-surface); border: var(--border-width) solid var(--color-border-subtle); color: var(--color-accent); font-family: var(--font-data); font-size: var(--text-xs); vertical-align: middle; }
+.plan-fieldset + .plan-fieldset { padding-top: var(--space-6); border-top: var(--border-width) solid var(--color-border-subtle); }
 .plan-fieldset > p { margin-bottom: var(--space-5); }
 
 /* A choice is a whole card; its native input stays in place for keyboard and screen readers, drawn invisible. */
 .choice-card { position: relative; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); cursor: pointer; transition: border-color var(--motion-duration), background var(--motion-duration), transform var(--motion-duration), box-shadow var(--motion-duration); }
 .choice-card input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .choice-card:hover { border-color: var(--color-border); transform: translateY(-2px); }
-.choice-card:has(input:checked) { border-color: var(--color-accent); background: var(--color-success-background); box-shadow: var(--glow-accent); }
+.choice-card:has(input:checked) { border-color: var(--color-accent); background: var(--color-success-background); box-shadow: inset 0 0 0 var(--border-width) var(--color-accent); }
+/* The check is a second selection cue, including when colour is unavailable. */
+.choice-card::after { content: ''; position: absolute; top: var(--space-2); right: var(--space-2); width: var(--choice-mark-size); height: calc(var(--choice-mark-size) / 2); border: 0 solid var(--color-accent); border-left-width: var(--choice-mark-stroke); border-bottom-width: var(--choice-mark-stroke); transform: rotate(-45deg); opacity: 0; pointer-events: none; }
+.choice-card:has(input:checked)::after { opacity: 1; }
 .choice-card:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 .choice-card .icon-badge { margin-bottom: 0; transition: background var(--motion-duration), color var(--motion-duration); }
 .choice-card:has(input:checked) .icon-badge { background: var(--color-accent); color: var(--color-button-text); }
 
 .goal-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.goal-option { font-weight: var(--font-weight-strong); }
+.goal-option { font-weight: var(--font-weight-strong); padding-right: var(--space-8); }
 .ambience-options { display: grid; grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); gap: var(--space-3); }
 .ambience-option { flex-direction: column; gap: var(--space-3); padding: var(--space-5) var(--space-2); text-align: center; font-weight: var(--font-weight-strong); }
 .plan-ambience { display: flex; align-items: center; gap: var(--space-3); }
@@ -26,8 +31,8 @@
 .duration-unit { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
 .duration-option:has(input:checked) .duration-figure { color: var(--color-accent); }
 
-.plan-summary { position: sticky; top: var(--space-6); display: grid; gap: var(--space-4); padding: var(--space-8); overflow: clip; }
-.plan-orb { position: absolute; top: calc(-1 * var(--space-8)); right: calc(-1 * var(--space-8)); font-size: var(--orb-size); opacity: 0.85; pointer-events: none; }
+.plan-summary { position: sticky; top: var(--space-6); display: grid; gap: var(--space-5); padding: var(--space-8); overflow: clip; }
+.plan-orb { position: absolute; top: calc(-1 * var(--space-8)); right: calc(-1 * var(--space-8)); font-size: var(--orb-size-small); opacity: 0.85; pointer-events: none; }
 .plan-summary > :not(.plan-orb) { position: relative; }
 .plan-summary .eyebrow { color: var(--color-accent); margin-bottom: 0; }
 .plan-duration strong { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); }
@@ -42,6 +47,7 @@
 .plan-proposal-length { font-family: var(--font-display); font-size: var(--text-xl); }
 .plan-proposal .pill-button { margin-top: var(--space-2); }
 .plan-program { font-size: var(--text-sm); }
+.plan-program { padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-control); line-height: var(--copy-line-height); }
 .plan-note { font-size: var(--text-sm); color: var(--color-text-secondary); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border-subtle); }
 
 /* The way into the session on a phone: a bar that stays at the bottom while the choices scroll (mounted only below the breakpoint). */
@@ -62,4 +68,12 @@
 }
 @media (max-width: 600px) {
   .goal-options { grid-template-columns: minmax(0, 1fr); }
+  .plan-fieldset legend { font-size: var(--text-xl); }
+  .ambience-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .instrument-options { grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); }
+  .plan-summary { padding: var(--space-6); }
+}
+@media (forced-colors: active) {
+  .choice-card:has(input:checked) { border-color: Highlight; }
+  .choice-card:has(input:checked)::after { border-color: Highlight; }
 }

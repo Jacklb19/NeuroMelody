@@ -55,6 +55,9 @@ export const QUERY_PARAMS = {
   ambience: 'ambience',
   /** Instrument of the music: an id of the instrument catalog. */
   instrument: 'instrument',
+  soundMode: 'sound-mode',
+  soundProfile: 'sound-profile',
+  guide: 'guide',
   /** Which sessions the report covers: an id of the progress range catalog. */
   range: 'range',
 } as const;
@@ -92,10 +95,19 @@ export function planPath(goals: readonly string[] = [], durationMin?: number): s
 }
 
 /** The session screen with the planned duration and, when chosen, its goals, its ambience and its instrument. */
-export function sessionPath(durationMin: number, goals: readonly string[] = [], ambience?: string, instrument?: string): string {
+export function sessionPath(
+  durationMin: number,
+  goals: readonly string[] = [],
+  ambience?: string,
+  instrument?: string,
+  sound?: { readonly fixed: boolean; readonly profile: string; readonly guide: boolean },
+): string {
   const params = planParams(goals);
   params.set(QUERY_PARAMS.duration, String(durationMin));
   if (ambience !== undefined) params.set(QUERY_PARAMS.ambience, ambience);
   if (instrument !== undefined) params.set(QUERY_PARAMS.instrument, instrument);
+  if (sound?.fixed) params.set(QUERY_PARAMS.soundMode, 'fixed');
+  if (sound !== undefined && sound.profile !== 'original') params.set(QUERY_PARAMS.soundProfile, sound.profile);
+  if (sound?.guide) params.set(QUERY_PARAMS.guide, '1');
   return `${ROUTES.session}?${params.toString()}`;
 }

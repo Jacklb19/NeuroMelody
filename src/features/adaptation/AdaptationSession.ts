@@ -38,6 +38,7 @@ export interface SessionSnapshot extends AdaptationSnapshot {
 /** Binds guidance to the existing audio engine; no musical timers or extra worker. */
 export class AdaptationSession {
   readonly #range: GuidanceRange;
+  readonly fixed: boolean;
   #model: ActivationModel | null = null;
   #guidance: AdaptationEngine;
   #audio: AudioEngine | null = null;
@@ -54,8 +55,9 @@ export class AdaptationSession {
   readonly #listeners = new Set<() => void>();
 
   /** `range` is the stretch of the ladder the program of the session allows (ADR-38). */
-  constructor(range: GuidanceRange = DEFAULT_GUIDANCE_RANGE) {
+  constructor(range: GuidanceRange = DEFAULT_GUIDANCE_RANGE, fixed = false) {
     this.#range = range;
+    this.fixed = fixed;
     this.#guidance = new AdaptationEngine(null, range);
     this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: null, levelTempoBpm: this.#levelTempo(), recap: null };
   }
@@ -129,7 +131,7 @@ export class AdaptationSession {
 
   receive = (result: IndicesResult): void => {
     const audio = this.#audio;
-    const level = this.#guidance.process(result, audio?.audioTime ?? 0, audio?.state === 'playing');
+    const level = this.#guidance.process(result, audio?.audioTime ?? 0, !this.fixed && audio?.state === 'playing');
     this.#syncTempo();
     if (level !== null && audio !== null) this.#apply(audio, level);
     this.#publish();
@@ -138,7 +140,7 @@ export class AdaptationSession {
   /** Source cadence checks eligibility; AudioParam still owns every sound ramp. */
   pulse = (): void => {
     const audio = this.#audio;
-    if (audio === null) return;
+    if (audio === null || this.fixed) return;
     const level = this.#guidance.advance(audio.audioTime, audio.state === 'playing');
     if (level !== null) this.#apply(audio, level);
     this.#publish();
@@ -152,20 +154,20 @@ export class AdaptationSession {
     }
     this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: tempo,
       levelTempoBpm: this.#levelTempo(), recap: this.#recap,
-      waitingForDwell: this.#audio?.state === 'playing' && this.#guidance.snapshot.waitingForDwell,
+      waitingForDwell: !this.fixed && this.#audio?.state === 'playing' && this.#guidance.snapshot.waitingForDwell,
       lastTransition: this.#lastTiming };
     for (const listener of this.#listeners) listener();
   }
 
   #levelTempo(): number {
     const { level, tempoOffsetBpm } = this.#guidance.snapshot;
-    return personalTempo(level, this.#range, tempoOffsetBpm);
+    return personalTempo(level, this.#range, this.fixed ? 0 : tempoOffsetBpm);
   }
 
   /** Hands the audio engine the tempos of this person when the pulse moves them; it ramps there gradually. */
   #syncTempo(): void {
     const offset = this.#guidance.snapshot.tempoOffsetBpm;
-    if (this.#audio === null || offset === this.#appliedOffsetBpm) return;
+    if (this.fixed || this.#audio === null || offset === this.#appliedOffsetBpm) return;
     this.#appliedOffsetBpm = offset;
     this.#audio.setTempos(personalTempos(this.#range, offset));
   }

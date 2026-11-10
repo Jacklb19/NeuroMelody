@@ -24,6 +24,7 @@ import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
 import { createSessionContext } from '../records/sessionContext';
 import { useSessionStore } from '../records/sessionStoreContext';
+import { isSoundProfile } from '../audio/engine/soundProfile';
 import { storeErrorMessage } from '../records/storeErrorMessage';
 import type { OrbHandle } from '../../shared/BreathingOrb';
 import { PageHeading } from '../../shared/PageHeading';
@@ -72,7 +73,11 @@ export function SessionPage(): React.JSX.Element {
   const { api } = useCloudSync();
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
-  const [adaptation] = useState(() => new AdaptationSession(program));
+  const [adaptation] = useState(() => new AdaptationSession(program, params.get(QUERY_PARAMS.soundMode) === 'fixed'));
+  const [profile] = useState(() => {
+    const value = params.get(QUERY_PARAMS.soundProfile);
+    return isSoundProfile(value) ? value : 'original';
+  });
   const [recorder] = useState(() => new SessionRecorder());
   const [elapsedS, setElapsedS] = useState(0);
   // The engine while the music plays; the breathing guide follows its tempo.
@@ -157,14 +162,14 @@ export function SessionPage(): React.JSX.Element {
         goals,
         sourceKind: sourceRef.current?.kind ?? null,
         ratingBefore: ratingBeforeRef.current,
-        context: createSessionContext(instrument, ambience),
+        context: { ...createSessionContext(instrument, ambience), fixed: adaptation.fixed, profile },
       });
       setEnded(false);
       setSavedId(null);
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, instrument, ambience, finishRecording, clearPauseTimer, goTo]);
+  }, [adaptation, recorder, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -267,6 +272,12 @@ export function SessionPage(): React.JSX.Element {
               {connection === 'connected' ? t.session.slides.next : t.session.slides.withoutPulse}
             </button>
           </div>
+          <details className="glass-card listening-tools" open={params.get(QUERY_PARAMS.guide) === '1' || undefined}>
+            <summary>{t.listeningTools.guide}</summary>
+            <ol className="guided-steps">
+              {t.listeningTools.guideSteps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+          </details>
         </section>
 
         <section className={slide === 'arrival' ? 'session-slide' : 'session-slide is-away'} aria-labelledby={slideIds.arrival}>
@@ -333,6 +344,7 @@ export function SessionPage(): React.JSX.Element {
           initialLevel={paused ? adaptationSnapshot.level : program.startLevel}
           ambience={ambience}
           instrument={instrument}
+          profile={profile}
           quietEnding={program.quietEnding}
           // While paused, resuming is offered next to finishing, above; once over, nothing is.
           hideStart={paused || ended}

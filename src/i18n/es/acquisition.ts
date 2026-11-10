@@ -4,7 +4,7 @@ import { common } from './common';
 const connect = {
   simulator: 'Conectar simulador',
   recording: 'Reproducir registro',
-  ble: 'Conectar banda',
+  ble: 'Conectar reloj o banda',
   camera: 'Conectar cámara',
 };
 
@@ -25,7 +25,7 @@ export const acquisition = {
   sources: {
     simulator: 'Simulador',
     recording: 'Registro de ejemplo',
-    ble: 'Banda Bluetooth',
+    ble: 'Reloj o banda Bluetooth',
     camera: 'Cámara del celular',
   },
   /** Option of a source not yet validated against a strap, e.g. "Cámara del celular (experimental)". */
@@ -38,7 +38,7 @@ export const acquisition = {
   },
   connect,
   disconnect: 'Desconectar',
-  reconnectRemembered: 'Reconectar banda',
+  reconnectRemembered: 'Reconectar dispositivo',
 
   scenarioLabel: 'Escenario del simulador',
   /** Scenario names; keys mirror `ScenarioId`. Descriptive, never clinical. */
@@ -68,8 +68,8 @@ export const acquisition = {
   speedOption: (factor: number): string => `${String(factor)}×`,
 
   bluetoothUnsupported:
-    'Este navegador no permite conectar una banda Bluetooth. Usa Chrome o Edge en escritorio o Android; mientras tanto puedes usar el simulador.',
-  bleNote: 'Enciende la banda y colócala antes de conectar. Si la conexión se pierde, se intentará recuperar automáticamente.',
+    'Este navegador no puede acceder a sensores Bluetooth. Puedes elegir otra fuente o seguir sin medir el pulso.',
+  bleNote: 'Colócate la banda o activa la transmisión de frecuencia cardíaca en el reloj. El modelo debe compartir el pulso por Bluetooth. Si se pierde la conexión, la app intentará recuperarla.',
   cameraUnsupported:
     `Este navegador no permite usar la cámara como fuente de señal. ${cameraBrowserAdvice} Mientras tanto puedes usar el simulador.`,
   cameraNote: `${cameraInstructions} La lectura aparece tras unos segundos con el dedo quieto; mantén esta pantalla abierta mientras la uses. Fuente experimental. ${cameraCaveat}`,
@@ -93,7 +93,7 @@ export const acquisition = {
   /** Notice around the reason of a source error, chosen by the kind of error. */
   sourceErrors: {
     recording: (reason: string): string => `No se pudo reproducir el registro (${reason}). Intenta conectarlo de nuevo.`,
-    ble: (reason: string): string => `No se pudo usar la banda: ${reason}`,
+    ble: (reason: string): string => `No se pudo usar el dispositivo: ${reason}`,
     camera: (reason: string): string => `No se pudo usar la cámara: ${reason}`,
     unexpected: (reason: string): string => `No se pudo usar la fuente de señal (${reason}). Intenta conectarla de nuevo.`,
     discarded: (reason: string): string =>
@@ -118,13 +118,13 @@ export const acquisition = {
   },
   /** Strap connection failures; keys mirror `BleFailure`. */
   bleFailures: {
-    no_remembered_device: `No hay una banda recordada en este navegador. Usa «${connect.ble}».`,
+    no_remembered_device: `No hay un dispositivo recordado en este navegador. Usa «${connect.ble}».`,
     no_gatt: 'El dispositivo no ofrece conexión GATT.',
-    link_lost: 'Se perdió la conexión con la banda y no se pudo recuperar.',
+    link_lost: 'Se perdió la conexión con el dispositivo y no se pudo recuperar.',
     permission_denied: 'El navegador no permitió usar Bluetooth.',
-    device_unavailable: 'La banda no está disponible. Comprueba que esté encendida y cerca.',
-    connect_failed: 'No se pudo conectar con la banda.',
-    attempt_timed_out: 'La banda no respondió a tiempo.',
+    device_unavailable: 'El dispositivo no está disponible. Comprueba que esté encendido y cerca.',
+    connect_failed: 'No se pudo conectar con el dispositivo.',
+    attempt_timed_out: 'El dispositivo no respondió a tiempo.',
   },
   /** Example recording failures; keys mirror `RecordingErrorCode`. */
   recordingErrors: {

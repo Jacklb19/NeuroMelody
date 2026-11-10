@@ -40,7 +40,9 @@ export function SessionStage({ session, connection, playing, ended = false }: Se
     qualityGood: snapshot.qualityGood,
     musicPlaying: playing,
   })];
-  const narrative = ended ? t.session.stage.ended : moment;
+  const narrative = ended ? t.session.stage.ended : session.fixed
+    ? { title: t.listeningTools.fixed, detail: t.listeningTools.fixedHint }
+    : moment;
   const connected = connection === 'connected';
   // Says who is estimating: the trained model (with its confidence once it has one) or the fallback rules.
   const estimateNote = snapshot.estimator === 'heart_rate'
@@ -59,10 +61,10 @@ export function SessionStage({ session, connection, playing, ended = false }: Se
 
       {playing && (
         <div className="music-now">
-          <SessionJourney range={session.range} level={snapshot.level} />
+          {!session.fixed && <SessionJourney range={session.range} level={snapshot.level} />}
           {snapshot.tempoBpm !== null && (
             <p className="music-pace">
-              {t.session.stage.pace(Math.round(snapshot.tempoBpm), snapshot.tempoOffsetBpm !== 0)}
+              {t.session.stage.pace(Math.round(snapshot.tempoBpm), !session.fixed && snapshot.tempoOffsetBpm !== 0)}
             </p>
           )}
         </div>
@@ -84,7 +86,7 @@ export function SessionStage({ session, connection, playing, ended = false }: Se
 
       {!ended && snapshot.estimator === 'heart_rate' && <p className="quiet-notice">{t.session.stage.heartRateOnlyNotice}</p>}
       {/* While the reference is still being taken the title already says so; the notice would only alarm. */}
-      {connected && playing && snapshot.state !== null && !snapshot.qualityGood && (
+      {!session.fixed && connected && playing && snapshot.state !== null && !snapshot.qualityGood && (
         <p className="quiet-notice">{t.session.stage.waitingForQuality}</p>
       )}
       {snapshot.waitingForDwell && (
