@@ -26,6 +26,8 @@ export interface SessionStore {
   get(id: string): Promise<SessionRecord | null>;
   /** All valid sessions, newest first. */
   list(): Promise<SessionRecord[]>;
+  /** Restores a validated batch atomically, preserving existing data on conflicts. */
+  restore(records: readonly SessionRecord[]): Promise<void>;
   setRatingAfter(id: string, rating: number | null): Promise<SessionRecord>;
   /** Saves or removes a local note, without sending it to the cloud. */
   setNote(id: string, note: string): Promise<SessionRecord>;
@@ -36,6 +38,25 @@ export interface SessionStore {
 }
 
 const newestFirst = (a: SessionRecord, b: SessionRecord): number => b.startedAt.localeCompare(a.startedAt);
+
+function restoredRecord(existing: unknown, incoming: SessionRecord): SessionRecord | undefined {
+  if (existing === undefined) return incoming;
+  const current = readSessionRecord(existing);
+  if (current === null || current.ownerId !== incoming.ownerId) return undefined;
+  // A synced copy can have the same id without the private fields of its original.
+  return {
+    ...current,
+    ...(current.note === undefined && incoming.note !== undefined ? { note: incoming.note } : {}),
+    ...(incoming.context === undefined ? {} : { context: { ...incoming.context, ...current.context } }),
+    ...(current.music === undefined && incoming.music !== undefined ? { music: incoming.music } : {}),
+  };
+}
+
+function validateRestore(records: readonly SessionRecord[]): void {
+  if (!records.every(isSessionRecord) || new Set(records.map(({ id }) => id)).size !== records.length) {
+    throw new SessionStoreError('invalid_record', 'The backup contains invalid or duplicate sessions.');
+  }
+}
 
 /**
  * Shared rules of every store: validates at the boundary in both directions
@@ -49,6 +70,7 @@ abstract class ValidatingStore implements SessionStore {
   protected abstract update(id: string, change: (record: SessionRecord) => SessionRecord): Promise<SessionRecord>;
   abstract delete(id: string): Promise<void>;
   abstract clear(): Promise<void>;
+  abstract restore(records: readonly SessionRecord[]): Promise<void>;
 
   async save(record: SessionRecord): Promise<void> {
     if (!isSessionRecord(record)) throw new SessionStoreError('invalid_record', 'The session record does not have a valid shape.');
@@ -84,6 +106,15 @@ abstract class ValidatingStore implements SessionStore {
 /** In-memory store for tests and for browsers without IndexedDB. */
 export class MemorySessionStore extends ValidatingStore {
   readonly #records = new Map<string, unknown>();
+
+  restore(records: readonly SessionRecord[]): Promise<void> {
+    validateRestore(records);
+    for (const record of records) {
+      const merged = restoredRecord(this.#records.get(record.id), record);
+      if (merged !== undefined) this.#records.set(record.id, structuredClone(merged));
+    }
+    return Promise.resolve();
+  }
 
   protected read(id: string): Promise<unknown> {
     return Promise.resolve(this.#records.get(id));
@@ -170,6 +201,24 @@ export class IndexedDbSessionStore extends ValidatingStore {
 
   protected async write(record: SessionRecord): Promise<void> {
     await requestResult((await this.#store('readwrite')).put(record));
+  }
+
+  async restore(records: readonly SessionRecord[]): Promise<void> {
+    validateRestore(records);
+    const store = await this.#store('readwrite');
+    await new Promise<void>((resolve, reject) => {
+      store.transaction.oncomplete = () => { resolve(); };
+      store.transaction.onabort = () => {
+        reject(new SessionStoreError('access_failed', 'Could not restore local sessions.', { cause: store.transaction.error }));
+      };
+      for (const record of records) {
+        const request = store.get(record.id);
+        request.onsuccess = () => {
+          const merged = restoredRecord(request.result, record);
+          if (merged !== undefined) store.put(merged);
+        };
+      }
+    });
   }
 
   protected async update(id: string, change: (record: SessionRecord) => SessionRecord): Promise<SessionRecord> {

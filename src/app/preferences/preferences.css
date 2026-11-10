@@ -15,5 +15,6 @@
 .segment:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
 @media (max-width: 600px) {
   .segmented { display: flex; width: 100%; }
-  .segment { flex: 1; padding: 0 var(--space-2); }
+  .segment { flex: 1; gap: var(--space-1); padding: 0 var(--space-1); }
+  .segment .icon { width: var(--space-4); height: var(--space-4); }
 }

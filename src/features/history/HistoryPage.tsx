@@ -13,6 +13,8 @@ import { storeErrorMessage } from '../records/storeErrorMessage';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { PageHeading } from '../../shared/PageHeading';
 import { groupByWeek, type HistoryWeek } from './historyWeeks';
+import { EMPTY_FILTERS, filterHistory } from './historyFilters';
+import { HistoryFilterPanel, WeeklyListening } from './HistoryTools';
 
 type Loaded =
   | { readonly kind: 'loading' }
@@ -30,6 +32,9 @@ export function HistoryPage(): React.JSX.Element {
   const store = useSessionStore();
   const { revision, syncNow } = useCloudSync();
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const invalidDates = filters.from !== '' && filters.to !== '' && filters.to < filters.from;
+  const visible = loaded.kind === 'ready' && !invalidDates ? filterHistory(loaded.records, filters) : [];
 
   const reload = useCallback((): Promise<void> => store.list().then(
     (records) => { setLoaded({ kind: 'ready', records }); },
@@ -61,7 +66,11 @@ export function HistoryPage(): React.JSX.Element {
       {loaded.kind === 'ready' && (loaded.records.length === 0 ? <EmptyHistory /> : (
         <>
           <ProgressInvite />
-          {groupByWeek(loaded.records, new Date()).map((week) => (
+          <WeeklyListening records={loaded.records} />
+          <HistoryFilterPanel value={filters} onChange={setFilters} />
+          {invalidDates && <p role="status">{t.listeningTools.dateOrder}</p>}
+          {!invalidDates && visible.length === 0 && <p role="status">{t.listeningTools.noMatches}</p>}
+          {groupByWeek(visible, new Date()).map((week) => (
             <HistoryWeekList key={week.key} week={week} onDelete={remove} />
           ))}
           <ConfirmButton

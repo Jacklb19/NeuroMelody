@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { AudioEngine } from '../audio/engine/AudioEngine';
 import { createFakeAudioEnvironment } from '../../test/fakeAudio';
 import { AdaptationSession } from './AdaptationSession';
+import { DEFAULT_GUIDANCE_RANGE } from './AdaptationEngine';
 import { FADE_DURATION_S, tempoRampDurationS } from '../audio/engine/ramps';
 import type { IndicesResult } from '../signal/processing/SignalProcessor';
 
@@ -11,6 +12,23 @@ function reading(timeMs: number, high = false, restingHr = 66): IndicesResult {
   return { timeMs, meanHr: high ? restingHr * 1.2 : restingHr, rmssd: high ? 30 : 50, sdnn: 50,
     nnDurationMs: timeMs, coverageMs: timeMs, acceptedBeats: 100, discardedBeats: 0, lfPower: null, hfPower: null, lfHfRatio: null, quality: 'good' };
 }
+
+it('still estimates pulse while the fixed mode keeps the initial tempo and level', async () => {
+  const env = createFakeAudioEnvironment();
+  const audio = await AudioEngine.create(env.factory, { seed: 1, initialLevel: 'intermediate', outputThroughAudioElement: false });
+  await audio.start();
+  const session = new AdaptationSession(DEFAULT_GUIDANCE_RANGE, true);
+  session.setAudio(audio);
+  for (let ms = 60_000; ms <= 220_000; ms += 5000) {
+    env.context.currentTime = ms / 1000;
+    session.receive(reading(ms, ms > 180_000, 76));
+    session.pulse();
+  }
+  expect(session.getSnapshot().state).toBe('high');
+  expect(audio.level).toBe('intermediate');
+  expect(audio.tempoBpm).toBe(66);
+  expect(env.worklets[0]?.parameters.get('tempo')?.last('linear')).toBeUndefined();
+});
 
 it('performs one thousand interrupted transitions with real delta ramps and no latency after accepted High', async () => {
   const env = createFakeAudioEnvironment();

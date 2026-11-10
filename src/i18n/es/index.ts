@@ -21,6 +21,7 @@ import { signal } from './signal';
 import { summary } from './summary';
 import { warnings } from './warnings';
 import { insights } from './insights';
+import { listeningTools } from './listeningTools';
 
 /**
  * Spanish dictionary, one module per area. Its shape is the `Messages` type:
@@ -28,6 +29,7 @@ import { insights } from './insights';
  */
 export const es = {
   insights,
+  listeningTools,
   common,
   app,
   landing,

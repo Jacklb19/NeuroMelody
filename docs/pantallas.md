@@ -8,6 +8,10 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 
 ## Pantallas
 
+La ampliación aprobada de noviembre sitúa los favoritos, la escucha previa y el modo de sonido en `/plan`. La guía inicial se abre desde `/app` y acompaña el paso de pulso en `/session`. El mezclador está junto al volumen de sesión. Los filtros y el resumen de la semana están en `/history` y la copia del historial y los favoritos en `/account`. Se conservan las rutas existentes.
+
+**Ajuste visual de noviembre de 2026:** se conservan todas las rutas y paneles. Navegación agrupada, encabezados separados, plan con cuatro grupos numerados y selección con marca, superficies de historial/resumen más legibles y foco sólido en el acceso. En Inicio se oculta el orbe decorativo bajo 900 px para despejar el texto; no se oculta el orbe de la sesión. Detalles y comprobación en `revision-producto-visual.md`.
+
 | Ruta | Pantalla | Propósito | HU | RF | Sprint | ¿Requiere sesión? | Lleva a |
 |---|---|---|---|---|---|---|---|
 | `/` | Portada | Página pública (ADR-28): qué es NeuroMelody, cómo funciona su lazo, fuentes de señal, privacidad y tecnología, con escena 3D animada y acceso a la app. Diseño propio, fuera del `Layout` de la app. | — | — | Portada | No | `/app`, `/plan`, `/account`, `/privacy`, `/diagnostics` |

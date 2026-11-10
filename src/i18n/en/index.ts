@@ -21,6 +21,7 @@ import { signal } from './signal';
 import { summary } from './summary';
 import { warnings } from './warnings';
 import { insights } from './insights';
+import { listeningTools } from './listeningTools';
 
 /**
  * English dictionary, one module per area. It must match the `Messages` type
@@ -28,6 +29,7 @@ import { insights } from './insights';
  */
 export const en = {
   insights,
+  listeningTools,
   common,
   app,
   landing,

@@ -1,5 +1,5 @@
 import type { SessionRecord } from '../records/sessionRecord';
-import type { SessionStore } from '../records/sessionStore';
+import { SessionStoreError, type SessionStore } from '../records/sessionStore';
 import type { CloudApi } from './cloudApi';
 import { belongsTo, markedByOtherAccounts, type PendingDeletions, type SyncMarks } from './syncSessions';
 
@@ -73,6 +73,13 @@ export function createMirroredSessionStore({
     },
     get: (id) => local.get(id),
     list: () => local.list(),
+    async restore(records) {
+      const account = owner();
+      if (account === null || records.some((record) => record.ownerId !== account)) {
+        throw new SessionStoreError('invalid_record', 'The backup belongs to another account.');
+      }
+      await local.restore(records);
+    },
     setNote: (id, note) => local.setNote(id, note),
     setOwner: (id, ownerId) => local.setOwner(id, ownerId),
     async setRatingAfter(id, rating) {

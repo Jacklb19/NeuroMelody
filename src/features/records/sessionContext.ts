@@ -1,5 +1,6 @@
 import { AMBIENCE_IDS, type AmbienceId } from '../audio/core/ambienceCatalog';
 import { INSTRUMENT_IDS, type InstrumentId } from '../audio/core/instrumentCatalog';
+import { isSoundProfile, type SoundProfile } from '../audio/engine/soundProfile';
 
 /** Version of the music programs accompanying these local choices. */
 export const SESSION_CONTEXT_VERSION = 1;
@@ -12,6 +13,8 @@ export interface SessionContext {
   readonly ambience: AmbienceId;
   readonly localHour: number;
   readonly localDate: string;
+  readonly fixed?: boolean;
+  readonly profile?: SoundProfile;
 }
 
 export function createSessionContext(instrument: InstrumentId, ambience: AmbienceId, now = new Date()): SessionContext {
@@ -27,6 +30,8 @@ export function isSessionContext(value: unknown): value is SessionContext {
   return item.version === SESSION_CONTEXT_VERSION
     && INSTRUMENT_IDS.some((id) => id === item.instrument)
     && AMBIENCE_IDS.some((id) => id === item.ambience)
+    && (item.fixed === undefined || typeof item.fixed === 'boolean')
+    && (item.profile === undefined || isSoundProfile(item.profile))
     && Number.isInteger(item.localHour) && Number(item.localHour) >= 0 && Number(item.localHour) < 24
     && typeof item.localDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.localDate)
     && !Number.isNaN(Date.parse(item.localDate))
