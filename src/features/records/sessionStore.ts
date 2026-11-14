@@ -20,7 +20,7 @@ export class SessionStoreError extends Error {
   }
 }
 
-/** Sessions kept on this device (RF-14, RF-16); no account needed. */
+/** Sessions kept on this device (RF-14, RF-16), read by every screen even without a connection. */
 export interface SessionStore {
   save(record: SessionRecord): Promise<void>;
   get(id: string): Promise<SessionRecord | null>;
