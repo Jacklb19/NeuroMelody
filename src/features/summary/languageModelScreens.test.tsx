@@ -10,9 +10,12 @@ import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from '../
 import { PlanPage } from '../plan/PlanPage';
 import { sessionRecord } from '../../test/sessionRecords';
 import { AutomaticSummary } from './AutomaticSummary';
-import { NARRATIVE_STORAGE_KEY } from './narrativeCache';
+import { LEGACY_NARRATIVE_STORAGE_KEY, narrativeStorageKey } from './narrativeCache';
 
 const RECORD = sessionRecord();
+/** Someone signed in: automatic texts are kept per account (ADR-61). */
+const SIGNED_IN: AuthState = { kind: 'signed_in', user: { id: 'user-1', email: 'persona@example.test', name: null }, assurance: { current: 'aal1', next: 'aal1' } };
+const OWN_TEXTS = narrativeStorageKey('user-1');
 const SESSION_ID = RECORD.id;
 const plan = es.plan;
 const automatic = es.summary.automatic;
@@ -28,6 +31,7 @@ function cloud(status: CloudSyncStatus, api: Partial<CloudApi> | null): CloudSyn
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
     forgetDeviceCopies: () => Promise.resolve(0),
+    forgetAccount: () => Promise.resolve(),
     api: api as CloudApi | null,
   };
 }
@@ -100,7 +104,7 @@ describe('automatic summary (RF-15)', () => {
     const user = userEvent.setup();
     const summarizeSession = vi.fn<CloudApi['summarizeSession']>(() => Promise.resolve({ text: 'Escuchaste 20 minutos.' }));
     // An account is enough: no two-step verification and no session in the cloud.
-    renderWith(cloud('needs_second_factor', { summarizeSession }), <AutomaticSummary record={RECORD} />);
+    renderWith(cloud('needs_second_factor', { summarizeSession }), <AutomaticSummary record={RECORD} />, SIGNED_IN);
 
     // What travels is said before the button.
     expect(screen.getByText(automatic.notice)).toBeVisible();
@@ -110,21 +114,31 @@ describe('automatic summary (RF-15)', () => {
     expect(summarizeSession).toHaveBeenCalledWith(SESSION_ID, 'es', expect.objectContaining({ plannedMinutes: 20, ratingBefore: 4, ratingAfter: 7 }));
     expect(await screen.findByTestId('narrative-text')).toHaveTextContent('Escuchaste 20 minutos.');
     expect(screen.getByText(automatic.generatedMark)).toBeVisible();
-    expect(window.localStorage.getItem(NARRATIVE_STORAGE_KEY)).toContain('Escuchaste 20 minutos.');
+    expect(window.localStorage.getItem(OWN_TEXTS)).toContain('Escuchaste 20 minutos.');
   });
 
   it('shows a summary written earlier without asking again', () => {
-    window.localStorage.setItem(NARRATIVE_STORAGE_KEY, JSON.stringify([
+    window.localStorage.setItem(OWN_TEXTS, JSON.stringify([
       { sessionId: SESSION_ID, locale: 'es', text: 'Tu pulso pasó de 78 a 68.' },
       { sessionId: SESSION_ID, locale: 'es', text: '' },
       'not an entry',
     ]));
     const summarizeSession = vi.fn<CloudApi['summarizeSession']>();
-    renderWith(cloud('signed_out', null), <AutomaticSummary record={RECORD} />);
+    renderWith(cloud('needs_second_factor', { summarizeSession }), <AutomaticSummary record={RECORD} />, SIGNED_IN);
 
     expect(screen.getByTestId('narrative-text')).toHaveTextContent('Tu pulso pasó de 78 a 68.');
     expect(screen.getByText(automatic.generatedMark)).toBeVisible();
     expect(summarizeSession).not.toHaveBeenCalled();
+  });
+
+  it('never shows a text another account of this device asked for, nor one kept before texts were per account', () => {
+    const text = [{ sessionId: SESSION_ID, locale: 'es', text: 'Texto de otra cuenta.' }];
+    window.localStorage.setItem(narrativeStorageKey('user-2'), JSON.stringify(text));
+    window.localStorage.setItem(LEGACY_NARRATIVE_STORAGE_KEY, JSON.stringify(text));
+    renderWith(cloud('needs_second_factor', { summarizeSession: vi.fn<CloudApi['summarizeSession']>() }), <AutomaticSummary record={RECORD} />, SIGNED_IN);
+
+    expect(screen.queryByTestId('narrative-text')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: automatic.ask })).toBeVisible();
   });
 
   it('asks only for an account when nobody is signed in', () => {

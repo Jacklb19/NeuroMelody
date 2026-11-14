@@ -5,6 +5,7 @@ import { useLocale, useMessages } from '../../i18n/messages';
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import type { SessionRecord } from '../records/sessionRecord';
+import { useAuth } from '../account/authContext';
 import { narrativeStorage, readNarrative, writeNarrative } from './narrativeCache';
 import { narrativeFigures } from './narrativeFigures';
 
@@ -27,13 +28,15 @@ export function AutomaticSummary({ record }: { readonly record: SessionRecord })
   const copy = t.summary.automatic;
   const locale = useLocale();
   const { status, api } = useCloudSync();
+  const { state } = useAuth();
+  const owner = state.kind === 'signed_in' ? state.user.id : null;
   const titleId = useId();
   // Written while this screen is open; what an earlier visit wrote is read from the device.
   const [written, setWritten] = useState<{ readonly sessionId: string; readonly locale: string; readonly text: string } | null>(null);
   const [request, setRequest] = useState<Request>({ kind: 'idle' });
   const text = written !== null && written.sessionId === sessionId && written.locale === locale
     ? written.text
-    : readNarrative(narrativeStorage(), sessionId, locale);
+    : owner === null ? null : readNarrative(narrativeStorage(), owner, sessionId, locale);
   const errors: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
 
   const ask = (): void => {
@@ -41,7 +44,7 @@ export function AutomaticSummary({ record }: { readonly record: SessionRecord })
     setRequest({ kind: 'working' });
     api.summarizeSession(sessionId, locale, narrativeFigures(record)).then(
       (narrative) => {
-        writeNarrative(narrativeStorage(), sessionId, locale, narrative.text);
+        if (owner !== null) writeNarrative(narrativeStorage(), owner, sessionId, locale, narrative.text);
         setWritten({ sessionId, locale, text: narrative.text });
         setRequest({ kind: 'idle' });
       },

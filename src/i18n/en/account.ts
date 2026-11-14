@@ -145,7 +145,7 @@ export const account = {
       },
       deleteAccount: {
         title: 'Delete the account',
-        text: 'Deletes your account and everything it keeps in the cloud. Sessions on this device are left alone.',
+        text: 'Deletes your account and everything it keeps in the cloud, and also your sessions, notes, favourites and automatic texts on this device.',
         unavailable: 'Not available in this version of the app.',
         action: 'Delete the account',
         confirm: 'Yes, delete my account',

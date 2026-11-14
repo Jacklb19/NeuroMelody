@@ -19,7 +19,8 @@ export interface FavoritePlan extends FavoriteChoices {
   readonly name: string;
 }
 
-function key(owner: string): string {
+/** Storage key of one account's favorites; exported so deleting the account can remove them. */
+export function favoritesStorageKey(owner: string): string {
   return `neuromelody.favorites.${owner}`;
 }
 
@@ -36,11 +37,11 @@ export function isFavoritePlan(value: unknown): value is FavoritePlan {
 }
 
 export function readFavorites(owner: string): FavoritePlan[] {
-  const value: unknown = JSON.parse(localStorage.getItem(key(owner)) ?? '[]');
+  const value: unknown = JSON.parse(localStorage.getItem(favoritesStorageKey(owner)) ?? '[]');
   if (!Array.isArray(value) || !value.every(isFavoritePlan)) throw new TypeError('Invalid favorites.');
   return value;
 }
 
 export function writeFavorites(owner: string, plans: readonly FavoritePlan[]): void {
-  localStorage.setItem(key(owner), JSON.stringify(plans));
+  localStorage.setItem(favoritesStorageKey(owner), JSON.stringify(plans));
 }

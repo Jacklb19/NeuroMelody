@@ -5,7 +5,8 @@ import { readConsent, writeConsent } from '../privacy/consentStore';
 import { SessionStoreContext, useSessionStore } from '../records/sessionStoreContext';
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
-import { createMirroredSessionStore } from './mirroredSessionStore';
+import { removeAccountStorage } from './accountStorage';
+import { claimUnownedSessions, createMirroredSessionStore } from './mirroredSessionStore';
 import {
   belongsTo,
   createPendingDeletions,
@@ -122,21 +123,30 @@ export function CloudSyncProvider({
     setProgress('failed');
   }, []);
 
-  const [{ link, mirrored }] = useState(() => {
-    const created = new SyncLink();
-    return {
-      link: created,
-      mirrored: createMirroredSessionStore({
-        local,
-        owner: () => created.userId,
-        marks: () => created.marks,
-        deletions: () => created.deletions,
-        cloud: () => created.api,
-        onUploadError: fail,
-        onPendingChange: () => { setPendingChange({ userId: created.userId, count: created.deletions.size }); },
-      }),
-    };
-  });
+  const [link] = useState(() => new SyncLink());
+  // A new store for each account: screens keyed on the store read the history again, and only
+  // ever see the sessions of whoever is signed in (ADR-61).
+  const mirrored = useMemo(() => createMirroredSessionStore({
+    local,
+    owner: userId,
+    marks: () => link.marks,
+    deletions: () => link.deletions,
+    cloud: () => link.api,
+    onUploadError: fail,
+    onPendingChange: () => { setPendingChange({ userId: link.userId, count: link.deletions.size }); },
+  }), [link, local, userId, fail]);
+
+  // Sessions without an owner go to the first account that signs in after the update (14 nov 2026).
+  useEffect(() => {
+    if (userId === null) return undefined;
+    let cancelled = false;
+    claimUnownedSessions(local, userId).then((claimed) => {
+      if (!cancelled && claimed > 0) setRevision((value) => value + 1);
+    }, () => {
+      // Unreadable history: the sessions stay without an owner and are claimed on a later visit.
+    });
+    return () => { cancelled = true; };
+  }, [local, userId]);
   useEffect(() => {
     link.connect(active ? api : null);
   }, [link, active, api]);
@@ -195,6 +205,18 @@ export function CloudSyncProvider({
     return removed;
   }, [link, local]);
 
+  const forgetAccount = useCallback(async (): Promise<void> => {
+    if (userId === null) return;
+    const others = markedByOtherAccounts(userId);
+    // The device's own store: the cloud copy went with the account.
+    for (const record of await local.list()) {
+      if (belongsTo(record, userId, others)) await local.delete(record.id);
+    }
+    removeAccountStorage(userId);
+    link.useMarksOf(userId);
+    setRevision((value) => value + 1);
+  }, [link, local, userId]);
+
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();
     if (service === null || userId === null) {
@@ -214,8 +236,8 @@ export function CloudSyncProvider({
   else status = progress === 'idle' ? 'syncing' : progress;
 
   const value = useMemo<CloudSyncValue>(() => ({
-    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api: userId === null ? null : api,
-  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api, userId]);
+    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, forgetAccount, api: userId === null ? null : api,
+  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, forgetAccount, api, userId]);
 
   return (
     <CloudSyncContext value={value}>

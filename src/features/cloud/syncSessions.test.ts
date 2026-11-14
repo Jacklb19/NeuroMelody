@@ -3,7 +3,8 @@ import { MemorySessionStore } from '../records/sessionStore';
 import type { SessionRecord } from '../records/sessionRecord';
 import { sample, sessionRecord } from '../../test/sessionRecords';
 import { CLOUD_SESSION_LIST_LIMIT, CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
-import { createMirroredSessionStore } from './mirroredSessionStore';
+import { claimUnownedSessions, createMirroredSessionStore } from './mirroredSessionStore';
+import { accountStorageKeys, removeAccountStorage } from './accountStorage';
 import { narrativeFigures } from '../summary/narrativeFigures';
 import { createSessionContext } from '../records/sessionContext';
 import {
@@ -263,7 +264,7 @@ describe('mirrored session store', () => {
     const onUploadError = vi.fn();
     const onPendingChange = vi.fn();
     const store = createMirroredSessionStore({
-      local, owner: () => owner, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
+      local, owner, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
     });
     return { local, marks, deletions, storage, store, onUploadError, onPendingChange };
   };
@@ -357,9 +358,9 @@ describe('mirrored session store', () => {
     expect((await local.get(ID_B))?.ownerId).toBe(OTHER);
     await vi.waitFor(() => { expect(saveSession).toHaveBeenCalledOnce(); });
 
-    // Rating the first account's session on this device keeps it here.
-    await store.setRatingAfter(ID_A, 7);
-    expect((await local.get(ID_A))?.ratingAfter).toBe(7);
+    // The first account's session does not exist for this one (ADR-61): it can neither rate it nor send it.
+    await expect(store.setRatingAfter(ID_A, 7)).rejects.toMatchObject({ code: 'not_found' });
+    expect((await local.get(ID_A))?.ratingAfter).toBe(sessionRecord().ratingAfter);
     expect(saveSession).toHaveBeenCalledOnce();
     expect(api.sessions.has(ID_A)).toBe(false);
   });
@@ -370,6 +371,69 @@ describe('mirrored session store', () => {
     await store.clear();
 
     expect(await local.list()).toEqual([]);
+  });
+});
+
+describe('local data per account (ADR-61)', () => {
+  /** The history of one device seen through the store of `owner`, without the cloud. */
+  function storeOf(local: MemorySessionStore, owner: string | null) {
+    return createMirroredSessionStore({
+      local,
+      owner,
+      others: () => NOBODY_ELSE,
+      marks: () => createSyncMarks(null),
+      deletions: noDeletions,
+      cloud: () => null,
+      onUploadError: vi.fn(),
+      onPendingChange: vi.fn(),
+    });
+  }
+
+  it('never lets account B list, open, annotate, rate or delete a session of account A', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A, ownerId: USER }), sessionRecord({ id: ID_B, ownerId: OTHER }));
+    const first = storeOf(local, USER);
+    const second = storeOf(local, OTHER);
+
+    expect((await second.list()).map(({ id }) => id)).toEqual([ID_B]);
+    // A direct link to A's session reads like one that does not exist.
+    expect(await second.get(ID_A)).toBeNull();
+    await expect(second.setNote(ID_A, 'not mine')).rejects.toMatchObject({ code: 'not_found' });
+    await expect(second.setRatingAfter(ID_A, 1)).rejects.toMatchObject({ code: 'not_found' });
+    await expect(second.save(sessionRecord({ id: ID_A, ownerId: OTHER }))).rejects.toMatchObject({ code: 'invalid_record' });
+    await second.delete(ID_A);
+    await second.clear();
+
+    expect(await local.get(ID_A)).toEqual(sessionRecord({ id: ID_A, ownerId: USER }));
+    expect((await first.list()).map(({ id }) => id)).toEqual([ID_A]);
+    expect(await local.get(ID_B)).toBeNull();
+  });
+
+  it('shows nothing without an account', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A, ownerId: USER }), sessionRecord({ id: ID_B }));
+    expect(await storeOf(local, null).list()).toEqual([]);
+    expect(await storeOf(local, null).get(ID_B)).toBeNull();
+  });
+
+  it('gives the sessions without an owner to the first account that signs in, and to no later one', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }), sessionRecord({ id: ID_C, ownerId: OTHER }));
+    // ID_B is in another account's cloud: it is that account's, as in ADR-53.
+    expect(await claimUnownedSessions(local, USER, new Set([ID_B]))).toBe(1);
+    expect(await claimUnownedSessions(local, OTHER, NOBODY_ELSE)).toBe(1);
+
+    expect((await local.get(ID_A))?.ownerId).toBe(USER);
+    expect((await local.get(ID_B))?.ownerId).toBe(OTHER);
+    expect((await storeOf(local, OTHER).list()).map(({ id }) => id).sort()).toEqual([ID_B, ID_C]);
+    expect(await storeOf(local, OTHER).get(ID_A)).toBeNull();
+  });
+
+  it('removes every key this device keeps for a deleted account, and only those', () => {
+    const storage = memoryStorage();
+    for (const key of [...accountStorageKeys(USER), ...accountStorageKeys(OTHER)]) storage.setItem(key, '[]');
+
+    removeAccountStorage(USER, storage);
+
+    expect(accountStorageKeys(USER).some((key) => storage.items.has(key))).toBe(false);
+    expect(accountStorageKeys(OTHER).every((key) => storage.items.has(key))).toBe(true);
   });
 });
 
