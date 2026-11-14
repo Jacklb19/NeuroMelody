@@ -1,6 +1,6 @@
 import type { SessionRecord } from '../records/sessionRecord';
 import type { SessionStore } from '../records/sessionStore';
-import type { CloudApi } from './cloudApi';
+import { CloudError, type CloudApi, type CloudErrorCode } from './cloudApi';
 
 /**
  * Which sessions of this device are already in the cloud. Without it, a
@@ -134,6 +134,46 @@ export function createPendingDeletions(userId: string | null, available: MarkSto
   };
 }
 
+/**
+ * Sessions of this device the cloud refused for what they are, not for the
+ * way there: the API found them invalid, or their id is already taken. Sending
+ * them again gives the same answer, so a pass skips them instead of stopping
+ * on them every time. They stay on the device, per account, untouched.
+ */
+export interface SetAsideSessions {
+  readonly size: number;
+  has(id: string): boolean;
+  add(id: string): void;
+  remove(id: string): void;
+}
+
+export const SET_ASIDE_STORAGE_PREFIX = 'neuromelody.set-aside-sessions.';
+
+export function createSetAsideSessions(userId: string | null, available: MarkStorage | null = browserStorage()): SetAsideSessions {
+  const { ids, persist } = storedIds(SET_ASIDE_STORAGE_PREFIX, userId, available);
+  return {
+    get size() { return ids.size; },
+    has: (id) => ids.has(id),
+    add: (id) => { ids.add(id); persist(); },
+    remove: (id) => { ids.delete(id); persist(); },
+  };
+}
+
+/** Refusals about the session itself; any other failure (network, account, server) stops the pass. */
+const REFUSALS_OF_THE_SESSION: ReadonlySet<CloudErrorCode> = new Set(['invalid_request', 'session_conflict']);
+
+/** Sends one session; `false` when the cloud refused that session for good, which is set aside. */
+async function sendOrSetAside(api: CloudApi, record: SessionRecord, setAside: SetAsideSessions): Promise<boolean> {
+  try {
+    await api.saveSession(record);
+    return true;
+  } catch (cause) {
+    if (!(cause instanceof CloudError) || !REFUSALS_OF_THE_SESSION.has(cause.code)) throw cause;
+    setAside.add(record.id);
+    return false;
+  }
+}
+
 /** What one pass changed, for the screens that must read the history again. */
 export interface SyncResult {
   readonly uploaded: number;
@@ -142,6 +182,8 @@ export interface SyncResult {
   readonly deleted: number;
   /** Sessions removed from this device because they were deleted from another one. */
   readonly removed: number;
+  /** Sessions the cloud refused in this pass; they are kept on the device and not sent again. */
+  readonly setAside: number;
 }
 
 interface SyncContext {
@@ -150,6 +192,8 @@ interface SyncContext {
   readonly store: SessionStore;
   readonly marks: SyncMarks;
   readonly deletions: PendingDeletions;
+  /** Sessions of this account the cloud refused; the provider keeps them on the device, this visit only by default. */
+  readonly setAside?: SetAsideSessions;
   /** The account signed in: only its sessions, and those made without an account, take part. */
   readonly owner: string;
   /** Sessions other accounts of this device have in their cloud; read from their marks by default. */
@@ -171,9 +215,20 @@ interface SyncContext {
  * and a session made without an account becomes this account's when sent.
  *
  * Sending and deleting are idempotent (ADR-18): a pass interrupted halfway simply
- * runs again, and nothing is stored twice.
+ * runs again, and nothing is stored twice. A session the cloud refuses for
+ * itself (invalid or with a taken id) is set aside and the pass goes on with
+ * the rest; it is not sent again. A failure on the way (network, account,
+ * server) still stops the pass, which runs again later.
  */
-export async function syncSessions({ api, store, marks, deletions, owner, others = markedByOtherAccounts(owner) }: SyncContext): Promise<SyncResult> {
+export async function syncSessions({
+  api,
+  store,
+  marks,
+  deletions,
+  owner,
+  setAside = createSetAsideSessions(null),
+  others = markedByOtherAccounts(owner),
+}: SyncContext): Promise<SyncResult> {
   let deleted = 0;
   for (const id of deletions.list()) {
     // A failure stops the pass here, before the list: the session must not be downloaded again.
@@ -187,6 +242,7 @@ export async function syncSessions({ api, store, marks, deletions, owner, others
   let uploaded = 0;
   let downloaded = 0;
   let removed = 0;
+  let refused = 0;
 
   for (const record of local) {
     if (!belongsTo(record, owner, others)) continue;
@@ -196,19 +252,22 @@ export async function syncSessions({ api, store, marks, deletions, owner, others
         await store.delete(record.id);
         marks.remove(record.id);
         removed++;
-      } else {
-        await api.saveSession(record);
+      } else if (setAside.has(record.id)) {
+        continue;
+      } else if (await sendOrSetAside(api, record, setAside)) {
         marks.add(record.id);
         if (record.ownerId === undefined) await store.setOwner(record.id, owner);
         uploaded++;
+      } else {
+        refused++;
       }
       continue;
     }
     marks.add(record.id);
     if (record.ownerId === undefined) await store.setOwner(record.id, owner);
-    if (record.ratingAfter !== null && record.ratingAfter !== summary.ratingAfter) {
-      await api.saveSession(record);
-      uploaded++;
+    if (record.ratingAfter !== null && record.ratingAfter !== summary.ratingAfter && !setAside.has(record.id)) {
+      if (await sendOrSetAside(api, record, setAside)) uploaded++;
+      else refused++;
     } else if (record.ratingAfter === null && summary.ratingAfter !== null) {
       await store.setRatingAfter(record.id, summary.ratingAfter);
       downloaded++;
@@ -226,5 +285,5 @@ export async function syncSessions({ api, store, marks, deletions, owner, others
     downloaded++;
   }
 
-  return { uploaded, downloaded, removed, deleted };
+  return { uploaded, downloaded, removed, deleted, setAside: refused };
 }

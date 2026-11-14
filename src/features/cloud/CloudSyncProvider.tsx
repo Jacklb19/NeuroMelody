@@ -6,7 +6,17 @@ import { SessionStoreContext, useSessionStore } from '../records/sessionStoreCon
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
 import { createMirroredSessionStore } from './mirroredSessionStore';
-import { belongsTo, createPendingDeletions, createSyncMarks, markedByOtherAccounts, syncSessions, type PendingDeletions, type SyncMarks } from './syncSessions';
+import {
+  belongsTo,
+  createPendingDeletions,
+  createSetAsideSessions,
+  createSyncMarks,
+  markedByOtherAccounts,
+  syncSessions,
+  type PendingDeletions,
+  type SetAsideSessions,
+  type SyncMarks,
+} from './syncSessions';
 
 interface CloudSyncProviderProps {
   readonly children: React.ReactNode;
@@ -33,6 +43,7 @@ class SyncLink {
   api: CloudApi | null = null;
   marks: SyncMarks = createSyncMarks(null);
   deletions: PendingDeletions = createPendingDeletions(null);
+  setAside: SetAsideSessions = createSetAsideSessions(null);
   userId: string | null = null;
   #running = false;
 
@@ -44,6 +55,7 @@ class SyncLink {
     this.userId = userId;
     this.marks = createSyncMarks(userId);
     this.deletions = createPendingDeletions(userId);
+    this.setAside = createSetAsideSessions(userId);
   }
 
   /** Claims the single sync pass; `false` when one is already running. */
@@ -139,7 +151,7 @@ export function CloudSyncProvider({
     try {
       const owner = link.userId;
       if (owner === null) return;
-      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions, owner });
+      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions, setAside: link.setAside, owner });
       if (result.downloaded > 0 || result.removed > 0) setRevision((value) => value + 1);
       setError(null);
       setProgress('synced');
