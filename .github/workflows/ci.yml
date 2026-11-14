@@ -10,56 +10,89 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# In stages: the quick checks run side by side and tell early what failed; the
+# browser tests, much slower, only start once all three have passed.
 jobs:
-  verify:
-    name: Verificación (Tipos, Lint, Pruebas y Build)
+  quality:
+    name: Tipos, lint y dependencias
     runs-on: ubuntu-latest
-
     steps:
       - name: Descargar código fuente
         uses: actions/checkout@v4
-
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: 'npm'
-
       - name: Instalar dependencias
         run: npm ci
-
       # Only what ships to the browser: development tools never reach the people who use the app.
       - name: Vulnerabilidades conocidas en las dependencias de producción
         run: npm audit --omit=dev
-
       - name: Verificación de tipos estáticos
         run: npm run typecheck
-
       - name: Análisis estático (Lint)
         run: npm run lint
 
+  unit:
+    name: Pruebas unitarias y cobertura
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm ci
       - name: Pruebas unitarias y cobertura
         run: npm run test:coverage
 
+  build:
+    name: Construcción
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm ci
       - name: Construcción de la aplicación
         run: npm run build
-
       - name: Verificar artefacto de construcción
         run: test -f dist/index.html
 
+  browser:
+    name: Recorridos E2E y continuidad de audio
+    needs: [quality, unit, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm ci
       - name: Instalar navegadores para E2E
         run: npx playwright install --with-deps chrome msedge
-
+      # Playwright builds its own copy (dist-e2e) pointed at services nobody listens on.
       - name: Recorridos E2E en Chrome y Edge
         run: npm run test:e2e
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/e2e
-
       - name: Continuidad de audio durante 60 segundos
         run: npm run test:audio
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/audio
-
       - name: Conservar informes de navegador y evidencia de audio
         if: always()
         uses: actions/upload-artifact@v4
