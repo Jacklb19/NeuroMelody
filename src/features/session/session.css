@@ -19,6 +19,15 @@
 .session-ring-track { stroke: var(--color-border-subtle); }
 .session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
 .session-orb-figure { font-size: calc(var(--ring-size) * 0.82); }
+/* The halo follows the step of the music (ADR-60): only moved and faded, never redrawn, and as slowly as the sound changes. */
+.session-halo { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--landing-glow-colour), transparent 70%); opacity: 0; scale: var(--halo-scale-high); transition: scale var(--halo-duration) ease-in-out, opacity var(--halo-duration) ease-in-out; will-change: scale, opacity; }
+.session-orb[data-level='high'] .session-halo { scale: var(--halo-scale-high); opacity: var(--halo-opacity-high); }
+.session-orb[data-level='intermediate'] .session-halo { scale: var(--halo-scale-intermediate); opacity: var(--halo-opacity-intermediate); }
+.session-orb[data-level='target'] .session-halo { scale: var(--halo-scale-target); opacity: var(--halo-opacity-target); }
+.session-orb[data-level='sleep'] .session-halo { scale: var(--halo-scale-sleep); opacity: var(--halo-opacity-sleep); }
+@media (prefers-reduced-motion: reduce) {
+  .session-halo { transition: none; }
+}
 
 /* Guided breathing (ADR-33): the word under the orb and the switch that turns it on. */
 .breathing-guide { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }

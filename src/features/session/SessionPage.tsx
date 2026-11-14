@@ -310,6 +310,7 @@ export function SessionPage(): React.JSX.Element {
             connection={connection}
             progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
             orbRef={orbRef}
+            playing={playing}
           />
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
