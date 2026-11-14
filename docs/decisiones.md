@@ -513,3 +513,4 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Cabeceras | COOP, COEP, CSP y HSTS en `vercel.json`, también aplicadas en el servidor de desarrollo de Vite. |
 | Dependencias del back en Vercel | Vercel instala las `dependencies` de `pyproject.toml` e ignora `requirements.txt` cuando existen los dos. Las dos listas llevan los mismos paquetes fijados y una prueba lo comprueba (12 oct). |
 | Media Session | Se probó solo con Web Audio; si el sistema no muestra controles, basta el botón fijo. |
+| Sesiones que la nube rechaza | Auditoría del 13 nov 2026: una sesión que la API rechaza por sí misma (`invalid_request` o `session_conflict`) se aparta, por cuenta y en el dispositivo, y la sincronización sigue con las demás; no se vuelve a enviar ni se borra del dispositivo. Un fallo de red, de cuenta o del servidor sigue deteniendo la pasada. |
