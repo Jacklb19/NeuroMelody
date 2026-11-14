@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemorySessionStore } from '../records/sessionStore';
 import type { SessionRecord } from '../records/sessionRecord';
 import { sample, sessionRecord } from '../../test/sessionRecords';
-import { CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
+import { CLOUD_SESSION_LIST_LIMIT, CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
 import { createMirroredSessionStore } from './mirroredSessionStore';
 import { narrativeFigures } from '../summary/narrativeFigures';
 import { createSessionContext } from '../records/sessionContext';
@@ -33,7 +33,7 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
       sessions.set(record.id, stored === undefined ? record : { ...stored, ratingAfter: record.ratingAfter ?? stored.ratingAfter });
       return Promise.resolve();
     },
-    listSessions: () => Promise.resolve([...sessions.values()].map(({ id, ratingAfter }) => ({ id, ratingAfter }))),
+    listSessions: () => Promise.resolve({ sessions: [...sessions.values()].map(({ id, ratingAfter }) => ({ id, ratingAfter })), truncated: false }),
     getSession: (id) => Promise.resolve(sessions.get(id) ?? null),
     deleteSession(id) {
       sessions.delete(id);
@@ -137,6 +137,29 @@ describe('syncSessions', () => {
     expect((await store.get(ID_C))?.ownerId).toBe(OTHER);
     expect((await store.get(ID_A))?.ownerId).toBe(USER);
     expect((await store.get(ID_B))?.ownerId).toBeUndefined();
+  });
+
+  it('removes nothing from the device when the cloud has more sessions than its list returns', async () => {
+    const idOf = (index: number): string => `017f22e2-79b0-7000-8000-${index.toString(16).padStart(12, '0')}`;
+    const records = Array.from({ length: CLOUD_SESSION_LIST_LIMIT + 1 }, (_, index) => sessionRecord({ id: idOf(index), ownerId: USER }));
+    const store = await storeWith(...records);
+    const marks = createSyncMarks(USER, memoryStorage());
+    for (const record of records) marks.add(record.id);
+    const cloud = fakeCloud(records);
+    // Like the API: the newest sessions up to the limit, and a flag for the ones left out.
+    const api: CloudApi = {
+      ...cloud,
+      listSessions: async () => {
+        const all = (await cloud.listSessions()).sessions;
+        return { sessions: all.slice(0, CLOUD_SESSION_LIST_LIMIT), truncated: all.length > CLOUD_SESSION_LIST_LIMIT };
+      },
+    };
+
+    const result = await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toMatchObject({ removed: 0, uploaded: 0, downloaded: 0 });
+    expect(await store.list()).toHaveLength(CLOUD_SESSION_LIST_LIMIT + 1);
+    expect(marks.has(idOf(CLOUD_SESSION_LIST_LIMIT))).toBe(true);
   });
 
   it('makes the rating given after listening equal on both sides', async () => {
@@ -301,6 +324,22 @@ describe('cloud API client', () => {
     expect(fromWire({ ...(wire as object), signal_mode: 'hr_only' })).toEqual({ ...record, signalMode: 'hr_only' });
   });
 
+  it('reads whether the list left older sessions out, also from an API without the flag', async () => {
+    const answering = (body: unknown): CloudApi => createCloudApi({
+      baseUrl: 'https://api.example.test',
+      accessToken: () => Promise.resolve('token-1'),
+      fetch: () => Promise.resolve(new Response(JSON.stringify(body), { status: 200 })),
+    });
+    const summary = { id: ID_A, rating_after: 7 };
+    const full = Array.from({ length: CLOUD_SESSION_LIST_LIMIT }, () => summary);
+
+    expect(await answering({ sessions: [summary], truncated: true }).listSessions()).toEqual({ sessions: [{ id: ID_A, ratingAfter: 7 }], truncated: true });
+    expect((await answering({ sessions: [summary], truncated: false }).listSessions()).truncated).toBe(false);
+    // Published before the flag: a list that reaches the limit may have been cut short.
+    expect((await answering({ sessions: [summary] }).listSessions()).truncated).toBe(false);
+    expect((await answering({ sessions: full }).listSessions()).truncated).toBe(true);
+  });
+
   it('turns the answers of the API into error codes and never trusts a malformed session', async () => {
     const answering = (status: number, body: unknown): CloudApi => createCloudApi({
       baseUrl: 'https://api.example.test',
@@ -314,6 +353,7 @@ describe('cloud API client', () => {
     await expect(answering(200, { id: ID_A, samples: [{ second: -1 }] }).getSession(ID_A)).rejects.toMatchObject({ code: 'unknown' });
     expect(await answering(404, { code: 'not_found' }).getSession(ID_A)).toBeNull();
     await expect(answering(404, { code: 'not_found' }).deleteSession(ID_A)).resolves.toBeUndefined();
+    await expect(answering(200, { sessions: [], truncated: 'yes' }).listSessions()).rejects.toMatchObject({ code: 'unknown' });
     const signedOut = createCloudApi({ baseUrl: 'https://api.example.test', accessToken: () => Promise.resolve(null) });
     await expect(signedOut.listSessions()).rejects.toMatchObject({ code: 'unauthenticated' });
   });
