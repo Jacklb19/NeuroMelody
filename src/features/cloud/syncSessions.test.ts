@@ -8,8 +8,10 @@ import { narrativeFigures } from '../summary/narrativeFigures';
 import { createSessionContext } from '../records/sessionContext';
 import {
   createPendingDeletions,
+  createSetAsideSessions,
   createSyncMarks,
   markedByOtherAccounts,
+  SET_ASIDE_STORAGE_PREFIX,
   SYNC_MARKS_STORAGE_PREFIX,
   syncSessions,
   type PendingDeletions,
@@ -87,12 +89,12 @@ describe('syncSessions', () => {
     const api = fakeCloud([theirs]);
     const marks = createSyncMarks(USER, memoryStorage());
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0, setAside: 0 });
     expect(api.sessions.get(ID_A)).toEqual(mine);
     // Brought from this account's cloud, it belongs to this account on the device.
     expect(await store.get(ID_B)).toEqual({ ...theirs, ownerId: USER });
     // A second pass finds both sides equal: sending again would be harmless, but nothing is sent.
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
   });
 
   it('removes from the device a session that was sent before and is gone from the cloud', async () => {
@@ -103,7 +105,7 @@ describe('syncSessions', () => {
 
     api.sessions.delete(ID_A); // deleted from another device
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0, setAside: 0 });
     expect(await store.list()).toEqual([]);
     expect(api.sessions.size).toBe(0);
   });
@@ -117,7 +119,7 @@ describe('syncSessions', () => {
     const otherCloud = fakeCloud();
     const result = await syncSessions({ api: otherCloud, store, marks: createSyncMarks(OTHER, storage), deletions: noDeletions(), owner: OTHER, others: markedByOtherAccounts(OTHER, storage) });
 
-    expect(result).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
+    expect(result).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
     expect(await store.list()).toHaveLength(1);
     expect(otherCloud.sessions.size).toBe(0);
   });
@@ -147,6 +149,85 @@ describe('syncSessions', () => {
 
     expect(api.sessions.get(ID_A)?.ratingAfter).toBe(8);
     expect((await store.get(ID_B))?.ratingAfter).toBe(6);
+  });
+});
+
+describe('syncSessions with sessions the cloud refuses', () => {
+  /** A cloud that refuses one session with `code` and stores the rest. */
+  function refusing(id: string, code: 'invalid_request' | 'session_conflict' | 'network', initial: readonly SessionRecord[] = []) {
+    const cloud = fakeCloud(initial);
+    const sent: string[] = [];
+    const save = cloud.saveSession.bind(cloud);
+    cloud.saveSession = (record) => {
+      sent.push(record.id);
+      return record.id === id ? Promise.reject(new CloudError(code)) : save(record);
+    };
+    return { cloud, sent };
+  }
+
+  it('sets an invalid session aside and still uploads the two around it', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }), sessionRecord({ id: ID_C }));
+    const { cloud, sent } = refusing(ID_B, 'invalid_request');
+    const marks = createSyncMarks(USER, memoryStorage());
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    const result = await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toEqual({ uploaded: 2, downloaded: 0, removed: 0, deleted: 0, setAside: 1 });
+    expect([...cloud.sessions.keys()].sort()).toEqual([ID_A, ID_C]);
+    expect(setAside.has(ID_B)).toBe(true);
+    // It stays on the device, unmarked, so no later pass reads it as deleted elsewhere.
+    expect(marks.has(ID_B)).toBe(false);
+    expect(await store.get(ID_B)).not.toBeNull();
+
+    // The next pass does not send it again.
+    sent.length = 0;
+    expect(await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
+    expect(sent).toEqual([]);
+    expect(await store.get(ID_B)).not.toBeNull();
+  });
+
+  it('sets aside a session whose id is already taken', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud } = refusing(ID_A, 'session_conflict');
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    const result = await syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toMatchObject({ uploaded: 1, setAside: 1 });
+    expect(setAside.has(ID_A)).toBe(true);
+  });
+
+  it('stops the pass on a network failure and sets nothing aside', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud } = refusing(ID_A, 'network');
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    await expect(syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .rejects.toMatchObject({ code: 'network' });
+    expect(setAside.size).toBe(0);
+  });
+
+  it('does not resend a refused rating on every pass', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A, ratingAfter: 8 }));
+    const { cloud, sent } = refusing(ID_A, 'invalid_request', [sessionRecord({ id: ID_A, ratingAfter: null })]);
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+    const marks = createSyncMarks(USER, memoryStorage());
+
+    expect(await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE })).toMatchObject({ setAside: 1 });
+    sent.length = 0;
+    await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+    expect(sent).toEqual([]);
+  });
+
+  it('keeps the set-aside sessions per account across visits', () => {
+    const storage = memoryStorage();
+    createSetAsideSessions(USER, storage).add(ID_A);
+
+    expect(createSetAsideSessions(USER, storage).has(ID_A)).toBe(true);
+    expect(createSetAsideSessions(OTHER, storage).has(ID_A)).toBe(false);
+    expect(storage.items.has(`${SET_ASIDE_STORAGE_PREFIX}${USER}`)).toBe(true);
   });
 });
 
