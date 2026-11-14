@@ -503,6 +503,15 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 - El modo se elige antes de empezar. En modo fijo el motor conserva el tempo y las capas iniciales mientras se sigue registrando la señal disponible. Las texturas Original, Mínima y Envolvente varían las capas o la reverberación. El modo y la textura se guardan con el contexto local para repetir la sesión.
 - La fuente Bluetooth se presenta como «Reloj o banda Bluetooth» e indica cómo activar la transmisión. El modo solo pulso y la recepción de intervalos siguen ADR-51. La compatibilidad por modelo requiere pruebas físicas.
 
+## ADR-60. La escucha se ve: halo del orbe, vista inmersiva y final adelantado para dormir
+
+Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos ni dependencias.
+
+- **Halo del orbe.** Mientras suena la música, un halo detrás del orbe sigue el paso musical: más ancho y más tenue a medida que la música se calma. Cambia en 45 s, lo mismo que el timbre, solo con `scale` y `opacity`. Es decorativo: el paso sigue escrito al lado y el color del orbe sigue al estado estimado. Con movimiento reducido cambia sin transición.
+- **Vista inmersiva.** Con la música sonando, un botón deja en pantalla el orbe, la respiración guiada, la frase del momento, el tiempo y «Detener». Lo demás se retira del diseño, no se tapa, para que nada oculto sea alcanzable con el teclado. Una pausa, el final de la sesión o el mismo botón devuelven todos los controles. Los avisos de duración y de interrupción del audio se siguen mostrando. No usa la API de pantalla completa del navegador.
+- **Final adelantado para dormir.** En una sesión con final silencioso (ADR-41) y música adaptativa, el fundido de dos minutos se adelanta cuando, durante cinco minutos seguidos de escucha, la estimación dice que el pulso está por debajo del inicial, la señal es buena y la música ya está en su paso más calmado. Cualquier lectura distinta o una pausa reinician la cuenta. Cerca del final del plan se mantiene su propio fundido. Un aviso lo dice sin afirmar que la persona duerme. La sesión se guarda con el tiempo realmente escuchado.
+- **Límites.** El criterio usa la misma estimación descriptiva de ADR-12; no mide el sueño. Los cinco minutos son un valor inicial (`SETTLED_FOR_S`) por ajustar con pruebas reales.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
