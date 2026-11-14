@@ -40,6 +40,7 @@ import { SessionStepper } from './SessionStepper';
 import { AUTO_ADVANCE_MS, SLIDE_IDS, useSlides, type SlideId } from './sessionSlides';
 import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
+import { isSettled, SettleWatch } from './sleepSettle';
 import './session.css';
 
 /** A pause longer than this ends the session on its own (ADR-52): what was heard is kept, not left open. */
@@ -81,6 +82,9 @@ export function SessionPage(): React.JSX.Element {
     return isSoundProfile(value) ? value : 'original';
   });
   const [recorder] = useState(() => new SessionRecorder());
+  // A session for falling asleep ends by itself once the pulse has stayed settled (ADR-60).
+  const [settleWatch] = useState(() => new SettleWatch());
+  const [endingEarly, setEndingEarly] = useState(false);
   const [elapsedS, setElapsedS] = useState(0);
   // The engine while the music plays; the breathing guide follows its tempo.
   const [engine, setEngine] = useState<AudioEngine | null>(null);
@@ -155,6 +159,9 @@ export function SessionPage(): React.JSX.Element {
     adaptation.setAudio(next, next !== null && recorder.active ? elapsedRef.current - sessionStartElapsedRef.current : undefined);
     setEngine(next);
     if (next === null) {
+      settleWatch.interrupt();
+      // A stopped engine drops its fades: music that resumes plays to the end of the plan again.
+      setEndingEarly(false);
       if (recorder.active) pauseTimerRef.current = setTimeout(finishRecording, PAUSE_LIMIT_MS);
       return;
     }
@@ -173,12 +180,13 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
         context: { ...createSessionContext(instrument, ambience), fixed: adaptation.fixed, profile },
       });
+      settleWatch.reset();
       setEnded(false);
       setSavedId(null);
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
+  }, [adaptation, recorder, settleWatch, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -187,8 +195,13 @@ export function SessionPage(): React.JSX.Element {
 
   const handleIndices = useCallback((result: IndicesResult): void => {
     adaptation.receive(result);
-    recorder.add(result, adaptation.getSnapshot().state);
-  }, [adaptation, recorder]);
+    const snapshot = adaptation.getSnapshot();
+    recorder.add(result, snapshot.state);
+    // Music that does not adapt has no calmest step to reach, so only an adaptive sleep session ends early.
+    if (!program.quietEnding || adaptation.fixed || !recorder.active) return;
+    const settled = isSettled(snapshot, program.calmestLevel);
+    if (settleWatch.observe(elapsedRef.current, settled) && playbackRef.current?.endQuietly() === true) setEndingEarly(true);
+  }, [adaptation, recorder, program, settleWatch]);
 
   // A watch that sends only the pulse (ADR-51) has no beats to follow: the orb beats at its pace instead.
   const adaptationSnapshot = useSyncExternalStore(adaptation.subscribe, adaptation.getSnapshot);
@@ -345,6 +358,7 @@ export function SessionPage(): React.JSX.Element {
               </div>
             </div>
           )}
+          {endingEarly && playing && <p className="quiet-notice" role="status">{t.session.settledEnding}</p>}
           <SessionCheckIn
             playing={playing}
             ratingBefore={ratingBefore}

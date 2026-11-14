@@ -10,6 +10,8 @@ export const session = {
   dimmer: {
     restore: 'Screen dimmed for sleep. Tap to see it.',
   },
+  /** A session for falling asleep that ends before its plan because the pulse stayed settled (ADR-60). */
+  settledEnding: 'Your pulse has been calmer than at the start for a few minutes. The music will fade out little by little.',
   /** Immersive view of the listening slide (ADR-60): the button that enters and leaves it. */
   immersive: {
     enter: 'Immersive view',
