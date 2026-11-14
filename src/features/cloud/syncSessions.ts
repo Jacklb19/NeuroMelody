@@ -174,6 +174,18 @@ async function sendOrSetAside(api: CloudApi, record: SessionRecord, setAside: Se
   }
 }
 
+/** How sending a new session went: stored, set aside for good, or refused because the account is full (ADR-63). */
+type NewSessionOutcome = 'sent' | 'set_aside' | 'full';
+
+async function sendNew(api: CloudApi, record: SessionRecord, setAside: SetAsideSessions): Promise<NewSessionOutcome> {
+  try {
+    return (await sendOrSetAside(api, record, setAside)) ? 'sent' : 'set_aside';
+  } catch (cause) {
+    if (cause instanceof CloudError && cause.code === 'limit_reached') return 'full';
+    throw cause;
+  }
+}
+
 /** What one pass changed, for the screens that must read the history again. */
 export interface SyncResult {
   readonly uploaded: number;
@@ -245,6 +257,9 @@ export async function syncSessions({
   let downloaded = 0;
   let removed = 0;
   let refused = 0;
+  // Once the cloud says the account is full (ADR-63), no new session is offered to it in this pass;
+  // the rest of the pass still runs, and the failure is reported at its end.
+  let full = false;
 
   for (const record of local) {
     if (!belongsTo(record, owner, others)) continue;
@@ -256,14 +271,17 @@ export async function syncSessions({
         await store.delete(record.id);
         marks.remove(record.id);
         removed++;
-      } else if (setAside.has(record.id)) {
-        continue;
-      } else if (await sendOrSetAside(api, record, setAside)) {
-        marks.add(record.id);
-        if (record.ownerId === undefined) await store.setOwner(record.id, owner);
-        uploaded++;
-      } else {
-        refused++;
+      } else if (!setAside.has(record.id) && !full) {
+        const outcome = await sendNew(api, record, setAside);
+        if (outcome === 'sent') {
+          marks.add(record.id);
+          if (record.ownerId === undefined) await store.setOwner(record.id, owner);
+          uploaded++;
+        } else if (outcome === 'set_aside') {
+          refused++;
+        } else {
+          full = true;
+        }
       }
       continue;
     }
@@ -289,5 +307,6 @@ export async function syncSessions({
     downloaded++;
   }
 
+  if (full) throw new CloudError('limit_reached');
   return { uploaded, downloaded, removed, deleted, setAside: refused };
 }

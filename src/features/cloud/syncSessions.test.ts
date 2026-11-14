@@ -178,7 +178,7 @@ describe('syncSessions', () => {
 
 describe('syncSessions with sessions the cloud refuses', () => {
   /** A cloud that refuses one session with `code` and stores the rest. */
-  function refusing(id: string, code: 'invalid_request' | 'session_conflict' | 'network', initial: readonly SessionRecord[] = []) {
+  function refusing(id: string, code: 'invalid_request' | 'session_conflict' | 'network' | 'limit_reached', initial: readonly SessionRecord[] = []) {
     const cloud = fakeCloud(initial);
     const sent: string[] = [];
     const save = cloud.saveSession.bind(cloud);
@@ -231,6 +231,26 @@ describe('syncSessions with sessions the cloud refuses', () => {
     await expect(syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
       .rejects.toMatchObject({ code: 'network' });
     expect(setAside.size).toBe(0);
+  });
+
+  it('with the account full it sends nothing new, still brings what the cloud has, and says so at the end (ADR-63)', async () => {
+    const theirs = sessionRecord({ id: ID_C, startedAt: '2026-10-08T10:00:00.000Z', endedAt: '2026-10-08T10:20:00.000Z' });
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud, sent } = refusing(ID_A, 'limit_reached', [theirs]);
+    // Every new session is refused once the account is full.
+    const save = cloud.saveSession.bind(cloud);
+    cloud.saveSession = (record) => (record.id === ID_B ? Promise.reject(new CloudError('limit_reached')) : save(record));
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    await expect(syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .rejects.toMatchObject({ code: 'limit_reached' });
+
+    // Nothing is set aside: once there is room, the sessions go up.
+    expect(setAside.size).toBe(0);
+    // After the first refusal no other new session is offered in this pass.
+    expect(sent).toHaveLength(1);
+    expect(await store.get(ID_C)).not.toBeNull();
+    expect(await store.list()).toHaveLength(3);
   });
 
   it('does not resend a refused rating on every pass', async () => {
@@ -494,6 +514,7 @@ describe('cloud API client', () => {
 
     await expect(answering(403, { code: 'second_factor_required' }).listSessions()).rejects.toMatchObject({ code: 'second_factor_required' });
     await expect(answering(429, { code: 'rate_limited' }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'rate_limited' });
+    await expect(answering(409, { code: 'limit_reached' }).saveSession(sessionRecord())).rejects.toMatchObject({ code: 'limit_reached' });
     await expect(answering(500, '<html>').listSessions()).rejects.toMatchObject({ code: 'unknown' });
     await expect(answering(200, { id: ID_A, samples: [{ second: -1 }] }).getSession(ID_A)).rejects.toMatchObject({ code: 'unknown' });
     expect(await answering(404, { code: 'not_found' }).getSession(ID_A)).toBeNull();

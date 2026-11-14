@@ -26,6 +26,8 @@ export const CLOUD_ERROR_CODES = [
   'language_model_unavailable',
   /** The account used up today's calls to the language model (ADR-54). */
   'rate_limited',
+  /** The account keeps as many sessions or recordings as the cloud allows (ADR-63). */
+  'limit_reached',
   'network',
   'unknown',
 ] as const;

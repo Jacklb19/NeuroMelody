@@ -531,6 +531,15 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 | Datos | La base `neuromelody` pasa a la versión 2: la actualización solo crea el almacén `drafts` y conserva `sessions`. Se cierra si otra pestaña abre una versión más nueva. |
 | Límites | Una sesión con el simulador o una grabación de ejemplo no deja borrador, como tampoco se guarda (ADR-35). Lo escuchado después del último borrador (como mucho 15 s) puede perderse si el navegador cierra la página sin avisar. No se probó en un teléfono real con la pantalla bloqueada. |
 
+## ADR-63. Tope de datos por cuenta en la nube
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 entre las mejoras menores de la auditoría del 13 nov. Las cifras (2000 sesiones y 20 grabaciones) son de producto y se pueden cambiar con una migración nueva. |
+| Problema | La clave anónima es pública y el plan gratuito de Supabase tiene 500 MB compartidos: una cuenta podía llenar la base insertando sesiones o grabaciones sin fin, directamente o a través de la API. |
+| Decisión | 1) La base guarda como mucho 2000 sesiones y 20 grabaciones guiadas por cuenta. Lo impone un disparador `before insert` con un bloqueo por cuenta (migración `20261114000000_account_storage_limits.sql`), que rechaza con `54000`. 2) La API responde 409 `limit_reached`. 3) Reenviar una sesión ya guardada (para actualizar su valoración) sigue funcionando. 4) En el front, con la cuenta llena la sincronización no ofrece más sesiones nuevas en esa pasada, pero termina el resto (descargas, valoraciones, borrados) y después lo dice: «tu cuenta ya guarda en la nube todo lo que puede; lo nuevo sigue en este dispositivo». No se aparta ninguna sesión, así que suben cuando hay sitio. |
+| Límites | Las filas que ya existan por encima del tope se conservan. Hay que aplicar la migración en Supabase antes de publicar el back; sin ella no hay tope, pero nada falla. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
@@ -544,3 +553,4 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 | Sesiones que la nube rechaza | Auditoría del 13 nov 2026: una sesión que la API rechaza por sí misma (`invalid_request` o `session_conflict`) se aparta, por cuenta y en el dispositivo, y la sincronización sigue con las demás; no se vuelve a enviar ni se borra del dispositivo. Un fallo de red, de cuenta o del servidor sigue deteniendo la pasada. |
 | Lista de sesiones incompleta | Auditoría del 13 nov 2026: `GET /v1/sessions` devuelve como mucho 500 sesiones y añade `truncated`, que vale `true` si quedaron fuera sesiones más antiguas (la API pide una más a `list_sessions`, sin migración). Con `truncated` la sincronización no borra del dispositivo ninguna sesión ausente de la lista. Si la API publicada aún no envía el campo, una lista de 500 se trata como incompleta. |
 | Cuota del modelo y caché | Auditoría del 13 nov 2026, modifica el contrato de ADR-54: la llamada gasta cuota después de las comprobaciones y solo si la respuesta no está en la caché de la API, justo antes del modelo. Una respuesta de la caché no gasta cuota y se entrega aunque la cuota esté agotada, porque no le cuesta nada al proveedor. Una llamada que el modelo no llega a responder sigue gastando la suya; devolverla exigiría una migración nueva (propuesta P-16). |
+| Estado de la API | Auditoría del 13 nov 2026: `GET /v1/health` dice también si alcanza Supabase (`supabase: ok` o `unreachable`). Mira las claves públicas del proyecto con la clave anónima, como mucho cada 30 s, y responde 503 con `status: degraded` mientras no lo alcanza. |
