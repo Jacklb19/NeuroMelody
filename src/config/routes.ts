@@ -37,7 +37,7 @@ export const ROUTES = {
   /** Guided recording that gives the classifier examples of the person. */
   collect: `/${ROUTE_SEGMENTS.collect}`,
   diagnostics: `/${ROUTE_SEGMENTS.diagnostics}`,
-  /** Profile: summary and settings of the person, with or without an account. */
+  /** Profile: summary and settings of the signed-in person (ADR-57). */
   account: `/${ROUTE_SEGMENTS.account}`,
   privacy: `/${ROUTE_SEGMENTS.privacy}`,
   login: `/${ROUTE_SEGMENTS.login}`,

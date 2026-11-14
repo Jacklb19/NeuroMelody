@@ -52,7 +52,8 @@ export interface SessionRecord {
   /**
    * Account the session belongs to on this device: set when it is recorded
    * with an account signed in, brought from its cloud or first sent there.
-   * Absent for a session made without an account. Never sent to the cloud.
+   * Absent for a session saved before owners were written down (ADR-53) or
+   * made without an account, before the app required one (ADR-57). Never sent to the cloud.
    */
   readonly ownerId?: string;
 }
