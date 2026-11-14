@@ -4,6 +4,8 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 
 **Usuarios.** El paciente es el usuario principal. El terapeuta o acompañante usa la misma cuenta y el mismo dispositivo que el paciente, sin rol ni permisos propios: su intervención se limita a las pantallas de plan e historial.
 
+**Datos por cuenta (ADR-61).** Historial, resumen, progreso, informe y copia muestran solo las sesiones de la cuenta que entró; un enlace a la sesión de otra cuenta del dispositivo responde como si no existiera.
+
 **Sesión de usuario.** La app solo se usa con cuenta (ADR-57): toda pantalla de la app, también la sesión con el simulador, está bajo `RequireAccount`. Sin sesión iniciada solo son públicas la portada, las pantallas de acceso, la privacidad y la página no encontrada. Sincronizar y ver los datos de salud de la nube piden además el segundo factor TOTP (ADR-10).
 
 ## Pantallas

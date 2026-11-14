@@ -512,6 +512,15 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 - **Final adelantado para dormir.** En una sesión con final silencioso (ADR-41) y música adaptativa, el fundido de dos minutos se adelanta cuando, durante cinco minutos seguidos de escucha, la estimación dice que el pulso está por debajo del inicial, la señal es buena y la música ya está en su paso más calmado. Cualquier lectura distinta o una pausa reinician la cuenta. Cerca del final del plan se mantiene su propio fundido. Un aviso lo dice sin afirmar que la persona duerme. La sesión se guarda con el tiempo realmente escuchado.
 - **Límites.** El criterio usa la misma estimación descriptiva de ADR-12; no mide el sueño. Los cinco minutos son un valor inicial (`SETTLED_FOR_S`) por ajustar con pruebas reales.
 
+## ADR-61. Los datos del dispositivo se separan por cuenta
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-09 de la revisión de noviembre), con la opción «primera cuenta» para las sesiones sin dueño. Modifica lo que ADR-53 mantenía: el historial ya no muestra todas las sesiones del dispositivo. |
+| Problema | ADR-53 solo separaba la sincronización. Con dos cuentas en un dispositivo, la segunda podía ver el historial de la primera, abrir sus sesiones por enlace directo, escribir notas, cambiar valoraciones y borrarlas. Los textos automáticos se guardaban en una sola clave que leía cualquier cuenta. |
+| Decisión | 1) El filtro vive en una sola capa: el almacén que entrega `CloudSyncProvider` (`mirroredSessionStore.ts`). Cada cuenta solo lista, lee, anota, valora y borra sus sesiones. La de otra cuenta responde como si no existiera, y sin cuenta no se muestra ninguna. 2) Las sesiones antiguas sin dueño pasan a la primera cuenta que entra en el dispositivo después de la actualización (`claimUnownedSessions`). Siguen siendo de otra cuenta las que figuren en sus marcas, como en ADR-53. 3) Los textos automáticos se guardan por cuenta (`neuromelody.narratives.<cuenta>`), y la clave común anterior se borra al escribir. 4) Al borrar la cuenta se eliminan también del dispositivo sus sesiones, con notas y valoraciones, sus marcas, colas, sesiones apartadas, textos y favoritos. Si la nube rechaza el borrado, no se toca nada. |
+| Límites | Es una separación de la interfaz en un mismo navegador, no un cifrado: quien tenga acceso al perfil del navegador puede leer IndexedDB. Las grabaciones de `/collect` (otra base) no cambian. No se probó con dos cuentas reales. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
