@@ -28,6 +28,7 @@ export const cloud = {
     invalid_request: 'a session is not in a format the service accepts.',
     language_model_unavailable: 'the automatic text is not available right now.',
     rate_limited: 'you reached the limit of automatic texts for today; try again tomorrow.',
+    limit_reached: 'your account already keeps everything the cloud allows; new items stay on this device. Delete something older to make room.',
     storage_unavailable: 'the service is not responding right now.',
     network: 'there is no connection.',
     unknown: 'an unexpected error occurred.',
