@@ -40,6 +40,7 @@ import { SessionStepper } from './SessionStepper';
 import { AUTO_ADVANCE_MS, SLIDE_IDS, useSlides, type SlideId } from './sessionSlides';
 import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
+import { isSettled, SettleWatch } from './sleepSettle';
 import './session.css';
 
 /** A pause longer than this ends the session on its own (ADR-52): what was heard is kept, not left open. */
@@ -54,7 +55,9 @@ const PAUSE_LIMIT_MS = PAUSE_LIMIT_MIN * SECONDS_PER_MINUTE * 1000;
  * on the device (RF-14); one made with a trial source is not, and says so.
  * Stopping the music pauses the session: resuming continues the same one,
  * and it ends when the person finishes it, the plan ends, the pause runs
- * out or the page is left (ADR-52).
+ * out or the page is left (ADR-52). While the music plays the person can
+ * switch to an immersive view that keeps only the orb, the moment, the
+ * time and Stop (ADR-60).
  */
 export function SessionPage(): React.JSX.Element {
   const t = useMessages();
@@ -79,6 +82,9 @@ export function SessionPage(): React.JSX.Element {
     return isSoundProfile(value) ? value : 'original';
   });
   const [recorder] = useState(() => new SessionRecorder());
+  // A session for falling asleep ends by itself once the pulse has stayed settled (ADR-60).
+  const [settleWatch] = useState(() => new SettleWatch());
+  const [endingEarly, setEndingEarly] = useState(false);
   const [elapsedS, setElapsedS] = useState(0);
   // The engine while the music plays; the breathing guide follows its tempo.
   const [engine, setEngine] = useState<AudioEngine | null>(null);
@@ -89,6 +95,13 @@ export function SessionPage(): React.JSX.Element {
   // Whether the session is over; until then, music that stopped is only paused.
   const [ended, setEnded] = useState(false);
   const paused = everPlayed && !playing && !ended;
+  // The immersive view only exists while the music sounds: a pause or the end bring every control back (ADR-60).
+  const [immersiveChosen, setImmersiveChosen] = useState(false);
+  const immersive = immersiveChosen && playing;
+  // The view replaces the page, so it starts at its top wherever the person had scrolled to.
+  useEffect(() => {
+    if (immersive) window.scrollTo({ top: 0 });
+  }, [immersive]);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The session that just ended was a trial of the app, so nothing was kept.
@@ -146,6 +159,9 @@ export function SessionPage(): React.JSX.Element {
     adaptation.setAudio(next, next !== null && recorder.active ? elapsedRef.current - sessionStartElapsedRef.current : undefined);
     setEngine(next);
     if (next === null) {
+      settleWatch.interrupt();
+      // A stopped engine drops its fades: music that resumes plays to the end of the plan again.
+      setEndingEarly(false);
       if (recorder.active) pauseTimerRef.current = setTimeout(finishRecording, PAUSE_LIMIT_MS);
       return;
     }
@@ -164,12 +180,13 @@ export function SessionPage(): React.JSX.Element {
         ratingBefore: ratingBeforeRef.current,
         context: { ...createSessionContext(instrument, ambience), fixed: adaptation.fixed, profile },
       });
+      settleWatch.reset();
       setEnded(false);
       setSavedId(null);
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
+  }, [adaptation, recorder, settleWatch, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -178,8 +195,13 @@ export function SessionPage(): React.JSX.Element {
 
   const handleIndices = useCallback((result: IndicesResult): void => {
     adaptation.receive(result);
-    recorder.add(result, adaptation.getSnapshot().state);
-  }, [adaptation, recorder]);
+    const snapshot = adaptation.getSnapshot();
+    recorder.add(result, snapshot.state);
+    // Music that does not adapt has no calmest step to reach, so only an adaptive sleep session ends early.
+    if (!program.quietEnding || adaptation.fixed || !recorder.active) return;
+    const settled = isSettled(snapshot, program.calmestLevel);
+    if (settleWatch.observe(elapsedRef.current, settled) && playbackRef.current?.endQuietly() === true) setEndingEarly(true);
+  }, [adaptation, recorder, program, settleWatch]);
 
   // A watch that sends only the pulse (ADR-51) has no beats to follow: the orb beats at its pace instead.
   const adaptationSnapshot = useSyncExternalStore(adaptation.subscribe, adaptation.getSnapshot);
@@ -246,7 +268,7 @@ export function SessionPage(): React.JSX.Element {
   const slideNames: Readonly<Record<SlideId, string>> = t.session.slides.names;
 
   return (
-    <div className="session-page">
+    <div className={immersive ? 'session-page is-immersive' : 'session-page'}>
       <SleepDimmer active={program.quietEnding && playing} />
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
@@ -310,11 +332,22 @@ export function SessionPage(): React.JSX.Element {
             connection={connection}
             progress={elapsedS / (durationMin * SECONDS_PER_MINUTE)}
             orbRef={orbRef}
+            playing={playing}
           />
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
           <SessionStage session={adaptation} connection={connection} playing={playing} ended={ended} />
+          {playing && (
+            <button
+              type="button"
+              className="pill-button pill-button-ghost immersive-toggle"
+              aria-pressed={immersive}
+              onClick={() => { setImmersiveChosen(!immersive); }}
+            >
+              {immersive ? t.session.immersive.exit : t.session.immersive.enter}
+            </button>
+          )}
           {paused && (
             <div className="session-saved session-paused" role="status">
               <p><strong>{t.session.paused.title}</strong> {t.session.paused.detail(PAUSE_LIMIT_MIN)}</p>
@@ -325,6 +358,7 @@ export function SessionPage(): React.JSX.Element {
               </div>
             </div>
           )}
+          {endingEarly && playing && <p className="quiet-notice" role="status">{t.session.settledEnding}</p>}
           <SessionCheckIn
             playing={playing}
             ratingBefore={ratingBefore}

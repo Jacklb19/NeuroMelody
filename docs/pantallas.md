@@ -79,7 +79,7 @@ Sustituye la organización de arriba. La sesión es un recorrido de tres diaposi
 2. **Cómo llegas:** el pulso en vivo, que late con cada latido, el resumen de lo elegido (intención, sonido y ambiente) y la autovaloración opcional. «Iniciar música» empieza la sesión y lleva a la siguiente.
 3. **Escuchando:** el escenario de siempre (orbe, frase, recorrido de la música, estado estimado, controles y progreso) y, al terminar, el aviso de guardado y «Lo que hizo la música».
 
-Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página.
+Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página. Con la música sonando, «Vista inmersiva» deja solo el orbe, la respiración, la frase del momento, el tiempo y «Detener»; una pausa o «Salir de la vista inmersiva» devuelven lo demás (ADR-60). El halo del orbe se ensancha y atenúa a medida que la música baja de paso, y una sesión para dormir puede apagarse antes del plan si el pulso lleva cinco minutos más tranquilo que al empezar.
 
 ### Ajustes de la revisión de usabilidad (22 oct 2026)
 

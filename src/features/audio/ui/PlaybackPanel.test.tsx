@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { APP_NAME } from '../../../config/app';
@@ -10,25 +11,27 @@ import { DEFAULT_VOLUME_DB, type AudioFactory } from '../engine/AudioEngine';
 import {
   CLOCK_CHECK_INTERVAL_MS,
   CONTINUOUS_WARNING_PERIOD_S,
+  EARLY_FADE_LEAD_S,
   QUIET_FADE_S,
   RESPONSE_WAIT_S,
 } from '../session/durationWarnings';
-import { PlaybackPanel } from './PlaybackPanel';
+import { PlaybackPanel, type PlaybackHandle } from './PlaybackPanel';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 
 const copy = es.audio.playback;
 
 function setup(durationMin = 10, quietEnding = false) {
   const env = createFakeAudioEnvironment();
+  const handle = createRef<PlaybackHandle>();
   const view = render(
-    <PlaybackPanel durationMin={durationMin} quietEnding={quietEnding} factory={env.factory} generateSeed={() => 42} />,
+    <PlaybackPanel ref={handle} durationMin={durationMin} quietEnding={quietEnding} factory={env.factory} generateSeed={() => 42} />,
   );
   const gains = () =>
     env.context.nodes.filter((n) => n.kind === 'gain') as unknown as { gain: FakeParam }[];
   // Creation order in AudioEngine: reverb, volume, envelope.
   const envelope = () => gains()[2]?.gain;
   const volume = () => gains()[1]?.gain;
-  return { env, view, envelope, volume };
+  return { env, view, envelope, volume, handle };
 }
 
 const state = () => screen.getByRole('status').textContent;
@@ -203,6 +206,45 @@ describe('PlaybackPanel', () => {
     advanceOneCheck();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(state()).toContain(copy.finished);
+  });
+
+  it('a quiet ending can be brought forward, and then the session ends by itself (ADR-60)', async () => {
+    const { env, envelope, handle } = setup(10, true);
+    await start();
+    env.context.currentTime = 200;
+    let broughtForward = false;
+    act(() => { broughtForward = handle.current?.endQuietly() ?? false; });
+    expect(broughtForward).toBe(true);
+    // The fade planned for the end of the plan is dropped; the new one starts after a short lead.
+    const fadeStart = 200 + EARLY_FADE_LEAD_S;
+    expect(envelope()?.events.slice(-2)).toEqual([
+      { kind: 'set', value: 1, time: fadeStart },
+      { kind: 'linear', value: 0, time: fadeStart + QUIET_FADE_S },
+    ]);
+    env.context.currentTime = fadeStart + QUIET_FADE_S - 1;
+    advanceOneCheck();
+    expect(state()).toContain(copy.states.playing);
+    env.context.currentTime = fadeStart + QUIET_FADE_S;
+    advanceOneCheck();
+    expect(state()).toContain(copy.finished);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('leaves the ending alone when its own fade is about to start, or the session has no quiet ending', async () => {
+    const quiet = setup(10, true);
+    // Nothing plays yet.
+    expect(quiet.handle.current?.endQuietly()).toBe(false);
+    await start();
+    quiet.env.context.currentTime = 600 - QUIET_FADE_S - EARLY_FADE_LEAD_S;
+    const planned = quiet.envelope()?.events.length;
+    expect(quiet.handle.current?.endQuietly()).toBe(false);
+    expect(quiet.envelope()?.events).toHaveLength(planned ?? 0);
+    quiet.view.unmount();
+
+    const asking = setup(10);
+    await start();
+    asking.env.context.currentTime = 200;
+    expect(asking.handle.current?.endQuietly()).toBe(false);
   });
 
   it('finishing from the warning stops the session', async () => {
