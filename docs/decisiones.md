@@ -513,3 +513,4 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Cabeceras | COOP, COEP, CSP y HSTS en `vercel.json`, también aplicadas en el servidor de desarrollo de Vite. |
 | Dependencias del back en Vercel | Vercel instala las `dependencies` de `pyproject.toml` e ignora `requirements.txt` cuando existen los dos. Las dos listas llevan los mismos paquetes fijados y una prueba lo comprueba (12 oct). |
 | Media Session | Se probó solo con Web Audio; si el sistema no muestra controles, basta el botón fijo. |
+| Lista de sesiones incompleta | Auditoría del 13 nov 2026: `GET /v1/sessions` devuelve como mucho 500 sesiones y añade `truncated`, que vale `true` si quedaron fuera sesiones más antiguas (la API pide una más a `list_sessions`, sin migración). Con `truncated` la sincronización no borra del dispositivo ninguna sesión ausente de la lista. Si la API publicada aún no envía el campo, una lista de 500 se trata como incompleta. |
