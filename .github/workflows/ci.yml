@@ -28,6 +28,10 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # Only what ships to the browser: development tools never reach the people who use the app.
+      - name: Vulnerabilidades conocidas en las dependencias de producción
+        run: npm audit --omit=dev
+
       - name: Verificación de tipos estáticos
         run: npm run typecheck
 
