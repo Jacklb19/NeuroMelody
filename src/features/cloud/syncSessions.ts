@@ -206,7 +206,8 @@ interface SyncContext {
  * those sessions is read back from the cloud. Then:
  *
  * - on the device only and never sent: it is uploaded;
- * - on the device only but sent before: it was deleted elsewhere, so it is removed here;
+ * - on the device only but sent before: it was deleted elsewhere, so it is removed here,
+ *   unless the cloud's list was cut short, which leaves older sessions out;
  * - in the cloud only: it is downloaded;
  * - on both: the rating given after listening, the one field filled in later, is made equal.
  *
@@ -237,7 +238,8 @@ export async function syncSessions({
     deleted++;
   }
 
-  const remote = new Map((await api.listSessions()).map((summary) => [summary.id, summary]));
+  const listed = await api.listSessions();
+  const remote = new Map(listed.sessions.map((summary) => [summary.id, summary]));
   const local = await store.list();
   let uploaded = 0;
   let downloaded = 0;
@@ -249,6 +251,8 @@ export async function syncSessions({
     const summary = remote.get(record.id);
     if (summary === undefined) {
       if (marks.has(record.id)) {
+        // A list cut short leaves out older sessions: missing from it does not mean deleted elsewhere.
+        if (listed.truncated) continue;
         await store.delete(record.id);
         marks.remove(record.id);
         removed++;
