@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { act } from 'react';
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeAll, describe, it, expect, vi } from 'vitest';
 import { APP_NAME } from '../config/app';
 import { ROUTES, sessionPath } from '../config/routes';
 import { DEFAULT_AMBIENCE_ID } from '../features/audio/core/ambienceCatalog';
@@ -62,12 +62,30 @@ function renderWith(route: string, accepted = false, account?: AccountSetup) {
   return { registry };
 }
 
-/** The first load of a screen file in the test environment transforms all its modules: give it time. */
+/**
+ * The first load of a screen file in the test environment transforms all its
+ * modules, which under a loaded machine took longer than a test may last. The
+ * screens are loaded once before the tests (`beforeAll`), so each test only
+ * waits for React; the generous waits stay as a margin, and the tests of this
+ * file may last as long as them.
+ */
 const LAZY_SCREEN = { timeout: 15_000 };
+const LAZY_TEST = { timeout: 20_000 };
+const PRELOAD_TIMEOUT_MS = 120_000;
+
+beforeAll(async () => {
+  await Promise.all([
+    import('../features/session/SessionPage'),
+    import('../features/diagnostics/DiagnosticsPage'),
+    import('../features/privacy/PrivacyPage'),
+    import('../features/history/HistoryPage'),
+    import('../features/account/AccountPage'),
+  ]);
+}, PRELOAD_TIMEOUT_MS);
 
 const currentPath = () => screen.getByTestId('current-path').textContent;
 
-describe('routes', () => {
+describe('routes', LAZY_TEST, () => {
   it('the landing page explains the app and leads into it', () => {
     renderWith(ROUTES.home);
     expect(screen.getByRole('heading', { level: 1, name: es.landing.hero.title })).toBeInTheDocument();
@@ -160,7 +178,7 @@ describe('routes', () => {
   });
 });
 
-describe('the account on the way into the app (ADR-57)', () => {
+describe('the account on the way into the app (ADR-57)', LAZY_TEST, () => {
   const homeTitle = es.home.start.title;
   const appIsHidden = (): void => {
     expect(screen.queryByRole('heading', { level: 2, name: homeTitle })).not.toBeInTheDocument();
