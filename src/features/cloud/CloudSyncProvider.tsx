@@ -3,6 +3,7 @@ import { env } from '../../config/env';
 import { useAuth } from '../account/authContext';
 import { readConsent, writeConsent } from '../privacy/consentStore';
 import { SessionStoreContext, useSessionStore } from '../records/sessionStoreContext';
+import { useSessionDrafts } from '../records/sessionDraftContext';
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
 import { removeAccountStorage } from './accountStorage';
@@ -83,6 +84,7 @@ export function CloudSyncProvider({
 }: CloudSyncProviderProps): React.JSX.Element {
   const { state, service } = useAuth();
   const local = useSessionStore();
+  const drafts = useSessionDrafts();
   const userId = state.kind === 'signed_in' ? state.user.id : null;
   const secondFactorPassed = state.kind === 'signed_in' && state.assurance.current === 'aal2';
 
@@ -212,10 +214,13 @@ export function CloudSyncProvider({
     for (const record of await local.list()) {
       if (belongsTo(record, userId, others)) await local.delete(record.id);
     }
+    for (const draft of await drafts.list()) {
+      if (draft.ownerId === userId) await drafts.delete(draft.id);
+    }
     removeAccountStorage(userId);
     link.useMarksOf(userId);
     setRevision((value) => value + 1);
-  }, [link, local, userId]);
+  }, [link, local, drafts, userId]);
 
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();
