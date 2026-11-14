@@ -20,6 +20,7 @@ import { TIMBRE_RAMP_DURATION_S, tempoRampDurationS } from './ramps';
 import { generateImpulseResponse } from './impulseResponse';
 import { AudioEngineError } from './AudioEngineError';
 import { profileLayers, profileReverb, type MixTrack, type SoundProfile } from './soundProfile';
+import { trackOpenEngine, untrackOpenEngine } from './openEngines';
 
 /** Default volume, control range and slider step (RF-18). */
 export const DEFAULT_VOLUME_DB = -12;
@@ -205,7 +206,9 @@ export class AudioEngine {
   static async create(factory: AudioFactory, options: EngineOptions): Promise<AudioEngine> {
     const context = factory.createAudioContext();
     try {
-      return await AudioEngine.#buildGraph(context, factory, options);
+      const engine = await AudioEngine.#buildGraph(context, factory, options);
+      trackOpenEngine(engine);
+      return engine;
     } catch (cause) {
       if (context.state !== 'closed') await context.close();
       throw cause;
@@ -517,6 +520,7 @@ export class AudioEngine {
   }
 
   async close(): Promise<void> {
+    untrackOpenEngine(this);
     this.#audioElement?.pause();
     this.#state = 'closed';
     if (this.#context.state !== 'closed') await this.#context.close();
