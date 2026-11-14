@@ -60,4 +60,17 @@ export const records = {
     /** File name without extension, e.g. "neuromelody-session-2026-10-07T10-00-00". */
     fileName: (prefix: string, startedAt: string): string => `${prefix}-session-${startedAt}`,
   },
+  /** Offered when the app opens after a session that was left open (ADR-62). */
+  draftRecovery: {
+    title: 'A session was left unfinished',
+    /** `listened` is a duration such as "12 min". */
+    text: (listened: string): string =>
+      `The page closed while you were listening (${listened} of music). You can save that stretch in your history. The music does not play again.`,
+    save: 'Save what you heard',
+    discard: 'Discard',
+    saved: 'That stretch is now in your history.',
+    view: 'View summary',
+    /** `reason` is one of the store error sentences. */
+    failed: (reason: string): string => `We could not save it (${reason}). You can try again.`,
+  },
 };

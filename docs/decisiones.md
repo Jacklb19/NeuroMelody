@@ -521,6 +521,16 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 | Decisión | 1) El filtro vive en una sola capa: el almacén que entrega `CloudSyncProvider` (`mirroredSessionStore.ts`). Cada cuenta solo lista, lee, anota, valora y borra sus sesiones. La de otra cuenta responde como si no existiera, y sin cuenta no se muestra ninguna. 2) Las sesiones antiguas sin dueño pasan a la primera cuenta que entra en el dispositivo después de la actualización (`claimUnownedSessions`). Siguen siendo de otra cuenta las que figuren en sus marcas, como en ADR-53. 3) Los textos automáticos se guardan por cuenta (`neuromelody.narratives.<cuenta>`), y la clave común anterior se borra al escribir. 4) Al borrar la cuenta se eliminan también del dispositivo sus sesiones, con notas y valoraciones, sus marcas, colas, sesiones apartadas, textos y favoritos. Si la nube rechaza el borrado, no se toca nada. |
 | Límites | Es una separación de la interfaz en un mismo navegador, no un cifrado: quien tenga acceso al perfil del navegador puede leer IndexedDB. Las grabaciones de `/collect` (otra base) no cambian. No se probó con dos cuentas reales. |
 
+## ADR-62. Borrador de la sesión abierta y recuperación al volver
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-11), con la política (a): 24 horas. Cubre el límite que ADR-52 dejaba abierto. |
+| Problema | El registro de la sesión activa solo vivía en memoria: si el sistema o la persona cerraban la pestaña sin terminarla, se perdía todo lo escuchado. |
+| Decisión | 1) Mientras una sesión con una fuente que mide a la persona está abierta, sonando o en pausa, se escribe su borrador en IndexedDB: cada 15 s, en cada pausa y al ocultarse o cerrarse la página (`pagehide`, `visibilitychange`). El borrador es la sesión tal como se guardaría en ese instante. 2) El dueño es la cuenta que la empezó, y solo a ella se le ofrece. 3) Cuenta como escuchado solo el tiempo con música, sin las pausas (ADR-52). 4) Al abrir la app, la cuenta ve el aviso «Una sesión quedó sin terminar» con «Guardar lo escuchado» y «Descartar». La música nunca vuelve a sonar sola. 5) Se guarda con el id de la sesión: guardar dos veces, o guardar un borrador cuya sesión ya estaba guardada, no duplica nada. 6) Se descartan solos los borradores de más de 24 horas, de cualquier cuenta, y los que no alcanzan el mínimo de una sesión normal (`worthKeeping`). Al terminar la sesión se borra su borrador; si el guardado falla, se conserva para recuperarla. Borrar la cuenta borra sus borradores (ADR-61). |
+| Datos | La base `neuromelody` pasa a la versión 2: la actualización solo crea el almacén `drafts` y conserva `sessions`. Se cierra si otra pestaña abre una versión más nueva. |
+| Límites | Una sesión con el simulador o una grabación de ejemplo no deja borrador, como tampoco se guarda (ADR-35). Lo escuchado después del último borrador (como mucho 15 s) puede perderse si el navegador cierra la página sin avisar. No se probó en un teléfono real con la pantalla bloqueada. |
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

@@ -19,9 +19,12 @@ import type { IndicesResult } from '../signal/processing/SignalProcessor';
 import { AdaptationSession } from '../adaptation/AdaptationSession';
 import { loadLatestActivationModel } from '../adaptation/classifier/activationModel';
 import { useCloudSync } from '../cloud/cloudSyncContext';
+import { useAuth } from '../account/authContext';
 import { MusicalStatePanel } from '../adaptation/MusicalStatePanel';
 import { worthKeeping } from '../records/retentionPolicy';
 import { SessionRecorder } from '../records/SessionRecorder';
+import { DRAFT_SAVE_PERIOD_MS, draftable, draftOf } from '../records/sessionDraft';
+import { useSessionDrafts } from '../records/sessionDraftContext';
 import { createSessionContext } from '../records/sessionContext';
 import { useSessionStore } from '../records/sessionStoreContext';
 import { isSoundProfile } from '../audio/engine/soundProfile';
@@ -55,7 +58,10 @@ const PAUSE_LIMIT_MS = PAUSE_LIMIT_MIN * SECONDS_PER_MINUTE * 1000;
  * on the device (RF-14); one made with a trial source is not, and says so.
  * Stopping the music pauses the session: resuming continues the same one,
  * and it ends when the person finishes it, the plan ends, the pause runs
- * out or the page is left (ADR-52). While the music plays the person can
+ * out or the page is left (ADR-52). While it is open, a draft is written
+ * every 15 s, at each pause and when the page is hidden, so a page closed
+ * without warning can be saved later; it never restarts the music (ADR-62).
+ * While the music plays the person can
  * switch to an immersive view that keeps only the orb, the moment, the
  * time and Stop (ADR-60).
  */
@@ -73,7 +79,11 @@ export function SessionPage(): React.JSX.Element {
   const [ambience] = useState(() => readAmbience(params.get(QUERY_PARAMS.ambience)));
   const [instrument] = useState(() => readInstrument(params.get(QUERY_PARAMS.instrument)));
   const store = useSessionStore();
+  const drafts = useSessionDrafts();
   const { api } = useCloudSync();
+  const { state: authState } = useAuth();
+  // The draft belongs to whoever started the session, and only they are offered it (ADR-62).
+  const owner = authState.kind === 'signed_in' ? authState.user.id : null;
   // Acquisition creates the shared source; signal analysis consumes it.
   const [source, setSource] = useState<SignalSource | null>(null);
   const [adaptation] = useState(() => new AdaptationSession(program, params.get(QUERY_PARAMS.soundMode) === 'fixed'));
@@ -134,24 +144,42 @@ export function SessionPage(): React.JSX.Element {
     pauseTimerRef.current = null;
   }, []);
 
+  /** Writes down the open session as it stands, in case the page closes before it ends (ADR-62). */
+  const writeDraft = useCallback((): void => {
+    if (owner === null) return;
+    const record = recorder.snapshot(elapsedRef.current - sessionStartElapsedRef.current, adaptation.getSnapshot().recap);
+    if (record === null || !draftable(record)) return;
+    // A draft that cannot be written only loses the chance to recover; the session goes on.
+    drafts.put(draftOf(record, owner, new Date())).catch(() => undefined);
+  }, [adaptation, recorder, drafts, owner]);
+
   const finishRecording = useCallback((): void => {
     clearPauseTimer();
     // The adaptation has been handed the end of the music, so its story is complete.
     const record = recorder.finish(elapsedRef.current - sessionStartElapsedRef.current, adaptation.getSnapshot().recap);
     if (record === null) return;
     setEnded(true);
+    const forgetDraft = (): void => { drafts.delete(record.id).catch(() => undefined); };
     if (isTrialSource(record.sourceKind)) {
+      forgetDraft();
       setTrialEnded(true);
       return;
     }
-    if (!worthKeeping(record)) return;
+    if (!worthKeeping(record)) {
+      forgetDraft();
+      return;
+    }
     store.save(record).then(
-      () => { setSavedId(record.id); },
+      () => {
+        setSavedId(record.id);
+        forgetDraft();
+      },
+      // The draft stays: the session can still be saved from it when the app opens again.
       (error: unknown) => {
         setSaveFailure({ cause: error });
       },
     );
-  }, [adaptation, recorder, store, clearPauseTimer]);
+  }, [adaptation, recorder, store, drafts, clearPauseTimer]);
 
   const handleEngineChange = useCallback((next: AudioEngine | null): void => {
     clearPauseTimer();
@@ -162,7 +190,10 @@ export function SessionPage(): React.JSX.Element {
       settleWatch.interrupt();
       // A stopped engine drops its fades: music that resumes plays to the end of the plan again.
       setEndingEarly(false);
-      if (recorder.active) pauseTimerRef.current = setTimeout(finishRecording, PAUSE_LIMIT_MS);
+      if (recorder.active) {
+        writeDraft();
+        pauseTimerRef.current = setTimeout(finishRecording, PAUSE_LIMIT_MS);
+      }
       return;
     }
     setEverPlayed(true);
@@ -186,7 +217,7 @@ export function SessionPage(): React.JSX.Element {
       setTrialEnded(false);
       setSaveFailure(null);
     }
-  }, [adaptation, recorder, settleWatch, durationMin, goals, instrument, ambience, profile, finishRecording, clearPauseTimer, goTo]);
+  }, [adaptation, recorder, settleWatch, durationMin, goals, instrument, ambience, profile, finishRecording, writeDraft, clearPauseTimer, goTo]);
 
   const handleElapsedChange = useCallback((seconds: number): void => {
     elapsedRef.current = seconds;
@@ -240,6 +271,22 @@ export function SessionPage(): React.JSX.Element {
 
   // Leaving the page mid-session still keeps what was listened to.
   useEffect(() => finishRecording, [finishRecording]);
+
+  // While the session is open its draft follows it: now and then, and when the page is hidden or closed.
+  // This timer only saves data; nothing audible depends on it.
+  const sessionOpen = everPlayed && !ended;
+  useEffect(() => {
+    if (!sessionOpen) return undefined;
+    const timer = setInterval(writeDraft, DRAFT_SAVE_PERIOD_MS);
+    const onHidden = (): void => { if (document.visibilityState === 'hidden') writeDraft(); };
+    window.addEventListener('pagehide', writeDraft);
+    document.addEventListener('visibilitychange', onHidden);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('pagehide', writeDraft);
+      document.removeEventListener('visibilitychange', onHidden);
+    };
+  }, [sessionOpen, writeDraft]);
 
   // The first time the pulse connects, the next slide comes in on its own, after a moment to read it.
   const connectedOnce = useRef(false);

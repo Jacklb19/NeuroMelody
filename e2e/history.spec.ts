@@ -37,7 +37,8 @@ const MEASURED: SessionRecord = {
 
 function storeSession(page: Page, record: SessionRecord): Promise<void> {
   return page.evaluate((session) => new Promise<void>((done, fail) => {
-    const request = indexedDB.open('neuromelody', 1);
+    // Without a version: the app may already have opened the database at its current one.
+    const request = indexedDB.open('neuromelody');
     request.onupgradeneeded = () => { request.result.createObjectStore('sessions', { keyPath: 'id' }); };
     request.onerror = () => { fail(new Error('could not open the history')); };
     request.onsuccess = () => {

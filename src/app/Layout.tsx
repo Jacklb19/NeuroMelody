@@ -9,6 +9,7 @@ import { NAVIGATION_ITEMS } from './navigation';
 import { PendingScreen } from './PendingScreen';
 import { QuickPreferences } from './preferences/PreferenceControls';
 import { ScreenErrorBoundary } from './ScreenErrorBoundary';
+import { DraftRecoveryNotice } from '../features/records/DraftRecoveryNotice';
 
 /** Target of the skip link, so keyboard users can jump past the navigation (WCAG 2.4.1). */
 export const MAIN_CONTENT_ID = 'main-content';
@@ -59,6 +60,8 @@ export function Layout(): React.JSX.Element {
         )}
       </header>
       <main id={MAIN_CONTENT_ID} tabIndex={-1} className="app-main">
+        {/* A session left open when the page closed is offered back on whichever screen the app opens (ADR-62). */}
+        {user !== null && <DraftRecoveryNotice />}
         {/* A screen that fails keeps the header and the navigation; going to another address tries again. */}
         <ScreenErrorBoundary resetKey={pathname}>
           <Suspense fallback={<PendingScreen />}>

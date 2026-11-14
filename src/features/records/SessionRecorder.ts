@@ -90,9 +90,18 @@ export class SessionRecorder {
    * @param music What the music did, kept with the session when there is a story to tell (ADR-42).
    */
   finish(listenedSeconds: number, music: MusicRecap | null = null): SessionRecord | null {
+    const record = this.snapshot(listenedSeconds, music);
+    this.#session = null;
+    return record;
+  }
+
+  /**
+   * The session as it would be saved now, without ending it: what a draft
+   * keeps in case the page closes first (ADR-62). `null` when none is running.
+   */
+  snapshot(listenedSeconds: number, music: MusicRecap | null = null): SessionRecord | null {
     const session = this.#session;
     if (session === null) return null;
-    this.#session = null;
     const endedAtMs = Math.max(this.#nowMs(), session.startedAtMs);
     return {
       id: session.id,
@@ -104,7 +113,8 @@ export class SessionRecorder {
       sourceKind: session.sourceKind,
       ratingBefore: session.ratingBefore,
       ratingAfter: null,
-      samples: session.samples,
+      // A copy: the session goes on adding samples after the snapshot.
+      samples: [...session.samples],
       // A session is pulse-only when a watch was used and no reading had variability (ADR-51).
       ...(session.pulseOnly && !session.variability ? { signalMode: 'hr_only' as const } : {}),
       ...(music === null ? {} : { music }),

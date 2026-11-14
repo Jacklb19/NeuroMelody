@@ -506,6 +506,9 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .check-in-note { margin-top: var(--space-6); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .session-saved { margin-top: var(--space-8); padding: var(--space-5) var(--space-6); background: var(--color-paper); border-left: var(--focus-width) solid var(--color-button-background); }
 .session-saved p { margin-bottom: var(--space-4); }
+.draft-recovery { margin-bottom: var(--space-6); }
+.draft-recovery h2 { margin-bottom: var(--space-3); }
+.draft-recovery p { margin-bottom: var(--space-4); }
 .self-rating { border: 0; min-width: 0; }
 .self-rating legend { font-weight: var(--font-weight-strong); }
 .optional-mark { font-weight: var(--font-weight-normal); color: var(--color-text-secondary); font-size: var(--text-sm); }
