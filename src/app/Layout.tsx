@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { APP_NAME } from '../config/app';
 import { ROUTES } from '../config/routes';
 import { useAuth } from '../features/account/authContext';
@@ -8,6 +8,7 @@ import { useMessages } from '../i18n/messages';
 import { NAVIGATION_ITEMS } from './navigation';
 import { PendingScreen } from './PendingScreen';
 import { QuickPreferences } from './preferences/PreferenceControls';
+import { ScreenErrorBoundary } from './ScreenErrorBoundary';
 
 /** Target of the skip link, so keyboard users can jump past the navigation (WCAG 2.4.1). */
 export const MAIN_CONTENT_ID = 'main-content';
@@ -22,6 +23,7 @@ export function Layout(): React.JSX.Element {
   const t = useMessages();
   const { state } = useAuth();
   const user = state.kind === 'signed_in' ? state.user : null;
+  const { pathname } = useLocation();
   return (
     <div className="app-shell">
       <a href={`#${MAIN_CONTENT_ID}`} className="skip-link">
@@ -57,9 +59,12 @@ export function Layout(): React.JSX.Element {
         )}
       </header>
       <main id={MAIN_CONTENT_ID} tabIndex={-1} className="app-main">
-        <Suspense fallback={<PendingScreen />}>
-          <Outlet />
-        </Suspense>
+        {/* A screen that fails keeps the header and the navigation; going to another address tries again. */}
+        <ScreenErrorBoundary resetKey={pathname}>
+          <Suspense fallback={<PendingScreen />}>
+            <Outlet />
+          </Suspense>
+        </ScreenErrorBoundary>
       </main>
     </div>
   );

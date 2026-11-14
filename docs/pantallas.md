@@ -50,6 +50,7 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `ReportPage` (`src/features/report/`) | Bloque 13 (ADR-33) | `/report`; reutiliza el selector de sesiones (`RangePicker`) y la gráfica de `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
+| `ScreenErrorBoundary` (`src/app/`) | Auditoría de noviembre (13 nov 2026) | En lugar de cualquier pantalla que falla al dibujarse o cuyo archivo no llega: dentro del `Layout` conserva la cabecera, y alrededor de todas las rutas cubre las que están fuera de él. Detiene la música y ofrece recargar |
 
 ## Organización de `/session` (ADR-24)
 
