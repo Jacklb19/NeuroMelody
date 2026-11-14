@@ -173,6 +173,10 @@
   --halo-opacity-intermediate: 0.8;
   --halo-opacity-target: 0.65;
   --halo-opacity-sleep: 0.5;
+  /* Immersive view (ADR-60): the orb grows with the screen, between these sizes. */
+  --ring-size-immersive: clamp(15rem, 44vmin, 26rem);
+  /* Room at the top of the immersive view for the button that leaves it. */
+  --immersive-top-reserve: 5.5rem;
   --avatar-size: 2.75rem;
   /* Still above the 24 px minimum target size (WCAG 2.5.8). */
   --avatar-size-compact: 2.5rem;

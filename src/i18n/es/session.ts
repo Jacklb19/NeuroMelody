@@ -10,6 +10,11 @@ export const session = {
   dimmer: {
     restore: 'Pantalla atenuada para dormir. Toca para verla.',
   },
+  /** Immersive view of the listening slide (ADR-60): the button that enters and leaves it. */
+  immersive: {
+    enter: 'Vista inmersiva',
+    exit: 'Salir de la vista inmersiva',
+  },
   /** The session as three slides (ADR-47); `names` and `leads` keys mirror `SlideId`. */
   slides: {
     label: 'Pasos de la sesión',

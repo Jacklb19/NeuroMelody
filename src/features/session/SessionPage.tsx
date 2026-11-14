@@ -54,7 +54,9 @@ const PAUSE_LIMIT_MS = PAUSE_LIMIT_MIN * SECONDS_PER_MINUTE * 1000;
  * on the device (RF-14); one made with a trial source is not, and says so.
  * Stopping the music pauses the session: resuming continues the same one,
  * and it ends when the person finishes it, the plan ends, the pause runs
- * out or the page is left (ADR-52).
+ * out or the page is left (ADR-52). While the music plays the person can
+ * switch to an immersive view that keeps only the orb, the moment, the
+ * time and Stop (ADR-60).
  */
 export function SessionPage(): React.JSX.Element {
   const t = useMessages();
@@ -89,6 +91,13 @@ export function SessionPage(): React.JSX.Element {
   // Whether the session is over; until then, music that stopped is only paused.
   const [ended, setEnded] = useState(false);
   const paused = everPlayed && !playing && !ended;
+  // The immersive view only exists while the music sounds: a pause or the end bring every control back (ADR-60).
+  const [immersiveChosen, setImmersiveChosen] = useState(false);
+  const immersive = immersiveChosen && playing;
+  // The view replaces the page, so it starts at its top wherever the person had scrolled to.
+  useEffect(() => {
+    if (immersive) window.scrollTo({ top: 0 });
+  }, [immersive]);
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   // The session that just ended was a trial of the app, so nothing was kept.
@@ -246,7 +255,7 @@ export function SessionPage(): React.JSX.Element {
   const slideNames: Readonly<Record<SlideId, string>> = t.session.slides.names;
 
   return (
-    <div className="session-page">
+    <div className={immersive ? 'session-page is-immersive' : 'session-page'}>
       <SleepDimmer active={program.quietEnding && playing} />
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
@@ -316,6 +325,16 @@ export function SessionPage(): React.JSX.Element {
         </div>
         <div className="stage-main">
           <SessionStage session={adaptation} connection={connection} playing={playing} ended={ended} />
+          {playing && (
+            <button
+              type="button"
+              className="pill-button pill-button-ghost immersive-toggle"
+              aria-pressed={immersive}
+              onClick={() => { setImmersiveChosen(!immersive); }}
+            >
+              {immersive ? t.session.immersive.exit : t.session.immersive.enter}
+            </button>
+          )}
           {paused && (
             <div className="session-saved session-paused" role="status">
               <p><strong>{t.session.paused.title}</strong> {t.session.paused.detail(PAUSE_LIMIT_MIN)}</p>

@@ -10,6 +10,11 @@ export const session = {
   dimmer: {
     restore: 'Screen dimmed for sleep. Tap to see it.',
   },
+  /** Immersive view of the listening slide (ADR-60): the button that enters and leaves it. */
+  immersive: {
+    enter: 'Immersive view',
+    exit: 'Leave the immersive view',
+  },
   /** The session as three slides (ADR-47); `names` and `leads` keys mirror `SlideId`. */
   slides: {
     label: 'Session steps',
