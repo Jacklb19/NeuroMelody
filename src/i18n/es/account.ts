@@ -145,7 +145,7 @@ export const account = {
       },
       deleteAccount: {
         title: 'Borrar la cuenta',
-        text: 'Borra tu cuenta y todo lo que guarda en la nube. Las sesiones de este dispositivo no se tocan.',
+        text: 'Borra tu cuenta y todo lo que guarda en la nube, y también tus sesiones, notas, favoritos y textos automáticos de este dispositivo.',
         unavailable: 'No está disponible en esta versión de la app.',
         action: 'Borrar la cuenta',
         confirm: 'Sí, borrar mi cuenta',

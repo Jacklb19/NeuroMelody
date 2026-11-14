@@ -5,8 +5,13 @@ import { belongsTo, markedByOtherAccounts, type PendingDeletions, type SyncMarks
 
 interface MirrorOptions {
   readonly local: SessionStore;
-  /** Account signed in now, the owner of what is recorded; `null` without one. */
-  readonly owner: () => string | null;
+  /**
+   * Account signed in, the owner of what is recorded and the only one whose
+   * sessions this store shows; `null` without one, and then it shows none.
+   */
+  readonly owner: string | null;
+  /** Sessions other accounts of this device have in their cloud; read from their marks by default. */
+  readonly others?: (owner: string) => ReadonlySet<string>;
   /** Marks of whoever is signed in now; they change with the account. */
   readonly marks: () => SyncMarks;
   /** Deletions waiting for the cloud, of whoever is signed in now. */
@@ -28,6 +33,10 @@ interface MirrorOptions {
  *   upload runs behind and the next sync retries it.
  * - A session recorded with an account signed in belongs to it on this
  *   device; one of another account is never uploaded to the account signed in.
+ * - Each account sees only its own sessions (ADR-61): listing, reading by id,
+ *   notes, ratings and deleting all treat a session of another account of
+ *   this device as one that does not exist. A session without an owner is
+ *   shown to the account signed in, which claims it (`claimUnownedSessions`).
  * - Deleting does not wait either (HU-09): the session leaves the device at
  *   once. If it was ever sent, its deletion is written down before anything
  *   else and stays queued until the cloud confirms it, now or on a later
@@ -35,16 +44,34 @@ interface MirrorOptions {
  *   deleted without a connection does not come back.
  */
 export function createMirroredSessionStore({
-  local, owner, marks, deletions, cloud, onUploadError, onPendingChange,
+  local, owner, others = markedByOtherAccounts, marks, deletions, cloud, onUploadError, onPendingChange,
 }: MirrorOptions): SessionStore {
+  /** Whether the account signed in may see this session; without an account, none. */
+  const visibleTo = (): ((record: SessionRecord) => boolean) => {
+    if (owner === null) return () => false;
+    const elsewhere = others(owner);
+    return (record) => belongsTo(record, owner, elsewhere);
+  };
+
+  /** The session, only when it is of the account signed in; otherwise it does not exist here. */
+  const own = async (id: string): Promise<SessionRecord | null> => {
+    const record = await local.get(id);
+    return record !== null && visibleTo()(record) ? record : null;
+  };
+
+  const requireOwn = async (id: string): Promise<void> => {
+    if ((await own(id)) === null) throw new SessionStoreError('not_found', 'The session no longer exists.');
+  };
+
   const upload = (record: SessionRecord): void => {
     const api = cloud();
-    const account = owner();
-    if (api === null || account === null || !belongsTo(record, account, markedByOtherAccounts(account))) return;
+    if (api === null || owner === null || !visibleTo()(record)) return;
     api.saveSession(record).then(() => { marks().add(record.id); }, onUploadError);
   };
 
   const deleteEverywhere = async (id: string): Promise<void> => {
+    // Another account's session is not there for this one: nothing to delete.
+    if ((await own(id)) === null) return;
     // A session that was never sent has nothing to delete in the cloud.
     const sent = marks().has(id);
     const queue = deletions();
@@ -66,30 +93,61 @@ export function createMirroredSessionStore({
 
   return {
     async save(record) {
-      const account = owner();
-      const owned = account !== null && record.ownerId === undefined ? { ...record, ownerId: account } : record;
+      const existing = await local.get(record.id);
+      if (existing !== null && !visibleTo()(existing)) {
+        throw new SessionStoreError('invalid_record', 'The session belongs to another account.');
+      }
+      const owned = owner !== null && record.ownerId === undefined ? { ...record, ownerId: owner } : record;
       await local.save(owned);
       upload(owned);
     },
-    get: (id) => local.get(id),
-    list: () => local.list(),
+    get: own,
+    async list() {
+      const visible = visibleTo();
+      return (await local.list()).filter(visible);
+    },
     async restore(records) {
-      const account = owner();
-      if (account === null || records.some((record) => record.ownerId !== account)) {
+      if (owner === null || records.some((record) => record.ownerId !== owner)) {
         throw new SessionStoreError('invalid_record', 'The backup belongs to another account.');
       }
       await local.restore(records);
     },
-    setNote: (id, note) => local.setNote(id, note),
-    setOwner: (id, ownerId) => local.setOwner(id, ownerId),
+    async setNote(id, note) {
+      await requireOwn(id);
+      return local.setNote(id, note);
+    },
+    async setOwner(id, ownerId) {
+      await requireOwn(id);
+      return local.setOwner(id, ownerId);
+    },
     async setRatingAfter(id, rating) {
+      await requireOwn(id);
       const updated = await local.setRatingAfter(id, rating);
       upload(updated);
       return updated;
     },
     delete: deleteEverywhere,
     async clear() {
-      for (const record of await local.list()) await deleteEverywhere(record.id);
+      const visible = visibleTo();
+      for (const record of await local.list()) if (visible(record)) await deleteEverywhere(record.id);
     },
   };
+}
+
+/**
+ * Gives the account signed in the sessions of this device that have no owner
+ * and that no other account has in its cloud (decision of 14 nov 2026): the
+ * first account to sign in after the update keeps them, and no later one sees
+ * them. Resolves with how many it claimed.
+ */
+export async function claimUnownedSessions(
+  local: SessionStore, owner: string, others: ReadonlySet<string> = markedByOtherAccounts(owner),
+): Promise<number> {
+  let claimed = 0;
+  for (const record of await local.list()) {
+    if (record.ownerId !== undefined || others.has(record.id)) continue;
+    await local.setOwner(record.id, owner);
+    claimed++;
+  }
+  return claimed;
 }

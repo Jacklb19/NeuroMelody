@@ -12,7 +12,7 @@ import { PrivacyPage } from '../privacy/PrivacyPage';
 import { MemorySessionStore, type SessionStore } from '../records/sessionStore';
 import { SessionStoreContext } from '../records/sessionStoreContext';
 import { sessionRecord } from '../../test/sessionRecords';
-import type { CloudApi } from './cloudApi';
+import { CloudError, type CloudApi } from './cloudApi';
 import { CloudSyncContext, type CloudSyncValue } from './cloudSyncContext';
 
 /** A signed-in person without two-step verification; `service` only answers what each screen asks. */
@@ -39,6 +39,7 @@ function cloud(overrides: Partial<CloudSyncValue> = {}): CloudSyncValue {
     setConsent: () => Promise.resolve(),
     syncNow: () => Promise.resolve(),
     forgetDeviceCopies: () => Promise.resolve(0),
+    forgetAccount: () => Promise.resolve(),
     api: null,
     ...overrides,
   };
@@ -59,21 +60,36 @@ function renderScreen(screenElement: React.ReactNode, auth: AuthContextValue, sy
 }
 
 describe('screens that act on the cloud', () => {
-  it('deletes the account only after confirming, then closes the session', async () => {
+  it('deletes the account only after confirming, then its data on this device, then closes the session', async () => {
     const user = userEvent.setup();
-    const deleteAccount = vi.fn(() => Promise.resolve());
-    const signOut = vi.fn(() => Promise.resolve());
+    const order: string[] = [];
+    const deleteAccount = vi.fn(() => { order.push('delete'); return Promise.resolve(); });
+    const forgetAccount = vi.fn(() => { order.push('forget'); return Promise.resolve(); });
+    const signOut = vi.fn(() => { order.push('sign out'); return Promise.resolve(); });
     const auth = signedIn({ signOut });
     const copy = es.account.profile.rows.deleteAccount;
-    renderScreen(<AccountPage />, auth, cloud({ api: { deleteAccount } as Partial<CloudApi> as CloudApi }));
+    renderScreen(<AccountPage />, auth, cloud({ api: { deleteAccount } as Partial<CloudApi> as CloudApi, forgetAccount }));
 
     await user.click(await screen.findByRole('button', { name: copy.action }));
     expect(deleteAccount).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: copy.confirm }));
 
     await vi.waitFor(() => { expect(auth.refresh).toHaveBeenCalled(); });
-    expect(deleteAccount).toHaveBeenCalledOnce();
-    expect(signOut).toHaveBeenCalledOnce();
+    expect(order).toEqual(['delete', 'forget', 'sign out']);
+  });
+
+  it('keeps the data on this device when the cloud refuses to delete the account', async () => {
+    const user = userEvent.setup();
+    const deleteAccount = vi.fn(() => Promise.reject(new CloudError('network')));
+    const forgetAccount = vi.fn(() => Promise.resolve());
+    const copy = es.account.profile.rows.deleteAccount;
+    renderScreen(<AccountPage />, signedIn(), cloud({ api: { deleteAccount } as Partial<CloudApi> as CloudApi, forgetAccount }));
+
+    await user.click(await screen.findByRole('button', { name: copy.action }));
+    await user.click(screen.getByRole('button', { name: copy.confirm }));
+
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(forgetAccount).not.toHaveBeenCalled();
   });
 
   it('signs out keeping the sessions on the device, unless the person asks to remove the ones already in the cloud', async () => {
