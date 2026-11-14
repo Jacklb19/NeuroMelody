@@ -10,6 +10,8 @@ Proyecto de la asignatura Programación Orientada a la Web. La API vive en un re
 
 El lazo de control se cierra íntegramente en el dispositivo; la API solo aporta identidad, persistencia y el modelo de lenguaje.
 
+La app solo se usa con cuenta (ADR-57): sin sesión iniciada solo son públicas la portada, las pantallas de acceso, la privacidad y la página no encontrada. Las sesiones se guardan primero en el dispositivo y, con el segundo factor y el consentimiento, se sincronizan con la nube.
+
 | Etapa | Contexto de ejecución | Tecnología |
 |---|---|---|
 | Adquisición | Hilo principal, tras una interfaz común de fuente de señal | Web Bluetooth, simulador o registros |
