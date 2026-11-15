@@ -163,11 +163,20 @@ export function PlanPage(): React.JSX.Element {
             <div className="world-options">
               {WORLD_IDS.map((id) => (
                 <label key={id} className="choice-card world-option">
-                  <input type="radio" name="world" value={id} checked={world === id} onChange={() => { enterWorld(id); }} />
+                  {/* Named by the world alone; its description is read after it, not as part of the name. */}
+                  <input
+                    type="radio"
+                    name="world"
+                    value={id}
+                    aria-label={worldNames[id]}
+                    aria-describedby={`${worldsHintId}-${id}`}
+                    checked={world === id}
+                    onChange={() => { enterWorld(id); }}
+                  />
                   <span className="world-swatch" data-world={id} aria-hidden="true" />
                   <span className="world-text">
                     <strong>{worldNames[id]}</strong>
-                    <span className="secondary-text">{worldDescriptions[id]}</span>
+                    <span id={`${worldsHintId}-${id}`} className="secondary-text">{worldDescriptions[id]}</span>
                   </span>
                 </label>
               ))}
