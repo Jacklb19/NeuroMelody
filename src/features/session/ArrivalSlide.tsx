@@ -3,6 +3,7 @@ import { useMessages } from '../../i18n/messages';
 import type { SourceReading } from '../acquisition/useSignalSource';
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
 import type { InstrumentId } from '../audio/core/instrumentCatalog';
+import type { WorldId } from '../plan/worldCatalog';
 import type { GoalId } from '../plan/goalCatalog';
 import { GoalIcon } from '../plan/GoalIcon';
 import { AmbienceIcon } from '../plan/AmbienceIcon';
@@ -17,6 +18,8 @@ interface ArrivalSlideProps {
   readonly goals: readonly GoalId[];
   readonly instrument: InstrumentId;
   readonly ambience: AmbienceId;
+  /** The sound world the choices are, when they are one (ADR-64). */
+  readonly world?: WorldId | null;
   readonly rating: number | null;
   readonly onRatingChange: (rating: number | null) => void;
   /** Starts the music; called inside the click, as browsers require to play sound. */
@@ -29,12 +32,13 @@ interface ArrivalSlideProps {
  * each heartbeat, what was chosen for this session, and how the person feels
  * before starting. Starting the music leads to the listening slide.
  */
-export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument, ambience, rating, onRatingChange, onStart, onMeasure }: ArrivalSlideProps): React.JSX.Element {
+export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument, ambience, world = null, rating, onRatingChange, onStart, onMeasure }: ArrivalSlideProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.session.arrival;
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
+  const worldNames: Readonly<Record<WorldId, string>> = t.plan.worlds.names;
   const heartRate = reading.state === 'connected' ? reading.last?.heartRate ?? null : null;
   const [watchBeats, setWatchBeats] = useState(0);
   useHeartRateBeats(watchHeartRate, () => { setWatchBeats((count) => count + 1); });
@@ -65,6 +69,9 @@ export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument
             <span key={goal} className="arrival-choice"><GoalIcon goal={goal} /> {goalNames[goal]}</span>
           ))}
         </li>
+        {world !== null && (
+          <li><span className="world-swatch world-swatch-small" data-world={world} aria-hidden="true" /> {t.plan.worlds.chosen(worldNames[world])}</li>
+        )}
         <li><InstrumentIcon instrument={instrument} /> {t.plan.instrument.chosen(instrumentNames[instrument])}</li>
         <li><AmbienceIcon ambience={ambience} /> {ambienceNames[ambience]}</li>
       </ul>

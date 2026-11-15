@@ -251,6 +251,8 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --page-glow: radial-gradient(ellipse 80% 50% at 80% -10%, #17302a, transparent 70%);
   --landing-glow-colour: #e0a96a55;
   --landing-night-raised: #17302a;
+  /* How much of a world's glow colour the halo and the shadows take. */
+  --world-glow-strength: 34%;
   /* Sound worlds (ADR-64): the depth behind the listening stage and the glow of its orb, per world. */
   --world-misty-forest-depth: #1d4032;
   --world-misty-forest-glow: #7fc8a1;
