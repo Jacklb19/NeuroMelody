@@ -47,6 +47,31 @@ export const plan = {
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `The suggestion could not be requested: ${reason} You can choose the length yourself.`,
   },
+  /** Sound worlds (ADR-64); `names` and `descriptions` keys mirror `WorldId`. */
+  worlds: {
+    legend: 'Which sound world?',
+    hint: 'Each world brings a sound, an ambience and a texture together, and gives the listening its own colour. You can still set them yourself below.',
+    names: {
+      misty_forest: 'Misty forest',
+      night_coast: 'Night coast',
+      city_rain: 'Rain in the city',
+      high_moor: 'High moor at dawn',
+      deep_space: 'Deep space',
+      quiet_room: 'Quiet room',
+    },
+    descriptions: {
+      misty_forest: 'Bowls that ring long, with wind through the trees.',
+      night_coast: 'A warm sound over the sway of the sea.',
+      city_rain: 'A calm piano with rain on the window.',
+      high_moor: 'Few notes and open wind, with plenty of air.',
+      deep_space: 'A warm, enveloping sound with nothing behind it.',
+      quiet_room: 'Just a piano, close and plain.',
+    },
+    /** Shown when the choices below match no world. */
+    custom: 'Your combination is none of the worlds: it is your own.',
+    /** Line of the session card and of the session heading. */
+    chosen: (world: string): string => `World: ${world}`,
+  },
   /** Instrument of the music (ADR-46); `names` keys mirror `InstrumentId`. */
   instrument: {
     legend: 'Which sound?',
