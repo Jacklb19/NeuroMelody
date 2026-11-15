@@ -47,6 +47,31 @@ export const plan = {
     /** `reason` is one of the cloud error sentences. */
     failed: (reason: string): string => `No se pudo pedir la propuesta: ${reason} Puedes elegir tú la duración.`,
   },
+  /** Sound worlds (ADR-64); `names` and `descriptions` keys mirror `WorldId`. */
+  worlds: {
+    legend: '¿En qué mundo sonoro?',
+    hint: 'Cada mundo reúne un sonido, un ambiente y una textura, y le da su propio color a la escucha. Si prefieres, ajústalos tú debajo.',
+    names: {
+      misty_forest: 'Bosque de niebla',
+      night_coast: 'Costa nocturna',
+      city_rain: 'Lluvia en la ciudad',
+      high_moor: 'Páramo al amanecer',
+      deep_space: 'Espacio profundo',
+      quiet_room: 'Habitación en calma',
+    },
+    descriptions: {
+      misty_forest: 'Cuencos que resuenan largo, con viento entre los árboles.',
+      night_coast: 'Sonido cálido sobre el vaivén del mar.',
+      city_rain: 'Piano tranquilo con lluvia en la ventana.',
+      high_moor: 'Pocas notas y viento abierto, con mucho aire.',
+      deep_space: 'Sonido cálido y envolvente, sin nada de fondo.',
+      quiet_room: 'Solo un piano, cercano y sin adornos.',
+    },
+    /** Shown when the choices below match no world. */
+    custom: 'Tu combinación no es ninguno de los mundos: es tuya.',
+    /** Line of the session card and of the session heading. */
+    chosen: (world: string): string => `Mundo: ${world}`,
+  },
   /** Instrument of the music (ADR-46); `names` keys mirror `InstrumentId`. */
   instrument: {
     legend: '¿Con qué sonido?',

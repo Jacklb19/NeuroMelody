@@ -12,6 +12,7 @@ import { PlaybackPanel, type PlaybackHandle } from '../audio/ui/PlaybackPanel';
 import { readDuration, QUICK_DURATION_MIN } from '../plan/plan';
 import { readGoals, type GoalId } from '../plan/goalCatalog';
 import { programFor } from '../plan/programCatalog';
+import { worldOf } from '../plan/worldCatalog';
 import { readAmbience, readInstrument, rememberAmbience, rememberInstrument, rememberGoals } from '../plan/soundChoices';
 import { GoalIcon } from '../plan/GoalIcon';
 import { SignalPanel } from '../signal/SignalPanel';
@@ -91,6 +92,8 @@ export function SessionPage(): React.JSX.Element {
     const value = params.get(QUERY_PARAMS.soundProfile);
     return isSoundProfile(value) ? value : 'original';
   });
+  // The sound world these choices are, if any: it only colours the screen (ADR-64).
+  const world = worldOf({ instrument, ambience, profile });
   const [recorder] = useState(() => new SessionRecorder());
   // A session for falling asleep ends by itself once the pulse has stayed settled (ADR-60).
   const [settleWatch] = useState(() => new SettleWatch());
@@ -315,7 +318,7 @@ export function SessionPage(): React.JSX.Element {
   const slideNames: Readonly<Record<SlideId, string>> = t.session.slides.names;
 
   return (
-    <div className={immersive ? 'session-page is-immersive' : 'session-page'}>
+    <div className={immersive ? 'session-page is-immersive' : 'session-page'} data-world={world ?? undefined}>
       <SleepDimmer active={program.quietEnding && playing} />
       <PageHeading eyebrow={t.session.eyebrow} title={t.session.title}>
         <p>{t.session.plan(durationMin)}</p>
@@ -358,6 +361,7 @@ export function SessionPage(): React.JSX.Element {
             goals={goals}
             instrument={instrument}
             ambience={ambience}
+            world={world}
             rating={ratingBefore}
             onRatingChange={handleRatingBefore}
             onMeasure={() => { goTo('pulse'); }}

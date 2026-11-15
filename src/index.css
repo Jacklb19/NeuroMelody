@@ -251,6 +251,21 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --page-glow: radial-gradient(ellipse 80% 50% at 80% -10%, #17302a, transparent 70%);
   --landing-glow-colour: #e0a96a55;
   --landing-night-raised: #17302a;
+  /* How much of a world's glow colour the halo and the shadows take. */
+  --world-glow-strength: 34%;
+  /* Sound worlds (ADR-64): the depth behind the listening stage and the glow of its orb, per world. */
+  --world-misty-forest-depth: #1d4032;
+  --world-misty-forest-glow: #7fc8a1;
+  --world-night-coast-depth: #15344a;
+  --world-night-coast-glow: #6fb7d6;
+  --world-city-rain-depth: #27343f;
+  --world-city-rain-glow: #a3b8cc;
+  --world-high-moor-depth: #40321c;
+  --world-high-moor-glow: #e0a96a;
+  --world-deep-space-depth: #272247;
+  --world-deep-space-glow: #a59be0;
+  --world-quiet-room-depth: #332d25;
+  --world-quiet-room-glow: #e6d3b0;
   --orb-idle: #5fb38a;
   --orb-calibrating: #8fa89b;
   --orb-high: #e0a96a;
@@ -301,6 +316,19 @@ body { min-width: 0; min-height: 100vh; background: var(--page-glow) fixed, var(
   --page-glow: radial-gradient(ellipse 80% 50% at 80% -10%, #e4eadf, transparent 70%);
   --landing-glow-colour: #304f4033;
   --landing-night-raised: #e4eadf;
+  /* Sound worlds (ADR-64): the depth behind the listening stage and the glow of its orb, per world. */
+  --world-misty-forest-depth: #d6e9db;
+  --world-misty-forest-glow: #3f7f5a;
+  --world-night-coast-depth: #d5e6ef;
+  --world-night-coast-glow: #2f6f8f;
+  --world-city-rain-depth: #dde3e8;
+  --world-city-rain-glow: #4d6475;
+  --world-high-moor-depth: #f0e2ca;
+  --world-high-moor-glow: #a8743a;
+  --world-deep-space-depth: #e2def3;
+  --world-deep-space-glow: #5a4fa0;
+  --world-quiet-room-depth: #eee6d9;
+  --world-quiet-room-glow: #8a7350;
   --orb-idle: #4f9d77;
   --orb-calibrating: #8fa89b;
   --orb-high: #c98f4f;
@@ -330,6 +358,14 @@ a.glass-card:hover { border-color: var(--color-border); transform: translateY(-2
 .icon-badge-large { width: var(--icon-badge-large); height: var(--icon-badge-large); }
 .moment-list .icon-badge { margin-bottom: 0; }
 #root { width: 100%; }
+/* Sound worlds (ADR-64): each one names its two colours; the swatch of the plan and the listening screen read them. */
+[data-world='misty_forest'] { --world-depth: var(--world-misty-forest-depth); --world-glow: var(--world-misty-forest-glow); }
+[data-world='night_coast'] { --world-depth: var(--world-night-coast-depth); --world-glow: var(--world-night-coast-glow); }
+[data-world='city_rain'] { --world-depth: var(--world-city-rain-depth); --world-glow: var(--world-city-rain-glow); }
+[data-world='high_moor'] { --world-depth: var(--world-high-moor-depth); --world-glow: var(--world-high-moor-glow); }
+[data-world='deep_space'] { --world-depth: var(--world-deep-space-depth); --world-glow: var(--world-deep-space-glow); }
+[data-world='quiet_room'] { --world-depth: var(--world-quiet-room-depth); --world-glow: var(--world-quiet-room-glow); }
+
 .app-shell { width: 100%; max-width: var(--content-max-width); margin: 0 auto; padding: 0 var(--space-8); }
 a { color: var(--color-button-background); text-underline-offset: var(--space-1); }
 a:hover { color: var(--color-button-hover); }
