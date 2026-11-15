@@ -540,6 +540,16 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 | Decisión | 1) La base guarda como mucho 2000 sesiones y 20 grabaciones guiadas por cuenta. Lo impone un disparador `before insert` con un bloqueo por cuenta (migración `20261114000000_account_storage_limits.sql`), que rechaza con `54000`. 2) La API responde 409 `limit_reached`. 3) Reenviar una sesión ya guardada (para actualizar su valoración) sigue funcionando. 4) En el front, con la cuenta llena la sincronización no ofrece más sesiones nuevas en esa pasada, pero termina el resto (descargas, valoraciones, borrados) y después lo dice: «tu cuenta ya guarda en la nube todo lo que puede; lo nuevo sigue en este dispositivo». No se aparta ninguna sesión, así que suben cuando hay sitio. |
 | Límites | Las filas que ya existan por encima del tope se conservan. Hay que aplicar la migración en Supabase antes de publicar el back; sin ella no hay tope, pero nada falla. |
 
+## ADR-64. Mundos sonoros
+
+Aprobado por el usuario el 14 nov 2026. Solo frontend; sin cambios de API, datos, motor de audio ni dependencias.
+
+- **Qué es un mundo.** Una combinación con nombre de instrumento, ambiente y textura, más dos colores propios. Hay seis: Bosque de niebla, Costa nocturna, Lluvia en la ciudad, Páramo al amanecer, Espacio profundo y Habitación en calma (`worldCatalog.ts`). Cada combinación pertenece a un solo mundo; una prueba lo comprueba.
+- **En el plan.** Un grupo nuevo, antes del sonido y el ambiente, ofrece los mundos como tarjetas. Entrar en uno fija las tres elecciones, que se pueden seguir cambiando a mano; si la combinación deja de ser un mundo, la pantalla lo dice.
+- **Sin dato nuevo.** El mundo no se guarda ni viaja: se deduce de las tres elecciones. Los enlaces, los favoritos, «Repetir la última» y el historial lo conservan sin campos ni migraciones.
+- **En la sesión.** El mundo da color al fondo del escenario, al anillo, al halo y a la nota del progreso, en tema claro y oscuro. El orbe conserva los tonos del estado estimado y el texto sus colores.
+- **Límites.** Un mundo no añade sonidos al sintetizador: reordena los que ya existen. Mundos con timbres o escalas propias necesitarían una decisión sobre el motor de audio.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
