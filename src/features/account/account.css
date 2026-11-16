@@ -4,6 +4,11 @@
 .auth-screen { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
 .auth-aside { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: var(--space-8) var(--space-10); background: radial-gradient(ellipse at 50% 55%, var(--landing-night-raised), transparent 70%); border-right: var(--border-width) solid var(--color-border-subtle); overflow: clip; }
 .auth-aside .brand-mark, .auth-brand-compact .brand-mark { color: var(--color-accent); }
+/* The side panel's top row: the brand and, at its end, theme and language. */
+.auth-aside-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+@media (min-width: 901px) {
+  .auth-screen > .landing-header { display: none; }
+}
 .auth-figure { flex: 1; display: grid; place-content: center; justify-items: center; gap: var(--space-10); text-align: center; }
 .orb-large { font-size: var(--orb-size-large); }
 .auth-tagline { font-family: var(--font-display); font-size: var(--text-metric); line-height: var(--heading-line-height); max-width: var(--stage-text-max-width); color: var(--color-text-secondary); }
@@ -125,9 +130,10 @@
   .auth-screen { grid-template-columns: minmax(0, 1fr); }
   .auth-aside { position: relative; height: auto; }
   .auth-aside { display: none; }
-  .auth-brand-compact { display: inline-flex; }
+  /* The floating header carries the brand, so the card does not repeat it. */
+  .auth-brand-compact { display: none; }
   .auth-card { padding: var(--space-8) var(--space-6); }
-  .auth-main { align-content: start; padding-top: var(--space-5); }
+  .auth-main { align-content: start; padding-top: var(--public-header-reserve); }
 }
 @media (max-width: 600px) {
   .stat-grid { grid-template-columns: minmax(0, 1fr); }

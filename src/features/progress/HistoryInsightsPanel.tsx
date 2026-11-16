@@ -1,10 +1,13 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { useMessages, type Messages } from '../../i18n/messages';
 import { MIN_INSIGHT_SESSIONS, nextComparison, type HistoryInsights } from './historyInsights';
 import { useInsightText } from './useInsightText';
 import type { SessionRecord } from '../records/sessionRecord';
 import type { ProgressRangeId } from './progressRangeCatalog';
 import { AutomaticInsights } from './AutomaticInsights';
+
+/** Rows of the method table shown at first, and added by each «show more». */
+const METHOD_PAGE_ROWS = 5;
 
 /** Before any observation: how many sessions the closest first comparison still needs, or what it takes in general. */
 function waitingText(insights: HistoryInsights, copy: Messages['insights'], text: ReturnType<typeof useInsightText>): string {
@@ -20,6 +23,10 @@ export function HistoryInsightsPanel({ insights, records, range }: { readonly in
   const titleId = useId();
   const text = useInsightText();
   const observed = insights.observations.length > 0;
+  // The table of every group can run long: it opens with a few rows and grows on request.
+  const [shownRows, setShownRows] = useState(METHOD_PAGE_ROWS);
+  const rows = insights.comparisons.flatMap((comparison) => comparison.groups.map((group) => ({ comparison, group })));
+  const hidden = rows.length - shownRows;
   return (
     <section className="glass-card history-insights" aria-labelledby={titleId}>
       <h2 id={titleId}>{copy.title}</h2>
@@ -39,13 +46,25 @@ export function HistoryInsightsPanel({ insights, records, range }: { readonly in
           <table>
             <caption>{copy.title}</caption>
             <thead><tr><th scope="col">{copy.scope}</th><th scope="col">{copy.option}</th><th scope="col">{copy.count}</th><th scope="col">{copy.median}</th></tr></thead>
-            <tbody>{insights.comparisons.flatMap((comparison) => comparison.groups.map((group) => (
+            <tbody>{rows.slice(0, shownRows).map(({ comparison, group }) => (
               <tr key={`${comparison.id}:${group.value}`}>
                 <th scope="row">{text.scope(comparison)}</th><td>{text.option(comparison.dimension, group.value)}</td><td>{group.count}</td><td>{text.number(group.median)}</td>
               </tr>
-            )))}</tbody>
+            ))}</tbody>
           </table>
         </div>
+        {rows.length > METHOD_PAGE_ROWS && (
+          <div className="action-row progress-more">
+            {hidden > 0 && (
+              <button type="button" className="pill-button pill-button-ghost" onClick={() => { setShownRows(shownRows + METHOD_PAGE_ROWS); }}>
+                {copy.showMore(Math.min(METHOD_PAGE_ROWS, hidden), hidden)}
+              </button>
+            )}
+            {shownRows > METHOD_PAGE_ROWS && (
+              <button type="button" className="text-button" onClick={() => { setShownRows(METHOD_PAGE_ROWS); }}>{copy.showLess}</button>
+            )}
+          </div>
+        )}
       </details>
     </section>
   );

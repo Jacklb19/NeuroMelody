@@ -168,6 +168,9 @@
   .landing-menu ul { display: grid; gap: 0; list-style: none; }
   .landing-menu li + li { border-top: var(--border-width) solid var(--color-border-subtle); }
   .landing-menu nav a { display: flex; align-items: center; min-height: var(--control-height); color: var(--color-text); text-decoration: none; font-size: var(--text-base); }
+  /* Theme and language move from the bar into the menu. */
+  .landing-account .quick-preferences { display: none; }
+  .landing-menu .quick-preferences { display: flex; gap: var(--space-2); }
   .moments-grid, .privacy-grid { grid-template-columns: minmax(0, 1fr); }
   .moments-heading { position: static; }
   .highlights { grid-template-columns: minmax(0, 1fr); }

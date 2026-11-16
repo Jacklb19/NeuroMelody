@@ -66,6 +66,8 @@ export const report = {
   },
   table: {
     title: 'Sesión por sesión',
+    showAll: (count: number): string => `Ver las ${String(count)} sesiones`,
+    showFewer: (count: number): string => `Ver solo las ${String(count)} primeras`,
     date: 'Fecha',
     listened: 'Escuchó',
     source: 'Medido con',

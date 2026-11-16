@@ -60,3 +60,10 @@
   .report-sheet tr { break-inside: avoid; }
   .report-sheet .trend-readout, .report-sheet .trend-crosshair { display: none; }
 }
+
+/* The session table shows a few rows on screen; printing always shows every one. */
+.report-row-extra { display: none; }
+.report-rows-toggle { margin-top: var(--space-4); }
+@media print {
+  .report-row-extra { display: table-row; }
+}

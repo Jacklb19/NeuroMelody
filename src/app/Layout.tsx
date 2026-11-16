@@ -5,6 +5,7 @@ import { ROUTES } from '../config/routes';
 import { useAuth } from '../features/account/authContext';
 import { BrandMark } from '../shared/BrandMark';
 import { CloseIcon, MenuIcon } from '../shared/icons';
+import { QuickPreferences } from './preferences/PreferenceControls';
 import { useMessages } from '../i18n/messages';
 import { NAVIGATION_ITEMS } from './navigation';
 import { PendingScreen } from './PendingScreen';
@@ -17,8 +18,8 @@ export const MAIN_CONTENT_ID = 'main-content';
 /**
  * Shared structure: skip-to-content link, a floating bar with the main
  * navigation and the profile avatar that stays in sight while scrolling, and
- * the route content. Theme and language live in the profile. The navigation
- * entries come from `NAVIGATION_ITEMS`. On the public screens (privacy, an unknown address)
+ * the route content. Theme and language sit in the bar, or in its menu on a
+ * phone. The navigation entries come from `NAVIGATION_ITEMS`. On the public screens (privacy, an unknown address)
  * someone not signed in sees the way in instead of the app's navigation.
  */
 export function Layout(): React.JSX.Element {
@@ -49,7 +50,9 @@ export function Layout(): React.JSX.Element {
           <BrandMark />
           {APP_NAME}
         </Link>
-        {user !== null && <nav id={menuId} aria-label={t.app.mainNavigation} className={menuOpen ? 'is-open' : undefined}>
+        {/* On a wide screen these sit in the bar itself; on a phone they are the menu that opens under it. */}
+        <div id={menuId} className={menuOpen ? 'header-links is-open' : 'header-links'}>
+        {user !== null && <nav aria-label={t.app.mainNavigation}>
           <ul>
             {NAVIGATION_ITEMS.map(({ route, labelKey }) => (
               <li key={route}>
@@ -64,6 +67,8 @@ export function Layout(): React.JSX.Element {
             ))}
           </ul>
         </nav>}
+          <QuickPreferences />
+        </div>
         {user === null ? (
           <Link to={ROUTES.login} className="pill-button pill-button-primary header-sign-in">{t.app.signIn}</Link>
         ) : (

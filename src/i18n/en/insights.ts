@@ -8,6 +8,32 @@ export const insights = {
   missing: (count: number, option: string): string => `${String(count)} ${count === 1 ? 'session' : 'sessions'} with “${option}”`,
   caution: 'These are observations of your sessions; they do not show that a choice caused a change.',
   methodTitle: 'How this was calculated and all groups',
+  /** The method table opens with a few rows; these grow and shrink it. */
+  showMore: (next: number, rest: number): string => `Show ${String(next)} more (${String(rest)} left)`,
+  showLess: 'Show less',
+  /** An observation read in plain words (`useInsightText().reading`); every figure is computed on the device. */
+  reading: {
+    lead: (dimension: string, better: string, betterChange: string, other: string, otherChange: string): string =>
+      `${dimension}: with “${better}” ${betterChange}; with “${other}”, ${otherChange}.`,
+    /** `sign` is -1, 0 or 1; `amount` is already formatted. */
+    ratingChange: (sign: number, amount: string): string => sign === 0 ? 'your rating did not change' : `your rating ${sign > 0 ? 'rose' : 'fell'} by a median of ${amount} ${amount === '1' ? 'point' : 'points'}`,
+    pulseChange: (sign: number, amount: string): string => sign === 0 ? 'your pulse did not change' : `your pulse ${sign < 0 ? 'fell' : 'rose'} by a median of ${amount} bpm`,
+    points: (gap: number): string => gap === 1 ? 'point' : 'points',
+    beats: 'bpm',
+    size: {
+      small: (gap: string, unit: string): string => `The difference is small (${gap} ${unit}): both options go with you in a similar way.`,
+      moderate: (gap: string, unit: string): string => `The difference is moderate (${gap} ${unit}).`,
+      clear: (gap: string, unit: string): string => `The difference is clear (${gap} ${unit}).`,
+    },
+    support: {
+      few: (left: number, right: number): string => `There are still few sessions (${String(left)} and ${String(right)}): take it as a hint, not a rule.`,
+      some: (left: number, right: number): string => `With ${String(left)} and ${String(right)} sessions it is a trend worth following.`,
+      many: (left: number, right: number): string => `With ${String(left)} and ${String(right)} sessions, the trend is fairly steady.`,
+    },
+    next: (better: string, goal: string): string => `In your next session for “${goal}”, choose “${better}” and see whether it repeats.`,
+    nextGoal: (better: string): string => `If you want to feel like that again, start with “${better}”.`,
+    nextEither: (better: string, other: string): string => `“${better}” and “${other}” work about the same for you: pick whichever you feel like that day.`,
+  },
   method: (minimum: number): string => `We use the median change from start to end, with at least ${String(minimum)} sessions per option. Comparisons share an intention and program version; pulse comparisons also share a source and require good-quality readings. Visible ties do not favour an option. Pulse is never used to recommend choices. The order is sound, ambience, hour, listening time, intention and plan. Trial data do not count.`,
   dimensions: { instrument: 'Sound', ambience: 'Ambience', hour: 'Local time', duration: 'Listening time', goal: 'Intention', plannedDuration: 'Planned duration' },
   hours: { morning: 'Morning (06–11)', afternoon: 'Afternoon (12–17)', evening: 'Evening (18–23)', night: 'Overnight (00–05)' },
@@ -59,13 +85,14 @@ export const insights = {
   },
   automatic: {
     title: 'An explanation of these observations',
+    tryLabel: 'To try:',
     notice: 'If you agree, only the choices and figures of up to three visible comparisons are sent. No dates, notes, sessions or signal are sent. The model selects wording from verified sentences; the figures stay the same.',
     ask: 'I agree and would like an explanation',
     working: 'Preparing the explanation…',
     generated: 'Explanation prepared automatically. Figures were calculated on your device.',
     needsAccount: 'Sign in to request an explanation. Your observations remain available here.',
-    overview: 'Each comparison includes sessions with enough data. Read the figures alongside their intention and source.',
-    balance: 'Other differences between sessions may exist. These comparisons describe the history and cannot attribute an outcome to a choice.',
+    overview: 'This is what your sessions say, one comparison at a time:',
+    balance: 'There are differences, but read them calmly: many things change from one day to the next besides your choice. This is what your sessions say:',
     failed: 'The explanation could not be prepared. You can still read the local observations.',
   },
 };

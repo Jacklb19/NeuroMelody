@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { usePreferences } from '../../app/preferences/preferencesContext';
 import { usePageTitle } from '../../app/usePageTitle';
@@ -20,6 +20,9 @@ import { useSessionRecords } from '../records/useSessionRecords';
 import { measuredSessions } from '../records/retentionPolicy';
 import { AVERAGE_DECIMALS, reportOf, type Report } from './report';
 import './report.css';
+
+/** Sessions the on-screen table shows before «show all». */
+const REPORT_PAGE_ROWS = 5;
 
 /**
  * Printable summary of a range of sessions (ADR-33), for the person to take
@@ -78,6 +81,8 @@ export function ReportPage(): React.JSX.Element {
 
 /** The printed page. It always reads on the ivory palette, whatever the theme of the app. */
 function ReportSheet({ report }: { readonly report: Report }): React.JSX.Element {
+  // Every session is printed; the screen shows the first few until the person asks for the rest.
+  const [allRows, setAllRows] = useState(false);
   const t = useMessages();
   const copy = t.report;
   const format = useFormatters();
@@ -133,8 +138,8 @@ function ReportSheet({ report }: { readonly report: Report }): React.JSX.Element
               </tr>
             </thead>
             <tbody>
-              {report.rows.map((row) => (
-                <tr key={row.id}>
+              {report.rows.map((row, index) => (
+                <tr key={row.id} className={index >= REPORT_PAGE_ROWS && !allRows ? 'report-row-extra' : undefined}>
                   <th scope="row">{recordFormat.sessionDate(row.startedAt)}</th>
                   <td>{recordFormat.listened(row.listenedSeconds)}</td>
                   <td>{row.sourceKind === null ? t.common.noValue : t.acquisition.sources[row.sourceKind]}</td>
@@ -144,6 +149,12 @@ function ReportSheet({ report }: { readonly report: Report }): React.JSX.Element
             </tbody>
           </table>
         </div>
+        {/* On screen the list opens with a few sessions; on paper every one is printed. */}
+        {report.rows.length > REPORT_PAGE_ROWS && (
+          <button type="button" className="pill-button pill-button-ghost screen-only report-rows-toggle" onClick={() => { setAllRows(!allRows); }}>
+            {allRows ? copy.table.showFewer(REPORT_PAGE_ROWS) : copy.table.showAll(report.rows.length)}
+          </button>
+        )}
       </section>
 
       <footer className="report-notes">

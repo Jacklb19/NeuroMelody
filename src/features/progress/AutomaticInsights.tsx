@@ -48,8 +48,21 @@ export function AutomaticInsights({ comparisons, records, range }: {
         {current?.state === 'working' && <p>{copy.working}</p>}
         {current?.state === 'failed' && <p>{copy.failed}</p>}
         {current?.narrative !== undefined && <>
-          <p>{copy[current.narrative.framing]}</p>
-          <ul>{comparisons.map((comparison) => <li key={comparison.id}>{text.scope(comparison)}: {text.observation(comparison)}</li>)}</ul>
+          <p className="automatic-lead">{copy[current.narrative.framing]}</p>
+          <ol className="insight-readings">
+            {comparisons.map((comparison) => {
+              const reading = text.reading(comparison);
+              if (reading === null) return null;
+              return (
+                <li key={comparison.id}>
+                  <h4>{text.scope(comparison)}</h4>
+                  <p>{reading.lead} {reading.size}</p>
+                  <p className="secondary-text">{reading.support}</p>
+                  <p className="insight-next"><strong>{copy.tryLabel}</strong> {reading.next}</p>
+                </li>
+              );
+            })}
+          </ol>
           <p className="generated-mark">{copy.generated}</p>
         </>}
       </div>
