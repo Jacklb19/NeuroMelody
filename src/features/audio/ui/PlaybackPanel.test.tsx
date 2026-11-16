@@ -324,6 +324,40 @@ describe('PlaybackPanel', () => {
     expect(stopButton()).toBeVisible();
   });
 
+  it('does not open a replacement after Stop cancels its pending discard', async () => {
+    const { env, handle } = setup();
+    await start();
+    let release: (() => void) | undefined;
+    const closing = new Promise<void>((resolve) => { release = resolve; });
+    env.context.close = () => closing;
+    act(() => {
+      handle.current?.start({ seed: 43, initialLevel: 'target', instrument: 'piano', ambience: 'rain', profile: 'original', startAtS: 10 });
+      handle.current?.stop();
+    });
+    await act(async () => { release?.(); await closing; });
+    expect(env.worklets).toHaveLength(2);
+    expect(state()).toContain(copy.states.stopped);
+  });
+
+  it('moves only its controls between hosts while keeping the same audio and volume', async () => {
+    const env = createFakeAudioEnvironment();
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    document.body.append(first, second);
+    const { rerender, unmount } = render(<PlaybackPanel durationMin={10} factory={env.factory} controlsHost={first} />);
+    await start();
+    fireEvent.change(screen.getByRole('slider', { name: copy.volume }), { target: { value: '-20' } });
+    rerender(<PlaybackPanel durationMin={10} factory={env.factory} controlsHost={second} />);
+    expect(first).toBeEmptyDOMElement();
+    expect(second.querySelector('.playback-panel')).not.toBeNull();
+    expect(screen.getByRole('slider', { name: copy.volume })).toHaveValue('-20');
+    expect(env.worklets).toHaveLength(2);
+    expect(env.context.state).toBe('running');
+    unmount();
+    first.remove();
+    second.remove();
+  });
+
   it('reports when the audio cannot start', async () => {
     const env = createFakeAudioEnvironment();
     const factory = {
@@ -398,5 +432,28 @@ describe('PlaybackPanel with Media Session', () => {
     });
     expect(state()).toContain(copy.states.stopped);
     expect(session.playbackState).toBe('paused');
+  });
+
+  it('exposes the melody and transport actions, and releases them when it leaves', () => {
+    vi.stubGlobal('MediaMetadata', class { constructor(readonly init: MediaMetadataInit) {} });
+    const play = vi.fn();
+    const previous = vi.fn();
+    const next = vi.fn();
+    const { unmount, rerender } = render(<PlaybackPanel durationMin={30} media={{ title: 'My coast', album: 'Night coast', onPlay: play, onPrevious: previous, onNext: next }} />);
+    expect(session.metadata).toMatchObject({ init: { title: 'My coast', album: 'Night coast', artwork: [expect.objectContaining({ type: 'image/svg+xml' })] } });
+    act(() => { handlers.get('play')?.(); handlers.get('previoustrack')?.(); handlers.get('nexttrack')?.(); });
+    expect(play).toHaveBeenCalledOnce();
+    expect(previous).toHaveBeenCalledOnce();
+    expect(next).toHaveBeenCalledOnce();
+    const metadata = session.metadata;
+    const latestPlay = vi.fn();
+    rerender(<PlaybackPanel durationMin={30} media={{ title: 'My coast', album: 'Night coast', onPlay: latestPlay, onPrevious: previous, onNext: next }} />);
+    expect(session.metadata).toBe(metadata);
+    act(() => { handlers.get('play')?.(); });
+    expect(latestPlay).toHaveBeenCalledOnce();
+    expect(play).toHaveBeenCalledOnce();
+    unmount();
+    expect(session.metadata).toBeNull();
+    expect([...handlers.values()].every((handler) => handler === null)).toBe(true);
   });
 });

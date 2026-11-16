@@ -1,4 +1,4 @@
-import { useId, type ReactNode, type RefObject } from 'react';
+import { useId, type ReactNode } from 'react';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import {
@@ -13,10 +13,7 @@ import {
 } from '../../shared/icons';
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
 import type { InstrumentId } from '../audio/core/instrumentCatalog';
-import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { LevelId } from '../audio/engine/levels';
-import type { MixTrack, SoundProfile } from '../audio/engine/soundProfile';
-import { PlaybackPanel, type PlaybackHandle } from '../audio/ui/PlaybackPanel';
 import type { ListenTab } from './listenCatalog';
 import { MAX_MELODIES } from './melody';
 import { SeekBar } from './SeekBar';
@@ -28,7 +25,9 @@ export type PlayerPhase = 'ready' | 'playing' | 'paused' | 'ended';
 export const SKIP_S = 15;
 
 interface ListenPlayerProps {
-  readonly playbackRef: RefObject<PlaybackHandle | null>;
+  readonly onControlsHostChange: (node: HTMLDivElement | null) => void;
+  readonly autoNext: boolean;
+  readonly onAutoNextChange: (enabled: boolean) => void;
   readonly phase: PlayerPhase;
   /** The saved melody's name, the world, or the words for a sound chosen by hand. */
   readonly title: string;
@@ -37,7 +36,6 @@ interface ListenPlayerProps {
   readonly level: LevelId;
   readonly instrument: InstrumentId;
   readonly ambience: AmbienceId;
-  readonly profile: SoundProfile;
   readonly hasPiece: boolean;
   readonly positionS: number;
   readonly lengthS: number;
@@ -68,10 +66,6 @@ interface ListenPlayerProps {
   readonly onCollapse: () => void;
   readonly onSave: () => void;
   readonly onViewSaved: () => void;
-  readonly onEngineChange: (engine: AudioEngine | null) => void;
-  readonly onElapsedChange: (seconds: number) => void;
-  readonly onFinished: () => void;
-  readonly onMixChange: (mix: Readonly<Record<MixTrack, number>>) => void;
 }
 
 /**
@@ -79,13 +73,15 @@ interface ListenPlayerProps {
  * looks, so the music never stops between them: a card beside the choices,
  * the open player that takes most of the screen with the melodies as a
  * queue, and, on a phone, a bar at the bottom that opens it. The playback
- * panel of the session sits inside it, so volume, mix, Escape and the system
+ * controls of the shared playback panel appear inside it, while the provider
+ * keeps the audio alive across routes. Volume, mix, Escape and the system
  * controls are the same everywhere (ADR-16); its own Stop gives way to the
  * pause of the player, which is always in sight while something plays.
  */
 export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
-  const { phase, title, unsaved, level, instrument, ambience, profile, hasPiece, positionS, lengthS, savedAtS } = props;
-  const { seeking, saved, olderSound, changedSinceStart, notice, expanded, tab, queue, playbackRef } = props;
+  const { phase, title, unsaved, level, instrument, ambience, hasPiece, positionS, lengthS, savedAtS } = props;
+  const { seeking, saved, olderSound, changedSinceStart, notice, expanded, tab, queue } = props;
+  const { onControlsHostChange } = props;
   const t = useMessages();
   const copy = t.listen.player;
   const titleId = useId();
@@ -158,20 +154,11 @@ export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
           </p>
         )}
 
-        <PlaybackPanel
-          ref={playbackRef}
-          durationMin={Math.max(1, Math.round(lengthS / 60))}
-          initialLevel={level}
-          ambience={ambience}
-          instrument={instrument}
-          profile={profile}
-          quietEnding
-          hideStart
-          onEngineChange={props.onEngineChange}
-          onElapsedChange={props.onElapsedChange}
-          onFinished={props.onFinished}
-          onMixChange={props.onMixChange}
-        />
+        <label className="player-auto-next">
+          <input type="checkbox" checked={props.autoNext} onChange={(event) => { props.onAutoNextChange(event.target.checked); }} />
+          {copy.autoNext}
+        </label>
+        <div ref={onControlsHostChange} className="player-audio-controls" />
       </div>
 
       {expanded && <div className="player-queue">{queue}</div>}

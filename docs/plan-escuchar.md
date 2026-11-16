@@ -2,6 +2,8 @@
 
 **Estado:** aprobado e implementado el 16 nov 2026 como ADR-66 (`decisiones.md`); sus pantallas están en `pantallas.md`. Este documento queda como la definición detallada.
 
+> **Continuidad aprobada el 16 nov (ADR-69).** Sustituye los apartados anteriores que indican detener al salir: la música sigue al navegar y las otras pantallas muestran una barra global también en pausa. Sesión medida, grabación, diagnóstico y muestra del plan toman prioridad. La siguiente melodía empieza sola si está activado el interruptor (encendido inicialmente); la última termina. Recargar conserva la recuperación en pausa y salir de la cuenta olvida la pieza. Detalles vigentes en ADR-69 y `pantallas.md`.
+
 > **Revisión del 16 nov (ADR-67).** Escuchar pasó a ser un reproductor de música. Donde este documento dice otra cosa, manda ADR-67:
 > - Cada melodía tiene duración (15, 30, 45 o 60 min, la de la pieza al guardarla) y una **barra de tiempo** que se puede mover, con ±15 s; el punto guardado es una marca en la barra y las tarjetas ya no tienen «Desde el minuto».
 > - En PC el **reproductor está a la izquierda** y las pestañas a la derecha. Al reproducir se **abre sobre la pantalla** con las melodías como cola (anterior y siguiente); `?player=open` va al historial y «Atrás» lo cierra.

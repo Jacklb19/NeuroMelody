@@ -14,6 +14,7 @@ import { PlanPage } from '../features/plan/PlanPage';
 import { Layout } from './Layout';
 import { NotFoundPage } from './NotFoundPage';
 import { PendingScreen } from './PendingScreen';
+import { ListeningProvider } from '../features/listen/ListeningProvider';
 
 /*
  * Screens loaded when first visited (RNF-04, RNF-05): the first screen a
@@ -43,6 +44,7 @@ const UNKNOWN_PATH = '*';
 export function AppRoutes(): React.JSX.Element {
   // The layout keeps its own boundary so the header stays while a screen loads; this one covers the rest.
   return (
+    <ListeningProvider>
     <Suspense fallback={<PendingScreen />}>
     <Routes>
       <Route index element={<LandingPage />} />
@@ -94,5 +96,6 @@ export function AppRoutes(): React.JSX.Element {
       </Route>
     </Routes>
     </Suspense>
+    </ListeningProvider>
   );
 }

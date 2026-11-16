@@ -40,6 +40,7 @@ export const listen = {
     newPiece: 'Nueva pieza',
     previous: 'Melodía anterior',
     next: 'Melodía siguiente',
+    autoNext: 'Reproducir la siguiente',
     back: (seconds: number): string => `Retroceder ${String(seconds)} segundos`,
     forward: (seconds: number): string => `Avanzar ${String(seconds)} segundos`,
     /** The time bar of the piece. */

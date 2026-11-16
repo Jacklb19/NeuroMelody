@@ -48,6 +48,7 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const generationRef = useRef(0);
   const startingRef = useRef(false);
+  const pendingStart = useRef<Promise<AudioEngine | null> | null>(null);
   const [state, setState] = useState<AudioState>('idle');
   const [error, setError] = useState<AudioStartFailure | null>(null);
 
@@ -70,57 +71,61 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   }, [factory]);
 
   const start = useCallback(
-    async (options: EngineOptions, volumeDb: number, mix?: Readonly<Record<MixTrack, number>>): Promise<AudioEngine | null> => {
-      if (startingRef.current) return null;
-      startingRef.current = true;
-      const generation = generationRef.current;
-      setState('loading');
-      setError(null);
-      try {
-        let engine = engineRef.current;
-        if (engine === null || engine.state === 'closed') {
-          engine = await AudioEngine.create(factory ?? (await defaultFactory()), options);
+    (options: EngineOptions, volumeDb: number, mix?: Readonly<Record<MixTrack, number>>): Promise<AudioEngine | null> => {
+      if (startingRef.current) return Promise.resolve(null);
+      const opening = (async (): Promise<AudioEngine | null> => {
+        startingRef.current = true;
+        const generation = generationRef.current;
+        setState('loading');
+        setError(null);
+        try {
+          let engine = engineRef.current;
+          if (engine === null || engine.state === 'closed') {
+            engine = await AudioEngine.create(factory ?? (await defaultFactory()), options);
+            if (generation !== generationRef.current) {
+              await engine.close();
+              return null;
+            }
+            engineRef.current = engine;
+            unsubscribeRef.current?.();
+            const observed = engine;
+            unsubscribeRef.current = engine.subscribeContextState(() => {
+              if (engineRef.current !== observed) return;
+              if (observed.contextState === 'closed') { setState('stopped'); return; }
+              if (observed.state !== 'playing') return;
+              setState(observed.contextState === 'running' ? 'playing' : 'interrupted');
+            });
+          }
+          engine.setVolumeDb(volumeDb);
+          if (mix !== undefined) {
+            engine.setMix('music', mix.music);
+            engine.setMix('ambience', mix.ambience);
+          }
+          await engine.start();
           if (generation !== generationRef.current) {
             await engine.close();
             return null;
           }
-          engineRef.current = engine;
+          if (engine.contextState === 'closed') { setState('stopped'); return null; }
+          setState(engine.contextState === 'running' ? 'playing' : 'interrupted');
+          return engine;
+        } catch (cause) {
+          if (generation !== generationRef.current) return null;
+          const failed = engineRef.current;
+          engineRef.current = null;
           unsubscribeRef.current?.();
-          const observed = engine;
-          unsubscribeRef.current = engine.subscribeContextState(() => {
-            if (engineRef.current !== observed) return;
-            if (observed.contextState === 'closed') { setState('stopped'); return; }
-            if (observed.state !== 'playing') return;
-            setState(observed.contextState === 'running' ? 'playing' : 'interrupted');
-          });
-        }
-        engine.setVolumeDb(volumeDb);
-        if (mix !== undefined) {
-          engine.setMix('music', mix.music);
-          engine.setMix('ambience', mix.ambience);
-        }
-        await engine.start();
-        if (generation !== generationRef.current) {
-          await engine.close();
+          unsubscribeRef.current = null;
+          await failed?.close();
+          if (generation !== generationRef.current) return null;
+          setState('error');
+          setError(toStartFailure(cause));
           return null;
+        } finally {
+          startingRef.current = false;
         }
-        if (engine.contextState === 'closed') { setState('stopped'); return null; }
-        setState(engine.contextState === 'running' ? 'playing' : 'interrupted');
-        return engine;
-      } catch (cause) {
-        if (generation !== generationRef.current) return null;
-        const failed = engineRef.current;
-        engineRef.current = null;
-        unsubscribeRef.current?.();
-        unsubscribeRef.current = null;
-        await failed?.close();
-        if (generation !== generationRef.current) return null;
-        setState('error');
-        setError(toStartFailure(cause));
-        return null;
-      } finally {
-        startingRef.current = false;
-      }
+      })();
+      pendingStart.current = opening;
+      return opening;
     },
     [factory],
   );
@@ -144,6 +149,7 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
   }, []);
 
   const discard = useCallback(async (): Promise<void> => {
+    const opening = pendingStart.current;
     generationRef.current++;
     unsubscribeRef.current?.();
     unsubscribeRef.current = null;
@@ -151,6 +157,8 @@ export function useAudioEngine(factory?: AudioFactory): AudioEngineControl {
     engineRef.current = null;
     setState('idle');
     await engine?.close();
+    // A replacement waits for a cancelled open to release its graph before opening another.
+    if (opening !== null) await opening;
   }, []);
 
   useEffect(

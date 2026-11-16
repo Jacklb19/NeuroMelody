@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessages } from '../../../i18n/messages';
 import { DEFAULT_VOLUME_DB, type EngineOptions } from '../engine/AudioEngine';
 import { useAudioEngine } from './useAudioEngine';
+import { useOptionalListening } from '../../listen/listeningContext';
 
 const PREVIEW_SECONDS = 8;
 const PREVIEW_FADE_SECONDS = 1;
@@ -10,11 +11,13 @@ const CLEANUP_POLL_MS = 250;
 /** Plays the chosen starting sound on demand and frees the graph after its audio-clock fade. */
 export function AudioPreview({ options }: { readonly options: Omit<EngineOptions, 'seed' | 'outputThroughAudioElement'> }): React.JSX.Element {
   const copy = useMessages().listeningTools;
+  const listening = useOptionalListening();
   const { start, engine, stop, discard, state, error } = useAudioEngine();
   const end = useRef<number | null>(null);
   const stopPending = useRef(false);
   const [stopping, setStopping] = useState(false);
   const active = state === 'loading' || state === 'playing' || state === 'interrupted';
+  const registerPreviewStop = listening?.registerPreviewStop;
 
   const stopPreview = useCallback(async (): Promise<void> => {
     if (stopPending.current) return;
@@ -29,6 +32,8 @@ export function AudioPreview({ options }: { readonly options: Omit<EngineOptions
       setStopping(false);
     }
   }, [stop, discard]);
+
+  useEffect(() => registerPreviewStop?.(() => { if (active) void stopPreview(); }), [registerPreviewStop, active, stopPreview]);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -57,6 +62,7 @@ export function AudioPreview({ options }: { readonly options: Omit<EngineOptions
           void stopPreview();
           return;
         }
+        listening?.pause();
         void start({ ...options, seed: 0, outputThroughAudioElement: false }, DEFAULT_VOLUME_DB).then((current) => {
           if (current !== null) end.current = current.scheduleFinalFade(PREVIEW_SECONDS - PREVIEW_FADE_SECONDS, PREVIEW_FADE_SECONDS);
         });

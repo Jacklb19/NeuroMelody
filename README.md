@@ -47,6 +47,8 @@ Antes de cada sesión la persona elige qué busca (relajarse, dormir, recuperar 
 
 El modelo de lenguaje nunca participa en el lazo de control: arma el plan inicial a partir de lo que escribe la persona (ADR-68), con valores de los catálogos de la app, y redacta el resumen final, marcado siempre como texto generado automáticamente. Con consentimiento también puede elegir una explicación del progreso entre frases verificadas, manteniendo las cifras calculadas en el dispositivo.
 
+Escuchar permite oír música sin sensor y guardar melodías. Su reproductor sigue sonando al navegar por la app, con una barra para pausar o reanudar, controles del sistema y avance opcional a la siguiente melodía (ADR-69). Una sesión medida o una muestra toma prioridad; recargar recupera en pausa. El audio con el teléfono bloqueado sigue pendiente de prueba física.
+
 ## Requisitos
 
 - Node.js 24 (versión exacta en `.nvmrc`) y npm.

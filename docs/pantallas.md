@@ -307,6 +307,8 @@ Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra expli
 
 ## Escuchar y pulso en vivo (ADR-66, 16 nov 2026)
 
+**Continuidad de Escuchar (ADR-69, aprobada el 16 nov):** la pieza y la cola viven por encima de las rutas. Inicio, Historial, Progreso y el resto del Layout muestran una barra mini fija mientras hay una pieza sonando, pausada o terminada; abre `/listen?player=open`. En el plan, su acción inferior pasa al flujo de la página cuando está esa barra para no superponer controles fijos. Entrar a una sesión medida, grabación o diagnóstico pausa Escuchar y oculta la barra. Iniciar una muestra pausa Escuchar; reanudar Escuchar detiene la muestra. La tarjeta y el reproductor abierto conservan su aspecto y añaden «Reproducir la siguiente», activado inicialmente y recordado en el dispositivo. La última melodía termina sin volver al principio. Recargar recupera en pausa; cerrar o cambiar de cuenta olvida la pieza. Media Session muestra título, mundo e imagen y ofrece reproducir, pausar, detener, anterior y siguiente cuando corresponda. El teléfono bloqueado sigue pendiente de prueba física (P-08).
+
 Definición completa, con el flujo de entradas, salidas y estados, en `plan-escuchar.md`.
 
 | Pantalla | Cambio |
