@@ -44,6 +44,19 @@ export const home = {
     view: 'View summary',
   },
   /** Shown instead of the activity until there is a first session; keys mirror `FIRST_SESSION_STEP_IDS`. */
+  /** Everything else the app offers, in sight from the start screen; `items` keys mirror `ExploreId`. */
+  explore: {
+    title: 'Explore NeuroMelody',
+    hint: 'Beyond one session: what you can see, keep and give back.',
+    items: {
+      worlds: { title: 'Sound worlds', text: 'Six places with their own sound and colour, from the misty forest to deep space.' },
+      progress: { title: 'Your progress', text: 'How your pulse and ratings change, and which choices suit you best.' },
+      report: { title: 'Report to share', text: 'A printable summary of your sessions for whoever supports you.' },
+      reminder: { title: 'Reminder', text: 'Add to your calendar the time and days you want to listen.' },
+      collect: { title: 'Help train the AI', text: 'A 15-minute guided recording that improves the model for everyone.' },
+      diagnostics: { title: 'Check your device', text: 'Test the sound, Bluetooth and camera before you start.' },
+    },
+  },
   first: {
     title: 'How your first session goes',
     steps: {

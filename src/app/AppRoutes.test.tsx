@@ -102,7 +102,8 @@ describe('routes', LAZY_TEST, () => {
     const links = Array.from(navigation.querySelectorAll('a'), (a) => a.textContent);
     const labels = es.app.navigation;
     // A session is not an entry of the navigation: it is reached by preparing it (ADR-42).
-    expect(links).toEqual([labels.home, labels.plan, labels.history]);
+    // Progress has an entry of its own, so the comparisons of the history are found (P-10).
+    expect(links).toEqual([labels.home, labels.plan, labels.history, labels.progress]);
     expect(screen.getByRole('link', { name: es.home.start.action })).toHaveAttribute('href', ROUTES.plan);
     expect(screen.getByRole('link', { name: es.app.profile })).toHaveAttribute('href', ROUTES.account);
     expect(screen.getAllByRole('main')).toHaveLength(1);

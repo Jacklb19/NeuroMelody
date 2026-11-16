@@ -11,6 +11,7 @@ export const app = {
     home: 'Home',
     plan: 'New session',
     history: 'History',
+    progress: 'Progress',
   },
   /** Accessible name of the avatar that opens the profile. */
   profile: 'Profile',

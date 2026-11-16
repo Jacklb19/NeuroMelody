@@ -11,10 +11,12 @@ export interface NavigationItem {
  * Screens of the main navigation, in order (docs/pantallas.md). A session is
  * not an entry of its own: it is reached by preparing it, so nobody lands on
  * one without having chosen anything. The profile is reached from the avatar;
- * diagnostics is a technical tool reached by its route.
+ * diagnostics is a technical tool reached by its route. Progress is an entry
+ * of its own so the comparisons of the history are found (P-10).
  */
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   { route: ROUTES.app, labelKey: 'home' },
   { route: ROUTES.plan, labelKey: 'plan' },
   { route: ROUTES.history, labelKey: 'history' },
+  { route: ROUTES.progress, labelKey: 'progress' },
 ];
