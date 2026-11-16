@@ -12,7 +12,7 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 
 La ampliación aprobada de noviembre sitúa los favoritos, la escucha previa y el modo de sonido en `/plan`. La guía inicial se abre desde `/app` y acompaña el paso de pulso en `/session`. El mezclador está junto al volumen de sesión. Los filtros y el resumen de la semana están en `/history` y la copia del historial y los favoritos en `/account`. Se conservan las rutas existentes.
 
-**Ajuste visual de noviembre de 2026:** se conservan todas las rutas y paneles. Navegación agrupada, encabezados separados, plan con cuatro grupos numerados y selección con marca, superficies de historial/resumen más legibles y foco sólido en el acceso. En Inicio se oculta el orbe decorativo bajo 900 px para despejar el texto; no se oculta el orbe de la sesión. Detalles y comprobación en `revision-producto-visual.md`.
+**Ajuste visual de noviembre de 2026:** se conservan todas las rutas y paneles. Navegación agrupada, encabezados separados, plan con cuatro grupos numerados y selección con marca, superficies de historial/resumen más legibles y foco sólido en el acceso. En Inicio se oculta el orbe decorativo bajo 900 px para despejar el texto; no se oculta el orbe de la sesión.
 
 | Ruta | Pantalla | Propósito | HU | RF | Sprint | ¿Requiere sesión? | Lleva a |
 |---|---|---|---|---|---|---|---|
@@ -186,7 +186,7 @@ Sin sesiones invita a preparar una. Con una sola muestra sus valores y avisa de 
 
 ## Bloque 23: observaciones locales y preparación personal (ADR-48)
 
-Desarrollo autorizado e implementado en local el 19 oct. El plan está en `plan-bloque-23.md`, la decisión en ADR-48 y el contrato opcional de la API en `contrato-progress-summary.md`.
+Implementado el 19 oct. La decisión está en ADR-48 y el contrato opcional de la API en `contrato-progress-summary.md`.
 
 | Pantalla | Panel o cambio | Ubicación y comportamiento |
 |---|---|---|
@@ -292,7 +292,7 @@ No añade pantallas. Funciona sola cuando se cumplen tres cosas: hay cuenta, la 
 
 ## Diagnóstico de audio al bloquear (P-08, aprobado el 19 oct)
 
-En `/diagnostics`, después de las capacidades y antes del prototipo de cámara, un panel de prueba de audio de hasta 3 minutos, con advertencias de uso si faltan. Permite elegir sonido, ambiente y salida actual o alternativa; muestra el último estado real del contexto, reloj, latencias, contadores disponibles y lecturas. Detener sigue fijo y Esc funciona; la prueba se apaga sola. La descarga del registro es explícita y local; no guarda una sesión ni transmite datos. Un contador no disponible se declara sin medición; en la salida alternativa advierte que no mide el último tramo audible. Detalle y limitaciones en `plan-audio-bloqueo.md`.
+En `/diagnostics`, después de las capacidades y antes del prototipo de cámara, un panel de prueba de audio de hasta 3 minutos, con advertencias de uso si faltan. Permite elegir sonido, ambiente y salida actual o alternativa; muestra el último estado real del contexto, reloj, latencias, contadores disponibles y lecturas. Detener sigue fijo y Esc funciona; la prueba se apaga sola. La descarga del registro es explícita y local; no guarda una sesión ni transmite datos. Un contador no disponible se declara sin medición; en la salida alternativa advierte que no mide el último tramo audible. Detalle y limitaciones en «Audio interrumpido y diagnóstico local», en `decisiones.md`.
 
 Desde el 20 oct el mismo panel compara también reverberación (con o sin) y la latencia pedida al navegador (para escuchar, equilibrada o interactiva); las dos primeras de cada lista son las de la sesión. Muestra el ritmo del reloj de audio frente al real con la pantalla encendida y bloqueada, y el tramo más lento. Los pasos guían cuatro pruebas cambiando una sola cosa cada vez.
 

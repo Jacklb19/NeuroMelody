@@ -90,7 +90,7 @@ Guardar informes completos fuera de Git; añadir solo fixtures pequeños revisad
 
 ## Resultado de la prueba
 
-Ejecutada por el usuario el 7 oct 2026. Central: Windows 11 con Chrome 154.0.8037.98. Periférico: Xiaomi 11 Lite con nRF Connect, configurado como en este documento (servicio `180D`, característica `2A37` con Notify y anuncio conectable con `0x180D`).
+Ejecutada el 7 oct 2026. Central: Windows 11 con Chrome 154.0.8037.98. Periférico: Xiaomi 11 Lite con nRF Connect, configurado como en este documento (servicio `180D`, característica `2A37` con Notify y anuncio conectable con `0x180D`).
 
 | Comprobación | Resultado |
 |---|---|
