@@ -397,17 +397,7 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .app-header-public .brand { margin-right: auto; }
 .skip-link { position: fixed; left: var(--space-4); top: calc(-1 * var(--space-24)); padding: var(--space-3) var(--space-4); background: var(--color-button-background); color: var(--color-button-text); z-index: var(--stop-layer); border-radius: var(--border-radius); }
 .skip-link:focus { top: var(--space-2); }
-/*
- * The navigation bar: one floating pill that stays at the top while the page scrolls, with the brand, the sections
- * and the profile. It is translucent so the page shows faintly under it.
- */
-.app-header {
-  position: sticky; top: var(--space-3); z-index: var(--header-layer);
-  display: flex; align-items: center; gap: var(--space-4);
-  margin-top: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
-  background: color-mix(in srgb, var(--color-background) 80%, transparent); backdrop-filter: blur(14px);
-  border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); box-shadow: var(--card-shadow);
-}
+.app-header { display: flex; align-items: center; gap: var(--space-8); padding: var(--space-5) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }
 .app-header nav { margin-left: auto; }
 .header-menu-button { display: none; }
 .app-header .avatar.active, .app-header .avatar:hover { border-color: var(--color-accent); }
@@ -415,7 +405,7 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .brand:hover { color: inherit; }
 .brand { display: inline-flex; gap: var(--space-2); align-items: center; font-family: var(--font-display); font-size: var(--text-xl); white-space: nowrap; }
 .brand-mark { width: var(--brand-size); height: var(--brand-size); color: var(--color-accent); }
-.app-header ul { list-style: none; display: flex; gap: var(--space-1); }
+.app-header ul { list-style: none; display: flex; gap: var(--space-1); padding: var(--space-1); background: var(--color-surface); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); }
 .nav-link { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-height); padding: var(--space-2) var(--space-4); text-decoration: none; font-size: var(--text-sm); color: var(--color-text-secondary); border: var(--border-width) solid transparent; border-radius: var(--radius-pill); transition: background var(--motion-duration), color var(--motion-duration), border-color var(--motion-duration); }
 .nav-link:hover { color: var(--color-text); background: var(--color-paper); }
 .nav-link.active { color: var(--color-text); background: var(--color-paper); border-color: var(--color-border); font-weight: var(--font-weight-strong); box-shadow: var(--surface-shadow); }
@@ -702,8 +692,18 @@ select.tool-input { padding-right: var(--space-10); }
   .source-controls label:first-child { grid-column: auto; }
 }
 /* Below this width the sections fold into a menu that opens under the same floating bar. */
+/*
+ * On a phone the header becomes one floating pill that stays at the top while the page scrolls, with the brand,
+ * the profile and a menu that holds the sections. It is translucent so the page shows faintly under it.
+ */
 @media (max-width: 760px) {
-  .app-header { gap: var(--space-2); }
+  .app-header {
+    position: sticky; top: var(--space-3); z-index: var(--header-layer);
+    gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+    background: color-mix(in srgb, var(--color-background) 80%, transparent); backdrop-filter: blur(14px);
+    border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); box-shadow: var(--card-shadow);
+  }
+  .app-header nav.is-open ul { padding: 0; background: none; border: 0; }
   .app-header .brand { margin-right: auto; }
   .app-header nav { display: none; }
   .app-header nav.is-open {
