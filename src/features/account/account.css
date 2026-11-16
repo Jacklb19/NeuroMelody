@@ -36,6 +36,13 @@
 .auth-existing { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: var(--text-sm); }
 .auth-existing a { display: inline-block; min-height: var(--target-min-size); padding-block: var(--space-1); color: var(--color-accent); font-weight: var(--font-weight-strong); }
 .password-requirements { display: grid; gap: var(--space-1); }
+/* The two password fields of the sign-up share a row on wide screens; the requirements span both. */
+.auth-password-pair { display: grid; gap: var(--space-4); }
+@media (min-width: 1100px) {
+  .auth-card:has(.auth-password-pair) { max-width: var(--auth-card-width-wide); }
+  .auth-password-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .auth-password-pair .password-requirements { grid-column: 1 / -1; }
+}
 .password-requirements ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-1) var(--space-4); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-secondary); }
 /* The list waits until the field is in use; screen readers get it as the field's description all the same. */
 .auth-field:not(:focus-within) .password-requirements[data-empty='true'] { display: none; }
@@ -90,6 +97,13 @@
   .reminder-days .segment { min-width: 0; padding: 0; }
 }
 .setting-panel { padding: var(--space-6) 0; }
+/* Backup: the file field hides behind a button of the app, and its focus shows on that button. */
+.file-picker { position: relative; cursor: pointer; }
+.file-picker:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
+.file-picker.is-busy { opacity: 0.6; cursor: progress; }
+.backup-confirm { display: flex; justify-content: flex-end; padding: 0 0 var(--space-4); border-top: 0 !important; }
+.backup-status { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.backup-status:empty { display: none; }
 .setting-panel .account-section { margin-bottom: 0; }
 .setting-list .form-error { margin: var(--space-3) 0; }
 
@@ -102,6 +116,13 @@
   .auth-divider { margin: var(--space-3) 0; }
   .auth-card .pill-button-large { min-height: var(--control-height); }
   .orb-large { font-size: var(--orb-size); }
+  .auth-cloud-note { font-size: var(--text-xs); margin-bottom: var(--space-3); }
+  .auth-form { gap: var(--space-3); }
+  .auth-field { gap: var(--space-1); }
+  .auth-field input { min-height: var(--control-height-compact); padding-block: var(--space-2); }
+  .auth-brand-compact { margin-bottom: var(--space-4); }
+  /* Theme and language move into the corner so the wider sign-up card never covers them. */
+  .auth-preferences { top: var(--space-4); right: var(--space-4); }
 }
 @media (max-width: 900px) {
   .auth-screen { grid-template-columns: minmax(0, 1fr); }

@@ -72,21 +72,24 @@ export function RegisterPage(): React.JSX.Element {
           <p className="auth-divider"><span>{auth.or}</span></p>
           <form className="auth-form" aria-label={copy.pageTitle} onSubmit={(event) => { void submit(event); }} noValidate>
             <EmailField label={auth.email} value={email} onChange={setEmail} error={fieldText(fieldErrors.email)} />
-            <PasswordField
-              label={auth.password}
-              value={password}
-              onChange={setPassword}
-              autoComplete="new-password"
-              requirements
-              error={mismatch ? null : fieldText(fieldErrors.password)}
-            />
-            <PasswordField
-              label={auth.confirmPassword}
-              value={confirmation}
-              onChange={setConfirmation}
-              autoComplete="new-password"
-              error={mismatch ? fieldText(fieldErrors.password) : null}
-            />
+            {/* Side by side on wide screens, so the whole form fits a laptop without scrolling. */}
+            <div className="auth-password-pair">
+              <PasswordField
+                label={auth.password}
+                value={password}
+                onChange={setPassword}
+                autoComplete="new-password"
+                requirements
+                error={mismatch ? null : fieldText(fieldErrors.password)}
+              />
+              <PasswordField
+                label={auth.confirmPassword}
+                value={confirmation}
+                onChange={setConfirmation}
+                autoComplete="new-password"
+                error={mismatch ? fieldText(fieldErrors.password) : null}
+              />
+            </div>
             <FormError code={error} />
             {error === 'user_already_exists' && (
               <p className="auth-existing">

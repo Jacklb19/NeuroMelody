@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { APP_NAME } from '../config/app';
 import { ROUTES } from '../config/routes';
@@ -25,6 +25,8 @@ export function Layout(): React.JSX.Element {
   const { state } = useAuth();
   const user = state.kind === 'signed_in' ? state.user : null;
   const { pathname } = useLocation();
+  // A new screen starts at its top: the browser would otherwise keep the scroll of the one before.
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [pathname]);
   return (
     <div className="app-shell">
       <a href={`#${MAIN_CONTENT_ID}`} className="skip-link">
@@ -65,7 +67,10 @@ export function Layout(): React.JSX.Element {
         {/* A screen that fails keeps the header and the navigation; going to another address tries again. */}
         <ScreenErrorBoundary resetKey={pathname}>
           <Suspense fallback={<PendingScreen />}>
-            <Outlet />
+            {/* Keyed by the screen, so each one fades in instead of replacing the last at once. */}
+            <div key={pathname} className="route-view">
+              <Outlet />
+            </div>
           </Suspense>
         </ScreenErrorBoundary>
       </main>
