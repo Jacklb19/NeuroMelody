@@ -4,11 +4,11 @@ Este documento reúne la dirección visual vigente y su evolución. El ajuste de
 
 ## Ajuste de noviembre de 2026
 
-El usuario eligió conservar la identidad actual: verde bosque, ámbar, serif en títulos y controles sans serif. Se suavizan las sombras, se agrupa la navegación, se separan mejor los encabezados y se unifican superficies de historial, resumen y estados vacíos. El plan muestra sus cuatro grupos numerados y una marca de selección independiente del color. En móvil, el orbe decorativo de Inicio se oculta para evitar que compita con el texto; el de la sesión se conserva.
+Se conserva la identidad actual: verde bosque, ámbar, serif en títulos y controles sans serif. Se suavizan las sombras, se agrupa la navegación, se separan mejor los encabezados y se unifican superficies de historial, resumen y estados vacíos. El plan muestra sus cuatro grupos numerados y una marca de selección independiente del color. En móvil, el orbe decorativo de Inicio se oculta para evitar que compita con el texto; el de la sesión se conserva.
 
 El foco de los campos de acceso usa un contorno sólido y el sistema compartido incluye las áreas de texto. Se mantienen controles nativos, reducción de movimiento, contraste de las paletas existentes y detención accesible. No se añaden pantallas, dependencias, fuentes externas ni animaciones.
 
-Alcance, evidencia y propuestas de producto en `revision-producto-visual.md`. Los párrafos históricos siguientes no describen todas las pantallas añadidas después de S4.
+Los párrafos históricos siguientes no describen todas las pantallas añadidas después de S4.
 
 ## Dirección
 

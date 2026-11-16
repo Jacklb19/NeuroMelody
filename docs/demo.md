@@ -1,12 +1,13 @@
 # Guion de demostración — NeuroMelody
 
-Recorrido de unos 12 minutos para presentar la app. Funciona sin banda ni cuenta: el pulso viene del simulador. Conviene hacerlo en Chrome de escritorio, con audífonos o altavoces, y el volumen del sistema moderado.
+Recorrido de unos 12 minutos para presentar la app. Funciona sin banda: el pulso viene del simulador. La app pide una cuenta (ADR-57). Conviene hacerlo en Chrome de escritorio, con audífonos o altavoces, y el volumen del sistema moderado.
 
 ## Antes de empezar
 
-- Abrir la app publicada (o `node .claude/dev-no-account.mjs` desde la carpeta `NeuroMelody`, en `http://localhost:4319`).
+- Abrir la app publicada (`https://neruomelody.vercel.app`) o el servidor local (`npm run dev`, en `http://localhost:5173`) y entrar con la cuenta de demostración.
+- Para mostrar el historial, el progreso y el informe con datos, restaurar antes en esa cuenta la biblioteca de demostración (README, «Datos de demostración»).
 - Tener aceptadas las advertencias de uso en ese navegador, para no leerlas en la demostración (o mostrarlas como parte del recorrido: son obligatorias antes de la primera sesión).
-- Si se va a mostrar la cuenta: entrar antes, con la verificación en dos pasos ya hecha.
+- Si se va a mostrar la sincronización con la nube: tener hecha la verificación en dos pasos.
 
 ## 1. La idea (1 min) · portada `/`
 
@@ -61,5 +62,5 @@ Muchos relojes envían el pulso pero no el tiempo entre latidos. Para mostrarlo 
 - **¿La música es grabada?** No: se compone nota a nota en el hilo de audio del navegador; cada sesión es distinta.
 - **¿Qué decide la música?** Un clasificador entrenado con WESAD estima si la activación sube, baja o no cambia respecto a tus primeros minutos; con tres estimaciones iguales seguidas la música cambia un escalón, siempre de forma gradual. Con un reloj que solo envía el pulso, una regla más simple usa solo el pulso, y la pantalla lo dice.
 - **¿Qué dispositivos sirven?** Bandas de pecho con Bluetooth (variabilidad completa), relojes que emiten el pulso por Bluetooth (solo pulso) y la cámara del celular (experimental).
-- **¿Qué sale del dispositivo?** Nada de la señal. Con cuenta, dos pasos y consentimiento, solo resúmenes de sesión.
+- **¿Qué sale del dispositivo?** De una sesión, nada de la señal: con dos pasos y consentimiento, solo su resumen. Las grabaciones guiadas para reentrenar el clasificador se envían solo si la persona lo decide.
 - **¿Y sin internet?** La sesión completa funciona sin red.
