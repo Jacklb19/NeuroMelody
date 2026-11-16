@@ -1,20 +1,31 @@
-import { useId, type RefObject } from 'react';
+import { useId, type ReactNode, type RefObject } from 'react';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
-import { PlayIcon } from '../../shared/icons';
-import { SECONDS_PER_MINUTE } from '../../shared/time';
+import {
+  BackIcon,
+  CollapseIcon,
+  ExpandIcon,
+  ForwardIcon,
+  NextIcon,
+  PlayerPauseIcon,
+  PlayIcon,
+  PreviousIcon,
+} from '../../shared/icons';
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
 import type { InstrumentId } from '../audio/core/instrumentCatalog';
 import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { LevelId } from '../audio/engine/levels';
 import type { MixTrack, SoundProfile } from '../audio/engine/soundProfile';
 import { PlaybackPanel, type PlaybackHandle } from '../audio/ui/PlaybackPanel';
-import { SessionProgress } from '../session/SessionProgress';
-import { LISTEN_DURATIONS_MIN, type ListenDurationMin, type ListenTab } from './listenCatalog';
+import type { ListenTab } from './listenCatalog';
 import { MAX_MELODIES } from './melody';
+import { SeekBar } from './SeekBar';
 
 /** What the player is doing (docs/plan-escuchar.md §2.8). */
 export type PlayerPhase = 'ready' | 'playing' | 'paused' | 'ended';
+
+/** The jump of the back and forward buttons, in seconds. */
+export const SKIP_S = 15;
 
 interface ListenPlayerProps {
   readonly playbackRef: RefObject<PlaybackHandle | null>;
@@ -27,26 +38,36 @@ interface ListenPlayerProps {
   readonly instrument: InstrumentId;
   readonly ambience: AmbienceId;
   readonly profile: SoundProfile;
-  readonly durationMin: ListenDurationMin;
-  readonly onDurationChange: (minutes: ListenDurationMin) => void;
-  readonly elapsedS: number;
   readonly hasPiece: boolean;
+  readonly positionS: number;
+  readonly lengthS: number;
+  /** Where the melody was saved, marked on its bar; `null` for a piece not saved. */
+  readonly savedAtS: number | null;
+  readonly seeking: boolean;
   readonly saved: boolean;
   readonly olderSound: boolean;
   /** The create tab no longer matches what sounds: the new choices wait for a new piece. */
   readonly changedSinceStart: boolean;
   readonly notice: 'saved' | 'full' | 'failed' | null;
-  readonly immersive: boolean;
-  /** Below the breakpoint the main actions move to a bar at the bottom of the screen. */
-  readonly narrow: boolean;
+  /** Open: the player takes most of the screen, with the melodies as a queue. */
+  readonly expanded: boolean;
   readonly tab: ListenTab;
+  readonly canPrevious: boolean;
+  readonly canNext: boolean;
+  /** The saved melodies beside the open player. */
+  readonly queue: ReactNode;
   readonly onPlay: () => void;
+  readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onRestart: () => void;
   readonly onNewPiece: () => void;
+  readonly onSeek: (seconds: number) => void;
+  readonly onPrevious: () => void;
+  readonly onNext: () => void;
+  readonly onExpand: () => void;
+  readonly onCollapse: () => void;
   readonly onSave: () => void;
   readonly onViewSaved: () => void;
-  readonly onImmersiveChange: (immersive: boolean) => void;
   readonly onEngineChange: (engine: AudioEngine | null) => void;
   readonly onElapsedChange: (seconds: number) => void;
   readonly onFinished: () => void;
@@ -54,138 +75,120 @@ interface ListenPlayerProps {
 }
 
 /**
- * The player of the listening screen (P-17): what sounds, for how long, and
- * the ways on from each moment. The playback panel of the session sits
- * inside it, so volume, mix, Stop, Escape and the system controls are the
- * same everywhere (ADR-16). The piece ends by itself with a quiet fade, as
- * the session for falling asleep does (ADR-41).
+ * The player of the listening screen (P-17, ADR-67). One component in three
+ * looks, so the music never stops between them: a card beside the choices,
+ * the open player that takes most of the screen with the melodies as a
+ * queue, and, on a phone, a bar at the bottom that opens it. The playback
+ * panel of the session sits inside it, so volume, mix, Escape and the system
+ * controls are the same everywhere (ADR-16); its own Stop gives way to the
+ * pause of the player, which is always in sight while something plays.
  */
 export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
-  const { phase, title, unsaved, level, instrument, ambience, profile, durationMin, onDurationChange, elapsedS, hasPiece, saved } = props;
-  const { olderSound, changedSinceStart, notice, immersive, narrow, tab, playbackRef } = props;
+  const { phase, title, unsaved, level, instrument, ambience, profile, hasPiece, positionS, lengthS, savedAtS } = props;
+  const { seeking, saved, olderSound, changedSinceStart, notice, expanded, tab, queue, playbackRef } = props;
   const t = useMessages();
   const copy = t.listen.player;
   const titleId = useId();
   const levelNames: Readonly<Record<LevelId, string>> = t.session.journey.levels;
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
-  const playing = phase === 'playing';
+  const sound = `${levelNames[level]} · ${instrumentNames[instrument]} · ${ambienceNames[ambience]}`;
+  const share = lengthS > 0 ? Math.min(1, positionS / lengthS) : 0;
+  // On a phone the bar shows what can be played or what plays; on the melodies tab with nothing chosen, each card plays its own.
+  const miniBar = hasPiece || tab === 'create';
 
-  const actions = <PlayerActions {...props} />;
   return (
-    <aside className="listen-player glass-card paper" aria-labelledby={titleId} data-phase={phase}>
-      <BreathingOrb className="listen-orb" />
-      <div className="listen-now">
-        <p className="eyebrow">{copy.phases[phase]}</p>
-        <h2 id={titleId} className="listen-title">{title}</h2>
-        <p className="secondary-text listen-sound">
-          {levelNames[level]} · {instrumentNames[instrument]} · {ambienceNames[ambience]}
-        </p>
-        {unsaved && <p className="secondary-text">{copy.unsaved}</p>}
-        {olderSound && <p className="quiet-notice">{copy.olderSound}</p>}
-        {changedSinceStart && <p className="quiet-notice" role="status">{copy.nextNotice}</p>}
+    <aside className={expanded ? 'listen-player is-expanded' : 'listen-player'} aria-labelledby={titleId} data-phase={phase}
+      data-mini={miniBar || undefined}>
+      {/* The bar of a phone: the whole of it opens the player, and its button plays or pauses. */}
+      <div className="player-mini" style={{ '--seek-share': share } as React.CSSProperties}>
+        <span className="player-mini-line" aria-hidden="true" />
+        <button type="button" className="player-mini-open" onClick={props.onExpand} aria-label={copy.expand}>
+          <BreathingOrb className="player-mini-orb" />
+          <span className="player-mini-text">
+            <strong>{title}</strong>
+            <span className="secondary-text">{hasPiece ? copy.phases[phase] : sound}</span>
+          </span>
+        </button>
+        <PrimaryButton {...props} compact />
       </div>
 
-      <fieldset className="listen-durations">
-        <legend>{copy.durationLegend}</legend>
-        <div className="listen-duration-options">
-          {LISTEN_DURATIONS_MIN.map((minutes) => (
-            <label key={minutes} className="listen-duration">
-              <input type="radio" name="listen-duration" value={minutes} aria-label={copy.minutesLong(minutes)}
-                checked={durationMin === minutes} onChange={() => { onDurationChange(minutes); }} />
-              <span aria-hidden="true">{copy.minutes(minutes)}</span>
-            </label>
-          ))}
+      <div className="player-stage">
+        <div className="player-top">
+          <p className="eyebrow">{copy.phases[phase]}</p>
+          {expanded ? (
+            <button type="button" className="icon-button" onClick={props.onCollapse} aria-label={copy.collapse}><CollapseIcon /></button>
+          ) : (
+            <button type="button" className="icon-button player-open" onClick={props.onExpand} aria-label={copy.expand}><ExpandIcon /></button>
+          )}
         </div>
-      </fieldset>
+        <BreathingOrb className="listen-orb" />
+        <div className="listen-now">
+          <h2 id={titleId} className="listen-title">{title}</h2>
+          <p className="secondary-text listen-sound">{sound}</p>
+          {unsaved && <p className="secondary-text">{copy.unsaved}</p>}
+          {olderSound && <p className="quiet-notice">{copy.olderSound}</p>}
+          {changedSinceStart && <p className="quiet-notice" role="status">{copy.nextNotice}</p>}
+        </div>
 
-      {hasPiece && phase !== 'ready' && <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />}
+        {hasPiece && <SeekBar positionS={positionS} lengthS={lengthS} savedAtS={savedAtS} seeking={seeking} onSeek={props.onSeek} />}
 
-      {/* On a phone the main actions live in the bar at the bottom; here they would only repeat it. */}
-      {!narrow && actions}
+        <div className="player-transport">
+          <button type="button" className="icon-button" onClick={props.onPrevious} disabled={!props.canPrevious} aria-label={copy.previous}><PreviousIcon /></button>
+          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS - SKIP_S); }} disabled={!hasPiece || seeking} aria-label={copy.back(SKIP_S)}><BackIcon /></button>
+          <PrimaryButton {...props} />
+          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS + SKIP_S); }} disabled={!hasPiece || seeking} aria-label={copy.forward(SKIP_S)}><ForwardIcon /></button>
+          <button type="button" className="icon-button" onClick={props.onNext} disabled={!props.canNext} aria-label={copy.next}><NextIcon /></button>
+        </div>
 
-      <div className="listen-secondary">
-        {hasPiece && phase !== 'ready' && (saved
-          ? <p className="listen-saved" role="status"><span aria-hidden="true">✓</span> {copy.saved}</p>
-          : <button type="button" className="pill-button pill-button-ghost" onClick={props.onSave}>{copy.save}</button>)}
-        {playing && (
-          <button type="button" className="pill-button pill-button-ghost immersive-toggle" aria-pressed={immersive}
-            onClick={() => { props.onImmersiveChange(!immersive); }}>
-            {immersive ? t.session.immersive.exit : t.session.immersive.enter}
-          </button>
+        <div className="listen-secondary">
+          {hasPiece && phase !== 'ready' && (saved
+            ? <p className="listen-saved" role="status"><span aria-hidden="true">✓</span> {copy.saved}</p>
+            : <button type="button" className="pill-button pill-button-ghost" onClick={props.onSave}>{copy.save}</button>)}
+          {hasPiece && tab === 'create' && (
+            <button type="button" className="pill-button pill-button-ghost" onClick={props.onNewPiece}>{copy.newPiece}</button>
+          )}
+        </div>
+
+        {notice !== null && (
+          <p className="listen-notice" role="status">
+            {notice === 'saved' && <>{copy.savedNotice} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.viewSaved}</button></>}
+            {notice === 'full' && <>{copy.full(MAX_MELODIES)} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.goToMelodies}</button></>}
+            {notice === 'failed' && copy.saveFailed}
+          </p>
         )}
+
+        <PlaybackPanel
+          ref={playbackRef}
+          durationMin={Math.max(1, Math.round(lengthS / 60))}
+          initialLevel={level}
+          ambience={ambience}
+          instrument={instrument}
+          profile={profile}
+          quietEnding
+          hideStart
+          onEngineChange={props.onEngineChange}
+          onElapsedChange={props.onElapsedChange}
+          onFinished={props.onFinished}
+          onMixChange={props.onMixChange}
+        />
       </div>
 
-      {notice !== null && (
-        <p className="listen-notice" role="status">
-          {notice === 'saved' && <>{copy.savedNotice} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.viewSaved}</button></>}
-          {notice === 'full' && <>{copy.full(MAX_MELODIES)} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.goToMelodies}</button></>}
-          {notice === 'failed' && copy.saveFailed}
-        </p>
-      )}
-
-      <PlaybackPanel
-        ref={playbackRef}
-        durationMin={durationMin}
-        initialLevel={level}
-        ambience={ambience}
-        instrument={instrument}
-        profile={profile}
-        quietEnding
-        hideStart
-        onEngineChange={props.onEngineChange}
-        onElapsedChange={props.onElapsedChange}
-        onFinished={props.onFinished}
-        onMixChange={props.onMixChange}
-      />
-
-      {narrow && <ListenBar {...props} tab={tab} />}
+      {expanded && <div className="player-queue">{queue}</div>}
     </aside>
   );
 }
 
-/** The ways on from each moment: play what is chosen, resume or restart the piece, or ask for a new one. */
-function PlayerActions({ phase, tab, onPlay, onResume, onRestart, onNewPiece }: ListenPlayerProps): React.JSX.Element | null {
+/** Play, pause, resume or start again: one button whose meaning follows the moment. */
+function PrimaryButton({ phase, hasPiece, seeking, onPlay, onPause, onResume, onRestart, compact = false }: ListenPlayerProps & { readonly compact?: boolean }): React.JSX.Element {
   const copy = useMessages().listen.player;
-  if (phase === 'playing') return null;
-  if (phase === 'ready') {
-    return (
-      <div className="listen-actions">
-        <button type="button" className="pill-button pill-button-primary pill-button-large" onClick={onPlay}><PlayIcon /> {copy.play}</button>
-      </div>
-    );
-  }
+  const playing = phase === 'playing';
+  const label = playing ? copy.pause : phase === 'ended' ? copy.restart : phase === 'paused' ? copy.resume : copy.play;
+  const action = playing ? onPause : phase === 'ended' ? onRestart : phase === 'paused' ? onResume : onPlay;
   return (
-    <div className="listen-actions">
-      <button type="button" className="pill-button pill-button-primary" onClick={phase === 'ended' ? onRestart : onResume}>
-        <PlayIcon /> {phase === 'ended' ? copy.restart : copy.resume}
-      </button>
-      {/* A new piece plays what the create tab holds; from the melodies it would play something not in sight. */}
-      {(tab === 'create' || phase === 'ended') && (
-        <button type="button" className="pill-button pill-button-ghost" onClick={onNewPiece}>{copy.newPiece}</button>
-      )}
-    </div>
-  );
-}
-
-/**
- * The bar at the bottom of a phone (900 px or less). While the music plays
- * the Stop button of the playback panel takes its place, so there is never
- * more than one bar; with nothing to offer it is not there at all.
- */
-function ListenBar(props: ListenPlayerProps): React.JSX.Element | null {
-  const { phase, tab, title, durationMin } = props;
-  const copy = useMessages().listen.player;
-  if (phase === 'playing' || (phase === 'ready' && tab !== 'create')) return null;
-  return (
-    <div className="listen-bar">
-      {phase === 'ready' && (
-        <p>
-          <strong>{title}</strong>
-          <span className="secondary-text">{copy.minutesLong(durationMin)}</span>
-        </p>
-      )}
-      <PlayerActions {...props} />
-    </div>
+    <button type="button" className={compact ? 'player-primary is-compact' : 'player-primary'} onClick={action}
+      disabled={seeking || (!hasPiece && phase !== 'ready')} aria-label={label} data-playing={playing || undefined}>
+      <span className="player-primary-icon" aria-hidden="true">{playing ? <PlayerPauseIcon /> : <PlayIcon />}</span>
+    </button>
   );
 }

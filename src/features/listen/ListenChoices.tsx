@@ -7,13 +7,16 @@ import { isSoundProfile, SOUND_PROFILES } from '../audio/engine/soundProfile';
 import { AmbienceIcon } from '../plan/AmbienceIcon';
 import { InstrumentIcon } from '../plan/InstrumentIcon';
 import { WORLD_IDS, WORLDS, worldOf, type SoundChoices, type WorldId } from '../plan/worldCatalog';
-import { LISTEN_LEVELS } from './listenCatalog';
+import { LISTEN_DURATIONS_MIN, LISTEN_LEVELS, type ListenDurationMin } from './listenCatalog';
 
 interface ListenChoicesProps {
   readonly sound: SoundChoices;
   readonly level: LevelId;
   readonly onSoundChange: (sound: SoundChoices) => void;
   readonly onLevelChange: (level: LevelId) => void;
+  /** How long the next piece lasts: the length of its time bar (ADR-67). */
+  readonly durationMin: ListenDurationMin;
+  readonly onDurationChange: (minutes: ListenDurationMin) => void;
 }
 
 /**
@@ -22,7 +25,7 @@ interface ListenChoicesProps {
  * the plan (ADR-64); the step stays put while the piece plays, and the
  * separate sound choices are folded below.
  */
-export function ListenChoices({ sound, level, onSoundChange, onLevelChange }: ListenChoicesProps): React.JSX.Element {
+export function ListenChoices({ sound, level, onSoundChange, onLevelChange, durationMin, onDurationChange }: ListenChoicesProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.listen.create;
   const world = worldOf(sound);
@@ -77,6 +80,20 @@ export function ListenChoices({ sound, level, onSoundChange, onLevelChange }: Li
               />
               <strong>{levelNames[id]}</strong>
               <span id={`${ids.levels}-${id}`} className="secondary-text">{copy.levelTempo(LEVELS[id].tempo)}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="plan-fieldset">
+        <legend><span className="plan-step-number" aria-hidden="true">03</span>{copy.durationLegend}</legend>
+        <div className="duration-options listen-duration-options" style={{ '--option-count': LISTEN_DURATIONS_MIN.length } as React.CSSProperties}>
+          {LISTEN_DURATIONS_MIN.map((minutes) => (
+            <label key={minutes} className="choice-card duration-option">
+              <input type="radio" name="listen-duration" value={minutes} aria-label={t.listen.player.minutesLong(minutes)}
+                checked={durationMin === minutes} onChange={() => { onDurationChange(minutes); }} />
+              <span className="duration-figure">{minutes}</span>
+              <span className="duration-unit">{t.plan.minutesUnit}</span>
             </label>
           ))}
         </div>

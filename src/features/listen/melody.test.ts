@@ -10,6 +10,7 @@ const CONTENT: MelodyContent = {
   profile: 'immersive',
   level: 'target',
   positionS: 720,
+  durationMin: 30,
   musicMix: 1,
   ambienceMix: 0.6,
 };
@@ -23,9 +24,17 @@ describe('melody', () => {
     expect(soundsAsSaved(melody)).toBe(true);
   });
 
-  it('keeps the saved point whole and within what the synthesizer can reach', () => {
+  it('keeps the saved point whole and within the piece', () => {
     expect(createMelody({ ...CONTENT, positionS: 12.6 }, 'ana', NOW).positionS).toBe(13);
-    expect(createMelody({ ...CONTENT, positionS: MAX_START_AT_S + 50 }, 'ana', NOW).positionS).toBe(MAX_START_AT_S);
+    expect(createMelody({ ...CONTENT, positionS: MAX_START_AT_S + 50 }, 'ana', NOW).positionS).toBe(30 * 60);
+  });
+
+  it('reads a melody saved before lengths existed as thirty minutes long (ADR-67)', () => {
+    const { durationMin, ...older } = createMelody(CONTENT, 'ana', NOW);
+    expect(durationMin).toBe(30);
+    expect(readMelody(older)?.durationMin).toBe(30);
+    expect(readMelody({ ...older, durationMin: 20 })).toBeNull();
+    expect(readMelody({ ...older, durationMin: 15, positionS: 15 * 60 + 1 })).toBeNull();
   });
 
   it.each([

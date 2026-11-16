@@ -1,7 +1,8 @@
 /**
- * Spanish copy of the listening screen (P-17): music generated while it
- * plays, with no sensor, and the melodies the person keeps. It describes
- * what sounds; it never says what the music does for anyone.
+ * Spanish copy of the listening screen (P-17, ADR-67): music generated while
+ * it plays, with no sensor, a player with a time bar, and the melodies the
+ * person keeps. It describes what sounds; it never says what the music does
+ * for anyone.
  */
 export const listen = {
   pageTitle: 'Escuchar',
@@ -20,6 +21,7 @@ export const listen = {
     levelLegend: '¿A qué paso?',
     levelHint: 'El paso se mantiene mientras suena: aquí la música no sigue tu pulso.',
     levelTempo: (bpm: number): string => `${String(bpm)} pulsos por minuto`,
+    durationLegend: '¿Cuánto dura?',
     adjust: 'Ajustes a mano',
     adjustHint: 'Sonido, ambiente y textura por separado.',
   },
@@ -30,14 +32,23 @@ export const listen = {
     /** The sound chosen by hand matches no world. */
     custom: 'Tu combinación',
     unsaved: 'Lo último que sonó, sin guardar',
-    durationLegend: 'Durante',
-    minutes: (minutes: number): string => `${String(minutes)} min`,
     minutesLong: (minutes: number): string => `${String(minutes)} minutos`,
-    remaining: (clock: string): string => `Quedan ${clock}`,
     play: 'Reproducir',
+    pause: 'Pausar',
     resume: 'Reanudar',
+    restart: 'Volver a empezar',
     newPiece: 'Nueva pieza',
-    restart: 'Volver a empezar esta pieza',
+    previous: 'Melodía anterior',
+    next: 'Melodía siguiente',
+    back: (seconds: number): string => `Retroceder ${String(seconds)} segundos`,
+    forward: (seconds: number): string => `Avanzar ${String(seconds)} segundos`,
+    /** The time bar of the piece. */
+    seekLabel: 'Tiempo de la pieza',
+    seekValue: (at: string, total: string): string => `${at} de ${total}`,
+    seeking: 'Buscando ese momento…',
+    savedPoint: (at: string): string => `Punto guardado: ${at}`,
+    expand: 'Abrir el reproductor',
+    collapse: 'Reducir el reproductor',
     save: 'Guardar esta melodía',
     saved: 'Guardada',
     savedNotice: 'Guardada en Mis melodías.',
@@ -50,11 +61,14 @@ export const listen = {
     saveFailed: 'No se pudo guardar la melodía en este dispositivo.',
     sessionQuestion: '¿Quieres que la música siga tu pulso?',
     sessionAction: 'Haz una sesión con este sonido',
+    /** The melodies as a queue beside the open player. */
+    queueTitle: 'Tus melodías',
+    queueEmpty: 'Todavía no has guardado ninguna. Cuando algo te guste, guárdalo y aparecerá aquí.',
   },
   save: {
     title: 'Guardar esta melodía',
     nameLabel: 'Nombre',
-    hint: (max: number): string => `Hasta ${String(max)} caracteres. Se guarda el minuto en que estás, para poder seguir desde ahí.`,
+    hint: (max: number): string => `Hasta ${String(max)} caracteres. Se guarda también el momento en que estás.`,
     confirm: 'Guardar',
     /** Proposed name: the world (or the sound) and the day. */
     defaultName: (place: string, date: string): string => `${place} · ${date}`,
@@ -64,8 +78,7 @@ export const listen = {
     empty: 'Cuando algo te guste, guárdalo y aquí lo tendrás para volver a oírlo.',
     create: 'Crear una',
     play: 'Escuchar',
-    fromStart: 'Desde el principio',
-    fromMinute: (minute: number): string => `Desde el minuto ${String(minute)}`,
+    playNamed: (name: string): string => `Escuchar ${name}`,
     playing: 'Sonando',
     more: (name: string): string => `Más opciones de ${name}`,
     rename: 'Renombrar',
@@ -74,7 +87,7 @@ export const listen = {
     deleteConfirm: 'Sí, borrar',
     pending: 'Pendiente de subir',
     savedOn: (date: string): string => `Guardada el ${date}`,
-    minute: (minute: number): string => `minuto ${String(minute)}`,
+    length: (minutes: number): string => `${String(minutes)} min`,
     /** Where the melodies stand with the cloud, keyed by `MelodyCloudState`. */
     cloud: {
       local: 'Guardadas en este dispositivo.',

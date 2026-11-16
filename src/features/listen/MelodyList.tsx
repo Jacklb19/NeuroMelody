@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useFormatters, useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
-import { SECONDS_PER_MINUTE } from '../../shared/time';
+import { PlayIcon } from '../../shared/icons';
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
 import type { InstrumentId } from '../audio/core/instrumentCatalog';
 import type { LevelId } from '../audio/engine/levels';
@@ -20,19 +20,18 @@ interface MelodyListProps {
   readonly paused: boolean;
   /** A melody a link brought into sight; it gets the focus once. */
   readonly highlightedId: string | null;
-  readonly onPlay: (melody: Melody, fromSavedPoint: boolean) => void;
+  /** Plays the melody from its start in the open player; its time bar reaches any other moment. */
+  readonly onPlay: (melody: Melody) => void;
   readonly onRename: (id: string, name: string) => void;
   readonly onDelete: (id: string) => void;
   readonly onCreate: () => void;
 }
 
-/** A melody is offered from its saved minute once that minute is worth going back to. */
-const RESUMABLE_FROM_S = SECONDS_PER_MINUTE;
-
 /**
- * The melodies tab of the listening screen (P-17): one card per melody, the
- * newest first, each with the way to hear it from its start or from the
- * minute where it was saved, and a small menu to rename or delete it.
+ * The melodies tab of the listening screen (P-17, ADR-67): one card per
+ * melody, the newest first, with the way to hear it and a small menu to
+ * rename or delete it. Hearing one opens the player, whose time bar reaches
+ * any moment of it, the saved one included.
  */
 export function MelodyList(props: MelodyListProps): React.JSX.Element {
   const { melodies, cloud, failed, onCreate } = props;
@@ -73,7 +72,6 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
   const playing = playingId === melody.id;
   const highlighted = highlightedId === melody.id;
-  const minute = Math.floor(melody.positionS / SECONDS_PER_MINUTE);
   const sound = world === null
     ? `${instrumentNames[melody.instrument]} · ${ambienceNames[melody.ambience]}`
     : worldNames[world];
@@ -92,8 +90,7 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
       <div className="melody-body">
         <h3 className="melody-name">{melody.name}</h3>
         <p className="secondary-text melody-meta">
-          {sound} · {levelNames[melody.level]} · {copy.savedOn(format.shortDate(melody.createdAt))}
-          {melody.positionS >= RESUMABLE_FROM_S && <> · {copy.minute(minute)}</>}
+          {sound} · {levelNames[melody.level]} · {copy.length(melody.durationMin)} · {copy.savedOn(format.shortDate(melody.createdAt))}
         </p>
         <p className="melody-badges">
           {playing && <span className="melody-badge is-playing">{paused ? t.listen.player.phases.paused : copy.playing}</span>}
@@ -118,20 +115,12 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
           </form>
         ) : (
           <div className="melody-actions">
-            {!playing && (melody.positionS >= RESUMABLE_FROM_S ? (
-              <>
-                <button type="button" className="pill-button pill-button-primary" onClick={() => { onPlay(melody, true); }}>
-                  {copy.fromMinute(minute)}
-                </button>
-                <button type="button" className="pill-button pill-button-ghost" onClick={() => { onPlay(melody, false); }}>
-                  {copy.fromStart}
-                </button>
-              </>
-            ) : (
-              <button type="button" className="pill-button pill-button-primary" onClick={() => { onPlay(melody, false); }}>
-                {copy.play}
+            {!playing && (
+              <button type="button" className="pill-button pill-button-primary" aria-label={copy.playNamed(melody.name)}
+                onClick={() => { onPlay(melody); }}>
+                <PlayIcon /> {copy.play}
               </button>
-            ))}
+            )}
             <details className="melody-menu">
               <summary aria-label={copy.more(melody.name)}><span aria-hidden="true">⋯</span></summary>
               <div className="melody-menu-body">

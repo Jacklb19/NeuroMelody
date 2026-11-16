@@ -117,6 +117,11 @@ export const session = {
     clock: <T>(elapsed: T, planned: string): readonly (T | string)[] => [elapsed, ` de ${planned}`],
     /** Time listened past the plan, appended to the clock. */
     extra: (extra: string): string => ` · ${extra} más`,
+    /** The step the music is at, as the chapter of its bar (ADR-67). */
+    chapter: (step: string, since: string): string => `${step} desde ${since}`,
+    /** A mark on the bar where the music changed its step. */
+    chapterMark: (step: string, at: string): string => `${at}: ${step}`,
+    chaptersLabel: 'Cambios de paso de la música',
   },
   stage: {
     eyebrow: 'Ahora',

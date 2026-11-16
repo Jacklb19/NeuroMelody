@@ -7,7 +7,7 @@ import { MelodyList } from './MelodyList';
 const copy = es.listen.melodies;
 
 const melody = (name: string, positionS: number): Melody => createMelody({
-  name, seed: 1, instrument: 'warm', ambience: 'sea', profile: 'original', level: 'target', positionS, musicMix: 1, ambienceMix: 1,
+  name, seed: 1, instrument: 'warm', ambience: 'sea', profile: 'original', level: 'target', positionS, durationMin: 30, musicMix: 1, ambienceMix: 1,
 }, 'ana', new Date('2026-11-16T21:00:00Z'));
 
 function renderList(melodies: readonly Melody[], overrides: Partial<Parameters<typeof MelodyList>[0]> = {}) {
@@ -18,17 +18,14 @@ function renderList(melodies: readonly Melody[], overrides: Partial<Parameters<t
 }
 
 describe('MelodyList', () => {
-  it('offers the saved minute and the start, or only the start when nothing much was heard', () => {
+  it('plays a melody with one press and shows its length, with no button per saved minute (ADR-67)', () => {
     const long = melody('Costa nocturna', 12 * 60 + 30);
-    const short = melody('Lluvia', 20);
-    const { onPlay } = renderList([long, short]);
+    const { onPlay } = renderList([long]);
 
-    fireEvent.click(screen.getByRole('button', { name: copy.fromMinute(12) }));
-    expect(onPlay).toHaveBeenLastCalledWith(long, true);
-    fireEvent.click(screen.getByRole('button', { name: copy.fromStart }));
-    expect(onPlay).toHaveBeenLastCalledWith(long, false);
-    fireEvent.click(screen.getByRole('button', { name: copy.play }));
-    expect(onPlay).toHaveBeenLastCalledWith(short, false);
+    fireEvent.click(screen.getByRole('button', { name: copy.playNamed('Costa nocturna') }));
+    expect(onPlay).toHaveBeenLastCalledWith(long);
+    expect(screen.getByText(new RegExp(copy.length(30)))).toBeVisible();
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).not.toContain('Desde el minuto 12');
   });
 
   it('shows the melody the player holds as playing or paused, with nothing to play it again', () => {

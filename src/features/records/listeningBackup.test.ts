@@ -30,7 +30,7 @@ describe('listening backup', () => {
 
   it('carries the melodies of the account and still reads a copy made before them (P-17)', () => {
     const melody = createMelody({
-      name: 'Bosque', seed: 7, instrument: 'bowls', ambience: 'wind', profile: 'immersive', level: 'target', positionS: 60, musicMix: 1, ambienceMix: 0.5,
+      name: 'Bosque', seed: 7, instrument: 'bowls', ambience: 'wind', profile: 'immersive', level: 'target', positionS: 60, durationMin: 30, musicMix: 1, ambienceMix: 0.5,
     }, owner);
     const withMelody = JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, owner, sessions: [], favorites: [], melodies: [melody] });
     expect(parseListeningBackup(withMelody, owner).melodies).toEqual([melody]);

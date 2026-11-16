@@ -455,7 +455,12 @@ export function SessionPage(): React.JSX.Element {
           onElapsedChange={handleElapsedChange}
           onFinished={finishRecording}
         />
-        <SessionProgress elapsedS={elapsedS} plannedS={durationMin * SECONDS_PER_MINUTE} />
+        <SessionProgress
+          elapsedS={elapsedS}
+          plannedS={durationMin * SECONDS_PER_MINUTE}
+          // The step it started at, then every step it took: the chapters of the bar (ADR-67).
+          chapters={everPlayed ? [{ atS: 0, level: program.startLevel }, ...adaptationSnapshot.steps] : []}
+        />
       </div>
         </section>
       </div>

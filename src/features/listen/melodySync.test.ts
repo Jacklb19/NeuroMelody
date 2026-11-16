@@ -14,7 +14,7 @@ import {
 
 const OWNER = 'ana';
 const CONTENT: MelodyContent = {
-  name: 'Bosque', seed: 1, instrument: 'warm', ambience: 'none', profile: 'original', level: 'target', positionS: 0, musicMix: 1, ambienceMix: 1,
+  name: 'Bosque', seed: 1, instrument: 'warm', ambience: 'none', profile: 'original', level: 'target', positionS: 0, durationMin: 30, musicMix: 1, ambienceMix: 1,
 };
 
 const melody = (name: string, at: string): Melody => createMelody({ ...CONTENT, name }, OWNER, new Date(at));

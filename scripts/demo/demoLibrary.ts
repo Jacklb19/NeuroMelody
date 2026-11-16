@@ -72,6 +72,7 @@ export interface DemoMelody {
   readonly profile: DemoSession['context']['profile'];
   readonly level: DemoMusicStep['level'];
   readonly positionS: number;
+  readonly durationMin: 15 | 30 | 45 | 60;
   readonly musicMix: number;
   readonly ambienceMix: number;
   readonly synthesisVersion: 1;
@@ -298,9 +299,9 @@ export function buildDemoBackup({ owner, now, utcOffsetHours = 5, seed = 2026 }:
     return { id: uuidv7(atMs, next), ownerId: owner, seed: Math.floor(next() * 2 ** 31), synthesisVersion: 1, createdAt: at, updatedAt: at, ...melody };
   };
   const melodies: DemoMelody[] = [
-    melodyOf(1, { name: 'Costa nocturna antes de dormir', instrument: 'warm', ambience: 'sea', profile: 'original', level: 'sleep', positionS: 840, musicMix: 1, ambienceMix: 0.7 }),
-    melodyOf(3, { name: 'Lluvia para leer', instrument: 'piano', ambience: 'rain', profile: 'original', level: 'target', positionS: 0, musicMix: 0.9, ambienceMix: 1 }),
-    melodyOf(6, { name: 'Bosque de la tarde', instrument: 'bowls', ambience: 'wind', profile: 'immersive', level: 'intermediate', positionS: 300, musicMix: 1, ambienceMix: 0.5 }),
+    melodyOf(1, { name: 'Costa nocturna antes de dormir', instrument: 'warm', ambience: 'sea', profile: 'original', level: 'sleep', positionS: 840, durationMin: 45, musicMix: 1, ambienceMix: 0.7 }),
+    melodyOf(3, { name: 'Lluvia para leer', instrument: 'piano', ambience: 'rain', profile: 'original', level: 'target', positionS: 0, durationMin: 30, musicMix: 0.9, ambienceMix: 1 }),
+    melodyOf(6, { name: 'Bosque de la tarde', instrument: 'bowls', ambience: 'wind', profile: 'immersive', level: 'intermediate', positionS: 300, durationMin: 15, musicMix: 1, ambienceMix: 0.5 }),
   ];
 
   return {

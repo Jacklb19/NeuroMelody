@@ -45,6 +45,11 @@ export interface PlaybackPiece {
   readonly startAtS: number;
   /** Balance of music and ambience it was kept with; the current one when omitted. */
   readonly mix?: Readonly<Record<MixTrack, number>>;
+  /**
+   * Seconds it plays from its start point before its ending: what is left of
+   * the piece (ADR-67). The plan of the props when omitted.
+   */
+  readonly playForS?: number;
 }
 
 /** What the session screen can ask of the panel from outside it (ADR-47). */
@@ -56,6 +61,8 @@ export interface PlaybackHandle {
    * piece from its start point, with the listening time counted again.
    */
   start(piece?: PlaybackPiece): void;
+  /** Stops the music at once, as the Stop button and Escape do; the piece stays paused. */
+  stop(): void;
   /**
    * Brings the fade of a quiet ending forward to now (ADR-60), so the session
    * ends by itself before its plan does. Returns whether it did: only a session
@@ -164,6 +171,11 @@ export function PlaybackPanel({
   const warningTitleId = useId();
   const warningTextId = useId();
   const planDurationS = durationMin * SECONDS_PER_MINUTE;
+  // Read when the fade is scheduled, right after a start: a piece brings its own length (ADR-67).
+  const planS = useCallback(
+    (): number => pieceRef.current?.playForS ?? planDurationS,
+    [planDurationS],
+  );
 
   const scheduleFade = useCallback(
     (engine: AudioEngine): void => {
@@ -171,15 +183,18 @@ export function PlaybackPanel({
       if (startTime === null) {
         return;
       }
+      const plan = planS();
       if (quietEnding) {
-        const startsAt = startTime + quietFadeStartS(planDurationS);
-        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, QUIET_FADE_S);
+        // A piece with less left than the whole fade fades over what is left, so it still ends on time.
+        const fadeS = Math.min(QUIET_FADE_S, Math.max(1, plan));
+        const startsAt = startTime + plan - fadeS;
+        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, fadeS);
         return;
       }
-      const startsAt = startTime + fadeStartS(planDurationS, warningIndexRef.current);
+      const startsAt = startTime + fadeStartS(plan, warningIndexRef.current);
       fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime);
     },
-    [planDurationS, quietEnding],
+    [planS, quietEnding],
   );
 
   const start = async (piece?: PlaybackPiece): Promise<void> => {
@@ -225,9 +240,22 @@ export function PlaybackPanel({
     onEngineChange?.(engine);
   };
 
+
+  const stopNow = useCallback((): void => {
+    const engine = getEngine();
+    const startTime = sessionStartRef.current;
+    if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
+    setWarning(null);
+    onEngineChange?.(null);
+    void stop();
+  }, [getEngine, stop, onEngineChange]);
+
   useImperativeHandle(ref, () => ({
     start: (piece?: PlaybackPiece) => {
       void start(piece);
+    },
+    stop: () => {
+      stopNow();
     },
     endQuietly: () => {
       const engine = getEngine();
@@ -240,15 +268,6 @@ export function PlaybackPanel({
       return true;
     },
   }));
-
-  const stopNow = useCallback((): void => {
-    const engine = getEngine();
-    const startTime = sessionStartRef.current;
-    if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
-    setWarning(null);
-    onEngineChange?.(null);
-    void stop();
-  }, [getEngine, stop, onEngineChange]);
 
   // A plan that changes while the music plays moves its ending: the fade is scheduled again (P-17).
   useEffect(() => {

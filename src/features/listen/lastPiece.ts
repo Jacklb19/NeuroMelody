@@ -45,12 +45,17 @@ export function readLastPieceValue(value: unknown): LastPiece | null {
   if (typeof p.seed !== 'number' || !Number.isInteger(p.seed) || p.seed < 0 || p.seed > MAX_SEED ||
     !LEVEL_IDS.some((id) => id === p.initialLevel) || !isInstrumentId(p.instrument) || !isAmbienceId(p.ambience) ||
     !isSoundProfile(p.profile) || typeof p.startAtS !== 'number' || !(p.startAtS >= 0 && p.startAtS <= MAX_START_AT_S) ||
-    (melodyId !== null && typeof melodyId !== 'string') || !isShare(m.music) || !isShare(m.ambience)) {
+    (melodyId !== null && typeof melodyId !== 'string') || !isShare(m.music) || !isShare(m.ambience) ||
+    (p.playForS !== undefined && (typeof p.playForS !== 'number' || !(p.playForS >= 0 && p.playForS <= MAX_START_AT_S)))) {
     return null;
   }
   const level = LEVEL_IDS.find((id) => id === p.initialLevel) ?? 'target';
   return {
-    piece: { seed: p.seed, initialLevel: level, instrument: p.instrument, ambience: p.ambience, profile: p.profile, startAtS: p.startAtS },
+    piece: {
+      seed: p.seed, initialLevel: level, instrument: p.instrument, ambience: p.ambience, profile: p.profile, startAtS: p.startAtS,
+      // What was left of the piece, so its time bar keeps its length (ADR-67).
+      ...(typeof p.playForS === 'number' ? { playForS: p.playForS } : {}),
+    },
     melodyId,
     mix: { music: m.music, ambience: m.ambience },
   };
