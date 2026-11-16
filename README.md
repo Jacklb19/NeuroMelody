@@ -22,7 +22,7 @@ La app solo se usa con cuenta (ADR-57). Para revisarla sin registrarse:
 | Correo | _(por completar)_ |
 | Contraseña | _(por completar)_ |
 
-La cuenta tiene cargada la biblioteca de demostración (ver «Datos de demostración»), así que el historial, el progreso y el informe muestran datos inventados. Para la sesión basta el simulador: «No tengo cómo medir mi pulso: probar la app». El recorrido sugerido está en [`docs/demo.md`](docs/demo.md).
+Con la biblioteca de demostración cargada en esa cuenta (ver «Datos de demostración»), el historial, el progreso y el informe muestran datos inventados. Para la sesión basta el simulador: «No tengo cómo medir mi pulso: probar la app». El recorrido sugerido está en [`docs/demo.md`](docs/demo.md).
 
 ## Arquitectura en breve
 
