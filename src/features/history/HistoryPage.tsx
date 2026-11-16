@@ -24,7 +24,7 @@ type Loaded =
 
 /**
  * Sessions saved on this device (RF-16, HU-10), with the way into how
- * they evolve. Everything here can be deleted without an account.
+ * they evolve. Deleting here works on the device first and never waits for the cloud.
  */
 export function HistoryPage(): React.JSX.Element {
   const t = useMessages();

@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemorySessionStore } from '../records/sessionStore';
 import type { SessionRecord } from '../records/sessionRecord';
 import { sample, sessionRecord } from '../../test/sessionRecords';
-import { CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
-import { createMirroredSessionStore } from './mirroredSessionStore';
+import { CLOUD_SESSION_LIST_LIMIT, CloudError, createCloudApi, fromWire, type CloudApi } from './cloudApi';
+import { claimUnownedSessions, createMirroredSessionStore } from './mirroredSessionStore';
+import { accountStorageKeys, removeAccountStorage } from './accountStorage';
 import { narrativeFigures } from '../summary/narrativeFigures';
 import { createSessionContext } from '../records/sessionContext';
 import {
   createPendingDeletions,
+  createSetAsideSessions,
   createSyncMarks,
   markedByOtherAccounts,
+  SET_ASIDE_STORAGE_PREFIX,
   SYNC_MARKS_STORAGE_PREFIX,
   syncSessions,
   type PendingDeletions,
@@ -33,7 +36,7 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
       sessions.set(record.id, stored === undefined ? record : { ...stored, ratingAfter: record.ratingAfter ?? stored.ratingAfter });
       return Promise.resolve();
     },
-    listSessions: () => Promise.resolve([...sessions.values()].map(({ id, ratingAfter }) => ({ id, ratingAfter }))),
+    listSessions: () => Promise.resolve({ sessions: [...sessions.values()].map(({ id, ratingAfter }) => ({ id, ratingAfter })), truncated: false }),
     getSession: (id) => Promise.resolve(sessions.get(id) ?? null),
     deleteSession(id) {
       sessions.delete(id);
@@ -87,12 +90,12 @@ describe('syncSessions', () => {
     const api = fakeCloud([theirs]);
     const marks = createSyncMarks(USER, memoryStorage());
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 1, downloaded: 1, removed: 0, deleted: 0, setAside: 0 });
     expect(api.sessions.get(ID_A)).toEqual(mine);
     // Brought from this account's cloud, it belongs to this account on the device.
     expect(await store.get(ID_B)).toEqual({ ...theirs, ownerId: USER });
     // A second pass finds both sides equal: sending again would be harmless, but nothing is sent.
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
   });
 
   it('removes from the device a session that was sent before and is gone from the cloud', async () => {
@@ -103,7 +106,7 @@ describe('syncSessions', () => {
 
     api.sessions.delete(ID_A); // deleted from another device
 
-    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0 });
+    expect(await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE })).toEqual({ uploaded: 0, downloaded: 0, removed: 1, deleted: 0, setAside: 0 });
     expect(await store.list()).toEqual([]);
     expect(api.sessions.size).toBe(0);
   });
@@ -117,7 +120,7 @@ describe('syncSessions', () => {
     const otherCloud = fakeCloud();
     const result = await syncSessions({ api: otherCloud, store, marks: createSyncMarks(OTHER, storage), deletions: noDeletions(), owner: OTHER, others: markedByOtherAccounts(OTHER, storage) });
 
-    expect(result).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0 });
+    expect(result).toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
     expect(await store.list()).toHaveLength(1);
     expect(otherCloud.sessions.size).toBe(0);
   });
@@ -139,6 +142,29 @@ describe('syncSessions', () => {
     expect((await store.get(ID_B))?.ownerId).toBeUndefined();
   });
 
+  it('removes nothing from the device when the cloud has more sessions than its list returns', async () => {
+    const idOf = (index: number): string => `017f22e2-79b0-7000-8000-${index.toString(16).padStart(12, '0')}`;
+    const records = Array.from({ length: CLOUD_SESSION_LIST_LIMIT + 1 }, (_, index) => sessionRecord({ id: idOf(index), ownerId: USER }));
+    const store = await storeWith(...records);
+    const marks = createSyncMarks(USER, memoryStorage());
+    for (const record of records) marks.add(record.id);
+    const cloud = fakeCloud(records);
+    // Like the API: the newest sessions up to the limit, and a flag for the ones left out.
+    const api: CloudApi = {
+      ...cloud,
+      listSessions: async () => {
+        const all = (await cloud.listSessions()).sessions;
+        return { sessions: all.slice(0, CLOUD_SESSION_LIST_LIMIT), truncated: all.length > CLOUD_SESSION_LIST_LIMIT };
+      },
+    };
+
+    const result = await syncSessions({ api, store, marks, deletions: noDeletions(), owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toMatchObject({ removed: 0, uploaded: 0, downloaded: 0 });
+    expect(await store.list()).toHaveLength(CLOUD_SESSION_LIST_LIMIT + 1);
+    expect(marks.has(idOf(CLOUD_SESSION_LIST_LIMIT))).toBe(true);
+  });
+
   it('makes the rating given after listening equal on both sides', async () => {
     const store = await storeWith(sessionRecord({ id: ID_A, ratingAfter: 8 }), sessionRecord({ id: ID_B, ratingAfter: null }));
     const api = fakeCloud([sessionRecord({ id: ID_A, ratingAfter: null }), sessionRecord({ id: ID_B, ratingAfter: 6 })]);
@@ -147,6 +173,105 @@ describe('syncSessions', () => {
 
     expect(api.sessions.get(ID_A)?.ratingAfter).toBe(8);
     expect((await store.get(ID_B))?.ratingAfter).toBe(6);
+  });
+});
+
+describe('syncSessions with sessions the cloud refuses', () => {
+  /** A cloud that refuses one session with `code` and stores the rest. */
+  function refusing(id: string, code: 'invalid_request' | 'session_conflict' | 'network' | 'limit_reached', initial: readonly SessionRecord[] = []) {
+    const cloud = fakeCloud(initial);
+    const sent: string[] = [];
+    const save = cloud.saveSession.bind(cloud);
+    cloud.saveSession = (record) => {
+      sent.push(record.id);
+      return record.id === id ? Promise.reject(new CloudError(code)) : save(record);
+    };
+    return { cloud, sent };
+  }
+
+  it('sets an invalid session aside and still uploads the two around it', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }), sessionRecord({ id: ID_C }));
+    const { cloud, sent } = refusing(ID_B, 'invalid_request');
+    const marks = createSyncMarks(USER, memoryStorage());
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    const result = await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toEqual({ uploaded: 2, downloaded: 0, removed: 0, deleted: 0, setAside: 1 });
+    expect([...cloud.sessions.keys()].sort()).toEqual([ID_A, ID_C]);
+    expect(setAside.has(ID_B)).toBe(true);
+    // It stays on the device, unmarked, so no later pass reads it as deleted elsewhere.
+    expect(marks.has(ID_B)).toBe(false);
+    expect(await store.get(ID_B)).not.toBeNull();
+
+    // The next pass does not send it again.
+    sent.length = 0;
+    expect(await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .toEqual({ uploaded: 0, downloaded: 0, removed: 0, deleted: 0, setAside: 0 });
+    expect(sent).toEqual([]);
+    expect(await store.get(ID_B)).not.toBeNull();
+  });
+
+  it('sets aside a session whose id is already taken', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud } = refusing(ID_A, 'session_conflict');
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    const result = await syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+
+    expect(result).toMatchObject({ uploaded: 1, setAside: 1 });
+    expect(setAside.has(ID_A)).toBe(true);
+  });
+
+  it('stops the pass on a network failure and sets nothing aside', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud } = refusing(ID_A, 'network');
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    await expect(syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .rejects.toMatchObject({ code: 'network' });
+    expect(setAside.size).toBe(0);
+  });
+
+  it('with the account full it sends nothing new, still brings what the cloud has, and says so at the end (ADR-63)', async () => {
+    const theirs = sessionRecord({ id: ID_C, startedAt: '2026-10-08T10:00:00.000Z', endedAt: '2026-10-08T10:20:00.000Z' });
+    const store = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }));
+    const { cloud, sent } = refusing(ID_A, 'limit_reached', [theirs]);
+    // Every new session is refused once the account is full.
+    const save = cloud.saveSession.bind(cloud);
+    cloud.saveSession = (record) => (record.id === ID_B ? Promise.reject(new CloudError('limit_reached')) : save(record));
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+
+    await expect(syncSessions({ api: cloud, store, marks: createSyncMarks(USER, memoryStorage()), deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE }))
+      .rejects.toMatchObject({ code: 'limit_reached' });
+
+    // Nothing is set aside: once there is room, the sessions go up.
+    expect(setAside.size).toBe(0);
+    // After the first refusal no other new session is offered in this pass.
+    expect(sent).toHaveLength(1);
+    expect(await store.get(ID_C)).not.toBeNull();
+    expect(await store.list()).toHaveLength(3);
+  });
+
+  it('does not resend a refused rating on every pass', async () => {
+    const store = await storeWith(sessionRecord({ id: ID_A, ratingAfter: 8 }));
+    const { cloud, sent } = refusing(ID_A, 'invalid_request', [sessionRecord({ id: ID_A, ratingAfter: null })]);
+    const setAside = createSetAsideSessions(USER, memoryStorage());
+    const marks = createSyncMarks(USER, memoryStorage());
+
+    expect(await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE })).toMatchObject({ setAside: 1 });
+    sent.length = 0;
+    await syncSessions({ api: cloud, store, marks, deletions: noDeletions(), setAside, owner: USER, others: NOBODY_ELSE });
+    expect(sent).toEqual([]);
+  });
+
+  it('keeps the set-aside sessions per account across visits', () => {
+    const storage = memoryStorage();
+    createSetAsideSessions(USER, storage).add(ID_A);
+
+    expect(createSetAsideSessions(USER, storage).has(ID_A)).toBe(true);
+    expect(createSetAsideSessions(OTHER, storage).has(ID_A)).toBe(false);
+    expect(storage.items.has(`${SET_ASIDE_STORAGE_PREFIX}${USER}`)).toBe(true);
   });
 });
 
@@ -159,7 +284,7 @@ describe('mirrored session store', () => {
     const onUploadError = vi.fn();
     const onPendingChange = vi.fn();
     const store = createMirroredSessionStore({
-      local, owner: () => owner, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
+      local, owner, marks: () => marks, deletions: () => deletions, cloud: () => api, onUploadError, onPendingChange,
     });
     return { local, marks, deletions, storage, store, onUploadError, onPendingChange };
   };
@@ -253,9 +378,9 @@ describe('mirrored session store', () => {
     expect((await local.get(ID_B))?.ownerId).toBe(OTHER);
     await vi.waitFor(() => { expect(saveSession).toHaveBeenCalledOnce(); });
 
-    // Rating the first account's session on this device keeps it here.
-    await store.setRatingAfter(ID_A, 7);
-    expect((await local.get(ID_A))?.ratingAfter).toBe(7);
+    // The first account's session does not exist for this one (ADR-61): it can neither rate it nor send it.
+    await expect(store.setRatingAfter(ID_A, 7)).rejects.toMatchObject({ code: 'not_found' });
+    expect((await local.get(ID_A))?.ratingAfter).toBe(sessionRecord().ratingAfter);
     expect(saveSession).toHaveBeenCalledOnce();
     expect(api.sessions.has(ID_A)).toBe(false);
   });
@@ -266,6 +391,69 @@ describe('mirrored session store', () => {
     await store.clear();
 
     expect(await local.list()).toEqual([]);
+  });
+});
+
+describe('local data per account (ADR-61)', () => {
+  /** The history of one device seen through the store of `owner`, without the cloud. */
+  function storeOf(local: MemorySessionStore, owner: string | null) {
+    return createMirroredSessionStore({
+      local,
+      owner,
+      others: () => NOBODY_ELSE,
+      marks: () => createSyncMarks(null),
+      deletions: noDeletions,
+      cloud: () => null,
+      onUploadError: vi.fn(),
+      onPendingChange: vi.fn(),
+    });
+  }
+
+  it('never lets account B list, open, annotate, rate or delete a session of account A', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A, ownerId: USER }), sessionRecord({ id: ID_B, ownerId: OTHER }));
+    const first = storeOf(local, USER);
+    const second = storeOf(local, OTHER);
+
+    expect((await second.list()).map(({ id }) => id)).toEqual([ID_B]);
+    // A direct link to A's session reads like one that does not exist.
+    expect(await second.get(ID_A)).toBeNull();
+    await expect(second.setNote(ID_A, 'not mine')).rejects.toMatchObject({ code: 'not_found' });
+    await expect(second.setRatingAfter(ID_A, 1)).rejects.toMatchObject({ code: 'not_found' });
+    await expect(second.save(sessionRecord({ id: ID_A, ownerId: OTHER }))).rejects.toMatchObject({ code: 'invalid_record' });
+    await second.delete(ID_A);
+    await second.clear();
+
+    expect(await local.get(ID_A)).toEqual(sessionRecord({ id: ID_A, ownerId: USER }));
+    expect((await first.list()).map(({ id }) => id)).toEqual([ID_A]);
+    expect(await local.get(ID_B)).toBeNull();
+  });
+
+  it('shows nothing without an account', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A, ownerId: USER }), sessionRecord({ id: ID_B }));
+    expect(await storeOf(local, null).list()).toEqual([]);
+    expect(await storeOf(local, null).get(ID_B)).toBeNull();
+  });
+
+  it('gives the sessions without an owner to the first account that signs in, and to no later one', async () => {
+    const local = await storeWith(sessionRecord({ id: ID_A }), sessionRecord({ id: ID_B }), sessionRecord({ id: ID_C, ownerId: OTHER }));
+    // ID_B is in another account's cloud: it is that account's, as in ADR-53.
+    expect(await claimUnownedSessions(local, USER, new Set([ID_B]))).toBe(1);
+    expect(await claimUnownedSessions(local, OTHER, NOBODY_ELSE)).toBe(1);
+
+    expect((await local.get(ID_A))?.ownerId).toBe(USER);
+    expect((await local.get(ID_B))?.ownerId).toBe(OTHER);
+    expect((await storeOf(local, OTHER).list()).map(({ id }) => id).sort()).toEqual([ID_B, ID_C]);
+    expect(await storeOf(local, OTHER).get(ID_A)).toBeNull();
+  });
+
+  it('removes every key this device keeps for a deleted account, and only those', () => {
+    const storage = memoryStorage();
+    for (const key of [...accountStorageKeys(USER), ...accountStorageKeys(OTHER)]) storage.setItem(key, '[]');
+
+    removeAccountStorage(USER, storage);
+
+    expect(accountStorageKeys(USER).some((key) => storage.items.has(key))).toBe(false);
+    expect(accountStorageKeys(OTHER).every((key) => storage.items.has(key))).toBe(true);
   });
 });
 
@@ -301,6 +489,22 @@ describe('cloud API client', () => {
     expect(fromWire({ ...(wire as object), signal_mode: 'hr_only' })).toEqual({ ...record, signalMode: 'hr_only' });
   });
 
+  it('reads whether the list left older sessions out, also from an API without the flag', async () => {
+    const answering = (body: unknown): CloudApi => createCloudApi({
+      baseUrl: 'https://api.example.test',
+      accessToken: () => Promise.resolve('token-1'),
+      fetch: () => Promise.resolve(new Response(JSON.stringify(body), { status: 200 })),
+    });
+    const summary = { id: ID_A, rating_after: 7 };
+    const full = Array.from({ length: CLOUD_SESSION_LIST_LIMIT }, () => summary);
+
+    expect(await answering({ sessions: [summary], truncated: true }).listSessions()).toEqual({ sessions: [{ id: ID_A, ratingAfter: 7 }], truncated: true });
+    expect((await answering({ sessions: [summary], truncated: false }).listSessions()).truncated).toBe(false);
+    // Published before the flag: a list that reaches the limit may have been cut short.
+    expect((await answering({ sessions: [summary] }).listSessions()).truncated).toBe(false);
+    expect((await answering({ sessions: full }).listSessions()).truncated).toBe(true);
+  });
+
   it('turns the answers of the API into error codes and never trusts a malformed session', async () => {
     const answering = (status: number, body: unknown): CloudApi => createCloudApi({
       baseUrl: 'https://api.example.test',
@@ -310,10 +514,12 @@ describe('cloud API client', () => {
 
     await expect(answering(403, { code: 'second_factor_required' }).listSessions()).rejects.toMatchObject({ code: 'second_factor_required' });
     await expect(answering(429, { code: 'rate_limited' }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'rate_limited' });
+    await expect(answering(409, { code: 'limit_reached' }).saveSession(sessionRecord())).rejects.toMatchObject({ code: 'limit_reached' });
     await expect(answering(500, '<html>').listSessions()).rejects.toMatchObject({ code: 'unknown' });
     await expect(answering(200, { id: ID_A, samples: [{ second: -1 }] }).getSession(ID_A)).rejects.toMatchObject({ code: 'unknown' });
     expect(await answering(404, { code: 'not_found' }).getSession(ID_A)).toBeNull();
     await expect(answering(404, { code: 'not_found' }).deleteSession(ID_A)).resolves.toBeUndefined();
+    await expect(answering(200, { sessions: [], truncated: 'yes' }).listSessions()).rejects.toMatchObject({ code: 'unknown' });
     const signedOut = createCloudApi({ baseUrl: 'https://api.example.test', accessToken: () => Promise.resolve(null) });
     await expect(signedOut.listSessions()).rejects.toMatchObject({ code: 'unauthenticated' });
   });

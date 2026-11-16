@@ -63,6 +63,32 @@ describe('SessionRecorder', () => {
   });
 });
 
+describe('SessionRecorder snapshot (ADR-62)', () => {
+  it('describes the open session without ending it, and later samples do not change it', () => {
+    let now = Date.parse('2026-10-07T10:00:00Z');
+    const recorder = new SessionRecorder(() => now);
+    recorder.start(START);
+    recorder.add(indices(300_000), null);
+    now += 120_000;
+
+    const draft = recorder.snapshot(120);
+    recorder.add(indices(305_000), null);
+
+    expect(recorder.active).toBe(true);
+    expect(draft?.samples).toHaveLength(1);
+    expect(draft?.listenedSeconds).toBe(120);
+    expect(draft?.endedAt).toBe('2026-10-07T10:02:00.000Z');
+    // The same session: saving the draft and then the finished session stores it once.
+    const finished = recorder.finish(130);
+    expect(finished?.id).toBe(draft?.id);
+    expect(finished?.samples).toHaveLength(2);
+  });
+
+  it('has nothing to describe while no session is running', () => {
+    expect(new SessionRecorder(() => 0).snapshot(10)).toBeNull();
+  });
+});
+
 describe('SessionRecorder with a watch that sends only the pulse (ADR-51)', () => {
   it('marks the session as pulse only when no reading carried variability', () => {
     const recorder = new SessionRecorder(() => 0);

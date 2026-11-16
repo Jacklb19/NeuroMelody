@@ -26,6 +26,8 @@ export const CLOUD_ERROR_CODES = [
   'language_model_unavailable',
   /** The account used up today's calls to the language model (ADR-54). */
   'rate_limited',
+  /** The account keeps as many sessions or recordings as the cloud allows (ADR-63). */
+  'limit_reached',
   'network',
   'unknown',
 ] as const;
@@ -49,6 +51,19 @@ export interface CloudSessionSummary {
   readonly ratingAfter: number | null;
 }
 
+/**
+ * The sessions the cloud lists, newest first. The API lists at most
+ * `CLOUD_SESSION_LIST_LIMIT`; `truncated` says older ones were left out, so
+ * a session missing from `sessions` is not necessarily deleted.
+ */
+export interface CloudSessionList {
+  readonly sessions: readonly CloudSessionSummary[];
+  readonly truncated: boolean;
+}
+
+/** Most sessions `GET /v1/sessions` returns; the same figure as `SESSION_LIST_LIMIT` in the API. */
+export const CLOUD_SESSION_LIST_LIMIT = 500;
+
 /** A plan proposed by the language model (RF-13): one of the allowed lengths and a sentence about it. */
 export interface PlanSuggestion {
   readonly durationMin: DurationMin;
@@ -64,7 +79,7 @@ export interface SessionNarrative {
 export interface CloudApi {
   /** Stores a session; sending it again changes nothing but the rating given afterwards. */
   saveSession(record: SessionRecord): Promise<void>;
-  listSessions(): Promise<CloudSessionSummary[]>;
+  listSessions(): Promise<CloudSessionList>;
   /** The whole session, or `null` when the cloud has none with that id. */
   getSession(id: string): Promise<SessionRecord | null>;
   /** Deleting a session the cloud no longer has is not an error: the result is the same. */
@@ -284,7 +299,11 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
     async listSessions() {
       const body = await json(await request('GET', SESSIONS_PATH));
       if (!isJson(body) || !Array.isArray(body.sessions)) throw new CloudError('unknown');
-      return body.sessions.map(summaryFromWire).filter((summary) => summary !== null);
+      if (body.truncated !== undefined && typeof body.truncated !== 'boolean') throw new CloudError('unknown');
+      const sessions = body.sessions.map(summaryFromWire).filter((summary) => summary !== null);
+      // An API published before the flag existed does not send it: a full list may then be cut short.
+      const truncated = body.truncated ?? sessions.length >= CLOUD_SESSION_LIST_LIMIT;
+      return { sessions, truncated };
     },
     async getSession(id) {
       const response = await request('GET', `${SESSIONS_PATH}/${encodeURIComponent(id)}`);

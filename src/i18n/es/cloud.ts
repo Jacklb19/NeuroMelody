@@ -29,6 +29,7 @@ export const cloud = {
     storage_unavailable: 'el servicio no responde ahora mismo.',
     language_model_unavailable: 'el texto automático no está disponible ahora mismo.',
     rate_limited: 'llegaste al límite de textos automáticos de hoy; vuelve a intentarlo mañana.',
+    limit_reached: 'tu cuenta ya guarda en la nube todo lo que puede; lo nuevo sigue en este dispositivo. Borra algo antiguo para hacer sitio.',
     network: 'no hay conexión.',
     unknown: 'ocurrió un error inesperado.',
   },

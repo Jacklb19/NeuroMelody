@@ -16,6 +16,7 @@ import { GoalIcon } from './GoalIcon';
 import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
 import { PlanSuggestionCard } from './PlanSuggestionCard';
 import { programFor } from './programCatalog';
+import { WORLD_IDS, WORLDS, worldOf, type WorldId } from './worldCatalog';
 import { parseOption } from '../../shared/parseOption';
 import { useMediaQuery } from '../../shared/useMediaQuery';
 import { PersonalPlanCard } from './PersonalPlanCard';
@@ -58,6 +59,11 @@ export function PlanPage(): React.JSX.Element {
   const [instrument, setInstrument] = useState<InstrumentId>(() => readInstrument(params.get(QUERY_PARAMS.instrument)));
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const instrumentHintId = useId();
+  // The world is read back from the three sound choices, never kept apart from them (ADR-64).
+  const world = worldOf({ instrument, ambience, profile });
+  const worldNames: Readonly<Record<WorldId, string>> = t.plan.worlds.names;
+  const worldDescriptions: Readonly<Record<WorldId, string>> = t.plan.worlds.descriptions;
+  const worldsHintId = useId();
   const goalsHintId = useId();
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const navigate = useNavigate();
@@ -67,6 +73,15 @@ export function PlanPage(): React.JSX.Element {
   // Checking a goal replaces the previous one; unchecking it leaves the session without a goal.
   const toggleGoal = (id: GoalId, chosen: boolean): void => {
     setGoals(chosen ? [id] : []);
+  };
+  // Entering a world sets its sound; like a choice made by hand, the device remembers it.
+  const enterWorld = (id: WorldId): void => {
+    const choices = WORLDS[id];
+    setInstrument(choices.instrument);
+    rememberInstrument(choices.instrument);
+    setAmbience(choices.ambience);
+    rememberAmbience(choices.ambience);
+    setProfile(choices.profile);
   };
   const startSession = (): void => {
     void navigate(sessionPath(duration, goals, ambience, instrument, { fixed, profile, guide: guided }));
@@ -142,8 +157,35 @@ export function PlanPage(): React.JSX.Element {
             <PlanSuggestionCard goals={goals} duration={duration} onAccept={setDuration} />
           </fieldset>
 
+          <fieldset className="plan-fieldset" aria-describedby={worldsHintId}>
+            <legend><span className="plan-step-number" aria-hidden="true">03</span>{t.plan.worlds.legend}</legend>
+            <p id={worldsHintId} className="secondary-text">{t.plan.worlds.hint}</p>
+            <div className="world-options">
+              {WORLD_IDS.map((id) => (
+                <label key={id} className="choice-card world-option">
+                  {/* Named by the world alone; its description is read after it, not as part of the name. */}
+                  <input
+                    type="radio"
+                    name="world"
+                    value={id}
+                    aria-label={worldNames[id]}
+                    aria-describedby={`${worldsHintId}-${id}`}
+                    checked={world === id}
+                    onChange={() => { enterWorld(id); }}
+                  />
+                  <span className="world-swatch" data-world={id} aria-hidden="true" />
+                  <span className="world-text">
+                    <strong>{worldNames[id]}</strong>
+                    <span id={`${worldsHintId}-${id}`} className="secondary-text">{worldDescriptions[id]}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {world === null && <p className="secondary-text world-custom" role="status">{t.plan.worlds.custom}</p>}
+          </fieldset>
+
           <fieldset className="plan-fieldset" aria-describedby={instrumentHintId}>
-            <legend><span className="plan-step-number" aria-hidden="true">03</span>{t.plan.instrument.legend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">04</span>{t.plan.instrument.legend}</legend>
             <p id={instrumentHintId} className="secondary-text">{t.plan.instrument.hint}</p>
             <div className="ambience-options instrument-options" style={{ '--option-count': INSTRUMENT_IDS.length } as React.CSSProperties}>
               {INSTRUMENT_IDS.map((id) => (
@@ -166,7 +208,7 @@ export function PlanPage(): React.JSX.Element {
           </fieldset>
 
           <fieldset className="plan-fieldset" aria-describedby={ambienceHintId}>
-            <legend><span className="plan-step-number" aria-hidden="true">04</span>{t.plan.ambience.legend}</legend>
+            <legend><span className="plan-step-number" aria-hidden="true">05</span>{t.plan.ambience.legend}</legend>
             <p id={ambienceHintId} className="secondary-text">{t.plan.ambience.hint}</p>
             <div className="ambience-options" style={{ '--option-count': AMBIENCE_IDS.length } as React.CSSProperties}>
               {AMBIENCE_IDS.map((id) => (
@@ -219,6 +261,11 @@ export function PlanPage(): React.JSX.Element {
             <ul className="plan-goals">
               {goals.map((id) => <li key={id}><GoalIcon goal={id} /> {goalNames[id]}</li>)}
             </ul>
+          )}
+          {world !== null && (
+            <p className="plan-ambience plan-world">
+              <span className="world-swatch world-swatch-small" data-world={world} aria-hidden="true" /> {t.plan.worlds.chosen(worldNames[world])}
+            </p>
           )}
           <p className="plan-ambience"><InstrumentIcon instrument={instrument} /> {t.plan.instrument.chosen(instrumentNames[instrument])}</p>
           {ambience !== DEFAULT_AMBIENCE_ID && (

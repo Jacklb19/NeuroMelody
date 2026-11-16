@@ -14,22 +14,27 @@ interface SessionOrbProps {
   readonly progress: number;
   /** Lets the page make the orb beat with each heartbeat. */
   readonly orbRef: Ref<OrbHandle>;
+  /** Whether the music sounds: only then is there a step of the music to show. */
+  readonly playing?: boolean;
 }
 
 /**
  * The centre of the listening screen: the orb takes the tone of the
  * estimated state and beats with the person's pulse, inside a ring that
- * closes as the session advances. Decorative: the state, the progress and
- * the time are all in text next to it.
+ * closes as the session advances. While the music plays, the halo behind it
+ * follows the step of the music: wider and softer as the music calms
+ * (ADR-60). Decorative: the state, the step, the progress and the time are
+ * all in text next to it.
  */
-export function SessionOrb({ session, connection, progress, orbRef }: SessionOrbProps): React.JSX.Element {
+export function SessionOrb({ session, connection, progress, orbRef, playing = false }: SessionOrbProps): React.JSX.Element {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const connected = connection === 'connected';
   const tone: OrbTone = !connected ? 'idle' : snapshot.state ?? 'calibrating';
   const clamped = Math.min(Math.max(progress, 0), 1);
 
   return (
-    <div className="session-orb" aria-hidden="true">
+    <div className="session-orb" aria-hidden="true" data-level={playing ? snapshot.level : undefined}>
+      <span className="session-halo" />
       <svg className="session-ring" viewBox="0 0 100 100">
         <circle className="session-ring-track" cx="50" cy="50" r={RING_RADIUS} />
         <circle

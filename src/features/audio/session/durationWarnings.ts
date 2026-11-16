@@ -13,6 +13,13 @@ export const CONTINUOUS_WARNING_PERIOD_S = 60 * SECONDS_PER_MINUTE;
  */
 export const QUIET_FADE_S = 2 * SECONDS_PER_MINUTE;
 
+/**
+ * Wait before a quiet ending brought forward starts to fade (ADR-60). The
+ * engine first drops the fade planned for the end of the plan and settles
+ * the level for a couple of seconds; the new fade must start after that.
+ */
+export const EARLY_FADE_LEAD_S = 5;
+
 /** Instant at which the fade of a quiet ending starts, in seconds of playback. */
 export function quietFadeStartS(planDurationS: number): number {
   return Math.max(0, planDurationS - QUIET_FADE_S);

@@ -3,10 +3,22 @@ import { env } from '../../config/env';
 import { useAuth } from '../account/authContext';
 import { readConsent, writeConsent } from '../privacy/consentStore';
 import { SessionStoreContext, useSessionStore } from '../records/sessionStoreContext';
+import { useSessionDrafts } from '../records/sessionDraftContext';
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
-import { createMirroredSessionStore } from './mirroredSessionStore';
-import { belongsTo, createPendingDeletions, createSyncMarks, markedByOtherAccounts, syncSessions, type PendingDeletions, type SyncMarks } from './syncSessions';
+import { removeAccountStorage } from './accountStorage';
+import { claimUnownedSessions, createMirroredSessionStore } from './mirroredSessionStore';
+import {
+  belongsTo,
+  createPendingDeletions,
+  createSetAsideSessions,
+  createSyncMarks,
+  markedByOtherAccounts,
+  syncSessions,
+  type PendingDeletions,
+  type SetAsideSessions,
+  type SyncMarks,
+} from './syncSessions';
 
 interface CloudSyncProviderProps {
   readonly children: React.ReactNode;
@@ -33,6 +45,7 @@ class SyncLink {
   api: CloudApi | null = null;
   marks: SyncMarks = createSyncMarks(null);
   deletions: PendingDeletions = createPendingDeletions(null);
+  setAside: SetAsideSessions = createSetAsideSessions(null);
   userId: string | null = null;
   #running = false;
 
@@ -44,6 +57,7 @@ class SyncLink {
     this.userId = userId;
     this.marks = createSyncMarks(userId);
     this.deletions = createPendingDeletions(userId);
+    this.setAside = createSetAsideSessions(userId);
   }
 
   /** Claims the single sync pass; `false` when one is already running. */
@@ -70,6 +84,7 @@ export function CloudSyncProvider({
 }: CloudSyncProviderProps): React.JSX.Element {
   const { state, service } = useAuth();
   const local = useSessionStore();
+  const drafts = useSessionDrafts();
   const userId = state.kind === 'signed_in' ? state.user.id : null;
   const secondFactorPassed = state.kind === 'signed_in' && state.assurance.current === 'aal2';
 
@@ -110,21 +125,30 @@ export function CloudSyncProvider({
     setProgress('failed');
   }, []);
 
-  const [{ link, mirrored }] = useState(() => {
-    const created = new SyncLink();
-    return {
-      link: created,
-      mirrored: createMirroredSessionStore({
-        local,
-        owner: () => created.userId,
-        marks: () => created.marks,
-        deletions: () => created.deletions,
-        cloud: () => created.api,
-        onUploadError: fail,
-        onPendingChange: () => { setPendingChange({ userId: created.userId, count: created.deletions.size }); },
-      }),
-    };
-  });
+  const [link] = useState(() => new SyncLink());
+  // A new store for each account: screens keyed on the store read the history again, and only
+  // ever see the sessions of whoever is signed in (ADR-61).
+  const mirrored = useMemo(() => createMirroredSessionStore({
+    local,
+    owner: userId,
+    marks: () => link.marks,
+    deletions: () => link.deletions,
+    cloud: () => link.api,
+    onUploadError: fail,
+    onPendingChange: () => { setPendingChange({ userId: link.userId, count: link.deletions.size }); },
+  }), [link, local, userId, fail]);
+
+  // Sessions without an owner go to the first account that signs in after the update (14 nov 2026).
+  useEffect(() => {
+    if (userId === null) return undefined;
+    let cancelled = false;
+    claimUnownedSessions(local, userId).then((claimed) => {
+      if (!cancelled && claimed > 0) setRevision((value) => value + 1);
+    }, () => {
+      // Unreadable history: the sessions stay without an owner and are claimed on a later visit.
+    });
+    return () => { cancelled = true; };
+  }, [local, userId]);
   useEffect(() => {
     link.connect(active ? api : null);
   }, [link, active, api]);
@@ -139,7 +163,7 @@ export function CloudSyncProvider({
     try {
       const owner = link.userId;
       if (owner === null) return;
-      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions, owner });
+      const result = await syncSessions({ api: current, store: local, marks: link.marks, deletions: link.deletions, setAside: link.setAside, owner });
       if (result.downloaded > 0 || result.removed > 0) setRevision((value) => value + 1);
       setError(null);
       setProgress('synced');
@@ -183,6 +207,21 @@ export function CloudSyncProvider({
     return removed;
   }, [link, local]);
 
+  const forgetAccount = useCallback(async (): Promise<void> => {
+    if (userId === null) return;
+    const others = markedByOtherAccounts(userId);
+    // The device's own store: the cloud copy went with the account.
+    for (const record of await local.list()) {
+      if (belongsTo(record, userId, others)) await local.delete(record.id);
+    }
+    for (const draft of await drafts.list()) {
+      if (draft.ownerId === userId) await drafts.delete(draft.id);
+    }
+    removeAccountStorage(userId);
+    link.useMarksOf(userId);
+    setRevision((value) => value + 1);
+  }, [link, local, drafts, userId]);
+
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();
     if (service === null || userId === null) {
@@ -202,8 +241,8 @@ export function CloudSyncProvider({
   else status = progress === 'idle' ? 'syncing' : progress;
 
   const value = useMemo<CloudSyncValue>(() => ({
-    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api: userId === null ? null : api,
-  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, api, userId]);
+    status, error: status === 'failed' ? error : null, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, forgetAccount, api: userId === null ? null : api,
+  }), [status, error, revision, pendingDeletions, consentAt, setConsent, syncNow, forgetDeviceCopies, forgetAccount, api, userId]);
 
   return (
     <CloudSyncContext value={value}>

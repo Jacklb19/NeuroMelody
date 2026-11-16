@@ -19,6 +19,23 @@
 .session-ring-track { stroke: var(--color-border-subtle); }
 .session-ring-progress { stroke: var(--color-accent); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--landing-glow-colour)); }
 .session-orb-figure { font-size: calc(var(--ring-size) * 0.82); }
+/* The halo follows the step of the music (ADR-60): only moved and faded, never redrawn, and as slowly as the sound changes. */
+.session-halo { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--landing-glow-colour), transparent 70%); opacity: 0; scale: var(--halo-scale-high); transition: scale var(--halo-duration) ease-in-out, opacity var(--halo-duration) ease-in-out; will-change: scale, opacity; }
+.session-orb[data-level='high'] .session-halo { scale: var(--halo-scale-high); opacity: var(--halo-opacity-high); }
+.session-orb[data-level='intermediate'] .session-halo { scale: var(--halo-scale-intermediate); opacity: var(--halo-opacity-intermediate); }
+.session-orb[data-level='target'] .session-halo { scale: var(--halo-scale-target); opacity: var(--halo-opacity-target); }
+.session-orb[data-level='sleep'] .session-halo { scale: var(--halo-scale-sleep); opacity: var(--halo-opacity-sleep); }
+@media (prefers-reduced-motion: reduce) {
+  .session-halo { transition: none; }
+}
+
+/*
+ * Sound worlds (ADR-64): a session in a world takes its two colours for the depth behind the stage and for the
+ * glow of the ring and the halo. The orb keeps the tones of the estimated state, and the text its own colours.
+ */
+.session-page[data-world] { --landing-night-raised: var(--world-depth); --landing-glow-colour: color-mix(in srgb, var(--world-glow) var(--world-glow-strength), transparent); }
+.session-page[data-world] .session-ring-progress { stroke: var(--world-glow); }
+.session-page[data-world] .listening-stage .staff-note { background: var(--world-glow); }
 
 /* Guided breathing (ADR-33): the word under the orb and the switch that turns it on. */
 .breathing-guide { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }
@@ -106,6 +123,27 @@
 .session-recap { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .session-recap h3 { font-size: var(--text-base); color: var(--color-text); margin-bottom: var(--space-2); }
 .session-recap ul { list-style: none; margin-top: var(--space-2); display: grid; gap: var(--space-1); }
+
+/*
+ * Immersive view (ADR-60): while the music plays, the screen keeps only the orb, the moment, the time and Stop.
+ * Everything else is taken out of the layout, not covered, so nothing hidden can be reached with the keyboard.
+ */
+.immersive-toggle { margin-top: var(--space-5); }
+.app-shell:has(.session-page.is-immersive) .app-header { display: none; }
+.app-main:has(> .session-page.is-immersive) { padding-block: 0; }
+.is-immersive .page-heading, .is-immersive .session-stepper, .is-immersive .technical-details { display: none; }
+.is-immersive .listening-stage { min-height: 100dvh; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'orb' 'stage' 'progress' 'playback'; align-content: center; justify-items: center; row-gap: var(--space-6); padding: var(--immersive-top-reserve) var(--space-6) var(--stop-reserve); text-align: center; border: 0; border-radius: 0; box-shadow: none; background: radial-gradient(ellipse at 50% 38%, var(--landing-night-raised), transparent 62%); }
+.is-immersive .session-orb { width: var(--ring-size-immersive); height: var(--ring-size-immersive); }
+.is-immersive .session-orb-figure { font-size: calc(var(--ring-size-immersive) * 0.82); }
+.is-immersive .stage-main { padding: 0; align-self: auto; }
+.is-immersive .stage-title { margin: 0 auto; }
+.is-immersive .session-stage .eyebrow, .is-immersive .stage-detail, .is-immersive .breath-hint, .is-immersive .music-now, .is-immersive .estimated-state, .is-immersive .session-stage .quiet-notice { display: none; }
+.is-immersive .playback-panel { padding: 0; border: 0; }
+.is-immersive .playback-panel > :is(h2, .panel-footnote, .playback-controls, .listening-tools) { display: none; }
+/* "Playing" needs no saying here; an interruption or a failure still does. */
+.is-immersive .playback-status[data-state='playing'] { display: none; }
+.is-immersive .session-progress { width: 100%; max-width: var(--stage-detail-max-width); margin-top: 0; padding-top: 0; border-top: 0; }
+.is-immersive .immersive-toggle { position: fixed; top: max(var(--space-5), env(safe-area-inset-top)); right: var(--space-5); z-index: var(--stop-layer); margin-top: 0; }
 
 /* Source and technical details as cards around the stage. */
 .session-page .acquisition-panel { margin-top: var(--space-8); padding: var(--space-8); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); }

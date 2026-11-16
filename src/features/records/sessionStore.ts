@@ -1,5 +1,6 @@
 import { isRating, isSessionRecord, MAX_RATING, MIN_RATING, readSessionRecord, type SessionRecord } from './sessionRecord';
 import { isSessionNote } from './sessionContext';
+import { openHistoryDatabase, SESSIONS_STORE } from './historyDatabase';
 
 /** Why the local history failed; the interface turns each code into a sentence. */
 export const SESSION_STORE_ERROR_CODES = ['invalid_record', 'invalid_rating', 'invalid_note', 'not_found', 'access_failed', 'open_failed'] as const;
@@ -20,7 +21,7 @@ export class SessionStoreError extends Error {
   }
 }
 
-/** Sessions kept on this device (RF-14, RF-16); no account needed. */
+/** Sessions kept on this device (RF-14, RF-16), read by every screen even without a connection. */
 export interface SessionStore {
   save(record: SessionRecord): Promise<void>;
   get(id: string): Promise<SessionRecord | null>;
@@ -148,11 +149,6 @@ export class MemorySessionStore extends ValidatingStore {
   }
 }
 
-/** IndexedDB database, schema version and object store of the history. */
-const DATABASE = 'neuromelody';
-const VERSION = 1;
-const SESSIONS = 'sessions';
-
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => { resolve(request.result); };
@@ -171,24 +167,19 @@ export class IndexedDbSessionStore extends ValidatingStore {
   }
 
   #open(): Promise<IDBDatabase> {
-    this.#database ??= new Promise((resolve, reject) => {
-      const request = this.#factory.open(DATABASE, VERSION);
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains(SESSIONS)) {
-          request.result.createObjectStore(SESSIONS, { keyPath: 'id' });
-        }
-      };
-      request.onsuccess = () => { resolve(request.result); };
-      request.onerror = () => {
-        this.#database = null;
-        reject(new SessionStoreError('open_failed', 'Could not open the session history database.', { cause: request.error }));
-      };
+    this.#database ??= openHistoryDatabase(
+      this.#factory,
+      (cause) => new SessionStoreError('open_failed', 'Could not open the session history database.', { cause }),
+      () => { this.#database = null; },
+    ).catch((error: unknown) => {
+      this.#database = null;
+      throw error;
     });
     return this.#database;
   }
 
   async #store(mode: IDBTransactionMode): Promise<IDBObjectStore> {
-    return (await this.#open()).transaction(SESSIONS, mode).objectStore(SESSIONS);
+    return (await this.#open()).transaction(SESSIONS_STORE, mode).objectStore(SESSIONS_STORE);
   }
 
   protected async read(id: string): Promise<unknown> {

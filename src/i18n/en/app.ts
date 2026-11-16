@@ -43,6 +43,13 @@ export const app = {
     app: 'Go to the app home',
     landing: 'Go to the front page',
   },
+  /** Screen shown when a screen fails to draw or its file does not arrive; the music has been stopped. */
+  screenFailure: {
+    eyebrow: 'Something went wrong',
+    title: 'We could not show this screen',
+    text: 'We stopped the music in case it was playing. Reload the page to carry on; your saved sessions are not lost.',
+    reload: 'Reload the page',
+  },
   /** Document title of a screen, e.g. "Session plan · NeuroMelody" (WCAG 2.4.2). */
   documentTitle: (page: string, appName: string): string => `${page} · ${appName}`,
 };

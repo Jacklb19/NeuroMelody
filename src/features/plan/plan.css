@@ -24,6 +24,17 @@
 .ambience-options { display: grid; grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); gap: var(--space-3); }
 .ambience-option { flex-direction: column; gap: var(--space-3); padding: var(--space-5) var(--space-2); text-align: center; font-weight: var(--font-weight-strong); }
 .plan-ambience { display: flex; align-items: center; gap: var(--space-3); }
+/* Sound worlds (ADR-64): a card per world, with a swatch in the colours the listening screen takes. */
+.world-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.world-option { align-items: flex-start; padding-right: var(--space-8); }
+.world-text { display: grid; gap: var(--space-1); min-width: 0; }
+.world-text .secondary-text { font-size: var(--text-sm); }
+.world-swatch { flex-shrink: 0; width: var(--icon-badge-size); height: var(--icon-badge-size); border-radius: 50%; border: var(--border-width) solid var(--color-border-subtle); background: radial-gradient(circle at 35% 30%, var(--world-glow), var(--world-depth) 72%); }
+.world-swatch-small { width: var(--icon-size); height: var(--icon-size); }
+.world-custom { margin-top: var(--space-4); margin-bottom: 0; font-size: var(--text-sm); }
+@media (max-width: 600px) {
+  .world-options { grid-template-columns: minmax(0, 1fr); }
+}
 .plan-ambience .icon { color: var(--color-accent); }
 .duration-options { display: grid; grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
 .duration-option { flex-direction: column; gap: 0; padding: var(--space-5) var(--space-2); text-align: center; }

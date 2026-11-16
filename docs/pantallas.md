@@ -4,7 +4,9 @@ Toda pantalla o panel nuevo se ubica en este mapa; si no encaja, se propone el c
 
 **Usuarios.** El paciente es el usuario principal. El terapeuta o acompañante usa la misma cuenta y el mismo dispositivo que el paciente, sin rol ni permisos propios: su intervención se limita a las pantallas de plan e historial.
 
-**Sesión de usuario.** Una sesión de escucha con el simulador no exige cuenta. La cuenta (Supabase Auth, con segundo factor TOTP) solo se requiere para sincronizar, ver datos de salud guardados en la nube y usar el modelo de lenguaje.
+**Datos por cuenta (ADR-61).** Historial, resumen, progreso, informe y copia muestran solo las sesiones de la cuenta que entró; un enlace a la sesión de otra cuenta del dispositivo responde como si no existiera.
+
+**Sesión de usuario.** La app solo se usa con cuenta (ADR-57): toda pantalla de la app, también la sesión con el simulador, está bajo `RequireAccount`. Sin sesión iniciada solo son públicas la portada, las pantallas de acceso, la privacidad y la página no encontrada. Sincronizar y ver los datos de salud de la nube piden además el segundo factor TOTP (ADR-10).
 
 ## Pantallas
 
@@ -23,8 +25,8 @@ La ampliación aprobada de noviembre sitúa los favoritos, la escucha previa y e
 | `/history` | Historial | Revisar sesiones anteriores y borrarlas; lleva a la evolución entre sesiones. | HU-10 | RF-14, RF-16 | S6 | Sí (ADR-57) | `/summary/:id`, `/progress`, `/` |
 | `/progress` | Tu progreso | Ver cómo cambian entre sesiones el pulso, la variación entre latidos y la autovaloración, al empezar y al terminar (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 11 | Sí (ADR-57) | `/plan`, `/report`, `/history` (por la cabecera) |
 | `/report` | Informe de tus sesiones | Preparar una hoja con el resumen de un grupo de sesiones para imprimirla o guardarla como PDF y llevarla a quien acompaña a la persona (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 13 | Sí (ADR-57) | `/plan`, `/progress` (por el navegador) |
-| `/account` | Perfil | Resumen y ajustes de la persona (ADR-30): actividad en el dispositivo, seguridad (contraseña y verificación en dos pasos), privacidad, cerrar sesión. Sin cuenta, invita a crear una. Se abre desde el avatar de la cabecera. | — | RF-14 | S6 | Sí (ADR-57) | `/login`, `/register`, `/privacy`, `/history` |
-| `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Todas ofrecen «Continuar sin cuenta» o volver. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
+| `/account` | Perfil | Resumen y ajustes de la persona (ADR-30): actividad en el dispositivo, seguridad (contraseña y verificación en dos pasos), privacidad, cerrar sesión. Se abre desde el avatar de la cabecera. | — | RF-14 | S6 | Sí (ADR-57) | `/login`, `/register`, `/privacy`, `/history` |
+| `/login`, `/register`, `/forgot-password`, `/reset-password` | Acceso | Pantallas propias, fuera del `Layout` de la app: iniciar sesión (correo o Google, con el código de dos pasos si aplica), crear cuenta (correo y contraseña dos veces, sin correo de confirmación), pedir el enlace de recuperación y elegir la contraseña nueva. Ninguna ofrece seguir sin cuenta (ADR-57); todas permiten volver a la portada. | — | RF-14 | S6 | No | `/app`, entre sí, `/privacy` |
 | `/privacy` | Privacidad | Explicar el tratamiento de datos de salud (Ley 1581 de 2012) y recoger el consentimiento explícito. | — | RF-14 | S6 | No | `/account`, `/` |
 | `/collect` | Ayuda a mejorar la app | Grabación guiada (ADR-33): reposo, respiración lenta y tarea de concentración, cada tramo guardado con su etiqueta, con consentimiento explícito, en el dispositivo; exportar y borrar. El modelo no se entrena aquí. | — | RF-07 | Bloque 14 | Sí (ADR-57) | `/app`, `/warnings` |
 | `*` (cualquier otra ruta) | Página no encontrada | Decir que la dirección no existe, dentro del `Layout` de la app, en lugar de llevar a la portada en silencio. | — | — | Auditoría de calidad (nov. 2026) | No | `/app`, `/` |
@@ -50,6 +52,8 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `ReportPage` (`src/features/report/`) | Bloque 13 (ADR-33) | `/report`; reutiliza el selector de sesiones (`RangePicker`) y la gráfica de `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
+| `DraftRecoveryNotice` (`src/features/records/`) | ADR-62 (14 nov 2026) | Dentro del `Layout`, encima de la pantalla que abra la app: ofrece guardar o descartar el tramo de una sesión que quedó abierta. Solo lo ve la cuenta que la empezó y nunca reinicia la música |
+| `ScreenErrorBoundary` (`src/app/`) | Auditoría de noviembre (13 nov 2026) | En lugar de cualquier pantalla que falla al dibujarse o cuyo archivo no llega: dentro del `Layout` conserva la cabecera, y alrededor de todas las rutas cubre las que están fuera de él. Detiene la música y ofrece recargar |
 
 ## Organización de `/session` (ADR-24)
 
@@ -78,7 +82,7 @@ Sustituye la organización de arriba. La sesión es un recorrido de tres diaposi
 2. **Cómo llegas:** el pulso en vivo, que late con cada latido, el resumen de lo elegido (intención, sonido y ambiente) y la autovaloración opcional. «Iniciar música» empieza la sesión y lleva a la siguiente.
 3. **Escuchando:** el escenario de siempre (orbe, frase, recorrido de la música, estado estimado, controles y progreso) y, al terminar, el aviso de guardado y «Lo que hizo la música».
 
-Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página.
+Arriba, un indicador de pasos («Tu pulso», «Cómo llegas», «Escuchando») marca el actual y permite volver a uno anterior, por ejemplo para cambiar el sensor con la música sonando. «Escuchando» se habilita cuando la música ha empezado. Debajo de las diapositivas siguen los detalles técnicos, plegados. «Detener» y Esc siguen disponibles en toda la página. Si el sonido, el ambiente y la textura elegidos forman un mundo sonoro (ADR-64), la sesión toma sus colores y «Cómo llegas» lo nombra. Con la música sonando, «Vista inmersiva» deja solo el orbe, la respiración, la frase del momento, el tiempo y «Detener»; una pausa o «Salir de la vista inmersiva» devuelven lo demás (ADR-60). El halo del orbe se ensancha y atenúa a medida que la música baja de paso, y una sesión para dormir puede apagarse antes del plan si el pulso lleva cinco minutos más tranquilo que al empezar.
 
 ### Ajustes de la revisión de usabilidad (22 oct 2026)
 

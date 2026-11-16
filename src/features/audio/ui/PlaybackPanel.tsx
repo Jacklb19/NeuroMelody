@@ -17,6 +17,7 @@ import { CALIBRATION_LEVEL, type LevelId } from '../engine/levels';
 import {
   CLOCK_CHECK_INTERVAL_MS,
   CONTINUOUS_WARNING_PERIOD_S,
+  EARLY_FADE_LEAD_S,
   QUIET_FADE_S,
   RESPONSE_WAIT_S,
   fadeStartS,
@@ -33,6 +34,12 @@ const PERCENT = 100;
 export interface PlaybackHandle {
   /** Starts the music, as the panel's own button does; call it inside a click. */
   start(): void;
+  /**
+   * Brings the fade of a quiet ending forward to now (ADR-60), so the session
+   * ends by itself before its plan does. Returns whether it did: only a session
+   * with a quiet ending that is playing, and whose own fade is not about to start, can.
+   */
+  endQuietly(): boolean;
 }
 
 interface PlaybackPanelProps {
@@ -175,6 +182,16 @@ export function PlaybackPanel({
   useImperativeHandle(ref, () => ({
     start: () => {
       void start();
+    },
+    endQuietly: () => {
+      const engine = getEngine();
+      const startTime = sessionStartRef.current;
+      if (!quietEnding || state !== 'playing' || engine === null || startTime === null) return false;
+      // Close to the end of the plan its own fade is already the earliest one.
+      if (engine.audioTime + EARLY_FADE_LEAD_S >= startTime + quietFadeStartS(planDurationS)) return false;
+      engine.cancelFinalFade();
+      fadeEndRef.current = engine.scheduleFinalFade(EARLY_FADE_LEAD_S, QUIET_FADE_S);
+      return true;
     },
   }));
 

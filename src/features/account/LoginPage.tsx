@@ -17,7 +17,7 @@ import { validateEmail, type AuthFieldError } from './validateAuth';
 /**
  * Sign in with email and password or with Google (ADR-10, ADR-30). An
  * account with two-step verification is asked for its code here, before
- * entering the app. Listening without an account stays one link away.
+ * entering the app. The app needs an account (ADR-57): there is no way in without one.
  */
 export function LoginPage(): React.JSX.Element {
   const t = useMessages();

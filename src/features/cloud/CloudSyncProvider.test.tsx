@@ -10,6 +10,7 @@ import { sessionRecord } from '../../test/sessionRecords';
 import { CloudSyncNotice } from './CloudSyncNotice';
 import { CloudSyncProvider } from './CloudSyncProvider';
 import { useCloudSync, type CloudSyncValue } from './cloudSyncContext';
+import { accountStorageKeys } from './accountStorage';
 
 const { status } = es.cloud;
 const API = 'https://api.example.test';
@@ -86,6 +87,25 @@ describe('CloudSyncProvider', () => {
 
     // The session was sent by the first pass; this one only asks what the cloud has.
     await waitFor(() => { expect(requests.slice(before)).toEqual([`GET ${API}/v1/sessions`]); });
+  });
+
+  it('gives a session without an owner to the account that signs in, and forgets it all once the account is deleted', async () => {
+    const local = new MemorySessionStore();
+    const found = new Map<'sync', CloudSyncValue>();
+    const other = sessionRecord({ id: '017f22e2-79b0-7000-8000-00000000000b', ownerId: 'user-2' });
+    await local.save(other);
+    for (const key of [...accountStorageKeys('user-1'), ...accountStorageKeys('user-2')]) window.localStorage.setItem(key, '[]');
+    // Signed in without consent: nothing reaches the cloud, the device still sorts its sessions.
+    await renderSync(account({ current: 'aal1', next: 'aal1' }, null), [], new Set(), local, found);
+
+    await waitFor(async () => { expect((await local.get(LOCAL.id))?.ownerId).toBe('user-1'); });
+    await act(async () => { await found.get('sync')?.forgetAccount(); });
+
+    expect(await local.get(LOCAL.id)).toBeNull();
+    expect(await local.get(other.id)).toEqual(other);
+    expect(accountStorageKeys('user-1').some((key) => window.localStorage.getItem(key) !== null)).toBe(false);
+    expect(accountStorageKeys('user-2').every((key) => window.localStorage.getItem(key) !== null)).toBe(true);
+    window.localStorage.clear();
   });
 
   it('before signing out, removes from this device only what this account already keeps in its cloud', async () => {

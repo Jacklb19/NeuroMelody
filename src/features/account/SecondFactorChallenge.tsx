@@ -11,8 +11,8 @@ interface SecondFactorChallengeProps {
 
 /**
  * Second step of the sign-in when the account has an authenticator (aal1 → aal2).
- * Whoever does not have the code at hand can sign out and keep using the app
- * without an account, instead of being stuck on this screen.
+ * Whoever does not have the code at hand can sign out instead of being stuck
+ * on this screen; the app itself needs an account (ADR-57).
  */
 export function SecondFactorChallenge({ service, onVerified, onSignedOut }: SecondFactorChallengeProps): React.JSX.Element {
   const copy = useMessages().account.totp;

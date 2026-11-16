@@ -274,13 +274,13 @@ function SessionSection({ service, onChanged }: { readonly service: AuthService;
 
 /**
  * Deletes the account and everything it keeps in the cloud (ADR-18), after
- * asking once more. What this device stores is left alone: it never needed
- * an account.
+ * asking once more, and then what this device keeps of it: its sessions,
+ * notes, marks, automatic texts and favorites (ADR-61).
  */
 function DeleteAccountRow({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
   const t = useMessages();
   const copy = t.account.profile.rows.deleteAccount;
-  const { api } = useCloudSync();
+  const { api, forgetAccount } = useCloudSync();
   const [failure, setFailure] = useState<CloudErrorCode | null>(null);
   const reasons: Readonly<Record<CloudErrorCode, string>> = t.cloud.errors;
 
@@ -288,6 +288,8 @@ function DeleteAccountRow({ service, onChanged }: { readonly service: AuthServic
     if (api === null) return;
     setFailure(null);
     api.deleteAccount()
+      // Its data on this device goes too; a local failure must not keep the person signed in to a deleted account.
+      .then(() => forgetAccount().catch(() => undefined))
       // The account is gone, so its session on this device is closed; a refusal to sign out changes nothing.
       .then(() => service.signOut().catch(() => undefined))
       .then(onChanged, (cause: unknown) => { setFailure(cause instanceof CloudError ? cause.code : 'unknown'); });

@@ -44,6 +44,12 @@ export interface CloudSyncValue {
    * not sent yet stay, so nothing is lost. Used before signing out.
    */
   readonly forgetDeviceCopies: () => Promise<number>;
+  /**
+   * Removes from this device everything of the account signed in: its
+   * sessions, with their notes and ratings, its marks, automatic texts and
+   * favorites (ADR-61). Called once the account has been deleted.
+   */
+  readonly forgetAccount: () => Promise<void>;
   /** The API for account actions; `null` when this deployment has none or nobody is signed in. */
   readonly api: CloudApi | null;
 }
@@ -58,6 +64,7 @@ const DEVICE_ONLY: CloudSyncValue = {
   setConsent: () => Promise.resolve(),
   syncNow: () => Promise.resolve(),
   forgetDeviceCopies: () => Promise.resolve(0),
+  forgetAccount: () => Promise.resolve(),
   api: null,
 };
 

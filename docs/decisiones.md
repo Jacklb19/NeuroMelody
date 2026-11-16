@@ -503,6 +503,53 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 - El modo se elige antes de empezar. En modo fijo el motor conserva el tempo y las capas iniciales mientras se sigue registrando la señal disponible. Las texturas Original, Mínima y Envolvente varían las capas o la reverberación. El modo y la textura se guardan con el contexto local para repetir la sesión.
 - La fuente Bluetooth se presenta como «Reloj o banda Bluetooth» e indica cómo activar la transmisión. El modo solo pulso y la recepción de intervalos siguen ADR-51. La compatibilidad por modelo requiere pruebas físicas.
 
+## ADR-60. La escucha se ve: halo del orbe, vista inmersiva y final adelantado para dormir
+
+Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos ni dependencias.
+
+- **Halo del orbe.** Mientras suena la música, un halo detrás del orbe sigue el paso musical: más ancho y más tenue a medida que la música se calma. Cambia en 45 s, lo mismo que el timbre, solo con `scale` y `opacity`. Es decorativo: el paso sigue escrito al lado y el color del orbe sigue al estado estimado. Con movimiento reducido cambia sin transición.
+- **Vista inmersiva.** Con la música sonando, un botón deja en pantalla el orbe, la respiración guiada, la frase del momento, el tiempo y «Detener». Lo demás se retira del diseño, no se tapa, para que nada oculto sea alcanzable con el teclado. Una pausa, el final de la sesión o el mismo botón devuelven todos los controles. Los avisos de duración y de interrupción del audio se siguen mostrando. No usa la API de pantalla completa del navegador.
+- **Final adelantado para dormir.** En una sesión con final silencioso (ADR-41) y música adaptativa, el fundido de dos minutos se adelanta cuando, durante cinco minutos seguidos de escucha, la estimación dice que el pulso está por debajo del inicial, la señal es buena y la música ya está en su paso más calmado. Cualquier lectura distinta o una pausa reinician la cuenta. Cerca del final del plan se mantiene su propio fundido. Un aviso lo dice sin afirmar que la persona duerme. La sesión se guarda con el tiempo realmente escuchado.
+- **Límites.** El criterio usa la misma estimación descriptiva de ADR-12; no mide el sueño. Los cinco minutos son un valor inicial (`SETTLED_FOR_S`) por ajustar con pruebas reales.
+
+## ADR-61. Los datos del dispositivo se separan por cuenta
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-09 de la revisión de noviembre), con la opción «primera cuenta» para las sesiones sin dueño. Modifica lo que ADR-53 mantenía: el historial ya no muestra todas las sesiones del dispositivo. |
+| Problema | ADR-53 solo separaba la sincronización. Con dos cuentas en un dispositivo, la segunda podía ver el historial de la primera, abrir sus sesiones por enlace directo, escribir notas, cambiar valoraciones y borrarlas. Los textos automáticos se guardaban en una sola clave que leía cualquier cuenta. |
+| Decisión | 1) El filtro vive en una sola capa: el almacén que entrega `CloudSyncProvider` (`mirroredSessionStore.ts`). Cada cuenta solo lista, lee, anota, valora y borra sus sesiones. La de otra cuenta responde como si no existiera, y sin cuenta no se muestra ninguna. 2) Las sesiones antiguas sin dueño pasan a la primera cuenta que entra en el dispositivo después de la actualización (`claimUnownedSessions`). Siguen siendo de otra cuenta las que figuren en sus marcas, como en ADR-53. 3) Los textos automáticos se guardan por cuenta (`neuromelody.narratives.<cuenta>`), y la clave común anterior se borra al escribir. 4) Al borrar la cuenta se eliminan también del dispositivo sus sesiones, con notas y valoraciones, sus marcas, colas, sesiones apartadas, textos y favoritos. Si la nube rechaza el borrado, no se toca nada. |
+| Límites | Es una separación de la interfaz en un mismo navegador, no un cifrado: quien tenga acceso al perfil del navegador puede leer IndexedDB. Las grabaciones de `/collect` (otra base) no cambian. No se probó con dos cuentas reales. |
+
+## ADR-62. Borrador de la sesión abierta y recuperación al volver
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-11), con la política (a): 24 horas. Cubre el límite que ADR-52 dejaba abierto. |
+| Problema | El registro de la sesión activa solo vivía en memoria: si el sistema o la persona cerraban la pestaña sin terminarla, se perdía todo lo escuchado. |
+| Decisión | 1) Mientras una sesión con una fuente que mide a la persona está abierta, sonando o en pausa, se escribe su borrador en IndexedDB: cada 15 s, en cada pausa y al ocultarse o cerrarse la página (`pagehide`, `visibilitychange`). El borrador es la sesión tal como se guardaría en ese instante. 2) El dueño es la cuenta que la empezó, y solo a ella se le ofrece. 3) Cuenta como escuchado solo el tiempo con música, sin las pausas (ADR-52). 4) Al abrir la app, la cuenta ve el aviso «Una sesión quedó sin terminar» con «Guardar lo escuchado» y «Descartar». La música nunca vuelve a sonar sola. 5) Se guarda con el id de la sesión: guardar dos veces, o guardar un borrador cuya sesión ya estaba guardada, no duplica nada. 6) Se descartan solos los borradores de más de 24 horas, de cualquier cuenta, y los que no alcanzan el mínimo de una sesión normal (`worthKeeping`). Al terminar la sesión se borra su borrador; si el guardado falla, se conserva para recuperarla. Borrar la cuenta borra sus borradores (ADR-61). |
+| Datos | La base `neuromelody` pasa a la versión 2: la actualización solo crea el almacén `drafts` y conserva `sessions`. Se cierra si otra pestaña abre una versión más nueva. |
+| Límites | Una sesión con el simulador o una grabación de ejemplo no deja borrador, como tampoco se guarda (ADR-35). Lo escuchado después del último borrador (como mucho 15 s) puede perderse si el navegador cierra la página sin avisar. No se probó en un teléfono real con la pantalla bloqueada. |
+
+## ADR-63. Tope de datos por cuenta en la nube
+
+| Campo | Contenido |
+|---|---|
+| Estado | Aprobado por el usuario el 14 nov 2026 entre las mejoras menores de la auditoría del 13 nov. Las cifras (2000 sesiones y 20 grabaciones) son de producto y se pueden cambiar con una migración nueva. |
+| Problema | La clave anónima es pública y el plan gratuito de Supabase tiene 500 MB compartidos: una cuenta podía llenar la base insertando sesiones o grabaciones sin fin, directamente o a través de la API. |
+| Decisión | 1) La base guarda como mucho 2000 sesiones y 20 grabaciones guiadas por cuenta. Lo impone un disparador `before insert` con un bloqueo por cuenta (migración `20261114000000_account_storage_limits.sql`), que rechaza con `54000`. 2) La API responde 409 `limit_reached`. 3) Reenviar una sesión ya guardada (para actualizar su valoración) sigue funcionando. 4) En el front, con la cuenta llena la sincronización no ofrece más sesiones nuevas en esa pasada, pero termina el resto (descargas, valoraciones, borrados) y después lo dice: «tu cuenta ya guarda en la nube todo lo que puede; lo nuevo sigue en este dispositivo». No se aparta ninguna sesión, así que suben cuando hay sitio. |
+| Límites | Las filas que ya existan por encima del tope se conservan. Hay que aplicar la migración en Supabase antes de publicar el back; sin ella no hay tope, pero nada falla. |
+
+## ADR-64. Mundos sonoros
+
+Aprobado por el usuario el 14 nov 2026. Solo frontend; sin cambios de API, datos, motor de audio ni dependencias.
+
+- **Qué es un mundo.** Una combinación con nombre de instrumento, ambiente y textura, más dos colores propios. Hay seis: Bosque de niebla, Costa nocturna, Lluvia en la ciudad, Páramo al amanecer, Espacio profundo y Habitación en calma (`worldCatalog.ts`). Cada combinación pertenece a un solo mundo; una prueba lo comprueba.
+- **En el plan.** Un grupo nuevo, antes del sonido y el ambiente, ofrece los mundos como tarjetas. Entrar en uno fija las tres elecciones, que se pueden seguir cambiando a mano; si la combinación deja de ser un mundo, la pantalla lo dice.
+- **Sin dato nuevo.** El mundo no se guarda ni viaja: se deduce de las tres elecciones. Los enlaces, los favoritos, «Repetir la última» y el historial lo conservan sin campos ni migraciones.
+- **En la sesión.** El mundo da color al fondo del escenario, al anillo, al halo y a la nota del progreso, en tema claro y oscuro. El orbe conserva los tonos del estado estimado y el texto sus colores.
+- **Límites.** Un mundo no añade sonidos al sintetizador: reordena los que ya existen. Mundos con timbres o escalas propias necesitarían una decisión sobre el motor de audio.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
@@ -513,3 +560,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 | Cabeceras | COOP, COEP, CSP y HSTS en `vercel.json`, también aplicadas en el servidor de desarrollo de Vite. |
 | Dependencias del back en Vercel | Vercel instala las `dependencies` de `pyproject.toml` e ignora `requirements.txt` cuando existen los dos. Las dos listas llevan los mismos paquetes fijados y una prueba lo comprueba (12 oct). |
 | Media Session | Se probó solo con Web Audio; si el sistema no muestra controles, basta el botón fijo. |
+| Sesiones que la nube rechaza | Auditoría del 13 nov 2026: una sesión que la API rechaza por sí misma (`invalid_request` o `session_conflict`) se aparta, por cuenta y en el dispositivo, y la sincronización sigue con las demás; no se vuelve a enviar ni se borra del dispositivo. Un fallo de red, de cuenta o del servidor sigue deteniendo la pasada. |
+| Lista de sesiones incompleta | Auditoría del 13 nov 2026: `GET /v1/sessions` devuelve como mucho 500 sesiones y añade `truncated`, que vale `true` si quedaron fuera sesiones más antiguas (la API pide una más a `list_sessions`, sin migración). Con `truncated` la sincronización no borra del dispositivo ninguna sesión ausente de la lista. Si la API publicada aún no envía el campo, una lista de 500 se trata como incompleta. |
+| Cuota del modelo y caché | Auditoría del 13 nov 2026, modifica el contrato de ADR-54: la llamada gasta cuota después de las comprobaciones y solo si la respuesta no está en la caché de la API, justo antes del modelo. Una respuesta de la caché no gasta cuota y se entrega aunque la cuota esté agotada, porque no le cuesta nada al proveedor. Una llamada que el modelo no llega a responder sigue gastando la suya; devolverla exigiría una migración nueva (propuesta P-16). |
+| Estado de la API | Auditoría del 13 nov 2026: `GET /v1/health` dice también si alcanza Supabase (`supabase: ok` o `unreachable`). Mira las claves públicas del proyecto con la clave anónima, como mucho cada 30 s, y responde 503 con `status: degraded` mientras no lo alcanza. |

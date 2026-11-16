@@ -7,6 +7,7 @@ import { CLIPPER_NAME, SYNTHESIZER_NAME } from '../worklet/workletContract';
 import { FINAL_FADE_S, LIMITER, AudioEngine, SESSION_FADE_IN_S, STOP_RAMP_S, type AudioFactory } from './AudioEngine';
 import { AudioEngineError } from './AudioEngineError';
 import { TIMBRE_RAMP_DURATION_S } from './ramps';
+import { closeOpenEngines } from './openEngines';
 
 async function createEngine(outputThroughAudioElement = false, telemetry: SharedArrayBuffer | null = null) {
   const env = createFakeAudioEnvironment(telemetry);
@@ -122,6 +123,14 @@ describe('AudioEngine.create', () => {
     const creation = AudioEngine.create(factory, { seed: 7, initialLevel: 'intermediate', outputThroughAudioElement: false });
     await expect(creation).rejects.toBeInstanceOf(AudioEngineError);
     await expect(creation).rejects.toMatchObject({ code: 'missing_parameter', params: { parameter: 'tempo' } });
+  });
+});
+
+describe('open engines', () => {
+  it('lists a created engine so a failed screen can close it', async () => {
+    const { engine } = await createEngine();
+    await closeOpenEngines();
+    expect(engine.state).toBe('closed');
   });
 });
 
