@@ -3,12 +3,13 @@ import { Link, Navigate } from 'react-router';
 import { PreferencePickers } from '../../app/preferences/PreferenceControls';
 import { ReminderCard } from '../reminders/ReminderCard';
 import { usePageTitle } from '../../app/usePageTitle';
-import { ROUTES, summaryPath } from '../../config/routes';
+import { listenPath, ROUTES, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { ConfirmButton } from '../../shared/ConfirmButton';
-import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, ShieldIcon, UserIcon } from '../../shared/icons';
+import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, NoteIcon, ShieldIcon, UserIcon } from '../../shared/icons';
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
+import { useMelodies } from '../listen/useMelodies';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { ListeningBackupPanel } from '../records/ListeningBackupPanel';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
@@ -219,6 +220,9 @@ function ChangePasswordForm({ service, askCurrent }: { readonly service: AuthSer
 function PreferencesSection(): React.JSX.Element {
   const copy = useMessages().account.profile;
   const titleId = useId();
+  const { state } = useAuth();
+  // Read only: the listening screen keeps the melodies in step with the cloud (P-17).
+  const melodies = useMelodies(state.kind === 'signed_in' ? state.user.id : null, { sync: false }).melodies?.length ?? 0;
   return (
     <section aria-labelledby={titleId} className="profile-section">
       <h2>{copy.sections.appearance}</h2>
@@ -229,6 +233,7 @@ function PreferencesSection(): React.JSX.Element {
       <div className="setting-list glass-card">
         <LinkRow to={ROUTES.privacy} icon={<ShieldIcon />} title={copy.rows.privacy.title} text={copy.rows.privacy.text} />
         <LinkRow to={ROUTES.history} icon={<HistoryIcon />} title={copy.rows.history.title} text={copy.rows.history.text} />
+        <LinkRow to={listenPath('melodies')} icon={<NoteIcon />} title={copy.rows.melodies.title} text={copy.rows.melodies.text(melodies)} />
         <LinkRow to={ROUTES.collect} icon={<HeartIcon />} title={copy.rows.collect.title} text={copy.rows.collect.text} />
       </div>
     </section>

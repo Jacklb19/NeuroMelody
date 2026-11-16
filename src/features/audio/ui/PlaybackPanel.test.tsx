@@ -88,12 +88,37 @@ describe('PlaybackPanel', () => {
     expect(state()).toContain(copy.states.stopped);
   });
 
+  it('plays a given piece from its start point, resumes it and leaves it for another (P-17)', async () => {
+    const { env, handle } = setup(30, true);
+    const synthesizers = () => env.worklets.filter((node) => node.name === 'neuromelody-synthesizer');
+    const piece = { seed: 11, initialLevel: 'target', instrument: 'piano', ambience: 'rain', profile: 'minimal', startAtS: 0 } as const;
+    act(() => { handle.current?.start(piece); });
+    await waitFor(() => { expect(state()).toContain(copy.states.playing); }, { timeout: 5000 });
+    expect(synthesizers()[0]?.options.processorOptions).toMatchObject({ seed: 11, instrument: 'piano', ambience: 'rain', startAtS: 0, startTempoBpm: 59 });
+
+    // Stopping and starting again keeps the same engine: the piece goes on where it paused.
+    fireEvent.click(stopButton());
+    // A person presses again later than the stop takes to suspend the output.
+    // (waitFor only re-checks on DOM changes here, so the pending promises are flushed by hand.)
+    await act(async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); });
+    expect(env.context.state).toBe('suspended');
+    act(() => { handle.current?.start(); });
+    await waitFor(() => { expect(state()).toContain(copy.states.playing); }, { timeout: 5000 });
+    expect(synthesizers()).toHaveLength(1);
+
+    // Another piece builds a new engine from its own start point.
+    act(() => { handle.current?.start({ ...piece, seed: 22, startAtS: 600 }); });
+    await waitFor(() => { expect(synthesizers()).toHaveLength(2); }, { timeout: 5000 });
+    await waitFor(() => { expect(state()).toContain(copy.states.playing); }, { timeout: 5000 });
+    expect(synthesizers()[1]?.options.processorOptions).toMatchObject({ seed: 22, startAtS: 600 });
+  });
+
   it('starts at the calibration level at −12 dB and schedules the final fade on the audio clock', async () => {
     const { env, envelope, volume } = setup(10);
     await start();
 
     const synthesizer = env.worklets[0];
-    expect(synthesizer?.options.processorOptions).toEqual({ seed: 42, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none', instrument: 'warm' });
+    expect(synthesizer?.options.processorOptions).toEqual({ seed: 42, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: 0, startTempoBpm: 66 });
     expect(DEFAULT_VOLUME_DB).toBe(-12);
     expect(volume()?.value).toBeCloseTo(dbToGain(DEFAULT_VOLUME_DB), 10);
     expect(stopButton()).toBeEnabled();

@@ -21,6 +21,7 @@ La ampliación aprobada de noviembre sitúa los favoritos, la escucha previa y e
 | `/warnings` | Advertencias de uso | Presentar el carácter no clínico de la aplicación y registrar la aceptación explícita antes de la primera sesión. | — | RF-17 | S3 | Sí (ADR-57) | `/plan`, `/session`, `/privacy` |
 | `/plan` | Plan de sesión | Fijar objetivos y duración (10 a 60 minutos) y ver el plan antes de empezar; ajustarlo a mano. Con cuenta, el modelo de lenguaje puede proponer la duración (bloque 15). | HU-07 | RF-13, RF-18 | S3 (plan manual y por defecto), S6 (propuesta del modelo) | Sí (ADR-57) | `/session`, `/` |
 | `/session` | Sesión en curso | Conectar la fuente de señal, escuchar la música adaptada, ver la señal y los indicadores, controlar el volumen y detener. El control de detención está siempre visible. | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06 | RF-01 a RF-12, RF-18 | S1 a S5 | Sí (ADR-57) | `/summary/:id` (al terminar), `/` |
+| `/listen` | Escuchar | Música generada sin sensor ni plan (ADR-66): elegir mundo, paso y duración, reproducir, pausar, guardar la pieza y volver a oír las melodías guardadas desde el principio o desde su minuto. Dos pestañas en la consulta (`?tab=melodies`) con un solo reproductor; `&melody=<id>` resalta una sin hacerla sonar. Detener siempre visible mientras suena. | — | RF-11, RF-18 | P-17 | Sí (ADR-57) | `/warnings` (si no se aceptaron), `/plan` (con el sonido elegido), cualquier entrada de la barra |
 | `/summary/:id` | Resumen de sesión | Mostrar los indicadores de la sesión y el texto en lenguaje llano, marcado como generado automáticamente; permitir la descarga. | HU-08 | RF-15 | S6 | Sí (ADR-57) | `/history`, `/` |
 | `/history` | Historial | Revisar sesiones anteriores y borrarlas; lleva a la evolución entre sesiones. | HU-10 | RF-14, RF-16 | S6 | Sí (ADR-57) | `/summary/:id`, `/progress`, `/` |
 | `/progress` | Tu progreso | Ver cómo cambian entre sesiones el pulso, la variación entre latidos y la autovaloración, al empezar y al terminar (ADR-33). Describe; no interpreta. | HU-10 | RF-16 | Bloque 11 | Sí (ADR-57) | `/plan`, `/report`, `/history` (por la cabecera) |
@@ -52,6 +53,8 @@ Desde el S3 la aplicación usa react-router en modo declarativo, sin cargadores 
 | `ReportPage` (`src/features/report/`) | Bloque 13 (ADR-33) | `/report`; reutiliza el selector de sesiones (`RangePicker`) y la gráfica de `/progress` |
 | `DiagnosticsPage` (`src/features/diagnostics/`) | S0 | `/diagnostics` |
 | `CameraPulsePanel` (`src/features/diagnostics/`) | Prototipo P-01 | `/diagnostics`: pulso con la cámara del celular, sin guardar imágenes |
+| `PulseTrace` (`src/features/session/`) | ADR-66 (16 nov 2026) | `/session`, en «Cómo llegas» (bajo la cifra del pulso) y en «Escuchando» (entre el momento y el estado estimado): pulso latido a latido del último minuto y avance de la referencia; más bajo tras la referencia, oculto en la vista inmersiva y sin fuente. Lleva a los detalles técnicos |
+| `ListenPage`, `ListenPlayer`, `ListenChoices`, `MelodyList` y `SaveMelodyDialog` (`src/features/listen/`) | ADR-66 (16 nov 2026) | `/listen`: pestañas Crear y Mis melodías, reproductor (columna derecha fija en PC, arriba y compacto hasta 900 px, con barra fija abajo cuando no suena) y diálogo para nombrar una melodía |
 | `DraftRecoveryNotice` (`src/features/records/`) | ADR-62 (14 nov 2026) | Dentro del `Layout`, encima de la pantalla que abra la app: ofrece guardar o descartar el tramo de una sesión que quedó abierta. Solo lo ve la cuenta que la empezó y nunca reinicia la música |
 | `ScreenErrorBoundary` (`src/app/`) | Auditoría de noviembre (13 nov 2026) | En lugar de cualquier pantalla que falla al dibujarse o cuyo archivo no llega: dentro del `Layout` conserva la cabecera, y alrededor de todas las rutas cubre las que están fuera de él. Detiene la música y ofrece recargar |
 
@@ -301,3 +304,17 @@ En `/session`, una interrupción del contexto deja de mostrarse como «Sonando»
 ## Funciones todavía no activas
 
 Aprobado junto con el plan de entrega. Una ruta pendiente del mapa muestra explicación accesible y regreso a Inicio/Sesión, sin rutas rotas. Acciones deshabilitadas con motivo/fecha. Google pendiente conserva correo; TOTP pendiente conserva recorrido local y bloquea sincronización/lectura remotas; Sin el modelo de lenguaje (sin cuenta, sin API o si no responde) se conservan el plan manual y el resumen de indicadores, y la pantalla dice qué falta. Ninguna etiqueta de pendiente satisface un requisito. El segundo factor se implementa en S6.2 (ADR-10, ADR-18).
+
+## Escuchar y pulso en vivo (ADR-66, 16 nov 2026)
+
+Definición completa, con el flujo de entradas, salidas y estados, en `plan-escuchar.md`.
+
+| Pantalla | Cambio |
+|---|---|
+| Barra y menú | Cinco entradas: Inicio, Nueva sesión, Escuchar, Historial y Progreso. «Escuchar» queda marcada en sus dos pestañas. |
+| `/app` | En la tarjeta principal, «O solo escuchar música» junto a «Tengo 3 minutos», y «Tu última melodía: …» cuando hay alguna (lleva a esa melodía, sin hacerla sonar). En «Explora», la tarjeta «Mundos sonoros» pasa a ser «Escuchar». |
+| `/listen` (ADR-67) | Reproductor: tarjeta a la izquierda y pestañas a la derecha; al reproducir se abre sobre la pantalla con las melodías como cola, barra de tiempo con saltos y ±15 s, anterior y siguiente; en el celular, barra mini abajo que lo abre a pantalla completa. `?player=open` y «Atrás» lo cierra. Antes (ADR-66): PC: dos columnas, pestañas y elecciones a la izquierda, reproductor fijo a la derecha. Hasta 900 px: reproductor compacto arriba y una barra abajo con Reproducir, o con Reanudar y Nueva pieza en pausa; mientras suena, Detener a todo lo ancho ocupa su lugar. Vista inmersiva a pantalla completa. Al salir, la pieza queda en pausa para la próxima visita. |
+| `/session` | El pulso latido a latido y el avance de la referencia en «Cómo llegas» y «Escuchando». Los detalles técnicos siguen plegados al final. Desde ADR-67, la barra de progreso marca cada cambio de paso como un capítulo. |
+| `/plan` | Acepta también la textura en la dirección (`sound-profile`), para que «Haz una sesión con este sonido» llegue completo. |
+| `/account` | En «Privacidad y datos», «Melodías guardadas» con su número, que lleva a Mis melodías. La copia de seguridad incluye las melodías. |
+

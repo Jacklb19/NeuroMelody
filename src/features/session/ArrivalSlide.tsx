@@ -25,6 +25,8 @@ interface ArrivalSlideProps {
   /** Starts the music; called inside the click, as browsers require to play sound. */
   readonly onStart: () => void;
   readonly onMeasure: () => void;
+  /** The pulse beat by beat and the reference, shown under the figure while the pulse arrives (P-17). */
+  readonly pulseTrace?: React.ReactNode;
 }
 
 /**
@@ -32,7 +34,7 @@ interface ArrivalSlideProps {
  * each heartbeat, what was chosen for this session, and how the person feels
  * before starting. Starting the music leads to the listening slide.
  */
-export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument, ambience, world = null, rating, onRatingChange, onStart, onMeasure }: ArrivalSlideProps): React.JSX.Element {
+export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument, ambience, world = null, rating, onRatingChange, onStart, onMeasure, pulseTrace }: ArrivalSlideProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.session.arrival;
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
@@ -62,6 +64,7 @@ export function ArrivalSlide({ reading, watchHeartRate = null, goals, instrument
           </>
         )}
       </div>
+      {heartRate !== null && pulseTrace}
 
       <ul className="arrival-choices" aria-label={copy.choicesLabel}>
         <li>

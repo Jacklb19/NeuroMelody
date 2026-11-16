@@ -38,6 +38,22 @@ export const session = {
     measure: 'Connect my pulse',
     choicesLabel: 'What you chose for this session',
   },
+  /** The pulse beat by beat and how far the baseline has come (P-17). Descriptive: it never judges the pulse. */
+  pulseTrace: {
+    title: 'Your pulse, beat by beat',
+    chartLabel: 'Line of your pulse beat by beat over the last minute',
+    waiting: 'The line appears with the first beats.',
+    /** Times as mm:ss; the readings are the good ones the baseline needs. */
+    reference: (elapsed: string, total: string, readings: number, minimum: number): string =>
+      `Taking your reference: ${elapsed} of ${total} · ${String(readings)} of ${String(minimum)} readings`,
+    referenceHint: 'It started when your pulse connected. Meanwhile, the music stays steady.',
+    referenceStarted: 'Taking your reference.',
+    referenceReady: 'Reference ready. From now on the music can change its step.',
+    /** A session with fixed music takes the reference too, but the music keeps its step. */
+    referenceReadyFixed: 'Reference ready.',
+    progressLabel: 'Progress of the reference',
+    showDetails: 'See the full signal',
+  },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {
     label: 'Step of the music',
@@ -101,6 +117,11 @@ export const session = {
     clock: <T>(elapsed: T, planned: string): readonly (T | string)[] => [elapsed, ` of ${planned}`],
     /** Time listened past the plan, appended to the clock. */
     extra: (extra: string): string => ` · ${extra} more`,
+    /** The step the music is at, as the chapter of its bar (ADR-67). */
+    chapter: (step: string, since: string): string => `${step} since ${since}`,
+    /** A mark on the bar where the music changed its step. */
+    chapterMark: (step: string, at: string): string => `${at}: ${step}`,
+    chaptersLabel: 'Steps the music took',
   },
   stage: {
     eyebrow: 'Now',

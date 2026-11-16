@@ -44,7 +44,7 @@ function create(name: string, processorOptions: unknown) {
 }
 
 describe('synthesizer processor', () => {
-  const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none', instrument: 'warm' };
+  const options = { seed: 1, initialMode: MODE.lydian, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: 0, startTempoBpm: 66 };
   const params: BlockParams = {
     tempo: new Float32Array([66]),
     mode: new Float32Array([MODE.lydian]),
@@ -143,23 +143,33 @@ describe('clipper processor', () => {
 
 describe('options validation', () => {
   it('accepts valid options', () => {
-    expect(readSynthesizerOptions({ seed: 3, initialMode: 2, initialLayers: 3, ambience: 'rain', instrument: 'bowls' })).toEqual({
+    expect(readSynthesizerOptions({
+      seed: 3, initialMode: 2, initialLayers: 3, ambience: 'rain', instrument: 'bowls', startAtS: 720, startTempoBpm: 59,
+    })).toEqual({
       seed: 3,
       initialMode: 2,
       initialLayers: 3,
       ambience: 'rain',
       instrument: 'bowls',
+      startAtS: 720,
+      startTempoBpm: 59,
     });
     expect(readClipperOptions({ telemetry: null })).toEqual({ telemetry: null });
   });
 
+  const start = { startAtS: 0, startTempoBpm: 66 };
   it.each([
-    { seed: 1.5, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm' },
-    { seed: 1, initialMode: 1, initialLayers: 0, ambience: 'none', instrument: 'warm' },
-    { seed: 1, initialMode: 1, initialLayers: 4, ambience: 'none', instrument: 'warm' },
-    { seed: '1', initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm' },
-    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'thunder', instrument: 'warm' },
-    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'trumpet' },
+    { seed: 1.5, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', ...start },
+    { seed: 1, initialMode: 1, initialLayers: 0, ambience: 'none', instrument: 'warm', ...start },
+    { seed: 1, initialMode: 1, initialLayers: 4, ambience: 'none', instrument: 'warm', ...start },
+    { seed: '1', initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', ...start },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'thunder', instrument: 'warm', ...start },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'trumpet', ...start },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm' },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: -1, startTempoBpm: 66 },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: 3 * 60 * 60, startTempoBpm: 66 },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: Number.NaN, startTempoBpm: 66 },
+    { seed: 1, initialMode: 1, initialLayers: 2, ambience: 'none', instrument: 'warm', startAtS: 0, startTempoBpm: 300 },
     { seed: 1, initialMode: 1, initialLayers: 2 },
   ])('rejects synthesizer options %o', (options) => {
     expect(() => readSynthesizerOptions(options)).toThrow(TypeError);

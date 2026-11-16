@@ -114,6 +114,28 @@ export const KeyIcon = (props: IconProps): React.JSX.Element => (
 export const ChevronRightIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M9 6l6 6-6 6" /></Icon>
 );
+/* Controls of the listening player (ADR-67). */
+export const PlayerPauseIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M9 5.500v13M15 5.500v13" /></Icon>
+);
+export const PreviousIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M6.500 5.500v13M18 6l-8.500 6 8.500 6z" /></Icon>
+);
+export const NextIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M17.500 5.500v13M6 6l8.500 6L6 18z" /></Icon>
+);
+export const BackIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M4.500 12a7.500 7.500 0 1 0 2.200-5.300M4.500 4v3.500H8" /><path d="M10 10v5M13 10h2.500v1.700h-2v1.300a1 1 0 0 0 1 1H15.500" /></Icon>
+);
+export const ForwardIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M19.500 12a7.500 7.500 0 1 1-2.200-5.300M19.500 4v3.500H16" /><path d="M9 10v5M12 10h2.500v1.700h-2v1.300a1 1 0 0 0 1 1H14.500" /></Icon>
+);
+export const ExpandIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M14 5h5v5M10 19H5v-5M19 5l-6 6M5 19l6-6" /></Icon>
+);
+export const CollapseIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M6 9l6 6 6-6" /></Icon>
+);
 
 /** Google's mark, in the colours its brand guidelines require for sign-in buttons. */
 export function GoogleIcon({ className }: IconProps): React.JSX.Element {

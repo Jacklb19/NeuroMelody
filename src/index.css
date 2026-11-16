@@ -101,6 +101,8 @@
   --public-header-reserve: 6rem;
   --color-dimmer: rgb(0 0 0 / 0.92);
   --color-dimmer-text: rgb(255 255 255 / 0.45);
+  /* Behind a dialog that asks one thing: the page stays readable but steps back. */
+  --color-dimmer-soft: rgb(0 0 0 / 0.45);
   --dimmer-fade: 1.5s;
   --stop-reserve: 6rem;
   --motion-duration: 160ms;
@@ -197,6 +199,32 @@
   --password-toggle-reserve: 6.5rem;
   --live-pulse-height: 3.5rem;
   --live-pulse-min-width: 14rem;
+  /* Pulse beat by beat in the session (P-17): its line while the reference is taken, lower once it is ready. */
+  --pulse-trace-height: 7.5rem;
+  --pulse-trace-height-mobile: 6rem;
+  --pulse-trace-height-compact: 3.5rem;
+  --pulse-trace-bar-height: 0.375rem;
+  /* Listen (P-17): the orb of the player on a wide screen and on a phone, and the width of a melody's menu. */
+  --listen-orb-size: 7rem;
+  --listen-orb-size-mobile: 4.5rem;
+  --melody-menu-min-width: 11rem;
+  /* The listening player (ADR-67): its sizes, its time bar and how it moves. */
+  --player-primary-size: 4rem;
+  --player-orb-size-open: clamp(8rem, 19vmin, 12rem);
+  --player-orb-size-sheet: clamp(8rem, 34vw, 11rem);
+  --player-mini-orb-size: 2.5rem;
+  --player-open-min-height: calc(100dvh - 9rem);
+  --seek-height: 6px;
+  --seek-hit-height: 24px;
+  --seek-thumb-size: 16px;
+  --seek-mark-width: 3px;
+  --seek-mark-height: 14px;
+  --seek-mini-height: 3px;
+  /* The bar follows the clock that the page reads once a second. */
+  --seek-follow: 1s;
+  --player-motion: 260ms;
+  --player-motion-open: 420ms;
+  --player-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --ring-size-mobile: 15rem;
   --totp-input-width: 12rem;
   font-family: var(--font-base);
@@ -478,6 +506,10 @@ input[type='radio'], input[type='checkbox'] { width: var(--checkbox-size); heigh
 .staff { position: relative; height: calc(var(--staff-gap) * 4 + var(--border-width)); background-image: linear-gradient(var(--color-border) var(--border-width), transparent var(--border-width)); background-size: 100% var(--staff-gap); }
 /* The staff moves less than a pixel per second: it is redrawn once a second, without a transition that would redo the layout on every frame (RNF-05). */
 .staff-ink { position: absolute; inset: 0 auto 0 0; width: calc(var(--progress) * 100%); background-image: linear-gradient(var(--color-chart-line) var(--border-width), transparent var(--border-width)); background-size: 100% var(--staff-gap); }
+/* Where the music changed its step (ADR-67): a thin bar across the staff, like a chapter of a player. */
+.staff-chapter { position: absolute; top: calc(-1 * var(--staff-gap) / 2); bottom: calc(-1 * var(--staff-gap) / 2); left: calc(var(--chapter-at) * 100%); width: var(--seek-mark-width); translate: -50% 0; border-radius: var(--radius-pill); background: var(--color-text-secondary); animation: chapter-in var(--player-motion) var(--player-easing) both; }
+@keyframes chapter-in { from { opacity: 0; scale: 1 0.3; } to { opacity: 1; scale: 1 1; } }
+.session-chapter { margin-left: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-surface); font-size: var(--text-xs); font-weight: var(--font-weight-strong); color: var(--color-text-secondary); }
 .staff-note { position: absolute; top: 50%; left: calc(var(--progress) * 100%); width: calc(var(--staff-gap) * 1.6); height: calc(var(--staff-gap) * 1.15); background: var(--color-button-background); border-radius: 50%; transform: translate(-50%, -50%) rotate(-20deg); }
 .session-clock { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
 .session-clock > span:first-child { font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-text); }

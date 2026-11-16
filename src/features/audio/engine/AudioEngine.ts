@@ -82,6 +82,12 @@ export interface EngineOptions {
   readonly instrument?: InstrumentId;
   readonly profile?: SoundProfile;
   /**
+   * Seconds into the piece where the music starts (P-17): a saved melody
+   * resumes where it was saved. Only fixed music, which keeps its tempo,
+   * plays from there the notes it would have played; 0 when omitted.
+   */
+  readonly startAtS?: number;
+  /**
    * Media Session fallback: the output goes through an `<audio>` element.
    * With it, `playbackStats` no longer measures what is actually heard.
    */
@@ -231,6 +237,8 @@ export class AudioEngine {
       initialLayers: profileLayers(profile, level.layers),
       ambience: options.ambience ?? DEFAULT_AMBIENCE_ID,
       instrument: options.instrument ?? DEFAULT_INSTRUMENT_ID,
+      startAtS: options.startAtS ?? 0,
+      startTempoBpm: level.tempo,
     };
     const synthesizer = factory.createWorkletNode(context, SYNTHESIZER_NAME, {
       numberOfInputs: 0,

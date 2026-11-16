@@ -19,6 +19,13 @@ describe('demo library', () => {
     expect(() => parseListeningBackup(text, '018f2a3b-1c2d-7e8f-9a0b-000000000000')).toThrow();
   });
 
+  it('holds three melodies the app accepts, newest first and before now (P-17)', () => {
+    expect(restored.melodies).toHaveLength(3);
+    const created = restored.melodies.map(({ createdAt }) => Date.parse(createdAt));
+    expect(created).toEqual([...created].sort((a, b) => b - a));
+    expect(Math.max(...created)).toBeLessThan(now.getTime());
+  });
+
   it('holds only valid sessions the app would keep, newest first and before today', () => {
     for (const session of restored.sessions) {
       expect(isSessionRecord(session)).toBe(true);

@@ -32,6 +32,8 @@ const SAME_IN_BOTH = new Set([
   'common.units.minutes',
   'common.units.tempo',
   'plan.minutesUnit',
+  // "30 min": the abbreviation of minutes on the cards of the saved melodies.
+  'listen.melodies.length',
   // "Piano" is the same word.
   'plan.instrument.names.piano',
   // Each language is named in itself, whatever the interface is in.

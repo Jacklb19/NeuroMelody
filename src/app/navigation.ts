@@ -17,6 +17,8 @@ export interface NavigationItem {
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   { route: ROUTES.app, labelKey: 'home' },
   { route: ROUTES.plan, labelKey: 'plan' },
+  // Music without a sensor, and the saved melodies inside it (P-17).
+  { route: ROUTES.listen, labelKey: 'listen' },
   { route: ROUTES.history, labelKey: 'history' },
   { route: ROUTES.progress, labelKey: 'progress' },
 ];

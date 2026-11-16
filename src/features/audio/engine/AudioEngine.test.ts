@@ -85,6 +85,8 @@ describe('AudioEngine.create', () => {
       initialLayers: 2,
       ambience: 'none',
       instrument: 'warm',
+      startAtS: 0,
+      startTempoBpm: 66,
     });
     // Two stereo outputs: the music and the ambience (ADR-40).
     expect(synthesizer.options.outputChannelCount).toEqual([2, 2]);

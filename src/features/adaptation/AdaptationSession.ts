@@ -33,6 +33,8 @@ export interface SessionSnapshot extends AdaptationSnapshot {
   readonly levelTempoBpm: number;
   /** What the music did in the session that just ended; `null` before one ends and while one plays. */
   readonly recap: MusicRecap | null;
+  /** The steps the music has taken so far in this session, as they happen: the chapters of its bar (ADR-67). */
+  readonly steps: readonly MusicStep[];
 }
 
 /** Binds guidance to the existing audio engine; no musical timers or extra worker. */
@@ -59,7 +61,7 @@ export class AdaptationSession {
     this.#range = range;
     this.fixed = fixed;
     this.#guidance = new AdaptationEngine(null, range);
-    this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: null, levelTempoBpm: this.#levelTempo(), recap: null };
+    this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: null, levelTempoBpm: this.#levelTempo(), recap: null, steps: [] };
   }
 
   /** The stretch of the ladder this session moves in. */
@@ -153,7 +155,7 @@ export class AdaptationSession {
       this.#endTempoBpm = tempo;
     }
     this.#snapshot = { ...this.#guidance.snapshot, tempoBpm: tempo,
-      levelTempoBpm: this.#levelTempo(), recap: this.#recap,
+      levelTempoBpm: this.#levelTempo(), recap: this.#recap, steps: this.#steps,
       waitingForDwell: !this.fixed && this.#audio?.state === 'playing' && this.#guidance.snapshot.waitingForDwell,
       lastTransition: this.#lastTiming };
     for (const listener of this.#listeners) listener();

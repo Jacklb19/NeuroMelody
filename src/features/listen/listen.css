@@ -1,0 +1,233 @@
+/*
+ * Listen (P-17, ADR-67; docs/plan-escuchar.md): a music player. The choice cards, world swatches and numbered groups
+ * come from plan.css. Wide: the player card on the left, the tabs on the right; open, the player takes the screen with
+ * the melodies as its queue. Phone: a bar at the bottom that opens the player over the whole screen.
+ * Every movement is short and eased, and none happens with reduced motion. Values come from index.css tokens.
+ */
+.listen-page { --player-glow: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+/* The glow of the world's own colour, light enough to sit on the card in both themes. */
+.listen-page[data-world] { --player-glow: color-mix(in srgb, var(--world-glow) 22%, transparent); }
+.listen-page[data-world] { --landing-night-raised: var(--world-depth); --landing-glow-colour: color-mix(in srgb, var(--world-glow) var(--world-glow-strength), transparent); }
+.listen-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); grid-template-areas: 'player main'; gap: var(--space-10); align-items: start; }
+.listen-main { grid-area: main; display: grid; gap: var(--space-8); min-width: 0; }
+.listen-choices { display: grid; gap: var(--space-10); }
+.listen-tab-panel { animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
+
+/* The two tabs: links in the query, drawn as one segmented control. */
+.listen-tabs { justify-self: start; display: inline-flex; gap: var(--space-1); padding: var(--space-1); background: var(--color-surface); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); }
+.listen-tabs a { display: inline-flex; align-items: center; min-height: var(--control-height); padding: 0 var(--space-6); border-radius: var(--radius-pill); color: var(--color-text-secondary); font-weight: var(--font-weight-strong); text-decoration: none; transition: background var(--player-motion) var(--player-easing), color var(--motion-duration); }
+.listen-tabs a:hover { color: var(--color-text); }
+.listen-tabs a[aria-current='page'] { background: var(--color-accent); color: var(--color-button-text); }
+
+/* The choices of the create tab. */
+.listen-levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.listen-level { flex-direction: column; align-items: flex-start; gap: var(--space-1); padding-right: var(--space-8); }
+.listen-level .secondary-text { font-size: var(--text-sm); }
+.listen-duration-options { grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); }
+.listen-adjust { padding: 0; }
+.listen-adjust > summary { display: grid; gap: var(--space-1); padding: var(--space-5) var(--space-6); cursor: pointer; }
+.listen-adjust-title { font-family: var(--font-display); font-size: var(--text-xl); }
+.listen-adjust > summary .secondary-text { font-size: var(--text-sm); }
+.listen-adjust-body { display: grid; gap: var(--space-6); padding: 0 var(--space-6) var(--space-6); }
+.listen-adjust[open] .listen-adjust-body { animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
+.listen-adjust-body .plan-fieldset legend { font-size: var(--text-lg); }
+.listen-profile { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.listen-session-link { font-size: var(--text-sm); color: var(--color-text-secondary); }
+
+/* The player card: the paper card of the app, kept in sight while the choices scroll. */
+.listen-player { grid-area: player; position: sticky; top: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding: var(--space-8); color: var(--color-text); background: radial-gradient(ellipse at 50% 0%, var(--player-glow), transparent 65%), var(--card-background); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-settle var(--player-motion) var(--player-easing) both; }
+.listen-player > * { min-width: 0; }
+.player-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-5); text-align: center; }
+/* The panels it borrows from the session carry named grid areas there; here they simply follow one another. */
+.player-stage > * { grid-area: auto; min-width: 0; width: 100%; }
+.player-stage > .listen-orb { width: 1em; }
+.player-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.player-top .eyebrow { margin: 0; color: var(--color-accent); }
+.listen-orb { font-size: var(--listen-orb-size); transition: font-size var(--player-motion) var(--player-easing); }
+.listen-now { display: grid; gap: var(--space-2); }
+.listen-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
+.listen-sound { font-size: var(--text-sm); }
+.listen-now .quiet-notice { margin: 0; }
+.player-mini { display: none; }
+
+/* Round buttons of the player, the same size and spacing either side of the main one. */
+.icon-button { display: inline-grid; place-items: center; flex-shrink: 0; width: var(--control-height); height: var(--control-height); padding: 0; color: var(--color-text); background: transparent; border: var(--border-width) solid var(--color-border-subtle); border-radius: 50%; cursor: pointer; transition: background var(--motion-duration), border-color var(--motion-duration), transform var(--motion-duration), opacity var(--motion-duration); }
+.icon-button:hover:not(:disabled) { background: var(--color-surface); border-color: var(--color-border); transform: translateY(-1px); }
+.icon-button:active:not(:disabled) { transform: scale(0.94); }
+.icon-button:disabled { opacity: 0.35; cursor: default; }
+.icon-button .icon { width: var(--icon-size); height: var(--icon-size); }
+.player-transport { display: grid; grid-template-columns: repeat(2, auto) auto repeat(2, auto); justify-content: center; align-items: center; gap: var(--space-4); }
+.player-primary { display: inline-grid; place-items: center; width: var(--player-primary-size); height: var(--player-primary-size); padding: 0; color: var(--color-button-text); background: var(--color-accent); border: 0; border-radius: 50%; box-shadow: var(--glow-accent); cursor: pointer; transition: transform var(--motion-duration) var(--player-easing), box-shadow var(--motion-duration); }
+.player-primary:hover:not(:disabled) { transform: scale(1.05); }
+.player-primary:active:not(:disabled) { transform: scale(0.95); }
+.player-primary:disabled { opacity: 0.5; cursor: default; }
+.player-primary .icon { width: calc(var(--icon-size) * 1.35); height: calc(var(--icon-size) * 1.35); }
+.player-primary-icon { display: inline-grid; animation: listen-pop var(--motion-duration) var(--player-easing); }
+.player-primary:not([data-playing]) .icon { translate: 2px 0; }
+.player-primary.is-compact { width: var(--control-height); height: var(--control-height); box-shadow: none; }
+.player-primary.is-compact .icon { width: var(--icon-size); height: var(--icon-size); }
+
+/* The time bar: a native range input drawn over a track, with the saved point marked. */
+.seek-bar { display: grid; gap: var(--space-2); }
+.seek-track { position: relative; height: var(--seek-hit-height); }
+.seek-track::before, .seek-fill { content: ''; position: absolute; left: 0; top: 50%; height: var(--seek-height); translate: 0 -50%; border-radius: var(--radius-pill); pointer-events: none; }
+.seek-track::before { right: 0; background: var(--color-border-subtle); }
+.seek-fill { width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
+.listen-page[data-world] .seek-fill { background: var(--world-glow); }
+.seek-saved { position: absolute; top: 50%; left: calc(var(--saved-share) * 100%); width: var(--seek-mark-width); height: var(--seek-mark-height); translate: -50% -50%; border-radius: var(--radius-pill); background: var(--color-text-secondary); pointer-events: none; }
+.seek-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; appearance: none; cursor: pointer; }
+.seek-input::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.seek-input::-moz-range-track { background: transparent; }
+.seek-input::-webkit-slider-thumb { appearance: none; width: var(--seek-thumb-size); height: var(--seek-thumb-size); margin-top: calc((var(--seek-hit-height) - var(--seek-thumb-size)) / 2); border: 0; border-radius: 50%; background: var(--color-text); box-shadow: var(--card-shadow); transition: transform var(--motion-duration) var(--player-easing); }
+.seek-input::-moz-range-thumb { width: var(--seek-thumb-size); height: var(--seek-thumb-size); border: 0; border-radius: 50%; background: var(--color-text); }
+.seek-input:hover::-webkit-slider-thumb, .seek-input:active::-webkit-slider-thumb { transform: scale(1.25); }
+.seek-input:focus-visible { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); border-radius: var(--radius-pill); }
+.seek-input:disabled { cursor: progress; }
+.seek-bar.is-seeking .seek-fill { animation: listen-breathe 1.2s ease-in-out infinite; }
+.seek-times { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+
+.listen-secondary { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
+.listen-secondary:empty { display: none; }
+.listen-saved { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); color: var(--color-accent); font-weight: var(--font-weight-strong); animation: listen-pop var(--player-motion) var(--player-easing); }
+.listen-notice { font-size: var(--text-sm); animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
+.listen-notice .text-button { min-height: 0; padding: 0; }
+/* The playback panel of the session, quieter inside the card: its title is for screen readers. */
+.listen-player .playback-panel { padding: var(--space-5) 0 0; text-align: left; border: 0; border-top: var(--border-width) solid var(--color-border-subtle); border-radius: 0; background: none; box-shadow: none; }
+.listen-player .playback-panel > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.listen-player .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; margin-top: var(--space-3); }
+.listen-player .listening-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* "Stopped" would repeat what the player already says ("Paused"); it stays for screen readers. Interruptions still show. */
+.listen-player .playback-status:is([data-state='stopped'], [data-state='idle'], [data-state='playing']) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* The pause of the player stops the music here; Escape and the system controls still do too (ADR-16). */
+.listen-page .stop-button { display: none; }
+
+/* The saved melodies. */
+.melody-list { display: grid; gap: var(--space-5); }
+.melody-cloud { font-size: var(--text-sm); }
+.melody-cards { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.melody-card { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); min-width: 0; animation: listen-fade-up var(--player-motion) var(--player-easing) both; transition: border-color var(--motion-duration), transform var(--motion-duration) var(--player-easing); }
+.melody-card:hover { transform: translateY(-2px); }
+.melody-card:focus { outline: none; }
+.melody-card.is-highlighted { box-shadow: inset 0 0 0 var(--focus-width) var(--color-focus); }
+.melody-card.is-playing { border-color: var(--color-accent); }
+.melody-body { flex: 1; display: grid; gap: var(--space-2); min-width: 0; }
+.melody-name { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
+.melody-meta { font-size: var(--text-sm); }
+.melody-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.melody-badges:empty { display: none; }
+.melody-badge { padding: var(--space-1) var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: var(--font-weight-strong); color: var(--color-text-secondary); }
+.melody-badge.is-playing { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-button-text); }
+.melody-note { font-size: var(--text-sm); }
+.melody-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.melody-actions .pill-button .icon { width: var(--space-4); height: var(--space-4); }
+.melody-menu { position: relative; margin-left: auto; }
+.melody-menu > summary { display: grid; place-items: center; width: var(--control-height); height: var(--control-height); list-style: none; border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-lg); line-height: 1; cursor: pointer; transition: background var(--motion-duration); }
+.melody-menu > summary::-webkit-details-marker { display: none; }
+.melody-menu[open] > summary { border-color: var(--color-border); background: var(--color-surface); }
+.melody-menu-body { position: absolute; right: 0; top: calc(100% + var(--space-2)); z-index: var(--header-layer); display: grid; justify-items: start; gap: var(--space-2); min-width: var(--melody-menu-min-width); padding: var(--space-3) var(--space-4); background: var(--color-background); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-control); box-shadow: var(--card-shadow); animation: listen-fade-up var(--motion-duration) var(--player-easing) both; }
+.melody-menu-body .confirm-group { display: grid; gap: var(--space-2); }
+.melody-rename { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.melody-rename .tool-input { flex: 1 1 var(--melody-menu-min-width); min-width: 0; }
+.melody-empty { display: grid; justify-items: start; gap: var(--space-4); padding: var(--space-8); }
+
+/* The queue beside the open player. */
+.player-queue { display: grid; align-content: start; gap: var(--space-4); min-height: 0; animation: listen-fade-up var(--player-motion) var(--player-easing) 80ms both; }
+.melody-queue { display: grid; gap: var(--space-4); }
+.melody-queue-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
+.melody-queue-list { list-style: none; display: grid; gap: var(--space-2); }
+.melody-queue-item { display: flex; align-items: center; gap: var(--space-4); width: 100%; padding: var(--space-3) var(--space-4); color: var(--color-text); text-align: left; background: transparent; border: var(--border-width) solid transparent; border-radius: var(--radius-control); font: inherit; cursor: pointer; transition: background var(--motion-duration), border-color var(--motion-duration); }
+.melody-queue-item:hover { background: var(--color-surface); }
+.melody-queue-item.is-current { border-color: var(--color-accent); background: var(--color-surface); }
+.melody-queue-text { flex: 1; display: grid; gap: var(--space-1); min-width: 0; }
+.melody-queue-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.melody-queue-text .secondary-text { font-size: var(--text-sm); }
+/* Three bars that move while the current melody sounds, and rest while it waits. */
+.melody-queue-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: var(--space-4); }
+.melody-queue-bars span { width: 3px; height: 30%; border-radius: var(--radius-pill); background: var(--color-accent); }
+.melody-queue-bars.is-playing span { animation: listen-bars 900ms ease-in-out infinite alternate; }
+.melody-queue-bars.is-playing span:nth-child(2) { animation-delay: 200ms; }
+.melody-queue-bars.is-playing span:nth-child(3) { animation-delay: 420ms; }
+
+/* Naming a melody: a modal card, with the page stepping back behind it. */
+.listen-save-dialog::backdrop { background: var(--color-dimmer-soft); animation: listen-fade var(--player-motion) ease both; }
+.listen-save-dialog { position: fixed; inset: 0; z-index: calc(var(--stop-layer) + 1); width: min(var(--auth-card-width), calc(100vw - 2 * var(--space-4))); height: fit-content; margin: auto; padding: var(--space-6); color: var(--color-text); background: var(--color-background); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-pop var(--player-motion) var(--player-easing) both; }
+.listen-save-dialog form { display: grid; gap: var(--space-3); }
+.listen-save-dialog h3 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
+.listen-save-dialog label { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.listen-save-dialog .secondary-text { font-size: var(--text-sm); }
+
+/* Open player on a wide screen: the stage and the queue side by side, over most of the screen. */
+.listen-page.is-player-open .page-heading, .listen-page.is-player-open .listen-main { display: none; }
+.listen-page.is-player-open .listen-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'player'; }
+.listen-player.is-expanded { position: relative; top: auto; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; gap: var(--space-12); min-height: var(--player-open-min-height); padding: var(--space-10) var(--space-12); animation: listen-open var(--player-motion-open) var(--player-easing) both; }
+.listen-player.is-expanded .listen-orb { font-size: var(--player-orb-size-open); }
+.listen-player.is-expanded .listen-title { font-size: var(--text-welcome); }
+.listen-player.is-expanded .player-queue { max-height: var(--player-open-min-height); overflow-y: auto; padding-left: var(--space-8); border-left: var(--border-width) solid var(--color-border-subtle); }
+
+@keyframes listen-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes listen-fade-up { from { opacity: 0; translate: 0 var(--space-3); } to { opacity: 1; translate: 0 0; } }
+@keyframes listen-settle { from { opacity: 0.6; scale: 0.985; } to { opacity: 1; scale: 1; } }
+@keyframes listen-open { from { opacity: 0; scale: 0.96; translate: 0 var(--space-4); } to { opacity: 1; scale: 1; translate: 0 0; } }
+@keyframes listen-sheet { from { translate: 0 100%; } to { translate: 0 0; } }
+@keyframes listen-pop { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
+@keyframes listen-breathe { 50% { opacity: 0.45; } }
+@keyframes listen-bars { from { height: 25%; } to { height: 100%; } }
+
+@media (max-width: 1100px) {
+  .melody-cards { grid-template-columns: minmax(0, 1fr); }
+  .listen-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .listen-player.is-expanded { padding: var(--space-8); gap: var(--space-8); }
+}
+
+/* Tablet and phone: no card; a bar at the bottom opens the player over the whole screen. */
+@media (max-width: 900px) {
+  .listen-page { padding-bottom: var(--stop-reserve); }
+  .listen-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'main'; gap: var(--space-8); }
+  /* Closed, the player keeps no box of its own: only its bar, fixed at the bottom, and nothing in the layout. */
+  .listen-player:not(.is-expanded) { display: contents; }
+  .listen-player:not(.is-expanded) > .player-stage { display: none; }
+  .listen-player[data-mini]:not(.is-expanded) > .player-mini {
+    position: fixed; left: var(--space-3); right: var(--space-3); bottom: max(var(--space-3), env(safe-area-inset-bottom)); z-index: var(--stop-layer);
+    display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); overflow: hidden;
+    color: var(--color-text); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow);
+    animation: listen-sheet var(--player-motion) var(--player-easing) both;
+  }
+  .player-mini-line { position: absolute; left: 0; top: 0; height: var(--seek-mini-height); width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
+  .player-mini-open { flex: 1; display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: var(--control-height); padding: 0; color: inherit; text-align: left; background: none; border: 0; font: inherit; cursor: pointer; }
+  .player-mini-orb { font-size: var(--player-mini-orb-size); flex-shrink: 0; }
+  .player-mini-text { display: grid; min-width: 0; line-height: 1.3; }
+  .player-mini-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-lg); }
+  .player-mini-text .secondary-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+  /* Open on a phone: a sheet over the whole screen, the queue under the controls. */
+  .listen-page.is-player-open .listen-layout { grid-template-areas: 'player'; }
+  .listen-player.is-expanded {
+    position: fixed; inset: 0; z-index: var(--header-layer); grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-8);
+    min-height: 0; padding: max(var(--space-5), env(safe-area-inset-top)) var(--space-5) max(var(--space-8), env(safe-area-inset-bottom)); overflow-y: auto;
+    border-radius: 0; animation: listen-sheet var(--player-motion-open) var(--player-easing) both;
+  }
+  .listen-player.is-expanded .listen-orb { font-size: var(--player-orb-size-sheet); }
+  .listen-player.is-expanded .listen-title { font-size: var(--text-2xl); }
+  .listen-player.is-expanded .player-queue { max-height: none; overflow: visible; padding: var(--space-6) 0 0; border-left: 0; border-top: var(--border-width) solid var(--color-border-subtle); }
+  .app-shell:has(.listen-page.is-player-open) .app-header { visibility: hidden; }
+}
+@media (max-width: 600px) {
+  .listen-tabs { justify-self: stretch; }
+  .listen-tabs a { flex: 1; justify-content: center; padding: 0 var(--space-3); }
+  .listen-levels { grid-template-columns: minmax(0, 1fr); }
+  .listen-duration-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .listen-adjust > summary { padding: var(--space-4) var(--space-5); }
+  .listen-adjust-body { padding: 0 var(--space-5) var(--space-5); }
+  .melody-card { padding: var(--space-4); }
+  .melody-empty { padding: var(--space-6); }
+  .player-transport { gap: var(--space-3); }
+}
+@media (max-width: 360px) {
+  .player-transport { gap: var(--space-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listen-page *, .listen-page *::before, .listen-page *::after, .listen-save-dialog::backdrop { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .listen-tabs a[aria-current='page'], .melody-queue-item.is-current { border: var(--border-width) solid Highlight; }
+  .seek-fill { background: Highlight; }
+}

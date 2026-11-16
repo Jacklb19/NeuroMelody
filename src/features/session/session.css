@@ -104,6 +104,27 @@
 .arrival-choices .icon { color: var(--color-accent); }
 .arrival > .pill-button-primary { justify-self: start; }
 
+/* The pulse beat by beat and how far the reference has come (P-17). Drawn once per notification, never animated. */
+.pulse-trace { display: grid; gap: var(--space-3); padding: var(--space-5); margin-bottom: var(--space-6); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); background: var(--color-surface); text-align: left; }
+.arrival .pulse-trace { margin-bottom: 0; }
+.pulse-trace-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.pulse-trace-title { font-size: var(--text-sm); font-weight: var(--font-weight-strong); color: var(--color-text); }
+.pulse-trace-rate { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.pulse-trace-rate strong { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); color: var(--color-text); font-variant-numeric: tabular-nums; }
+.pulse-trace-chart { display: block; width: 100%; height: var(--pulse-trace-height); overflow: visible; }
+.pulse-trace-chart path { stroke: var(--color-accent); stroke-width: var(--chart-line-width-series); stroke-linejoin: round; stroke-linecap: round; }
+.session-page[data-world] .pulse-trace-chart path { stroke: var(--world-glow); }
+.pulse-trace-waiting { display: grid; place-items: center; height: var(--pulse-trace-height); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.pulse-trace-reference { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text); font-variant-numeric: tabular-nums; }
+.pulse-trace-hint { color: var(--color-text-secondary); }
+.pulse-trace-progress { width: 100%; height: var(--pulse-trace-bar-height); appearance: none; border: 0; border-radius: var(--radius-pill); background: var(--color-border-subtle); overflow: hidden; }
+.pulse-trace-progress::-webkit-progress-bar { background: var(--color-border-subtle); border-radius: var(--radius-pill); }
+.pulse-trace-progress::-webkit-progress-value { background: var(--color-accent); border-radius: var(--radius-pill); }
+.pulse-trace-progress::-moz-progress-bar { background: var(--color-accent); border-radius: var(--radius-pill); }
+.pulse-trace-details { justify-self: start; min-height: var(--target-min-size); padding: 0; font-size: var(--text-sm); }
+.pulse-trace.is-compact { gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+.pulse-trace.is-compact :is(.pulse-trace-chart, .pulse-trace-waiting) { height: var(--pulse-trace-height-compact); }
+
 .step-mark { display: inline-grid; place-items: center; width: var(--icon-badge-size); height: var(--icon-badge-size); flex-shrink: 0; border: var(--border-width) solid var(--color-border); border-radius: 50%; font-weight: var(--font-weight-strong); font-variant-numeric: tabular-nums; }
 
 /* While it plays: the steps the music can take and its pace. */
@@ -137,7 +158,7 @@
 .is-immersive .session-orb-figure { font-size: calc(var(--ring-size-immersive) * 0.82); }
 .is-immersive .stage-main { padding: 0; align-self: auto; }
 .is-immersive .stage-title { margin: 0 auto; }
-.is-immersive .session-stage .eyebrow, .is-immersive .stage-detail, .is-immersive .breath-hint, .is-immersive .music-now, .is-immersive .estimated-state, .is-immersive .session-stage .quiet-notice { display: none; }
+.is-immersive .session-stage .eyebrow, .is-immersive .stage-detail, .is-immersive .breath-hint, .is-immersive .music-now, .is-immersive .estimated-state, .is-immersive .session-stage .quiet-notice, .is-immersive .pulse-trace { display: none; }
 .is-immersive .playback-panel { padding: 0; border: 0; }
 .is-immersive .playback-panel > :is(h2, .panel-footnote, .playback-controls, .listening-tools) { display: none; }
 /* "Playing" needs no saying here; an interruption or a failure still does. */
@@ -164,6 +185,7 @@
   .listening-stage .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: var(--space-5); }
   .listening-stage .play-button { grid-column: 1 / -1; justify-self: center; margin: 0; }
   .session-page .acquisition-panel, .session-page .technical-details { padding-left: var(--space-5); padding-right: var(--space-5); }
+  .pulse-trace-chart, .pulse-trace-waiting { height: var(--pulse-trace-height-mobile); }
 }
 @media (max-width: 520px) {
   /* The first screen on a phone reaches how the pulse is measured and its button. The steps already name the slide,

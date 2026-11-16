@@ -26,14 +26,43 @@ import {
 } from '../session/durationWarnings';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
-import type { SoundProfile } from '../engine/soundProfile';
+import type { MixTrack, SoundProfile } from '../engine/soundProfile';
 
 const PERCENT = 100;
 
+/**
+ * One piece of music, fully described (P-17): playing it again with the
+ * same values plays the same notes. The listening screen gives it to the
+ * panel; a session leaves it out and the panel draws a new seed.
+ */
+export interface PlaybackPiece {
+  readonly seed: number;
+  readonly initialLevel: LevelId;
+  readonly instrument: InstrumentId;
+  readonly ambience: AmbienceId;
+  readonly profile: SoundProfile;
+  /** Seconds of the piece already heard: it sounds from there (fixed music only). */
+  readonly startAtS: number;
+  /** Balance of music and ambience it was kept with; the current one when omitted. */
+  readonly mix?: Readonly<Record<MixTrack, number>>;
+  /**
+   * Seconds it plays from its start point before its ending: what is left of
+   * the piece (ADR-67). The plan of the props when omitted.
+   */
+  readonly playForS?: number;
+}
+
 /** What the session screen can ask of the panel from outside it (ADR-47). */
 export interface PlaybackHandle {
-  /** Starts the music, as the panel's own button does; call it inside a click. */
-  start(): void;
+  /**
+   * Starts the music, as the panel's own button does; call it inside a
+   * click. Without a piece it resumes what was paused, or starts the music
+   * of the props. With one, it leaves whatever was playing and plays that
+   * piece from its start point, with the listening time counted again.
+   */
+  start(piece?: PlaybackPiece): void;
+  /** Stops the music at once, as the Stop button and Escape do; the piece stays paused. */
+  stop(): void;
   /**
    * Brings the fade of a quiet ending forward to now (ADR-60), so the session
    * ends by itself before its plan does. Returns whether it did: only a session
@@ -68,6 +97,8 @@ interface PlaybackPanelProps {
   readonly onFinished?: () => void;
   /** The page offers starting elsewhere, or the session is over and there is nothing left to start. */
   readonly hideStart?: boolean;
+  /** The balance of music and ambience changed, so a page that keeps the piece can keep it too (P-17). */
+  readonly onMixChange?: (mix: Readonly<Record<MixTrack, number>>) => void;
 }
 
 /** Seeds are drawn from [0, 2^31): non-negative integers that fit the 32-bit seed of the PRNG (mulberry32). */
@@ -116,6 +147,7 @@ export function PlaybackPanel({
   onElapsedChange,
   onFinished,
   hideStart = false,
+  onMixChange,
 }: PlaybackPanelProps): React.JSX.Element {
   const t = useMessages();
   const control = useAudioEngine(factory);
@@ -132,11 +164,18 @@ export function PlaybackPanel({
   const warningIndexRef = useRef(0);
   const fadeEndRef = useRef<number | null>(null);
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
+  // The piece being played, when the page chose one (P-17).
+  const pieceRef = useRef<PlaybackPiece | null>(null);
   const titleId = useId();
   const volumeId = useId();
   const warningTitleId = useId();
   const warningTextId = useId();
   const planDurationS = durationMin * SECONDS_PER_MINUTE;
+  // Read when the fade is scheduled, right after a start: a piece brings its own length (ADR-67).
+  const planS = useCallback(
+    (): number => pieceRef.current?.playForS ?? planDurationS,
+    [planDurationS],
+  );
 
   const scheduleFade = useCallback(
     (engine: AudioEngine): void => {
@@ -144,30 +183,52 @@ export function PlaybackPanel({
       if (startTime === null) {
         return;
       }
+      const plan = planS();
       if (quietEnding) {
-        const startsAt = startTime + quietFadeStartS(planDurationS);
-        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, QUIET_FADE_S);
+        // A piece with less left than the whole fade fades over what is left, so it still ends on time.
+        const fadeS = Math.min(QUIET_FADE_S, Math.max(1, plan));
+        const startsAt = startTime + plan - fadeS;
+        fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime, fadeS);
         return;
       }
-      const startsAt = startTime + fadeStartS(planDurationS, warningIndexRef.current);
+      const startsAt = startTime + fadeStartS(plan, warningIndexRef.current);
       fadeEndRef.current = engine.scheduleFinalFade(startsAt - engine.audioTime);
     },
-    [planDurationS, quietEnding],
+    [planS, quietEnding],
   );
 
-  const start = async (): Promise<void> => {
+  const start = async (piece?: PlaybackPiece): Promise<void> => {
+    if (piece !== undefined) {
+      // Another piece: the engine of the last one goes, and its time with it.
+      if (getEngine() !== null) {
+        onEngineChange?.(null);
+        await control.discard();
+      }
+      pieceRef.current = piece;
+      if (piece.mix !== undefined) setMix(piece.mix);
+      listenedRef.current = 0;
+      warningIndexRef.current = 0;
+      setWarning(null);
+      setFinished(false);
+    }
+    const chosen = pieceRef.current;
     const engine = await control.start(
-      {
-        seed: generateSeed(),
-        initialLevel,
-        ambience,
-        instrument,
-        profile,
-        outputThroughAudioElement,
-        reverb,
-      },
+      chosen === null
+        ? { seed: generateSeed(), initialLevel, ambience, instrument, profile, outputThroughAudioElement, reverb }
+        : {
+            seed: chosen.seed,
+            initialLevel: chosen.initialLevel,
+            instrument: chosen.instrument,
+            ambience: chosen.ambience,
+            profile: chosen.profile,
+            // An engine closed under a paused piece is built again where the piece was left.
+            startAtS: chosen.startAtS + (finished ? 0 : listenedRef.current),
+            outputThroughAudioElement,
+            reverb,
+          },
       volumeDb,
-      mix,
+      // A piece given now brings its own balance; the state above only shows on the next render.
+      piece?.mix ?? mix,
     );
     if (engine === null) {
       return;
@@ -179,9 +240,22 @@ export function PlaybackPanel({
     onEngineChange?.(engine);
   };
 
+
+  const stopNow = useCallback((): void => {
+    const engine = getEngine();
+    const startTime = sessionStartRef.current;
+    if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
+    setWarning(null);
+    onEngineChange?.(null);
+    void stop();
+  }, [getEngine, stop, onEngineChange]);
+
   useImperativeHandle(ref, () => ({
-    start: () => {
-      void start();
+    start: (piece?: PlaybackPiece) => {
+      void start(piece);
+    },
+    stop: () => {
+      stopNow();
     },
     endQuietly: () => {
       const engine = getEngine();
@@ -195,14 +269,13 @@ export function PlaybackPanel({
     },
   }));
 
-  const stopNow = useCallback((): void => {
+  // A plan that changes while the music plays moves its ending: the fade is scheduled again (P-17).
+  useEffect(() => {
     const engine = getEngine();
-    const startTime = sessionStartRef.current;
-    if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
-    setWarning(null);
-    onEngineChange?.(null);
-    void stop();
-  }, [getEngine, stop, onEngineChange]);
+    if (engine?.state !== 'playing' || sessionStartRef.current === null) return;
+    engine.cancelFinalFade();
+    scheduleFade(engine);
+  }, [getEngine, scheduleFade]);
 
   // Failed playback or a system-closed context also ends the parent's recording.
   useEffect(() => {
@@ -359,7 +432,9 @@ export function PlaybackPanel({
                 disabled={state === 'loading'} onChange={(event) => {
                   const gain = event.target.valueAsNumber / PERCENT;
                   getEngine()?.setMix(track, gain);
-                  setMix({ ...mix, [track]: gain });
+                  const next = { ...mix, [track]: gain };
+                  setMix(next);
+                  onMixChange?.(next);
                 }} />
             </label>
           ))}

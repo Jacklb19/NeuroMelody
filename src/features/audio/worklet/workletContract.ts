@@ -5,7 +5,7 @@
  */
 import { isAmbienceId, type AmbienceId } from '../core/ambienceCatalog';
 import { isInstrumentId, type InstrumentId } from '../core/instrumentCatalog';
-import { LAYER_COUNT, MIN_LAYERS } from '../core/SynthesisCore';
+import { LAYER_COUNT, MAX_START_AT_S, MIN_LAYERS } from '../core/SynthesisCore';
 import { MODE, isMode, type Mode } from '../core/theory';
 import { CALIBRATION_LEVEL, LEVELS } from '../engine/levels';
 
@@ -85,6 +85,10 @@ export interface SynthesizerOptions {
   readonly ambience: AmbienceId;
   /** Instrument the music is played with for the whole session (ADR-46). */
   readonly instrument: InstrumentId;
+  /** Seconds of the piece to move past before sounding, so a saved melody resumes where it was saved (P-17). */
+  readonly startAtS: number;
+  /** Tempo the piece is moved forward at: the starting tempo of fixed music. */
+  readonly startTempoBpm: number;
 }
 
 export interface ClipperOptions {
@@ -110,7 +114,11 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     value.initialLayers < MIN_LAYERS ||
     value.initialLayers > LAYER_COUNT ||
     !isAmbienceId(value.ambience) ||
-    !isInstrumentId(value.instrument)
+    !isInstrumentId(value.instrument) ||
+    typeof value.startAtS !== 'number' ||
+    !(value.startAtS >= 0 && value.startAtS <= MAX_START_AT_S) ||
+    typeof value.startTempoBpm !== 'number' ||
+    !(value.startTempoBpm >= MIN_TEMPO_BPM && value.startTempoBpm <= MAX_TEMPO_BPM)
   ) {
     throw new TypeError('Invalid synthesizer options.');
   }
@@ -120,6 +128,8 @@ export function readSynthesizerOptions(value: unknown): SynthesizerOptions {
     initialLayers: value.initialLayers,
     ambience: value.ambience,
     instrument: value.instrument,
+    startAtS: value.startAtS,
+    startTempoBpm: value.startTempoBpm,
   };
 }
 

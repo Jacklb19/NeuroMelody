@@ -17,6 +17,11 @@ export const home = {
     action: 'Preparar mi sesión',
     /** Starts a session like the last one: same goal and length, and the ambience kept on the device. */
     repeat: 'Repetir la última',
+    /** Music without a sensor or a plan (P-17). */
+    listen: 'O solo escuchar música',
+    /** The melody saved most recently, with the way to hear it. */
+    lastMelody: 'Tu última melodía:',
+    hearMelody: (name: string): string => `Oír ${name}`,
   },
   goals: {
     title: 'O empieza por una intención',
@@ -49,7 +54,7 @@ export const home = {
     title: 'Explora NeuroMelody',
     hint: 'Más allá de una sesión: lo que puedes ver, guardar y aportar.',
     items: {
-      worlds: { title: 'Mundos sonoros', text: 'Seis lugares con su propio sonido y color, del bosque de niebla al espacio profundo.' },
+      listen: { title: 'Escuchar', text: 'Música que se crea mientras la oyes, en seis mundos sonoros y sin sensor. Guarda las melodías que te gusten.' },
       progress: { title: 'Tu progreso', text: 'Cómo cambian tu pulso y tus valoraciones, y qué elecciones te sientan mejor.' },
       report: { title: 'Informe para compartir', text: 'Un resumen imprimible de tus sesiones para llevar a quien te acompaña.' },
       reminder: { title: 'Recordatorio', text: 'Añade a tu calendario la hora y los días en que quieres escuchar.' },

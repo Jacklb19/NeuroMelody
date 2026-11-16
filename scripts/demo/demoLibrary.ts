@@ -1,7 +1,7 @@
 /**
  * A believable listening library for a demonstration account: six weeks of
  * sessions with their samples, ratings, music recap, context and a few notes,
- * plus two favorite plans. Every value is invented; nothing comes from a
+ * plus two favorite plans and three saved melodies (P-17). Every value is invented; nothing comes from a
  * person. The same seed always gives the same library, so a backup can be
  * rebuilt for another account and its ids stay stable.
  *
@@ -61,12 +61,32 @@ export interface DemoFavorite {
   readonly profile: DemoSession['context']['profile'];
 }
 
+/** Shape of `src/features/listen/melody.ts`, written out. */
+export interface DemoMelody {
+  readonly id: string;
+  readonly ownerId: string;
+  readonly name: string;
+  readonly seed: number;
+  readonly instrument: DemoSession['context']['instrument'];
+  readonly ambience: DemoSession['context']['ambience'];
+  readonly profile: DemoSession['context']['profile'];
+  readonly level: DemoMusicStep['level'];
+  readonly positionS: number;
+  readonly durationMin: 15 | 30 | 45 | 60;
+  readonly musicMix: number;
+  readonly ambienceMix: number;
+  readonly synthesisVersion: 1;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface DemoBackup {
   readonly format: 'neuromelody-listening';
-  readonly version: 1;
+  readonly version: 2;
   readonly owner: string;
   readonly sessions: readonly DemoSession[];
   readonly favorites: readonly DemoFavorite[];
+  readonly melodies: readonly DemoMelody[];
 }
 
 export interface DemoOptions {
@@ -271,9 +291,22 @@ export function buildDemoBackup({ owner, now, utcOffsetHours = 5, seed = 2026 }:
     };
   });
 
+  // Three pieces kept from Listen in the last week of the library, newest first, as the app lists them.
+  const melodyOf = (daysAgo: number, melody: Omit<DemoMelody, 'id' | 'ownerId' | 'seed' | 'synthesisVersion' | 'createdAt' | 'updatedAt'>): DemoMelody => {
+    // 21:00 local time, `daysAgo` days before today, as an instant in UTC.
+    const atMs = todayLocal - daysAgo * MS_PER_DAY + 21 * MS_PER_HOUR + offsetMs;
+    const at = new Date(atMs).toISOString();
+    return { id: uuidv7(atMs, next), ownerId: owner, seed: Math.floor(next() * 2 ** 31), synthesisVersion: 1, createdAt: at, updatedAt: at, ...melody };
+  };
+  const melodies: DemoMelody[] = [
+    melodyOf(1, { name: 'Costa nocturna antes de dormir', instrument: 'warm', ambience: 'sea', profile: 'original', level: 'sleep', positionS: 840, durationMin: 45, musicMix: 1, ambienceMix: 0.7 }),
+    melodyOf(3, { name: 'Lluvia para leer', instrument: 'piano', ambience: 'rain', profile: 'original', level: 'target', positionS: 0, durationMin: 30, musicMix: 0.9, ambienceMix: 1 }),
+    melodyOf(6, { name: 'Bosque de la tarde', instrument: 'bowls', ambience: 'wind', profile: 'immersive', level: 'intermediate', positionS: 300, durationMin: 15, musicMix: 1, ambienceMix: 0.5 }),
+  ];
+
   return {
     format: 'neuromelody-listening',
-    version: 1,
+    version: 2,
     owner,
     // The app lists sessions newest first.
     sessions: [...sessions].reverse(),
@@ -281,5 +314,6 @@ export function buildDemoBackup({ owner, now, utcOffsetHours = 5, seed = 2026 }:
       { name: 'Noche tranquila', duration: 30, goals: ['rest_before_sleep'], instrument: 'warm', ambience: 'sea', fixed: false, profile: 'original' },
       { name: 'Pausa del almuerzo', duration: 10, goals: ['pause'], instrument: 'piano', ambience: 'rain', fixed: false, profile: 'original' },
     ],
+    melodies,
   };
 }

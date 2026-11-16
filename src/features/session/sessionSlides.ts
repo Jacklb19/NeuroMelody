@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { withViewTransition } from '../../shared/viewTransition';
 
 /**
  * The session as a path of slides (ADR-47): the pulse, how the person
@@ -11,12 +11,6 @@ export type SlideId = (typeof SLIDE_IDS)[number];
 
 /** Pause after the pulse connects before the next slide comes in, so "connected" can be read. */
 export const AUTO_ADVANCE_MS = 700;
-
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
 
 export interface Slides {
   readonly slide: SlideId;
@@ -36,20 +30,7 @@ export function useSlides(initial: SlideId): Slides {
     const current = currentRef.current;
     if (current === next) return;
     currentRef.current = next;
-    if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) {
-      // The transition photographs the page before and after a synchronous update.
-      const transition = document.startViewTransition(() => {
-        flushSync(() => { setSlide(next); });
-      });
-      // A transition cut short (another one starts, the tab is hidden) rejects these promises;
-      // the slide has changed anyway, so there is nothing to report.
-      const ignore = (): void => undefined;
-      transition.ready.catch(ignore);
-      transition.finished.catch(ignore);
-      transition.updateCallbackDone.catch(ignore);
-    } else {
-      setSlide(next);
-    }
+    withViewTransition(() => { setSlide(next); });
   }, []);
   return { slide, goTo };
 }

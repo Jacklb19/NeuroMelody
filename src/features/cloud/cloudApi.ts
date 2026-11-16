@@ -5,6 +5,7 @@ import { readSessionRecord, type SessionRecord, type SessionSample } from '../re
 import type { NarrativeFigures } from '../summary/narrativeFigures';
 import type { CollectionRecording } from '../collection/collectionRecording';
 import { progressNarrativeFromWire, type ProgressNarrative, type ProgressObservation } from '../progress/progressNarrative';
+import type { Melody } from '../listen/melody';
 
 /**
  * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
@@ -64,6 +65,12 @@ export interface CloudSessionList {
 /** Most sessions `GET /v1/sessions` returns; the same figure as `SESSION_LIST_LIMIT` in the API. */
 export const CLOUD_SESSION_LIST_LIMIT = 500;
 
+/**
+ * A saved melody as the cloud returns it (P-17): every field but the owner,
+ * which only the device keeps. Not yet validated: the caller checks it.
+ */
+export type CloudMelody = Readonly<Record<keyof Omit<Melody, 'ownerId'>, unknown>>;
+
 /** A plan proposed by the language model (RF-13): one of the allowed lengths and a sentence about it. */
 export interface PlanSuggestion {
   readonly durationMin: DurationMin;
@@ -109,6 +116,12 @@ export interface CloudApi {
    * version has been published. The model code checks every field before using it.
    */
   currentClassifier(): Promise<unknown>;
+  /** The melodies the account saved (P-17). An API from before them answers `not_found`. */
+  listMelodies(): Promise<CloudMelody[]>;
+  /** Stores a melody under its own id; the cloud keeps its newest version. */
+  saveMelody(melody: Melody): Promise<void>;
+  /** Deleting a melody the cloud no longer has is not an error: the result is the same. */
+  deleteMelody(id: string): Promise<void>;
 }
 
 /** Paths of the API, relative to its base URL. */
@@ -119,6 +132,7 @@ const SUMMARY_SUFFIX = '/summary';
 const RECORDINGS_PATH = '/v1/recordings';
 const CLASSIFIER_PATH = '/v1/models/classifier';
 const PROGRESS_SUMMARY_PATH = '/v1/progress/summary';
+const MELODIES_PATH = '/v1/melodies';
 const NOT_FOUND = 404;
 
 type Json = Readonly<Record<string, unknown>>;
@@ -214,6 +228,46 @@ function recordingToWire(recording: CollectionRecording): Json {
       rr_ms: segment.rrMs,
     })),
     consent: true,
+  };
+}
+
+/** A melody in the API's field names; the owner never travels. */
+function melodyToWire(melody: Melody): Json {
+  return {
+    name: melody.name,
+    seed: melody.seed,
+    instrument: melody.instrument,
+    ambience: melody.ambience,
+    profile: melody.profile,
+    level: melody.level,
+    position_seconds: melody.positionS,
+    duration_minutes: melody.durationMin,
+    music_mix: melody.musicMix,
+    ambience_mix: melody.ambienceMix,
+    synthesis_version: melody.synthesisVersion,
+    created_at: melody.createdAt,
+    updated_at: melody.updatedAt,
+  };
+}
+
+/** A melody the API listed, in the device's field names, still to be validated. */
+export function melodyFromWire(value: unknown): CloudMelody | null {
+  if (!isJson(value)) return null;
+  return {
+    id: value.id,
+    name: value.name,
+    seed: value.seed,
+    instrument: value.instrument,
+    ambience: value.ambience,
+    profile: value.profile,
+    level: value.level,
+    positionS: value.position_seconds,
+    durationMin: value.duration_minutes,
+    musicMix: value.music_mix,
+    ambienceMix: value.ambience_mix,
+    synthesisVersion: value.synthesis_version,
+    createdAt: toInstant(value.created_at),
+    updatedAt: toInstant(value.updated_at),
   };
 }
 
@@ -352,6 +406,19 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
       const narrative = narrativeFromWire(await json(await request('POST', path, body)));
       if (narrative === null) throw new CloudError('unknown');
       return narrative;
+    },
+    async listMelodies() {
+      const body = await json(await request('GET', MELODIES_PATH));
+      if (!isJson(body) || !Array.isArray(body.melodies)) throw new CloudError('unknown');
+      return body.melodies.map(melodyFromWire).filter((melody) => melody !== null);
+    },
+    async saveMelody(melody) {
+      const response = await request('PUT', `${MELODIES_PATH}/${encodeURIComponent(melody.id)}`, melodyToWire(melody));
+      if (!response.ok) throw await failure(response);
+    },
+    async deleteMelody(id) {
+      const response = await request('DELETE', `${MELODIES_PATH}/${encodeURIComponent(id)}`);
+      if (!response.ok && response.status !== NOT_FOUND) throw await failure(response);
     },
     async summarizeProgress(locale, observations) {
       const body = await json(await request('POST', PROGRESS_SUMMARY_PATH, { consent: true, locale, observations }));

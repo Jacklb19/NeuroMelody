@@ -137,6 +137,11 @@ export const account = {
       secondFactor: { title: 'Verificación en dos pasos', on: 'Activa', off: 'Sin activar', action: 'Gestionar' },
       privacy: { title: 'Privacidad y consentimiento', text: 'Qué se guarda y dónde.' },
       history: { title: 'Historial de sesiones', text: 'Revisa o borra tus sesiones.' },
+      /** Melodies kept from Listen (P-17). */
+      melodies: {
+        title: 'Melodías guardadas',
+        text: (count: number): string => (count === 0 ? 'Ninguna todavía. Se guardan desde Escuchar.' : count === 1 ? '1 melodía. Escúchala, renómbrala o bórrala.' : `${String(count)} melodías. Escúchalas, renómbralas o bórralas.`),
+      },
       collect: { title: 'Ayuda a mejorar la app', text: 'Una grabación guiada para que el modelo aprenda de ti. Opcional.' },
       signOut: {
         title: 'Cerrar sesión',

@@ -149,7 +149,7 @@ El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](
 | Documento | Contenido |
 |---|---|
 | [`definicion-proyecto.md`](docs/definicion-proyecto.md) | Especificación previa a la construcción (26 sep 2026): problema, requisitos, arquitectura y ADR-01 a ADR-06. Se conserva tal cual; donde difiere, prevalece `decisiones.md` (por ejemplo, ADR-08: Groq en lugar de Gemini; ADR-57: la app solo se usa con cuenta) |
-| [`decisiones.md`](docs/decisiones.md) | ADR-07 a ADR-64: lo que completa o cambia la especificación |
+| [`decisiones.md`](docs/decisiones.md) | ADR-07 a ADR-67: lo que completa o cambia la especificación |
 | [`plan-entrega.md`](docs/plan-entrega.md) | Bloques de trabajo y estado de cada requisito |
 | [`pantallas.md`](docs/pantallas.md) | Mapa de pantallas y de su contenido |
 | [`diseno-musical.md`](docs/diseno-musical.md) | Niveles musicales y reglas de transición |
@@ -158,6 +158,8 @@ El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](
 | [`fuentes-de-pulso.md`](docs/fuentes-de-pulso.md) | Sensores que sirven y por qué |
 | [`prueba-ble.md`](docs/prueba-ble.md) | Prueba manual de Bluetooth con nRF Connect |
 | [`contrato-progress-summary.md`](docs/contrato-progress-summary.md) | Contrato de `POST /v1/progress/summary` |
+| [`contrato-melodies.md`](docs/contrato-melodies.md) | Contrato de `/v1/melodies` y de su sincronización (ADR-66) |
+| [`plan-escuchar.md`](docs/plan-escuchar.md) | Definición de Escuchar, las melodías y el pulso en vivo, con su flujo de navegación (ADR-66) |
 | [`demo.md`](docs/demo.md) | Guion de demostración |
 
 ## Ramas

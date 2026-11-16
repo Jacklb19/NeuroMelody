@@ -57,7 +57,7 @@ test('restores and exports a backup without overwriting an existing note, then f
     await page.getByLabel(copy.selectBackup).setInputFiles({
       name: 'backup.json',
       mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, owner, sessions: records, favorites: [] })),
+      buffer: Buffer.from(JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, owner, sessions: records, favorites: [], melodies: [] })),
     });
     await page.getByRole('button', { name: copy.importBackup }).click();
     await expect(page.getByText(copy.backupDone)).toBeVisible();
