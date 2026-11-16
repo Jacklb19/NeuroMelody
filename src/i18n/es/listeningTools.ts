@@ -36,7 +36,7 @@ export const listeningTools = {
   restoreTitle: 'Restaurar una copia',
   restoreHint: 'Elige un archivo descargado desde esta misma cuenta. Se conservan tus datos actuales.',
   chooseBackup: 'Elegir archivo',
-  backupHint: 'Guarda un archivo con tus sesiones, notas, detalles musicales y favoritos de este navegador. El archivo contiene datos personales. Puedes recuperar la copia desde la misma cuenta.',
+  backupHint: 'Tus sesiones, notas y favoritos de este navegador en un archivo. Incluye datos personales.',
   exportBackup: 'Descargar copia JSON',
   selectBackup: 'Elegir copia JSON',
   importBackup: 'Restaurar copia',

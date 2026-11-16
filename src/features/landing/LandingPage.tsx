@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useId, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { MAIN_CONTENT_ID } from '../../app/Layout';
 import { QuickPreferences } from '../../app/preferences/PreferenceControls';
@@ -7,7 +7,7 @@ import { APP_NAME } from '../../config/app';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { BrandMark } from '../../shared/BrandMark';
-import { ArrowRightIcon, HeartIcon, NoteIcon, ShieldIcon, SparkIcon, WaveIcon } from '../../shared/icons';
+import { ArrowRightIcon, CloseIcon, HeartIcon, MenuIcon, NoteIcon, ShieldIcon, SparkIcon, WaveIcon } from '../../shared/icons';
 import { SourceIcon } from '../acquisition/SourceIcon';
 import { SOURCE_KIND_IDS, type SourceKind } from '../acquisition/sourceCatalog';
 import { SOURCE_TRAITS } from '../acquisition/sourceTraits';
@@ -59,6 +59,15 @@ export function LandingPage(): React.JSX.Element {
   const [sceneAvailable, setSceneAvailable] = useState(supportsWebGl);
   const handleUnavailable = useCallback(() => { setSceneAvailable(false); }, []);
   const id = useId();
+  // On a phone the sections, the theme, the language and the sign-up live in a menu (landing.css).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => { setMenuOpen(false); }, []);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (event: KeyboardEvent): void => { if (event.key === 'Escape') closeMenu(); };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); };
+  }, [menuOpen, closeMenu]);
   const sourceNames: Readonly<Record<SourceKind, string>> = t.acquisition.sources;
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const stepTexts: Readonly<Record<(typeof LANDING_STEP_IDS)[number], string>> = {
@@ -86,7 +95,28 @@ export function LandingPage(): React.JSX.Element {
         <div className="landing-account">
           <QuickPreferences />
           <Link to={ROUTES.login} className="landing-signin">{copy.nav.signIn}</Link>
-          <Link to={ROUTES.register} className="pill-button pill-button-primary">{copy.nav.register}</Link>
+          <Link to={ROUTES.register} className="pill-button pill-button-primary landing-register">{copy.nav.register}</Link>
+          <button
+            type="button"
+            className="landing-menu-button"
+            aria-expanded={menuOpen}
+            aria-controls={`${id}-menu`}
+            aria-label={menuOpen ? copy.nav.closeMenu : copy.nav.menu}
+            onClick={() => { setMenuOpen(!menuOpen); }}
+          >
+            {menuOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
+        </div>
+        <div id={`${id}-menu`} className="landing-menu" hidden={!menuOpen}>
+          <nav aria-label={copy.navigationLabel}>
+            <ul>
+              <li><a href={`#${LANDING_SECTIONS.howItWorks}`} onClick={closeMenu}>{copy.nav.howItWorks}</a></li>
+              <li><a href={`#${LANDING_SECTIONS.moments}`} onClick={closeMenu}>{copy.nav.moments}</a></li>
+              <li><a href={`#${LANDING_SECTIONS.privacy}`} onClick={closeMenu}>{copy.nav.privacy}</a></li>
+            </ul>
+          </nav>
+          <QuickPreferences />
+          <Link to={ROUTES.register} className="pill-button pill-button-ghost pill-button-block">{copy.nav.register}</Link>
         </div>
       </header>
 

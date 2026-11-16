@@ -653,6 +653,23 @@ select:disabled { background-color: var(--color-surface); color: var(--color-tex
 .listening-tools > summary { min-height: var(--control-height); cursor: pointer; }
 .listening-tools label { display: grid; min-width: 0; gap: var(--space-1); }
 .listening-tools .confirmation-control { display: flex; margin: 0; }
+/* History filters: the title inside the card, two fields to a row, the check and the reset on one line. */
+.history-filters { min-width: 0; margin: var(--space-4) 0; padding: var(--space-6); }
+.history-filters > legend { float: left; width: 100%; padding: 0; margin-bottom: var(--space-4); font-family: var(--font-display); font-size: var(--text-xl); }
+.history-filters > legend + * { clear: both; }
+.history-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.history-filter-grid label { display: grid; gap: var(--space-2); min-width: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.history-filter-grid .tool-input { width: 100%; }
+.history-filter-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-4); margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border-subtle); }
+.history-filter-check { display: inline-flex; align-items: center; gap: var(--space-3); min-height: var(--target-min-size); cursor: pointer; }
+.history-filter-check input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--color-accent); }
+@media (max-width: 900px) {
+  .history-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+}
+@media (max-width: 380px) {
+  .history-filter-grid { grid-template-columns: minmax(0, 1fr); }
+  .history-filters { padding: var(--space-5); }
+}
 .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--totp-input-width)), 1fr)); gap: var(--space-3); }
 .tool-input { min-width: 0; max-width: 100%; min-height: var(--control-height); padding: var(--space-2) var(--space-4); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); background-color: var(--color-background); color: var(--color-text); transition: border-color var(--motion-duration); }
 select.tool-input { padding-right: var(--space-10); }

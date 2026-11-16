@@ -13,6 +13,8 @@ export const landing = {
     privacy: 'Privacidad',
     signIn: 'Iniciar sesión',
     register: 'Crear cuenta',
+    menu: 'Menú',
+    closeMenu: 'Cerrar el menú',
   },
   hero: {
     eyebrow: 'Música que se adapta a ti',
