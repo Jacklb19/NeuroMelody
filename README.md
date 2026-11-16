@@ -149,7 +149,7 @@ El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](
 | Documento | Contenido |
 |---|---|
 | [`definicion-proyecto.md`](docs/definicion-proyecto.md) | Especificación previa a la construcción (26 sep 2026): problema, requisitos, arquitectura y ADR-01 a ADR-06. Se conserva tal cual; donde difiere, prevalece `decisiones.md` (por ejemplo, ADR-08: Groq en lugar de Gemini; ADR-57: la app solo se usa con cuenta) |
-| [`decisiones.md`](docs/decisiones.md) | ADR-07 a ADR-66: lo que completa o cambia la especificación |
+| [`decisiones.md`](docs/decisiones.md) | ADR-07 a ADR-67: lo que completa o cambia la especificación |
 | [`plan-entrega.md`](docs/plan-entrega.md) | Bloques de trabajo y estado de cada requisito |
 | [`pantallas.md`](docs/pantallas.md) | Mapa de pantallas y de su contenido |
 | [`diseno-musical.md`](docs/diseno-musical.md) | Niveles musicales y reglas de transición |

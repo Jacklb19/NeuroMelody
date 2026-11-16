@@ -2,6 +2,14 @@
 
 **Estado:** aprobado e implementado el 16 nov 2026 como ADR-66 (`decisiones.md`); sus pantallas están en `pantallas.md`. Este documento queda como la definición detallada.
 
+> **Revisión del 16 nov (ADR-67).** Escuchar pasó a ser un reproductor de música. Donde este documento dice otra cosa, manda ADR-67:
+> - Cada melodía tiene duración (15, 30, 45 o 60 min, la de la pieza al guardarla) y una **barra de tiempo** que se puede mover, con ±15 s; el punto guardado es una marca en la barra y las tarjetas ya no tienen «Desde el minuto».
+> - En PC el **reproductor está a la izquierda** y las pestañas a la derecha. Al reproducir se **abre sobre la pantalla** con las melodías como cola (anterior y siguiente); `?player=open` va al historial y «Atrás» lo cierra.
+> - En el celular, una **barra mini** abajo (línea de progreso, título, pausar) abre el reproductor a pantalla completa.
+> - La duración se elige en Crear (grupo 03), no en el reproductor. La vista inmersiva aparte desaparece: el reproductor abierto la sustituye.
+> - La pausa del reproductor sustituye al botón fijo de Detener en Escuchar; Esc y los controles del sistema siguen deteniendo.
+> - En la sesión, la barra de «Escuchando» marca los cambios de paso como capítulos.
+
 **Ajustes del usuario ya incorporados:**
 
 - Escuchar es como una sesión, pero sin medir nada.

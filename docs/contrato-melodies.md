@@ -15,7 +15,8 @@ La API llama a la base con el token de la persona: las políticas RLS vuelven a 
 | `ambience` | `none`, `rain`, `sea` o `wind` |
 | `profile` | `original`, `minimal` o `immersive` |
 | `level` | `high`, `intermediate`, `target` o `sleep` |
-| `position_seconds` | Entero de 0 a 7200 |
+| `position_seconds` | Entero de 0 a 7200, y como mucho la duración de la pieza |
+| `duration_minutes` | 15, 30, 45 o 60 (ADR-67); las guardadas antes de existir valen 30 |
 | `music_mix`, `ambience_mix` | Número de 0 a 1 |
 | `synthesis_version` | Entero de 1 a 32 767 |
 | `created_at`, `updated_at` | Fecha y hora con zona; `updated_at` no es anterior a `created_at` |
@@ -48,4 +49,4 @@ El registro de lo sincronizado y la cola de borrados viven en `localStorage` por
 
 ## Publicación
 
-Primero se aplica la migración `back/supabase/migrations/20261117000000_melodies.sql` en Supabase, después se publica el back y por último el front. El front publicado antes que el back funciona igual: las melodías se quedan en el dispositivo.
+Primero se aplican las migraciones `back/supabase/migrations/20261117000000_melodies.sql` y `20261117010000_melody_duration.sql` en Supabase, en ese orden, después se publica el back y por último el front. El front publicado antes que el back funciona igual: las melodías se quedan en el dispositivo.
