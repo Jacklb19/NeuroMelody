@@ -43,7 +43,11 @@ export function PlanPage(): React.JSX.Element {
   const [params] = useSearchParams();
   const { state: account } = useAuth();
   const [fixed, setFixed] = useState(false);
-  const [profile, setProfile] = useState<SoundProfile>('original');
+  // A link from the listening screen brings its texture along with its sound (P-17).
+  const [profile, setProfile] = useState<SoundProfile>(() => {
+    const linked = params.get(QUERY_PARAMS.soundProfile);
+    return isSoundProfile(linked) ? linked : 'original';
+  });
   const guided = params.get(QUERY_PARAMS.guide) === '1';
   const [duration, setDuration] = useState<DurationMin>(() => parseOption(DURATIONS_MIN, Number(params.get(QUERY_PARAMS.duration)), DEFAULT_DURATION_MIN));
   // One goal at most: a link that carries several keeps its first one.

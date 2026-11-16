@@ -10,6 +10,7 @@ export const app = {
   navigation: {
     home: 'Home',
     plan: 'New session',
+    listen: 'Listen',
     history: 'History',
     progress: 'Progress',
   },

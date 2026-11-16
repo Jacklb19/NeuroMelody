@@ -7,6 +7,7 @@ export const ROUTE_SEGMENTS = {
   warnings: 'warnings',
   plan: 'plan',
   session: 'session',
+  listen: 'listen',
   summary: 'summary/:id',
   history: 'history',
   progress: 'progress',
@@ -29,6 +30,8 @@ export const ROUTES = {
   warnings: `/${ROUTE_SEGMENTS.warnings}`,
   plan: `/${ROUTE_SEGMENTS.plan}`,
   session: `/${ROUTE_SEGMENTS.session}`,
+  /** Music generated while it plays, with no sensor, and the melodies the person saved (P-17). */
+  listen: `/${ROUTE_SEGMENTS.listen}`,
   history: `/${ROUTE_SEGMENTS.history}`,
   /** Evolution across the sessions saved on the device. */
   progress: `/${ROUTE_SEGMENTS.progress}`,
@@ -60,6 +63,10 @@ export const QUERY_PARAMS = {
   guide: 'guide',
   /** Which sessions the report covers: an id of the progress range catalog. */
   range: 'range',
+  /** Tab of the listening screen (P-17): an id of `LISTEN_TABS`; the create tab when absent. */
+  tab: 'tab',
+  /** A saved melody the listening screen brings into sight, without playing it. */
+  melody: 'melody',
 } as const;
 
 /** Absolute URL of a route, for the links the identity provider sends or returns to. */
@@ -110,4 +117,30 @@ export function sessionPath(
   if (sound !== undefined && sound.profile !== 'original') params.set(QUERY_PARAMS.soundProfile, sound.profile);
   if (sound?.guide) params.set(QUERY_PARAMS.guide, '1');
   return `${ROUTES.session}?${params.toString()}`;
+}
+
+/** Ids of the tabs of the listening screen; mirrors `LISTEN_TABS` (P-17). */
+const MELODIES_TAB = 'melodies';
+
+/**
+ * The listening screen (P-17), on its melodies tab when asked, with one of
+ * them brought into sight. The tab travels in the query, not the path: the
+ * layout mounts a screen again when its path changes, and the music would stop.
+ */
+export function listenPath(tab: 'create' | 'melodies' = 'create', melodyId?: string): string {
+  const params = new URLSearchParams();
+  if (tab === MELODIES_TAB) params.set(QUERY_PARAMS.tab, MELODIES_TAB);
+  if (melodyId !== undefined) params.set(QUERY_PARAMS.melody, melodyId);
+  const query = params.toString();
+  return query === '' ? ROUTES.listen : `${ROUTES.listen}?${query}`;
+}
+
+/** The plan with a sound already chosen: the listening screen hands its sound to a session (P-17). */
+export function planWithSoundPath(sound: { readonly instrument: string; readonly ambience: string; readonly profile: string }): string {
+  const params = new URLSearchParams({
+    [QUERY_PARAMS.instrument]: sound.instrument,
+    [QUERY_PARAMS.ambience]: sound.ambience,
+    [QUERY_PARAMS.soundProfile]: sound.profile,
+  });
+  return `${ROUTES.plan}?${params.toString()}`;
 }

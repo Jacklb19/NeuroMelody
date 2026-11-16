@@ -50,6 +50,9 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
     listSentRecordings: () => Promise.resolve([]),
     withdrawRecording: () => Promise.resolve(),
     currentClassifier: () => Promise.resolve(null),
+    listMelodies: () => Promise.resolve([]),
+    saveMelody: () => Promise.resolve(),
+    deleteMelody: () => Promise.resolve(),
   };
 }
 

@@ -20,4 +20,4 @@ if (owner === undefined || !UUID.test(owner)) {
 
 const backup = buildDemoBackup({ owner, now: new Date() });
 await writeFile(output, JSON.stringify(backup));
-console.log(`Wrote ${String(backup.sessions.length)} sessions and ${String(backup.favorites.length)} favorites to ${output}`);
+console.log(`Wrote ${String(backup.sessions.length)} sessions, ${String(backup.favorites.length)} favorites and ${String(backup.melodies.length)} melodies to ${output}`);

@@ -26,7 +26,7 @@ import {
 } from '../session/durationWarnings';
 import { STOP_SHORTCUT_KEY } from './stopShortcut';
 import { useAudioEngine, type AudioStartFailure, type AudioState } from './useAudioEngine';
-import type { SoundProfile } from '../engine/soundProfile';
+import type { MixTrack, SoundProfile } from '../engine/soundProfile';
 
 const PERCENT = 100;
 
@@ -43,6 +43,8 @@ export interface PlaybackPiece {
   readonly profile: SoundProfile;
   /** Seconds of the piece already heard: it sounds from there (fixed music only). */
   readonly startAtS: number;
+  /** Balance of music and ambience it was kept with; the current one when omitted. */
+  readonly mix?: Readonly<Record<MixTrack, number>>;
 }
 
 /** What the session screen can ask of the panel from outside it (ADR-47). */
@@ -88,6 +90,8 @@ interface PlaybackPanelProps {
   readonly onFinished?: () => void;
   /** The page offers starting elsewhere, or the session is over and there is nothing left to start. */
   readonly hideStart?: boolean;
+  /** The balance of music and ambience changed, so a page that keeps the piece can keep it too (P-17). */
+  readonly onMixChange?: (mix: Readonly<Record<MixTrack, number>>) => void;
 }
 
 /** Seeds are drawn from [0, 2^31): non-negative integers that fit the 32-bit seed of the PRNG (mulberry32). */
@@ -136,6 +140,7 @@ export function PlaybackPanel({
   onElapsedChange,
   onFinished,
   hideStart = false,
+  onMixChange,
 }: PlaybackPanelProps): React.JSX.Element {
   const t = useMessages();
   const control = useAudioEngine(factory);
@@ -185,6 +190,7 @@ export function PlaybackPanel({
         await control.discard();
       }
       pieceRef.current = piece;
+      if (piece.mix !== undefined) setMix(piece.mix);
       listenedRef.current = 0;
       warningIndexRef.current = 0;
       setWarning(null);
@@ -195,14 +201,19 @@ export function PlaybackPanel({
       chosen === null
         ? { seed: generateSeed(), initialLevel, ambience, instrument, profile, outputThroughAudioElement, reverb }
         : {
-            ...chosen,
+            seed: chosen.seed,
+            initialLevel: chosen.initialLevel,
+            instrument: chosen.instrument,
+            ambience: chosen.ambience,
+            profile: chosen.profile,
             // An engine closed under a paused piece is built again where the piece was left.
             startAtS: chosen.startAtS + (finished ? 0 : listenedRef.current),
             outputThroughAudioElement,
             reverb,
           },
       volumeDb,
-      mix,
+      // A piece given now brings its own balance; the state above only shows on the next render.
+      piece?.mix ?? mix,
     );
     if (engine === null) {
       return;
@@ -402,7 +413,9 @@ export function PlaybackPanel({
                 disabled={state === 'loading'} onChange={(event) => {
                   const gain = event.target.valueAsNumber / PERCENT;
                   getEngine()?.setMix(track, gain);
-                  setMix({ ...mix, [track]: gain });
+                  const next = { ...mix, [track]: gain };
+                  setMix(next);
+                  onMixChange?.(next);
                 }} />
             </label>
           ))}

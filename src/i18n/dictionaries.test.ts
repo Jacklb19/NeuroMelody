@@ -32,6 +32,8 @@ const SAME_IN_BOTH = new Set([
   'common.units.minutes',
   'common.units.tempo',
   'plan.minutesUnit',
+  // "15 min": the abbreviation of minutes on the duration buttons of Listen.
+  'listen.player.minutes',
   // "Piano" is the same word.
   'plan.instrument.names.piano',
   // Each language is named in itself, whatever the interface is in.

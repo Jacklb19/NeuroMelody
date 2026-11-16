@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { usePageTitle } from '../../app/usePageTitle';
-import { planPath, QUERY_PARAMS, ROUTES, sessionPath, summaryPath } from '../../config/routes';
+import { listenPath, planPath, QUERY_PARAMS, ROUTES, sessionPath, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import { ArrowRightIcon, ClockIcon, FileIcon, HeartIcon, MonitorIcon, PlayIcon, SparkIcon, WaveIcon } from '../../shared/icons';
@@ -13,6 +13,7 @@ import { readAmbience, readInstrument, readLastGoals } from '../plan/soundChoice
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
 import { EXPLORE_IDS, EXPLORE_ROUTES, type ExploreId } from './exploreCatalog';
+import { useMelodies } from '../listen/useMelodies';
 import { dayPartAt, FIRST_SESSION_STEP_IDS, firstName } from './greeting';
 import './home.css';
 
@@ -25,7 +26,7 @@ import './home.css';
  */
 /** The icon of each place to explore. */
 const EXPLORE_ICONS: Readonly<Record<ExploreId, React.JSX.Element>> = {
-  worlds: <SparkIcon />,
+  listen: <SparkIcon />,
   progress: <WaveIcon />,
   report: <FileIcon />,
   reminder: <ClockIcon />,
@@ -45,6 +46,8 @@ export function HomePage(): React.JSX.Element {
   const ids = { start: useId(), goals: useId(), activity: useId(), explore: useId() };
   const exploreItems: Readonly<Record<ExploreId, { readonly title: string; readonly text: string }>> = copy.explore.items;
   const name = state.kind === 'signed_in' ? firstName(state.user.name) : null;
+  // Read only: the listening screen is the one that keeps the melodies in step with the cloud.
+  const lastMelody = useMelodies(state.kind === 'signed_in' ? state.user.id : null, { sync: false }).melodies?.[0] ?? null;
   const greeting = name === null ? copy.greetings[dayPart] : copy.greetingWithName(copy.greetings[dayPart], name);
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
   const goalTaglines: Readonly<Record<GoalId, string>> = copy.goals.taglines;
@@ -91,8 +94,15 @@ export function HomePage(): React.JSX.Element {
                 {copy.start.repeat}
               </Link>
             )}
+            <Link to={ROUTES.listen} className="pill-button pill-button-ghost">{copy.start.listen}</Link>
           </div>
           <p className="start-quick-hint">{quickHint}</p>
+          {lastMelody !== null && (
+            <p className="start-quick-hint start-last-melody">
+              {copy.start.lastMelody}{' '}
+              <Link to={listenPath('melodies', lastMelody.id)} aria-label={copy.start.hearMelody(lastMelody.name)}>{lastMelody.name}</Link>
+            </p>
+          )}
         </div>
         <BreathingOrb className="start-orb" />
       </section>

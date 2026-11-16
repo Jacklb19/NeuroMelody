@@ -4,6 +4,8 @@ import { useAuth } from '../account/authContext';
 import { readConsent, writeConsent } from '../privacy/consentStore';
 import { SessionStoreContext, useSessionStore } from '../records/sessionStoreContext';
 import { useSessionDrafts } from '../records/sessionDraftContext';
+import { forgetLastPiece } from '../listen/lastPiece';
+import { useMelodyStore } from '../listen/melodyStoreContext';
 import { CloudError, createCloudApi, type CloudApi, type CloudErrorCode } from './cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from './cloudSyncContext';
 import { removeAccountStorage } from './accountStorage';
@@ -85,6 +87,7 @@ export function CloudSyncProvider({
   const { state, service } = useAuth();
   const local = useSessionStore();
   const drafts = useSessionDrafts();
+  const melodyStore = useMelodyStore();
   const userId = state.kind === 'signed_in' ? state.user.id : null;
   const secondFactorPassed = state.kind === 'signed_in' && state.assurance.current === 'aal2';
 
@@ -217,10 +220,13 @@ export function CloudSyncProvider({
     for (const draft of await drafts.list()) {
       if (draft.ownerId === userId) await drafts.delete(draft.id);
     }
+    // The melodies went from the cloud with the account (on delete cascade); these are the device's copies.
+    for (const melody of await melodyStore.list(userId)) await melodyStore.delete(melody.id);
+    forgetLastPiece(userId);
     removeAccountStorage(userId);
     link.useMarksOf(userId);
     setRevision((value) => value + 1);
-  }, [link, local, drafts, userId]);
+  }, [link, local, drafts, melodyStore, userId]);
 
   const setConsent = useCallback(async (given: boolean): Promise<void> => {
     const now = new Date();

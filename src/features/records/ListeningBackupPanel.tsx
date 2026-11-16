@@ -3,6 +3,8 @@ import { useMessages } from '../../i18n/messages';
 import { downloadText } from '../../shared/downloadText';
 import { FileIcon, HistoryIcon } from '../../shared/icons';
 import { readFavorites, writeFavorites } from '../plan/favorites';
+import { MAX_MELODIES } from '../listen/melody';
+import { useMelodyStore } from '../listen/melodyStoreContext';
 import { BACKUP_FORMAT, BACKUP_VERSION, MAX_BACKUP_BYTES, parseListeningBackup, type ListeningBackup } from './listeningBackup';
 import { useSessionStore } from './sessionStoreContext';
 
@@ -15,6 +17,7 @@ export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: st
   const copy = useMessages().listeningTools;
   const titleId = useId();
   const store = useSessionStore();
+  const melodyStore = useMelodyStore();
   const [pending, setPending] = useState<ListeningBackup | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
@@ -28,6 +31,7 @@ export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: st
         owner,
         sessions: (await store.list()).filter((record) => record.ownerId === owner),
         favorites: readFavorites(owner),
+        melodies: await melodyStore.list(owner),
       };
       const content = JSON.stringify(backup);
       if (new Blob([content]).size > MAX_BACKUP_BYTES) throw new RangeError('Backup exceeds the import limit.');
@@ -47,7 +51,7 @@ export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: st
       if (file.size > MAX_BACKUP_BYTES) throw new RangeError('Backup too large.');
       const backup = parseListeningBackup(await file.text(), owner);
       setPending(backup);
-      setNotice(copy.backupReady(backup.sessions.length, backup.favorites.length));
+      setNotice(copy.backupReady(backup.sessions.length, backup.favorites.length, backup.melodies.length));
     } catch {
       setNotice(copy.backupInvalid);
     } finally {
@@ -64,6 +68,11 @@ export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: st
       const names = new Set(existing.map(({ name }) => name));
       const missing = backup.favorites.filter(({ name }) => !names.has(name));
       if (missing.length > 0) writeFavorites(owner, [...existing, ...missing]);
+      // Melodies kept here stay as they are; the ones missing come back, up to the limit of the account.
+      const kept = await melodyStore.list(owner);
+      const keptIds = new Set(kept.map(({ id }) => id));
+      const room = Math.max(0, MAX_MELODIES - kept.length);
+      for (const melody of backup.melodies.filter(({ id }) => !keptIds.has(id)).slice(0, room)) await melodyStore.put(melody);
       setNotice(copy.backupDone);
       setPending(null);
     } catch {

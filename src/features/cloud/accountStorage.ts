@@ -1,3 +1,4 @@
+import { melodyLedgerKey } from '../listen/melodySync';
 import { favoritesStorageKey } from '../plan/favorites';
 import { narrativeStorageKey } from '../summary/narrativeCache';
 import { PENDING_DELETIONS_STORAGE_PREFIX, SET_ASIDE_STORAGE_PREFIX, SYNC_MARKS_STORAGE_PREFIX } from './syncSessions';
@@ -20,12 +21,14 @@ export function accountStorageKeys(owner: string): readonly string[] {
     `${SET_ASIDE_STORAGE_PREFIX}${owner}`,
     narrativeStorageKey(owner),
     favoritesStorageKey(owner),
+    melodyLedgerKey(owner),
   ];
 }
 
 /**
  * Removes what this device keeps for an account that no longer exists: its
- * marks, queues, automatic texts and favorites (ADR-61). Blocked storage
+ * marks, queues, automatic texts, favorites and what it knows of the
+ * account's melodies in the cloud (ADR-61, P-17). Blocked storage
  * leaves nothing to remove.
  */
 export function removeAccountStorage(owner: string, storage: RemovableStorage | null = browserStorage()): void {

@@ -22,6 +22,7 @@ import { PendingScreen } from './PendingScreen';
  * for offline use like any other file of the build.
  */
 const SessionPage = lazy(() => import('../features/session/SessionPage').then((m) => ({ default: m.SessionPage })));
+const ListenPage = lazy(() => import('../features/listen/ListenPage').then((m) => ({ default: m.ListenPage })));
 const SessionSummaryPage = lazy(() => import('../features/summary/SessionSummaryPage').then((m) => ({ default: m.SessionSummaryPage })));
 const HistoryPage = lazy(() => import('../features/history/HistoryPage').then((m) => ({ default: m.HistoryPage })));
 const ProgressPage = lazy(() => import('../features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })));
@@ -60,6 +61,14 @@ export function AppRoutes(): React.JSX.Element {
             element={
               <RequireWarnings>
                 <SessionPage />
+              </RequireWarnings>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.listen}
+            element={
+              <RequireWarnings>
+                <ListenPage />
               </RequireWarnings>
             }
           />
