@@ -30,6 +30,8 @@
 
 .first-steps { list-style: none; counter-reset: first-step; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-4); }
 .first-steps li { counter-increment: first-step; }
+/* The way into a guided first session sits apart from the steps it follows. */
+.first-steps + .action-row { margin-top: var(--space-6); }
 .first-steps li::before { content: counter(first-step, decimal-leading-zero); display: inline-grid; place-items: center; width: var(--icon-badge-size); height: var(--icon-badge-size); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); font-family: var(--font-data); font-size: var(--text-sm); color: var(--color-accent); margin-bottom: var(--space-5); }
 .first-steps h3 { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); margin-bottom: var(--space-2); }
 .first-steps p { color: var(--color-text-secondary); }
