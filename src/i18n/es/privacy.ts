@@ -22,7 +22,7 @@ export const privacy = {
     },
     summary: {
       title: 'Resumen automático',
-      text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente. También puedes aceptar enviar hasta tres comparaciones visibles del progreso, solo con sus opciones, conteos y medianas. En ese caso el modelo selecciona frases explicativas verificadas y las cifras se conservan. No recibe notas, fechas, identificadores de sesiones, imágenes ni señal.',
+      text: 'Si lo pides, un modelo de lenguaje recibe solo cifras agregadas de la sesión para redactar un resumen en palabras sencillas, marcado como generado automáticamente. También puedes aceptar enviar hasta tres comparaciones visibles del progreso, solo con sus opciones, conteos y medianas. En ese caso el modelo selecciona frases explicativas verificadas y las cifras se conservan. No recibe notas, fechas, identificadores de sesiones, imágenes ni señal. En «Prepara tu sesión» puedes escribir cómo te sientes o qué quieres escuchar: al pulsar «Enviar», ese texto va al modelo solo para armar el plan, que se elige de las opciones de la app. No se guarda en el dispositivo, en la nube ni en ningún registro, y gasta uno de tus textos automáticos del día.',
     },
     collection: {
       title: 'Grabaciones guiadas',

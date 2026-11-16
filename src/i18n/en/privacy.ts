@@ -22,7 +22,7 @@ export const privacy = {
     },
     summary: {
       title: 'Automatic summary',
-      text: 'If you ask for it, a language model receives only aggregated figures from the session to write a summary in plain words, marked as automatically generated. You can also agree to send up to three visible progress comparisons, with only their options, counts and medians. In that case the model selects reviewed explanatory sentences and the figures are preserved. It receives no notes, dates, session identifiers, images or signal.',
+      text: 'If you ask for it, a language model receives only aggregated figures from the session to write a summary in plain words, marked as automatically generated. You can also agree to send up to three visible progress comparisons, with only their options, counts and medians. In that case the model selects reviewed explanatory sentences and the figures are preserved. It receives no notes, dates, session identifiers, images or signal. In “Set up your session” you can write how you feel or what you want to hear: when you press “Send”, that text goes to the model only to put the plan together, chosen from the app’s own options. It is not kept on the device, in the cloud or in any log, and it uses one of your automatic texts for the day.',
     },
     collection: {
       title: 'Guided recordings',

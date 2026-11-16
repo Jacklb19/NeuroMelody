@@ -586,6 +586,17 @@ Aprobado el 16 nov 2026, tras probar ADR-66: el usuario quería un reproductor d
 - **Sesión.** La barra de progreso de «Escuchando» marca cada cambio de paso de la música como un capítulo y dice en qué paso va desde qué minuto. No se puede mover: la música sigue el pulso en tiempo real. La instantánea de la sesión publica los pasos según ocurren (`steps`).
 - **Límites.** Saltar lejos tarda hasta un segundo; las notas largas que sonaban en ese punto no se reconstruyen y entran con su ataque. La música sigue deteniéndose al salir de Escuchar.
 
+## ADR-68. La IA arma el plan a partir de lo que escribe la persona
+
+Aprobado el 16 nov 2026. Front y back, sin migración ni dependencias. Amplía ADR-08 y ADR-36; contrato en `contrato-plan-compose.md`.
+
+- **Qué hace.** Arriba de `/plan`, la persona escribe cómo se siente o qué quiere escuchar (hasta 300 caracteres) y pulsa «Enviar». `POST /v1/plans/compose` devuelve un plan completo: intención (o ninguna), duración, mundo sonoro y modo adaptativo o fijo, todos de los catálogos de la app, y una frase breve sobre el plan. La pantalla lo muestra como «Propuesta automática» con «Usar esta configuración y empezar sesión» y «No, gracias». Nada cambia hasta usarlo; al usarlo, el plan se rellena y se abre `/session` con las advertencias, el pulso y la referencia de siempre. Sustituye a «Proponme una duración», cuyo punto de la API (`/v1/plans/suggest`) queda sin uso en el front.
+- **Primer texto libre hacia el modelo.** Hasta ahora el modelo solo recibía valores de catálogo y cifras. El texto puede contener datos de salud, así que no se guarda en la base ni en el dispositivo, no pasa por la caché de la API y no se escribe en ningún registro. Viaja entre delimitadores, sin `<` ni `>`, y el modelo lo trata como datos y no como instrucciones; aunque no lo hiciera, solo puede devolver valores de los catálogos, validados con Pydantic y otra vez en el front.
+- **Consentimiento sin aviso.** Por decisión del usuario no hay advertencias en pantalla: pulsar «Enviar» es el consentimiento (la petición lleva `consent: true` y sin él la API responde 403). La página de privacidad lo explica. Basta una cuenta (sin `aal2`), como en ADR-36, porque nada se guarda.
+- **Lenguaje.** La frase describe solo el plan. Pasa por el filtro clínico de siempre y por uno nuevo de palabras sobre la persona (sentir, ánimo, estrés, cansancio, «ayudar», «mejor», salud…). Si no los pasa, se descarta y el plan se muestra sin frase, sin error: quien escribe «me siento mal» nunca lee un comentario sobre cómo está.
+- **Cuota y fallos.** Cada envío gasta una de las 30 llamadas diarias (ADR-54). Si se agota, no hay red o el modelo falla, una línea lo dice y el plan manual sigue igual.
+- **Límites.** El modelo solo propone el plan inicial; la música en la sesión sigue la adaptación del navegador (ADR-05/19). Sin probar con Groq real: la calidad de las elecciones y de las frases depende del modelo y se verifica con la cuenta real.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |

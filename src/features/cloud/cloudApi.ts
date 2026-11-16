@@ -1,6 +1,7 @@
 import type { Locale } from '../../i18n/locale';
 import { DURATIONS_MIN, type DurationMin } from '../plan/plan';
-import type { GoalId } from '../plan/goalCatalog';
+import { isGoalId, type GoalId } from '../plan/goalCatalog';
+import { WORLD_IDS, type WorldId } from '../plan/worldCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
 import type { NarrativeFigures } from '../summary/narrativeFigures';
 import type { CollectionRecording } from '../collection/collectionRecording';
@@ -9,7 +10,7 @@ import type { Melody } from '../listen/melody';
 
 /**
  * Client of the NeuroMelody API (ADR-19): sessions in the cloud, the
- * account and the two texts the language model writes (ADR-08). The API
+ * account and the texts and plans the language model writes (ADR-08, ADR-68). The API
  * only stores, returns and words data; nothing that sounds depends on it.
  * Every request carries the person's Supabase token.
  */
@@ -71,11 +72,20 @@ export const CLOUD_SESSION_LIST_LIMIT = 500;
  */
 export type CloudMelody = Readonly<Record<keyof Omit<Melody, 'ownerId'>, unknown>>;
 
-/** A plan proposed by the language model (RF-13): one of the allowed lengths and a sentence about it. */
-export interface PlanSuggestion {
+/**
+ * A whole plan the language model composed from what the person wrote
+ * (ADR-68). Every choice is a value of the app's own catalogs, checked here
+ * again whatever the API says; the person decides whether to use it.
+ */
+export interface ComposedPlan {
+  /** `null` when the text pointed to none of the goals. */
+  readonly goal: GoalId | null;
   readonly durationMin: DurationMin;
-  /** Text generated automatically; the interface always says so. */
-  readonly note: string;
+  readonly world: WorldId;
+  /** The music stays as it starts instead of following the pulse (ADR-59). */
+  readonly fixed: boolean;
+  /** A sentence about the plan, generated automatically, or `null` when the API kept none. */
+  readonly note: string | null;
 }
 
 /** A session told in plain words by the language model (RF-15). Generated automatically. */
@@ -92,8 +102,11 @@ export interface CloudApi {
   /** Deleting a session the cloud no longer has is not an error: the result is the same. */
   deleteSession(id: string): Promise<void>;
   deleteAccount(): Promise<void>;
-  /** Asks for a session length for the chosen goals. Only the goals, the hour and the language travel. */
-  suggestPlan(goals: readonly GoalId[], localHour: number, locale: Locale): Promise<PlanSuggestion>;
+  /**
+   * Asks for a whole plan from what the person wrote (ADR-68). Calling it states their
+   * consent to send that text to the language model, which neither stores nor logs it.
+   */
+  composePlan(text: string, localHour: number, locale: Locale): Promise<ComposedPlan>;
   /**
    * Asks for the plain-words summary of a session, from its aggregated figures. The session
    * does not have to be in the cloud. Calling it states the person's consent to send those
@@ -127,7 +140,7 @@ export interface CloudApi {
 /** Paths of the API, relative to its base URL. */
 const SESSIONS_PATH = '/v1/sessions';
 const ACCOUNT_PATH = '/v1/account';
-const PLAN_SUGGESTION_PATH = '/v1/plans/suggest';
+const PLAN_COMPOSE_PATH = '/v1/plans/compose';
 const SUMMARY_SUFFIX = '/summary';
 const RECORDINGS_PATH = '/v1/recordings';
 const CLASSIFIER_PATH = '/v1/models/classifier';
@@ -293,12 +306,17 @@ function generatedText(body: Json, field: string): string | null {
   return body.generated === true && typeof text === 'string' && text.trim() !== '' ? text.trim() : null;
 }
 
-/** Reads a proposed plan. The length is checked against the app's own options, whatever the API says. */
-export function planFromWire(value: unknown): PlanSuggestion | null {
-  if (!isJson(value)) return null;
+/** Reads a composed plan. Every choice is checked against the app's own catalogs, whatever the API says. */
+export function composedPlanFromWire(value: unknown): ComposedPlan | null {
+  if (!isJson(value) || value.generated !== true) return null;
   const durationMin = DURATIONS_MIN.find((minutes) => minutes === value.duration_minutes);
+  const world = WORLD_IDS.find((id) => id === value.world);
+  const goal = value.goal === null ? null : isGoalId(value.goal) ? value.goal : undefined;
+  const fixed = value.mode === 'fixed' ? true : value.mode === 'adaptive' ? false : undefined;
+  if (durationMin === undefined || world === undefined || goal === undefined || fixed === undefined) return null;
+  if (value.note !== null && typeof value.note !== 'string') return null;
   const note = generatedText(value, 'note');
-  return durationMin === undefined || note === null ? null : { durationMin, note };
+  return { goal, durationMin, world, fixed, note };
 }
 
 export function narrativeFromWire(value: unknown): SessionNarrative | null {
@@ -374,9 +392,9 @@ export function createCloudApi({ baseUrl, accessToken, fetch: send = fetch }: Cl
       const response = await request('DELETE', ACCOUNT_PATH);
       if (!response.ok) throw await failure(response);
     },
-    async suggestPlan(goals, localHour, locale) {
-      const body = await json(await request('POST', PLAN_SUGGESTION_PATH, { goals, local_hour: localHour, locale }));
-      const plan = planFromWire(body);
+    async composePlan(text, localHour, locale) {
+      const body = await json(await request('POST', PLAN_COMPOSE_PATH, { consent: true, text, local_hour: localHour, locale }));
+      const plan = composedPlanFromWire(body);
       if (plan === null) throw new CloudError('unknown');
       return plan;
     },

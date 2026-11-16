@@ -83,13 +83,43 @@
 .plan-goals { list-style: none; display: grid; gap: var(--space-2); }
 .plan-goals li { display: flex; align-items: center; gap: var(--space-3); }
 .plan-goals .icon { color: var(--color-accent); }
-/* Length proposed by the language model: an offer under the options, never a default. */
-.plan-suggestion { display: grid; gap: var(--space-4); margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border-subtle); }
-.plan-suggestion-ask { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
-.plan-suggestion-ask .secondary-text { flex: 1; min-width: var(--plan-suggestion-text-min-width); font-size: var(--text-sm); }
-.plan-proposal { display: grid; justify-items: start; gap: var(--space-3); padding: var(--space-5); background: var(--color-surface); border-radius: var(--border-radius); }
-.plan-proposal-length { font-family: var(--font-display); font-size: var(--text-xl); }
-.plan-proposal .pill-button { margin-top: var(--space-2); }
+/*
+ * Plan composed from what the person writes (ADR-68): one card above the choices. The send button only
+ * appears once there is text, and the proposal takes the colours of its world.
+ */
+.plan-compose { display: grid; gap: var(--space-4); margin-bottom: var(--space-10); padding: var(--space-6) var(--space-8); }
+.plan-compose-question { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-xl); line-height: var(--heading-line-height); }
+.plan-compose-question .icon { flex-shrink: 0; color: var(--color-accent); }
+.plan-compose-field { display: flex; align-items: flex-end; gap: var(--space-3); }
+.plan-compose-input { flex: 1; width: 100%; min-height: var(--plan-compose-input-height); padding-block: var(--space-3); resize: vertical; font: inherit; line-height: var(--copy-line-height); }
+.plan-compose-input:focus-visible { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
+.plan-compose-send { flex-shrink: 0; animation: plan-compose-in var(--player-motion) var(--player-easing) both; }
+.plan-compose-count { margin: 0; font-size: var(--text-sm); text-align: right; }
+.plan-compose-working { margin: 0; }
+.plan-compose .quiet-notice { margin: 0; }
+.plan-compose-result { background: linear-gradient(135deg, color-mix(in srgb, var(--world-glow) 14%, transparent), transparent 55%), var(--card-background); animation: plan-compose-in var(--player-motion-open) var(--player-easing) both; }
+.plan-compose-result:focus { outline: none; }
+.plan-compose-result:focus-visible { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }
+.plan-compose-heading { display: flex; align-items: center; gap: var(--space-4); }
+.plan-compose-heading h2 { margin: 0; font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); line-height: var(--heading-line-height); }
+.plan-compose-heading .generated-mark { margin-bottom: var(--space-1); }
+.plan-compose-facts { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.plan-compose-facts li { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); background: var(--color-surface); font-size: var(--text-sm); }
+.plan-compose-facts .icon { color: var(--color-accent); }
+.plan-compose-note { color: var(--color-text-secondary); max-width: var(--introduction-max-width); }
+.plan-compose-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+@keyframes plan-compose-in { from { opacity: 0; translate: 0 var(--space-2); } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .plan-compose-send, .plan-compose-result { animation: none; }
+}
+@media (max-width: 600px) {
+  .plan-compose { padding: var(--space-5); margin-bottom: var(--space-8); }
+  .plan-compose-question { font-size: var(--text-lg); }
+  /* On a phone the field takes the whole width and the send button comes in under it. */
+  .plan-compose-field { flex-direction: column; align-items: stretch; }
+  .plan-compose-send { align-self: flex-end; }
+  .plan-compose-actions .pill-button { width: 100%; justify-content: center; }
+}
 .plan-program { font-size: var(--text-sm); }
 .plan-program { padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-control); line-height: var(--copy-line-height); }
 .plan-note { font-size: var(--text-sm); color: var(--color-text-secondary); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border-subtle); }
