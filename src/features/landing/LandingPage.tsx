@@ -93,7 +93,6 @@ export function LandingPage(): React.JSX.Element {
           </ul>
         </nav>
         <div className="landing-account">
-          <QuickPreferences />
           <Link to={ROUTES.login} className="landing-signin">{copy.nav.signIn}</Link>
           <Link to={ROUTES.register} className="pill-button pill-button-primary landing-register">{copy.nav.register}</Link>
           <button
@@ -115,8 +114,7 @@ export function LandingPage(): React.JSX.Element {
               <li><a href={`#${LANDING_SECTIONS.privacy}`} onClick={closeMenu}>{copy.nav.privacy}</a></li>
             </ul>
           </nav>
-          <QuickPreferences />
-          <Link to={ROUTES.register} className="pill-button pill-button-ghost pill-button-block">{copy.nav.register}</Link>
+          <Link to={ROUTES.register} className="pill-button pill-button-primary pill-button-block">{copy.nav.register}</Link>
         </div>
       </header>
 

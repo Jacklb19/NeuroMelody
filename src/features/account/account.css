@@ -10,7 +10,6 @@
 .auth-main { display: grid; align-content: center; justify-items: center; gap: var(--space-4); padding: var(--space-8) var(--space-6); }
 .auth-main:focus { outline: none; }
 .auth-main { position: relative; }
-.auth-preferences { position: absolute; top: var(--space-6); right: var(--space-6); }
 .auth-card { width: 100%; max-width: var(--auth-card-width); padding: var(--space-8) var(--space-10); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: auth-rise var(--landing-rise-duration) cubic-bezier(.2, .7, .2, 1) both; }
 .auth-brand-compact { display: none; margin-bottom: var(--space-8); }
 .auth-title { font-size: var(--text-stage); margin-bottom: var(--space-2); text-wrap: balance; }
@@ -121,8 +120,6 @@
   .auth-field { gap: var(--space-1); }
   .auth-field input { min-height: var(--control-height-compact); padding-block: var(--space-2); }
   .auth-brand-compact { margin-bottom: var(--space-4); }
-  /* Theme and language move into the corner so the wider sign-up card never covers them. */
-  .auth-preferences { top: var(--space-4); right: var(--space-4); }
 }
 @media (max-width: 900px) {
   .auth-screen { grid-template-columns: minmax(0, 1fr); }
@@ -130,8 +127,6 @@
   .auth-aside { display: none; }
   .auth-brand-compact { display: inline-flex; }
   .auth-card { padding: var(--space-8) var(--space-6); }
-  /* Without the side panel, theme and language sit above the card instead of behind it. */
-  .auth-preferences { position: static; justify-self: end; }
   .auth-main { align-content: start; padding-top: var(--space-5); }
 }
 @media (max-width: 600px) {

@@ -95,6 +95,8 @@
   --stop-layer: 10;
   /* Dark layer of a session for falling asleep: under the Stop button, over everything else. */
   --dimmer-layer: 9;
+  /* The floating navigation: above the page, under the sleep dimmer and the Stop button. */
+  --header-layer: 8;
   --color-dimmer: rgb(0 0 0 / 0.92);
   --color-dimmer-text: rgb(255 255 255 / 0.45);
   --dimmer-fade: 1.5s;
@@ -393,29 +395,31 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 /* Public screens without a session: the brand on one side, the way in on the other. */
 .app-header-public { gap: var(--space-4); }
 .app-header-public .brand { margin-right: auto; }
-@media (max-width: 600px) {
-  /* A phone keeps one line: the brand and the way in; the sign-in screens carry theme and language. */
-  .app-header-public { padding-bottom: var(--space-4); }
-  .app-header-public .quick-preferences { display: none; }
-}
 .skip-link { position: fixed; left: var(--space-4); top: calc(-1 * var(--space-24)); padding: var(--space-3) var(--space-4); background: var(--color-button-background); color: var(--color-button-text); z-index: var(--stop-layer); border-radius: var(--border-radius); }
 .skip-link:focus { top: var(--space-2); }
-.app-header { display: flex; align-items: center; gap: var(--space-8); padding: var(--space-5) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }
+/*
+ * The navigation bar: one floating pill that stays at the top while the page scrolls, with the brand, the sections
+ * and the profile. It is translucent so the page shows faintly under it.
+ */
+.app-header {
+  position: sticky; top: var(--space-3); z-index: var(--header-layer);
+  display: flex; align-items: center; gap: var(--space-4);
+  margin-top: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+  background: color-mix(in srgb, var(--color-background) 80%, transparent); backdrop-filter: blur(14px);
+  border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); box-shadow: var(--card-shadow);
+}
 .app-header nav { margin-left: auto; }
+.header-menu-button { display: none; }
 .app-header .avatar.active, .app-header .avatar:hover { border-color: var(--color-accent); }
 .brand { color: inherit; text-decoration: none; }
 .brand:hover { color: inherit; }
 .brand { display: inline-flex; gap: var(--space-2); align-items: center; font-family: var(--font-display); font-size: var(--text-xl); white-space: nowrap; }
 .brand-mark { width: var(--brand-size); height: var(--brand-size); color: var(--color-accent); }
-.app-header ul { list-style: none; display: flex; gap: var(--space-1); padding: var(--space-1); background: var(--color-surface); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); }
+.app-header ul { list-style: none; display: flex; gap: var(--space-1); }
 .nav-link { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-height); padding: var(--space-2) var(--space-4); text-decoration: none; font-size: var(--text-sm); color: var(--color-text-secondary); border: var(--border-width) solid transparent; border-radius: var(--radius-pill); transition: background var(--motion-duration), color var(--motion-duration), border-color var(--motion-duration); }
 .nav-link:hover { color: var(--color-text); background: var(--color-paper); }
 .nav-link.active { color: var(--color-text); background: var(--color-paper); border-color: var(--color-border); font-weight: var(--font-weight-strong); box-shadow: var(--surface-shadow); }
 .app-main { padding-top: var(--space-12); padding-bottom: var(--space-16); }
-/* Four entries share the width of a phone: each keeps its name on one line. */
-@media (max-width: 480px) {
-  .app-header .nav-link { padding-inline: var(--space-2); font-size: var(--text-xs); white-space: nowrap; }
-}
 /*
  * Every screen arrives with a short fade, so moving between them is not a jump. Opacity only, and no fill once it
  * ends: a transform would make this wrapper the frame of the fixed Stop button instead of the window.
@@ -697,15 +701,21 @@ select.tool-input { padding-right: var(--space-10); }
   .source-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   .source-controls label:first-child { grid-column: auto; }
 }
-/* Four entries no longer fit beside the brand on a tablet: the navigation takes a row of its own. */
-@media (max-width: 900px) {
-  .app-header { flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: var(--space-4) 0 0; }
+/* Below this width the sections fold into a menu that opens under the same floating bar. */
+@media (max-width: 760px) {
+  .app-header { gap: var(--space-2); }
   .app-header .brand { margin-right: auto; }
-  .app-header nav { order: 3; width: 100%; margin-left: 0; }
-  .app-header ul { justify-content: space-between; gap: var(--space-1); margin-bottom: var(--space-3); }
-  .app-header nav li { flex: 1; min-width: 0; }
-  .nav-link { width: 100%; padding-inline: var(--space-2); }
+  .app-header nav { display: none; }
+  .app-header nav.is-open {
+    display: block; position: absolute; top: calc(100% + var(--space-2)); left: 0; right: 0; margin: 0;
+    padding: var(--space-3); background: var(--color-background); border: var(--border-width) solid var(--color-border-subtle);
+    border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: header-menu-in var(--motion-duration) ease-out;
+  }
+  .app-header nav.is-open ul { display: grid; gap: var(--space-1); }
+  .app-header nav.is-open .nav-link { width: 100%; justify-content: flex-start; padding: var(--space-3) var(--space-4); font-size: var(--text-base); }
+  .header-menu-button { display: inline-grid; place-items: center; width: var(--avatar-size); height: var(--avatar-size); padding: 0; border: var(--border-width) solid var(--color-border); border-radius: 50%; background: var(--color-surface); color: var(--color-text); cursor: pointer; }
 }
+@keyframes header-menu-in { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 520px) {
   :root { --text-2xl: 2.25rem; --text-display: 3.25rem; }
   .app-shell { padding: 0 var(--space-5); }
@@ -729,14 +739,13 @@ select.tool-input { padding-right: var(--space-10); }
   /* On a phone the Stop control spans the width: a floating pill would cover the words it sits over. */
   .stop-button { left: var(--space-5); right: var(--space-5); width: auto; }
 }
-/* The narrowest phones (360 px is the most common Android width): brand, theme, language and profile keep to one row. */
+/* The narrowest phones (360 px is the most common Android width): brand, profile and menu keep to one row. */
 @media (max-width: 389px) {
   .app-shell { padding: 0 var(--space-4); }
-  .app-header { column-gap: var(--space-2); }
+  .app-header { column-gap: var(--space-2); padding-left: var(--space-4); }
   .app-header .brand { font-size: var(--text-lg); gap: var(--space-1); }
-  .app-header .quick-preferences { gap: var(--space-1); }
   .app-header .brand-mark { width: var(--brand-size-compact); height: var(--brand-size-compact); }
-  .app-header .icon-button, .app-header .avatar { width: var(--avatar-size-compact); height: var(--avatar-size-compact); }
+  .app-header .avatar, .header-menu-button { width: var(--avatar-size-compact); height: var(--avatar-size-compact); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
