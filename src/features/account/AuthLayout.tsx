@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
 import { MAIN_CONTENT_ID } from '../../app/Layout';
-import { QuickPreferences } from '../../app/preferences/PreferenceControls';
 import { APP_NAME } from '../../config/app';
 import { ROUTES } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
@@ -35,7 +34,6 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
         </div>
       </aside>
       <main id={MAIN_CONTENT_ID} className="auth-main">
-        <div className="auth-preferences"><QuickPreferences /></div>
         <div className="auth-card paper">
           <Link to={ROUTES.home} className="brand auth-brand-compact" aria-label={copy.backToHome}>
             <BrandMark />

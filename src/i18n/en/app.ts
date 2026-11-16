@@ -15,6 +15,9 @@ export const app = {
   },
   /** Accessible name of the avatar that opens the profile. */
   profile: 'Profile',
+  /** The button that opens and closes the navigation on a phone. */
+  menu: 'Menu',
+  closeMenu: 'Close the menu',
   /** Way in shown on the public screens to someone not signed in. */
   signIn: 'Sign in',
   /** Appearance and language controls, in the header and the profile. */
