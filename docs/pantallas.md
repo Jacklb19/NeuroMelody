@@ -70,7 +70,7 @@ Antes de iniciar la música, el escenario ofrece la autovaloración opcional de 
 
 ### Cambios de ADR-42 (13 oct 2026)
 
-- **Navegación de la app:** Inicio, Nueva sesión (`/plan`) e Historial. `/session` no está en la navegación: se llega preparando la sesión, o con «Repetir la última» desde el inicio.
+- **Navegación de la app:** Inicio, Nueva sesión (`/plan`), Historial y Progreso (ADR-65). Hasta 900 px es una píldora flotante con menú. `/session` no está en la navegación: se llega preparando la sesión, o con «Repetir la última» desde el inicio.
 - **Inicio (`/app`):** la tarjeta principal lleva a preparar la sesión («Preparar mi sesión») y, si ya hay sesiones, ofrece «Repetir la última». Debajo, las cinco intenciones con una línea que dice qué hace la música con cada una.
 - **`/session`, de arriba abajo:** (1) antes de la primera nota, los tres pasos «Antes de empezar» con su estado; (2) «Cómo se mide tu pulso», plegable, con el panel de la fuente dentro: abierto al llegar, se pliega solo cuando la música suena con el pulso conectado; (3) el escenario de escucha, que mientras suena añade el recorrido de la música, su ritmo y «¿Qué significa?» junto al estado estimado, y al terminar «Lo que hizo la música»; (4) los detalles técnicos, plegados.
 
