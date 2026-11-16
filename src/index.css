@@ -82,6 +82,8 @@
   --report-hint-max-width: 44ch;
   --plan-suggestion-text-min-width: 16rem;
   --control-height: 48px;
+  /* Text fields of the sign-in screens on a short laptop screen. */
+  --control-height-compact: 42px;
   /* Smallest tap area of a text link (WCAG 2.5.8). */
   --target-min-size: 24px;
   --checkbox-size: 20px;
@@ -100,6 +102,8 @@
   --motion-duration: 160ms;
   /* Slides of the session (ADR-47): a single crossfade between steps. */
   --slide-duration: 240ms;
+  /* How a new screen comes in. */
+  --route-duration: 280ms;
   --slide-easing: ease-in-out;
 
   /* Landing page (ADR-28): a night forest around the beating staff, then the app's paper. */
@@ -182,6 +186,8 @@
   --avatar-size-compact: 2.5rem;
   --avatar-size-large: 5rem;
   --auth-card-width: 27rem;
+  /* The sign-up card with both password fields on one row. */
+  --auth-card-width-wide: 31rem;
   --ring-size: 20rem;
   --ring-width: 6;
   --password-toggle-reserve: 6.5rem;
@@ -406,6 +412,19 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .nav-link:hover { color: var(--color-text); background: var(--color-paper); }
 .nav-link.active { color: var(--color-text); background: var(--color-paper); border-color: var(--color-border); font-weight: var(--font-weight-strong); box-shadow: var(--surface-shadow); }
 .app-main { padding-top: var(--space-12); padding-bottom: var(--space-16); }
+/* Four entries share the width of a phone: each keeps its name on one line. */
+@media (max-width: 480px) {
+  .app-header .nav-link { padding-inline: var(--space-2); font-size: var(--text-xs); white-space: nowrap; }
+}
+/*
+ * Every screen arrives with a short fade, so moving between them is not a jump. Opacity only, and no fill once it
+ * ends: a transform would make this wrapper the frame of the fixed Stop button instead of the window.
+ */
+.route-view { animation: route-in var(--route-duration) ease-out backwards; }
+@keyframes route-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .route-view { animation: none; }
+}
 .page-heading { margin-bottom: var(--space-10); padding-bottom: var(--space-6); border-bottom: var(--border-width) solid var(--color-border-subtle); }
 .eyebrow { font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--color-text-secondary); margin-bottom: var(--space-3); font-weight: var(--font-weight-strong); }
 .page-introduction { margin-top: var(--space-4); color: var(--color-text-secondary); max-width: var(--introduction-max-width); }
@@ -499,8 +518,11 @@ input[type='range'] { width: 100%; min-width: 0; min-height: var(--control-heigh
 .source-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); margin-bottom: var(--space-5); }
 .source-controls label { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); min-width: 0; }
 .source-controls label:first-child { grid-column: 1 / -1; }
-select { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control-height); padding: var(--space-2) var(--space-3); background: var(--color-paper); color: var(--color-text); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); }
-select:disabled { background: var(--color-surface); color: var(--color-text-muted); }
+select { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control-height); padding: var(--space-2) var(--space-10) var(--space-2) var(--space-4); background-color: var(--color-paper); color: var(--color-text); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); cursor: pointer; transition: border-color var(--motion-duration);
+  /* The browser's arrow does not follow the theme; two gradients draw a chevron in the text colour instead. */
+  appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%), linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%); background-position: calc(100% - 22px) 52%, calc(100% - 16px) 52%; background-size: 6px 6px; background-repeat: no-repeat; }
+select:hover:not(:disabled) { border-color: var(--color-accent); }
+select:disabled { background-color: var(--color-surface); color: var(--color-text-muted); }
 .source-button { margin-bottom: var(--space-5); }
 .trial-switch { display: grid; justify-items: start; gap: var(--space-1); margin-bottom: var(--space-4); }
 .trial-switch .recording-note { margin-bottom: 0; }
@@ -632,7 +654,9 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
 .listening-tools label { display: grid; min-width: 0; gap: var(--space-1); }
 .listening-tools .confirmation-control { display: flex; margin: 0; }
 .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--totp-input-width)), 1fr)); gap: var(--space-3); }
-.tool-input { min-width: 0; max-width: 100%; min-height: var(--control-height); padding: var(--space-2); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-control); background: var(--color-background); color: var(--color-text); }
+.tool-input { min-width: 0; max-width: 100%; min-height: var(--control-height); padding: var(--space-2) var(--space-4); border: var(--border-width) solid var(--color-border); border-radius: var(--border-radius); background-color: var(--color-background); color: var(--color-text); transition: border-color var(--motion-duration); }
+select.tool-input { padding-right: var(--space-10); }
+.tool-input:hover:not(:disabled) { border-color: var(--color-accent); }
 .tool-list { list-style: none; }
 .guided-steps { padding-inline-start: var(--space-6); }
 .tool-list > li { overflow-wrap: anywhere; }
@@ -656,15 +680,18 @@ select:disabled { background: var(--color-surface); color: var(--color-text-mute
   .source-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   .source-controls label:first-child { grid-column: auto; }
 }
-@media (max-width: 520px) {
-  :root { --text-2xl: 2.25rem; --text-display: 3.25rem; }
-  .app-shell { padding: 0 var(--space-5); }
+/* Four entries no longer fit beside the brand on a tablet: the navigation takes a row of its own. */
+@media (max-width: 900px) {
   .app-header { flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: var(--space-4) 0 0; }
   .app-header .brand { margin-right: auto; }
   .app-header nav { order: 3; width: 100%; margin-left: 0; }
   .app-header ul { justify-content: space-between; gap: var(--space-1); margin-bottom: var(--space-3); }
   .app-header nav li { flex: 1; min-width: 0; }
   .nav-link { width: 100%; padding-inline: var(--space-2); }
+}
+@media (max-width: 520px) {
+  :root { --text-2xl: 2.25rem; --text-display: 3.25rem; }
+  .app-shell { padding: 0 var(--space-5); }
   .app-main { padding-top: var(--space-8); }
   .page-heading { margin-bottom: var(--space-8); }
   .reading-page { padding-top: 0; }
