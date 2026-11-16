@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { LAYER_COUNT, MIN_LAYERS, SynthesisCore, BEATS_PER_CYCLE } from './SynthesisCore';
 import { MODE } from './theory';
 import { FADE_DURATION_S } from '../engine/ramps';
+import { VoicePool } from './voices';
 
 const FS = 48_000;
 const BLOCK = 128;
@@ -204,5 +205,70 @@ describe('SynthesisCore', () => {
     for (const mode of Object.values(MODE)) {
       expect(new SynthesisCore(FS, 1, mode).currentMode).toBe(mode);
     }
+  });
+
+  describe('advance (P-17)', () => {
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    /** Every note the composers ask the voices for, in order, with what makes it that note. */
+    function recordNotes(): unknown[][] {
+      const notes: unknown[][] = [];
+      for (const method of ['strike', 'holdChord', 'strikeChord', 'releaseChord'] as const) {
+        // Records the call and lets the real voice pool play it, so the piece goes on as it would.
+        const original = Reflect.get(VoicePool.prototype, method) as (this: VoicePool, ...args: unknown[]) => void;
+        vi.spyOn(VoicePool.prototype, method).mockImplementation(function (this: VoicePool, ...args: unknown[]) {
+          notes.push([method, ...args]);
+          original.apply(this, args);
+        });
+      }
+      return notes;
+    }
+
+    // Fixed music at the intermediate step: what a saved melody plays (ADR-59).
+    const steady: Params = { tempo: 66, mode: MODE.lydian, layers: 3 };
+    // A whole number of blocks, so the piece heard from its start reaches exactly the same sample.
+    const SAVED_AT_S = 40;
+    const AFTER_S = 30;
+
+    it('plays from the saved point the same notes as the piece heard from its start', () => {
+      const notes = recordNotes();
+      const heard = new SynthesisCore(FS, 7, MODE.lydian);
+      heard.setInitialLayers(steady.layers);
+      renderAudio(heard, SAVED_AT_S, steady);
+      const heardFrom = notes.length;
+      renderAudio(heard, AFTER_S, steady);
+      const heardAfter = notes.slice(heardFrom);
+
+      const resumed = new SynthesisCore(FS, 7, MODE.lydian);
+      resumed.setInitialLayers(steady.layers);
+      resumed.advance(SAVED_AT_S, steady.tempo);
+      const resumedFrom = notes.length;
+      renderAudio(resumed, AFTER_S, steady);
+      const resumedAfter = notes.slice(resumedFrom);
+
+      expect(resumed.beat).toBe(heard.beat);
+      expect(heardAfter.length).toBeGreaterThan(10);
+      expect(resumedAfter).toEqual(heardAfter);
+    }, RENDER_TIMEOUT_MS);
+
+    it('starts in silence and makes no sound while it moves forward', () => {
+      const core = new SynthesisCore(FS, 3, MODE.lydian);
+      core.setInitialLayers(steady.layers);
+      core.advance(SAVED_AT_S, steady.tempo);
+      // Only held chord notes are left, waiting to come in with their attack.
+      expect(core.soundingVoices(0)).toBeLessThanOrEqual(6);
+      const audio = renderAudio(core, 1, steady);
+      expect(audio.every(Number.isFinite)).toBe(true);
+      expect(Math.max(...audio.map(Math.abs))).toBeLessThan(1);
+    }, RENDER_TIMEOUT_MS);
+
+    it('moves an hour forward fast enough to build the processor', () => {
+      const core = new SynthesisCore(FS, 5, MODE.majorPentatonic);
+      const started = performance.now();
+      core.advance(60 * 60, 76);
+      // Measured with coverage on a shared runner; in a browser it is several times faster.
+      expect(performance.now() - started).toBeLessThan(5000);
+      expect(core.beat).toBeGreaterThan(60 * 76 - 2);
+    }, RENDER_TIMEOUT_MS);
   });
 });

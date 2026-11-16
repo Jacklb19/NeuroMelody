@@ -181,6 +181,19 @@ export class VoicePool implements NoteSink {
     }
   }
 
+  /**
+   * Silences at once every voice that is not a held chord note. Only for a
+   * piece moved forward before it sounds (P-17): its struck notes were never
+   * heard, and its held chords enter with their attack from silence.
+   */
+  dropStruck(): void {
+    for (let v = 0; v < MAX_VOICES; v++) {
+      if (this.#held[v] === 1) continue;
+      this.#state[v] = STATE_FREE;
+      this.#amplitude[v] = 0;
+    }
+  }
+
   /** Advances every voice by one sample and leaves the mix in `left` and `right`. */
   render(): void {
     let sumLeft = 0;

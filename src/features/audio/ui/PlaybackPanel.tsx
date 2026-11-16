@@ -30,10 +30,30 @@ import type { SoundProfile } from '../engine/soundProfile';
 
 const PERCENT = 100;
 
+/**
+ * One piece of music, fully described (P-17): playing it again with the
+ * same values plays the same notes. The listening screen gives it to the
+ * panel; a session leaves it out and the panel draws a new seed.
+ */
+export interface PlaybackPiece {
+  readonly seed: number;
+  readonly initialLevel: LevelId;
+  readonly instrument: InstrumentId;
+  readonly ambience: AmbienceId;
+  readonly profile: SoundProfile;
+  /** Seconds of the piece already heard: it sounds from there (fixed music only). */
+  readonly startAtS: number;
+}
+
 /** What the session screen can ask of the panel from outside it (ADR-47). */
 export interface PlaybackHandle {
-  /** Starts the music, as the panel's own button does; call it inside a click. */
-  start(): void;
+  /**
+   * Starts the music, as the panel's own button does; call it inside a
+   * click. Without a piece it resumes what was paused, or starts the music
+   * of the props. With one, it leaves whatever was playing and plays that
+   * piece from its start point, with the listening time counted again.
+   */
+  start(piece?: PlaybackPiece): void;
   /**
    * Brings the fade of a quiet ending forward to now (ADR-60), so the session
    * ends by itself before its plan does. Returns whether it did: only a session
@@ -132,6 +152,8 @@ export function PlaybackPanel({
   const warningIndexRef = useRef(0);
   const fadeEndRef = useRef<number | null>(null);
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
+  // The piece being played, when the page chose one (P-17).
+  const pieceRef = useRef<PlaybackPiece | null>(null);
   const titleId = useId();
   const volumeId = useId();
   const warningTitleId = useId();
@@ -155,17 +177,30 @@ export function PlaybackPanel({
     [planDurationS, quietEnding],
   );
 
-  const start = async (): Promise<void> => {
+  const start = async (piece?: PlaybackPiece): Promise<void> => {
+    if (piece !== undefined) {
+      // Another piece: the engine of the last one goes, and its time with it.
+      if (getEngine() !== null) {
+        onEngineChange?.(null);
+        await control.discard();
+      }
+      pieceRef.current = piece;
+      listenedRef.current = 0;
+      warningIndexRef.current = 0;
+      setWarning(null);
+      setFinished(false);
+    }
+    const chosen = pieceRef.current;
     const engine = await control.start(
-      {
-        seed: generateSeed(),
-        initialLevel,
-        ambience,
-        instrument,
-        profile,
-        outputThroughAudioElement,
-        reverb,
-      },
+      chosen === null
+        ? { seed: generateSeed(), initialLevel, ambience, instrument, profile, outputThroughAudioElement, reverb }
+        : {
+            ...chosen,
+            // An engine closed under a paused piece is built again where the piece was left.
+            startAtS: chosen.startAtS + (finished ? 0 : listenedRef.current),
+            outputThroughAudioElement,
+            reverb,
+          },
       volumeDb,
       mix,
     );
@@ -180,8 +215,8 @@ export function PlaybackPanel({
   };
 
   useImperativeHandle(ref, () => ({
-    start: () => {
-      void start();
+    start: (piece?: PlaybackPiece) => {
+      void start(piece);
     },
     endQuietly: () => {
       const engine = getEngine();
@@ -203,6 +238,14 @@ export function PlaybackPanel({
     onEngineChange?.(null);
     void stop();
   }, [getEngine, stop, onEngineChange]);
+
+  // A plan that changes while the music plays moves its ending: the fade is scheduled again (P-17).
+  useEffect(() => {
+    const engine = getEngine();
+    if (engine?.state !== 'playing' || sessionStartRef.current === null) return;
+    engine.cancelFinalFade();
+    scheduleFade(engine);
+  }, [getEngine, scheduleFade]);
 
   // Failed playback or a system-closed context also ends the parent's recording.
   useEffect(() => {

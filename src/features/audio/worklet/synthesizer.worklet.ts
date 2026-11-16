@@ -25,10 +25,13 @@ class SynthesizerProcessor extends scope.AudioWorkletProcessor {
 
   constructor(options: AudioWorkletNodeOptions) {
     super();
-    const { seed, initialMode, initialLayers, ambience, instrument } = readSynthesizerOptions(options.processorOptions);
+    const { seed, initialMode, initialLayers, ambience, instrument, startAtS, startTempoBpm } =
+      readSynthesizerOptions(options.processorOptions);
     this.#ambience = new Ambience(scope.sampleRate, seed, ambience);
     this.#core = new SynthesisCore(scope.sampleRate, seed, initialMode, instrument);
     this.#core.setInitialLayers(initialLayers);
+    // Here, before the first block, and never inside process(): moving forward is a long loop (P-17).
+    if (startAtS > 0) this.#core.advance(startAtS, startTempoBpm);
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][], params: BlockParams): boolean {

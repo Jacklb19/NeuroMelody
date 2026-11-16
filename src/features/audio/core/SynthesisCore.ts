@@ -24,6 +24,17 @@ export const BEATS_PER_CYCLE = 16;
 const COLOUR_SEED_OFFSET = 0x5bd1e995;
 
 /**
+ * Version of what a seed plays (P-17). A saved melody is its seed and its
+ * choices; the same seed only plays the same notes while the composer, the
+ * arrangements and the timbres stay as they are. Raise it whenever a change
+ * makes an old seed play something else, so a saved melody can say so.
+ */
+export const SYNTHESIS_VERSION = 1;
+
+/** Furthest point a piece can be started at, in seconds (P-17): two hours of music. */
+export const MAX_START_AT_S = 2 * 60 * 60;
+
+/**
  * Slow cycles that keep a long session from repeating, in seconds: how busy
  * the music is, how high it sits and how open the pad sounds. The periods are
  * primes, so the three never come back to the same combination in a session.
@@ -167,6 +178,41 @@ export class SynthesisCore {
   setInitialLayers(layers: number): void {
     this.#updateLayerTargets(layers);
     this.#layerGain.set(this.#layerTarget);
+  }
+
+  /**
+   * Moves the piece forward to `seconds` of music without sounding it, so a
+   * saved melody can start where it was saved (P-17). Call it once, after
+   * `setInitialLayers` and before the first block, for music that keeps
+   * `tempo`, its mode and its layers, as fixed music does (ADR-59).
+   *
+   * The sequencer runs sample by sample with the same arithmetic as
+   * `process`, so every tick falls on the same sample and the composers draw
+   * the same numbers: from here on the notes are those of the piece heard
+   * from its start. Only the notes already sounding are not rebuilt: struck
+   * ones are dropped and held chords come in again with their own attack.
+   * It works in the constructor of the processor, never inside `process`.
+   */
+  advance(seconds: number, tempo: number): void {
+    const samples = Math.round(Math.min(Math.max(0, seconds), MAX_START_AT_S) * this.#fs);
+    this.#pendingMode = this.#currentMode;
+    const tickAdvance = (tempo * TICKS_PER_BEAT) / (SECONDS_PER_MINUTE * this.#fs);
+    for (let n = 0; n < samples; n++) {
+      this.#samples++;
+      this.#tickPhase += tickAdvance;
+      if (this.#tickPhase >= 1) {
+        this.#tickPhase -= 1;
+        this.#onTick();
+        // Silent voices never fade, so struck ones would fill the pool and push held chord notes out.
+        this.#voices.dropStruck();
+      }
+    }
+    // The drone only moves its phases: where they land makes no note.
+    for (let p = 0; p < DRONE_PARTIALS.length; p++) {
+      this.#dronePhaseA[p] = ((this.#dronePhaseA[p] ?? 0) + (this.#droneIncrementA[p] ?? 0) * samples) % 1;
+      this.#dronePhaseB[p] = ((this.#dronePhaseB[p] ?? 0) + (this.#droneIncrementB[p] ?? 0) * samples) % 1;
+      this.#swellPhase[p] = ((this.#swellPhase[p] ?? 0) + (this.#swellIncrement[p] ?? 0) * samples) % 1;
+    }
   }
 
   /**
