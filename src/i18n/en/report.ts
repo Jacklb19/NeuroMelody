@@ -66,6 +66,8 @@ export const report = {
   },
   table: {
     title: 'Session by session',
+    showAll: (count: number): string => `Show all ${String(count)} sessions`,
+    showFewer: (count: number): string => `Show only the first ${String(count)}`,
     date: 'Date',
     listened: 'Listened',
     source: 'Measured with',

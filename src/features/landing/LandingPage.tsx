@@ -1,7 +1,6 @@
 import { Suspense, lazy, useCallback, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { MAIN_CONTENT_ID } from '../../app/Layout';
-import { QuickPreferences } from '../../app/preferences/PreferenceControls';
 import { usePageTitle } from '../../app/usePageTitle';
 import { APP_NAME } from '../../config/app';
 import { ROUTES } from '../../config/routes';
@@ -16,6 +15,7 @@ import { GoalIcon } from '../plan/GoalIcon';
 import { CALIBRATION_MIN, MAX_DURATION_MIN, MIN_DURATION_MIN } from '../plan/plan';
 import { HeartbeatSimulator } from './heartbeatSimulator';
 import { LANDING_HIGHLIGHT_IDS, LANDING_PRIVACY_IDS, LANDING_SECTIONS, LANDING_STEP_IDS } from './landingCatalog';
+import { PublicHeader } from './PublicHeader';
 import { PulseToMelody } from './PulseToMelody';
 import { SampleReadout } from './SampleReadout';
 import { useReveal } from './useReveal';
@@ -71,24 +71,7 @@ export function LandingPage(): React.JSX.Element {
   return (
     <div className="landing" ref={pageRef}>
       <a href={`#${MAIN_CONTENT_ID}`} className="skip-link">{t.app.skipToContent}</a>
-      <header className="landing-header night">
-        <Link to={ROUTES.home} className="brand landing-brand" aria-label={APP_NAME}>
-          <BrandMark />
-          {APP_NAME}
-        </Link>
-        <nav aria-label={copy.navigationLabel}>
-          <ul>
-            <li><a href={`#${LANDING_SECTIONS.howItWorks}`}>{copy.nav.howItWorks}</a></li>
-            <li><a href={`#${LANDING_SECTIONS.moments}`}>{copy.nav.moments}</a></li>
-            <li><a href={`#${LANDING_SECTIONS.privacy}`}>{copy.nav.privacy}</a></li>
-          </ul>
-        </nav>
-        <div className="landing-account">
-          <QuickPreferences />
-          <Link to={ROUTES.login} className="landing-signin">{copy.nav.signIn}</Link>
-          <Link to={ROUTES.register} className="pill-button pill-button-primary">{copy.nav.register}</Link>
-        </div>
-      </header>
+      <PublicHeader page="landing" />
 
       <main id={MAIN_CONTENT_ID} tabIndex={-1}>
         <section className="hero night" aria-labelledby={`${id}-hero`}>
@@ -235,9 +218,7 @@ export function LandingPage(): React.JSX.Element {
         <div className="landing-inner footer-inner">
           <p className="footer-brand"><BrandMark />{APP_NAME}</p>
           <p className="footer-notice">{copy.footer.notice}</p>
-          {/* A div, not a paragraph: the preference buttons come in their own block. */}
           <div className="footer-meta">
-            <QuickPreferences />
             <Link to={ROUTES.privacy}>{copy.footer.privacy}</Link>
             <span>{copy.footer.project}</span>
           </div>

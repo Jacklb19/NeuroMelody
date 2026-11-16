@@ -8,6 +8,32 @@ export const insights = {
   missing: (count: number, option: string): string => `${String(count)} ${count === 1 ? 'sesión' : 'sesiones'} con «${option}»`,
   caution: 'Son observaciones de tus sesiones; no demuestran que una elección haya causado el cambio.',
   methodTitle: 'Cómo se calculó y todos los grupos',
+  /** The method table opens with a few rows; these grow and shrink it. */
+  showMore: (next: number, rest: number): string => `Ver ${String(next)} más (quedan ${String(rest)})`,
+  showLess: 'Ver menos',
+  /** An observation read in plain words (`useInsightText().reading`); every figure is computed on the device. */
+  reading: {
+    lead: (dimension: string, better: string, betterChange: string, other: string, otherChange: string): string =>
+      `${dimension}: con «${better}» ${betterChange}; con «${other}», ${otherChange}.`,
+    /** `sign` is -1, 0 or 1; `amount` is already formatted. */
+    ratingChange: (sign: number, amount: string): string => sign === 0 ? 'tu valoración no cambió' : `tu valoración ${sign > 0 ? 'subió' : 'bajó'} ${amount} ${amount === '1' ? 'punto' : 'puntos'} de mediana`,
+    pulseChange: (sign: number, amount: string): string => sign === 0 ? 'tu pulso no cambió' : `tu pulso ${sign < 0 ? 'bajó' : 'subió'} ${amount} lat/min de mediana`,
+    points: (gap: number): string => gap === 1 ? 'punto' : 'puntos',
+    beats: 'lat/min',
+    size: {
+      small: (gap: string, unit: string): string => `La diferencia es pequeña (${gap} ${unit}): las dos opciones te acompañan de forma parecida.`,
+      moderate: (gap: string, unit: string): string => `La diferencia es moderada (${gap} ${unit}).`,
+      clear: (gap: string, unit: string): string => `La diferencia es clara (${gap} ${unit}).`,
+    },
+    support: {
+      few: (left: number, right: number): string => `Aún son pocas sesiones (${String(left)} y ${String(right)}): tómalo como una pista, no como una regla.`,
+      some: (left: number, right: number): string => `Con ${String(left)} y ${String(right)} sesiones es una tendencia que vale la pena seguir.`,
+      many: (left: number, right: number): string => `Con ${String(left)} y ${String(right)} sesiones, la tendencia es bastante estable.`,
+    },
+    next: (better: string, goal: string): string => `En tu próxima sesión para «${goal}», elige «${better}» y mira si se repite.`,
+    nextGoal: (better: string): string => `Si buscas sentirte así otra vez, empieza por «${better}».`,
+    nextEither: (better: string, other: string): string => `«${better}» y «${other}» te funcionan parecido: elige la que más te apetezca ese día.`,
+  },
   method: (minimum: number): string => `Usamos la mediana del cambio entre el final y el inicio, con al menos ${String(minimum)} sesiones por opción. Comparamos dentro de la misma intención y versión del programa; el pulso también exige la misma fuente y lecturas de buena calidad. Los empates visibles no dan una preferencia. No usamos el pulso para recomendar elecciones. El orden es sonido, ambiente, hora, tiempo escuchado, intención y plan. Los datos de prueba no cuentan.`,
   dimensions: { instrument: 'Sonido', ambience: 'Ambiente', hour: 'Hora local', duration: 'Tiempo escuchado', goal: 'Intención', plannedDuration: 'Duración del plan' },
   hours: { morning: 'Mañana (06–11)', afternoon: 'Tarde (12–17)', evening: 'Noche (18–23)', night: 'Madrugada (00–05)' },
@@ -59,13 +85,14 @@ export const insights = {
   },
   automatic: {
     title: 'Una explicación de estas observaciones',
+    tryLabel: 'Para probar:',
     notice: 'Si aceptas, se envían solo las opciones y cifras de hasta tres comparaciones visibles. No se envían fechas, notas, sesiones ni señal. El modelo elige una forma de explicarlas entre frases verificadas; las cifras no cambian.',
     ask: 'Acepto y quiero una explicación',
     working: 'Preparando la explicación…',
     generated: 'Explicación preparada automáticamente. Las cifras se calcularon en tu dispositivo.',
     needsAccount: 'Necesitas iniciar sesión para pedir la explicación. Tus observaciones siguen disponibles aquí.',
-    overview: 'Cada comparación reúne sesiones con datos suficientes. Lee las cifras junto con su intención y fuente.',
-    balance: 'Puede haber otras diferencias entre las sesiones. Estas comparaciones describen el historial y no permiten atribuir un resultado a una elección.',
+    overview: 'Esto es lo que dicen tus sesiones, comparación por comparación:',
+    balance: 'Hay diferencias, pero léelas con calma: de un día a otro cambian muchas cosas además de tu elección. Esto es lo que dicen tus sesiones:',
     failed: 'No se pudo preparar la explicación. Puedes seguir consultando las observaciones locales.',
   },
 };
