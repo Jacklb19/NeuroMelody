@@ -188,6 +188,16 @@
   .footer-meta { flex-wrap: wrap; white-space: normal; }
 }
 
+/* Narrow phones: brand, Sign in and the menu always share one line. */
+@media (max-width: 420px) {
+  .landing-header, .landing-account { gap: var(--space-2); }
+  .landing-brand { font-size: var(--text-base); }
+  .landing-signin { padding: 0 var(--space-4); white-space: nowrap; }
+}
+@media (max-width: 370px) {
+  /* Only the mark of the brand remains; its link keeps the name for screen readers. */
+  .landing-brand { font-size: 0; gap: 0; }
+}
 @keyframes landing-menu-in { from { opacity: 0; transform: translateY(calc(-1 * var(--space-2))); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .landing-menu:not([hidden]) { animation: none; }
