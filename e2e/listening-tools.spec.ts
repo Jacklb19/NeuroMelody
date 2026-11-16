@@ -30,6 +30,8 @@ test('opens the first-session guide and uses a saved sound plan in playback', as
   await expect(page.getByRole('button', { name: copy.preview, exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(copy.previewFailed)).toHaveCount(0);
   await page.getByRole('button', { name: es.plan.continueToSession }).click();
+  // The plan only navigates after the click; the warnings must be on screen before their checkbox is looked for.
+  await expect(page.getByRole('heading', { name: es.warnings.pageTitle, exact: true })).toBeVisible();
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
   await expect(page.getByText(copy.guideSteps[0] ?? '')).toBeVisible();

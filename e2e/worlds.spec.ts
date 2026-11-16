@@ -22,6 +22,8 @@ test('a sound world sets the sound of the plan and colours the session (ADR-64)'
 
   await page.getByRole('radio', { name: worlds.names.deep_space, exact: true }).check();
   await page.getByRole('button', { name: es.plan.continueToSession }).first().click();
+  // The plan only navigates after the click; the warnings must be on screen before their checkbox is looked for.
+  await expect(page.getByRole('heading', { name: es.warnings.pageTitle, exact: true })).toBeVisible();
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
   await expect(page.locator('.session-page')).toHaveAttribute('data-world', 'deep_space');
