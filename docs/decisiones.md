@@ -1,6 +1,6 @@
 # Decisiones técnicas — NeuroMelody
 
-Decisiones aprobadas durante la construcción que completan o se desvían del documento de definición (`docs/definicion-proyecto.md`, que no se modifica). Los ADR-01 a ADR-06 están en ese documento. Aquí solo entran decisiones ya aprobadas.
+Decisiones aprobadas durante la construcción que completan o se desvían del documento de definición (`docs/definicion-proyecto.md`, que no se modifica). Los ADR-01 a ADR-06 están en ese documento. Aquí solo entran decisiones ya aprobadas. Las referencias P-01 a P-16 son propuestas de cambio y SEC-P1 a SEC-P7 hallazgos de seguridad de la auditoría de calidad del 2 nov 2026: lo que se aprobó de cada una está en el ADR que la cita.
 
 ## ADR-07. Síntesis y secuenciador dentro del AudioWorklet, sin Tone.js
 
@@ -61,7 +61,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 5 oct 2026; **retirado el 7 oct 2026** por decisión del usuario. |
+| Estado | Aprobado el 5 oct 2026; **retirado el 7 oct 2026**. |
 | Decisión | No hay calendario con fechas. El trabajo se ordena por prioridad en `plan-entrega.md` y avanza bloque a bloque. |
 | Consecuencias | Las tareas no tienen fecha límite propia; el orden sigue la ruta crítica. Ningún dato de salud se abre en la nube sin `aal2`. |
 
@@ -69,8 +69,8 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Decisión del usuario el 5 oct 2026, tras comprobar que no existe rama, script, dataset etiquetado ni modelo de entrenamiento. |
-| Decisión | El estimador de entrega son las reglas de ADR-12 (alternativa R-05). Se retira S5.3 ONNX y sus dos días pasan a reserva. ONNX solo como mejora opcional al final, si sobra tiempo, con un contrato de etiquetas definido por el usuario y aprobación expresa. |
+| Estado | Aprobado el 5 oct 2026, tras comprobar que no existía rama, script, dataset etiquetado ni modelo de entrenamiento. |
+| Decisión | El estimador de entrega son las reglas de ADR-12 (alternativa R-05). Se retira S5.3 ONNX y sus dos días pasan a reserva. ONNX solo como mejora opcional al final, si sobra tiempo, con un contrato de etiquetas definido y aprobación expresa. |
 | Desviación | RF-07 queda limitado: no se entrega el clasificador entrenado de la especificación ni se afirma su cumplimiento literal. |
 | Consecuencias | Confianza no calibrada y visible. Los registros nsr2db son datos de prueba de señal, sin etiquetas de activación. |
 
@@ -99,7 +99,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 |---|---|
 | Estado | Aprobado el 29 sep 2026; Bluetooth implementado el 6 oct 2026 (S5). |
 | Decisión | Tres fuentes tras el contrato `SignalSource`: simulador, banda Bluetooth y dos extractos de 30 minutos de PhysioNet nsr2db 1.0.0 (ODC-By 1.0, créditos en `public/recordings/CREDITS.md`), versionados como JSON de unos 25 KB. Bluetooth reintenta a 1, 2, 4 y 8 s tras perder el enlace y después cada 8 s hasta cerca de un minuto (ampliado el 7 oct 2026 tras la prueba manual), con un máximo de 10 s por intento y sin reiniciar el tiempo de señal, y ofrece «Reconectar banda» con `getDevices()` cuando el navegador lo expone. |
-| Desviación | Versionar los extractos es una excepción a la regla de no versionar datos, aprobada por el usuario. |
+| Desviación | Versionar los extractos es una excepción aprobada a la regla de no versionar datos. |
 | Consecuencias | La app se demuestra sin banda. La emulación con nRF Connect prueba el protocolo, no la precisión de una banda real. Desde el 7 oct hay una cuarta fuente experimental, la cámara del celular (propuesta P-01), pendiente de prueba en un teléfono real antes de pasar a decisión. |
 
 ## ADR-18. Cuenta, datos y privacidad
@@ -168,7 +168,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 7 oct 2026 por instrucción del usuario («no tiene que haber nada quemado en código»). |
+| Estado | Aprobado el 7 oct 2026: ningún valor ajustable queda escrito a mano en el código. |
 | Contexto | Una auditoría encontró unos 300 textos de interfaz dentro de los componentes, listas de opciones y valores por defecto repetidos, umbrales sin nombre, rutas escritas a mano en una docena de sitios y variables de entorno declaradas pero nunca leídas. |
 | Decisión | Sin dependencias nuevas. (1) **Entorno:** solo `src/config/env.ts` lee `import.meta.env` y valida los valores al arrancar. (2) **Rutas:** `src/config/routes.ts`. (3) **Opciones elegibles:** catálogos por funcionalidad (`*Catalog.ts`) con identificadores `as const`, tipo derivado, valor por defecto y `parseOption` en la frontera. (4) **Valores ajustables:** constantes con nombre y documentadas, en un único módulo por dominio (`thresholds.ts`, `levels.ts`, `ramps.ts`, `config.ts`). (5) **Textos:** diccionarios por área en `src/i18n/es/`; los textos con cifras son funciones con parámetros, así que ningún número se escribe dentro de una frase. (6) **Errores:** la lógica lanza errores con `code`; la interfaz los traduce. (7) **Diseño:** solo variables CSS en inglés; las rejillas que dependen de un catálogo reciben `--option-count`. (8) **Backend:** configuración desde el entorno validada con Pydantic y errores con código. |
 | Consecuencias | Cambiar una opción, un umbral o un texto toca un solo archivo. Las pruebas usan el diccionario y las constantes en lugar de repetir literales. El tipo `Messages` obliga a que otro idioma tenga las mismas claves. |
@@ -177,7 +177,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 7 oct 2026 («Sí, aplica las mejoras»). |
+| Estado | Aprobado el 7 oct 2026. |
 | Contexto | La limpieza de ADR-25 no cambió textos ni comportamiento a propósito y dejó once decisiones visibles abiertas. |
 | Decisión | (1) Errata del doble punto corregida. (2) La interfaz no muestra textos crudos del navegador (audio, caída del Worker, descarga de un registro, historial): usa el diccionario; el detalle técnico queda solo en `/diagnostics`. (3) Una sola clave para el consejo de navegador de la cámara, para el aviso de reglas provisionales y para el aviso no clínico de los indicadores. (4) Las columnas del CSV siguen en español: el archivo es para la persona y su terapeuta; si hiciera falta para scripts, se añade otra exportación. (5) El aviso de error de la fuente se elige por el tipo de error, no por la fuente seleccionada. (6) La regla de hueco o pérdida de contacto vive en el Worker de señal, que envía un evento `contact`. (7) Cada registro de ejemplo declara su duración en el catálogo. (8) Los minutos del resumen se redondean hacia abajo en todos los casos. (9) `index.html` y el manifest se generan al compilar desde `APP_NAME`, el idioma, el diccionario y los tokens CSS. (10) Backend: CORS admite las vistas previas de Vercel solo con la forma `https://<proyecto>-<hash de 9>-<equipo>.vercel.app`, configurada con `VERCEL_PREVIEW_PROJECT` y `VERCEL_PREVIEW_TEAM` (opcionales y juntas); los alias de rama quedan fuera. (11) Backend: `httpx2` 2.13.1 en lugar de `httpx` para el `TestClient`. |
 | Consecuencias | Para activar las vistas previas hay que definir las dos variables en Vercel. |
@@ -186,7 +186,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 7 oct 2026; el usuario delegó la lista. |
+| Estado | Aprobado el 7 oct 2026. |
 | Decisión | Catálogo `GOAL_IDS` con ids en inglés y textos en el diccionario, sin lenguaje clínico: `relax`, `rest_before_sleep`, `calm_after_activity`, `slow_breathing` y `pause`. Selección múltiple y opcional en `/plan`; viajan a `/session` en `QUERY_PARAMS.goals` (validados en la frontera, en orden del catálogo y sin repetir), se guardan en `SessionRecord.goals` y se muestran en el resumen y en el historial. |
 | Consecuencias | Los registros guardados antes de este cambio se leen con la lista vacía. Con la nube (S6.2) se guardan en `plans.goals`. Los objetivos no cambian la música: solo describen la intención de la sesión. |
 
@@ -194,7 +194,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 7 oct 2026 por el usuario («una pantalla de inicio con animaciones… como una página real en producción»; eligió three.js y la ruta `/` para la portada con la app en `/app`). |
+| Estado | Aprobado el 7 oct 2026: una portada animada con three.js en `/`, como la de un producto publicado, y la app en `/app`. |
 | Contexto | `diseno-visual.md` excluía animaciones decorativas y degradados en las pantallas de la app. Falta una página que explique el proyecto a quien llega por primera vez. |
 | Decisión | `/` pasa a ser una portada pública con su propio diseño (noche de bosque en la cabecera y el papel de la app en el resto) y el inicio de la app se mueve a `/app`. La cabecera muestra una escena 3D con `three` 0.180.0 (y `@types/three` 0.180.0 en desarrollo): una esfera de partículas que late con un corazón simulado y un pentagrama de cinco líneas a su alrededor. three.js se carga de forma diferida, solo en la portada y solo si hay WebGL; sin WebGL queda una figura en CSS. Animaciones de entrada y al desplazarse, todas desactivadas con `prefers-reduced-motion`; la escena se detiene fuera de pantalla y con la pestaña oculta. Colores, medidas y tiempos son tokens de `index.css`; textos en `src/i18n/es/landing.ts`. |
 | Consecuencias | La excepción a «sin animaciones decorativas» vale solo para la portada; las pantallas de escucha siguen sobrias. El manifest abre la app en `/app`. Las cifras de la cabecera son de un corazón simulado y lo dicen. |
@@ -203,7 +203,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 7 oct 2026 (el usuario aprobó `@supabase/supabase-js` 2.58.0 y la cuenta real). |
+| Estado | Aprobado el 7 oct 2026, con `@supabase/supabase-js` 2.58.0 y la cuenta real. |
 | Decisión | La biblioteca oficial de Supabase gestiona en el navegador el registro con confirmación por correo, la entrada, la recuperación de contraseña y el segundo factor TOTP, con flujo PKCE y la clave pública (las tablas tienen RLS). Se carga de forma diferida desde `AuthProvider`, así que las pantallas de escucha no la descargan. La interfaz depende de la interfaz `AuthService`; los errores de Supabase se traducen a códigos (`AccountErrorCode`) y nunca se muestra su texto. TOTP admite varios dispositivos: un segundo dispositivo es la vía de recuperación, porque Supabase no emite códigos de respaldo. El consentimiento de sincronización se guarda por ahora en el dispositivo. |
 | Consecuencias | En el panel de Supabase hay que permitir las URL de redirección (`/account` del despliegue y de `localhost:5173`) y activar TOTP. Quedan para la tarea C: borrar la cuenta (DELETE de ADR-18), llevar el consentimiento a `profiles` y sincronizar sesiones con `aal2`. |
 
@@ -211,16 +211,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 10 oct 2026 por el usuario, tras revisar la portada («el resto de la app pierde sentido… debes mejorar toda la app»). |
-| Contexto | Solo la portada tenía el nivel visual deseado; el inicio, el plan y la sesión se veían básicos, la cuenta mezclaba registro y ajustes, y la portada usaba recursos y secciones que el usuario rechazó (sección de tecnología, enlace al código, titular con una palabra resaltada). |
-| Decisión | (1) **Tema:** la «noche de bosque» de la portada pasa a toda la app; se cambian los tokens base de `index.css` (fondo verde profundo, tinta clara, acento ámbar) y las pruebas de contraste siguen exigiendo 4,5:1 y 3:1. (2) **Figura común:** `BreathingOrb`, un orbe en CSS que respira y puede latir; en la sesión toma el tono del estado y late con el pulso real. (3) **Portada:** lenguaje llano, sin sección de tecnología ni código fuente, titular sobrio y un trazo del pulso simulado en vivo como demostración. (4) **Acceso:** pantallas propias `/login`, `/register`, `/forgot-password` y `/reset-password`; la portada lleva a ellas y todas dejan «Continuar sin cuenta», porque escuchar sigue sin exigir cuenta (ADR-18). Registro con correo y contraseña repetida, sin correo de confirmación. «Continuar con Google» consulta antes si el proyecto lo tiene activo. La recuperación envía un enlace por el SMTP propio que el usuario configura en Supabase. (5) **Perfil:** `/account` es resumen y ajustes, accesible desde el avatar. (6) **Inicio, plan y sesión** rediseñados (detalle en `pantallas.md`). |
-| Consecuencias | Sustituye la dirección «papel marfil» de `diseno-visual.md` y la restricción de ADR-28 a la portada. En Supabase el usuario debe: desactivar «Confirm email», configurar un SMTP propio, activar el proveedor Google con sus credenciales y añadir `/app` y `/reset-password` a las URL de redirección. Sin dependencias nuevas. |
+| Estado | Aprobado el 10 oct 2026, tras revisar la portada: el resto de la app debía alcanzar su nivel visual. |
+| Contexto | Solo la portada tenía el nivel visual deseado; el inicio, el plan y la sesión se veían básicos, la cuenta mezclaba registro y ajustes, y la portada usaba recursos y secciones descartadas (sección de tecnología, enlace al código, titular con una palabra resaltada). |
+| Decisión | (1) **Tema:** la «noche de bosque» de la portada pasa a toda la app; se cambian los tokens base de `index.css` (fondo verde profundo, tinta clara, acento ámbar) y las pruebas de contraste siguen exigiendo 4,5:1 y 3:1. (2) **Figura común:** `BreathingOrb`, un orbe en CSS que respira y puede latir; en la sesión toma el tono del estado y late con el pulso real. (3) **Portada:** lenguaje llano, sin sección de tecnología ni código fuente, titular sobrio y un trazo del pulso simulado en vivo como demostración. (4) **Acceso:** pantallas propias `/login`, `/register`, `/forgot-password` y `/reset-password`; la portada lleva a ellas y todas dejan «Continuar sin cuenta», porque escuchar sigue sin exigir cuenta (ADR-18). Registro con correo y contraseña repetida, sin correo de confirmación. «Continuar con Google» consulta antes si el proyecto lo tiene activo. La recuperación envía un enlace por el SMTP propio configurado en Supabase. (5) **Perfil:** `/account` es resumen y ajustes, accesible desde el avatar. (6) **Inicio, plan y sesión** rediseñados (detalle en `pantallas.md`). |
+| Consecuencias | Sustituye la dirección «papel marfil» de `diseno-visual.md` y la restricción de ADR-28 a la portada. En Supabase hay que: desactivar «Confirm email», configurar un SMTP propio, activar el proveedor Google con sus credenciales y añadir `/app` y `/reset-password` a las URL de redirección. Sin dependencias nuevas. |
 
 ## ADR-31. Tema claro y oscuro, e interfaz en español e inglés
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 10 oct 2026 por instrucción del usuario («debe tener dark and light, además de español e inglés»; «combinar el verde con el blanco de antes»). |
+| Estado | Aprobado el 10 oct 2026: tema claro y oscuro, español e inglés, y el verde combinado con el blanco anterior. |
 | Decisión | **Temas:** dos paletas escritas una sola vez en `index.css`, noche de bosque y papel marfil. El tema oscuro es fondo verde con tarjetas marfil; el claro es fondo marfil con tarjetas verdes. Una superficie con la clase `.paper` toma la paleta contraria a la de la página y `.night` conserva la oscura en cualquier tema (cabecera de la portada, cuya escena 3D está pensada para fondo oscuro). `data-theme` en el documento elige el tema; la preferencia es «como el sistema», claro u oscuro. **Idiomas:** diccionario `src/i18n/en/` con la misma forma que el español (el tipo `Messages` lo exige al compilar); el español es el idioma por defecto. **Controles:** botones de tema e idioma en las cabeceras y selectores en el perfil; ambas preferencias se guardan en el dispositivo y se validan al leerlas. |
 | Consecuencias | Toda clave nueva debe añadirse en los dos diccionarios. El CSV se exporta en el idioma de la interfaz. La gráfica de la señal toma la paleta al abrir la sesión: si se cambia el tema con la sesión abierta, la gráfica conserva los colores anteriores hasta recargar. Las pruebas de contraste verifican la paleta oscura; la clara es la que ya estaba verificada antes de ADR-30. |
 
@@ -228,7 +228,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 11 oct 2026 por el usuario («sin IA no puedo presentar el proyecto, y no puede ser generativa»). Sustituye a ADR-14 en lo que limitaba RF-07. |
+| Estado | Aprobado el 11 oct 2026: el proyecto necesita un modelo propio que no sea generativo. Sustituye a ADR-14 en lo que limitaba RF-07. |
 | Contexto | El estado se estimaba con reglas fijas (ADR-12) porque no había datos etiquetados ni modelo. El proyecto necesita un modelo de aprendizaje automático propio, no generativo. |
 | Decisión | Un clasificador supervisado (regresión logística multinomial de tres clases con confianza calibrada) entrenado con el conjunto público WESAD. Contrato de etiquetas: meditación → `low`, reposo y vídeos divertidos → `uncertain`, estrés inducido → `high`. Entradas: FC media, RMSSD y SDNN respecto a la línea base de la persona. Se entrena fuera de la app (`back/training/`, con numpy, scipy y scikit-learn solo para entrenar) y se entrega como un archivo JSON estático (`public/models/activation-classifier.json`, ADR-09) que el navegador ejecuta como aritmética: sin ONNX, sin WebAssembly (ADR-21 se mantiene) y sin dependencias nuevas en la app. Las reglas de ADR-12 quedan como respaldo si el archivo no carga. Ficha completa en `docs/modelo.md`. |
 | Resultado | Validación dejando una persona fuera: acierto equilibrado 71,9 % frente al 62,4 % de las reglas; F1 macro 0,71 frente a 0,64. |
@@ -238,7 +238,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 11 oct 2026 por el usuario («anota todas, por orden de facilidad y urgencia»). |
+| Estado | Aprobado el 11 oct 2026, ordenado por facilidad y urgencia. |
 | Contexto | La app adapta la música al pulso, pero da pocos motivos para volver y no muestra si sirve. Ninguna de estas funciones estaba en la especificación. |
 | Decisión | Se añaden seis funciones, en este orden dentro del plan (`plan-entrega.md`): (1) **Respiración guiada:** el orbe de la sesión marca un ritmo lento de inhalar y exhalar, opcional, sincronizado con la música; da contenido al objetivo «Acompañar una respiración lenta». (2) **Tu progreso:** vista con la evolución entre sesiones del pulso, la variabilidad y la autovaloración antes y después. (3) **Recolección de datos y reentrenamiento:** un protocolo guiado y corto (reposo, respiración lenta, tarea exigente) que guarda cada tramo con su etiqueta, con consentimiento explícito; los datos se exportan, se reentrena en `back/training/` y se publica una nueva versión del modelo (ADR-32). El modelo nunca se reentrena solo dentro de la app. (4) **Informe para el terapeuta:** resumen imprimible de un periodo, hecho con la impresión del navegador. (5) **Paisaje sonoro:** elegir entre dos o tres timbres o ambientes. (6) **Recordatorios** a la hora elegida, donde el navegador lo permita. |
 | Consecuencias | Cada función se ubica en `pantallas.md` y se planifica antes de programarse. Todas mantienen el lenguaje no clínico: describen, no prometen efectos. Sin dependencias nuevas previstas para (1), (2) y (4). La (3) necesita la API; la (5) toca el motor de audio y exige repetir la prueba de audio; la (6) depende de permisos y varía entre sistemas, así que puede quedar limitada. |
@@ -247,16 +247,16 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 11 oct 2026 por el usuario (versiones, clave pública en el back, contrato y los tres puntos de detalle). Concreta ADR-10, ADR-18 y ADR-19. |
+| Estado | Aprobado el 11 oct 2026 (versiones, clave pública en el back, contrato y los tres puntos de detalle). Concreta ADR-10, ADR-18 y ADR-19. |
 | Decisión | **API:** `POST`/`GET /v1/sessions`, `GET`/`DELETE /v1/sessions/{id}` y `DELETE /v1/account`, con `Authorization: Bearer <token de Supabase>`. El token se verifica con las claves públicas del proyecto (ES256) usando PyJWT 2.15.1 y `cryptography` 50.0.2; las rutas de sesiones exigen `aal2`. Errores con código: `unauthenticated` (401), `second_factor_required` y `consent_required` (403), `not_found` (404), `session_conflict` (409), `invalid_request` (422) y `storage_unavailable` (502). **Doble barrera:** la API llama a Supabase con `httpx2` y el token de la persona, así que RLS vuelve a comprobar propiedad y segundo factor; para identificar el proyecto usa la clave pública (`SUPABASE_ANON_KEY`, variable nueva del back) y la clave de servicio queda solo para borrar la cuenta. **Base de datos:** una migración nueva añade el consentimiento a `profiles`, los campos de una sesión del dispositivo, `good_quality` en `session_metrics`, políticas restrictivas de `aal2` y cuatro funciones (`save_session`, `list_sessions`, `get_session`, `delete_session`) que guardan o leen la sesión completa en una sola llamada. Los objetivos y la duración van en `plans` (ADR-27). **Envío idempotente:** el id es el UUID v7 del dispositivo; reenviar una sesión no la duplica y solo actualiza la valoración final. **Consentimiento:** lo escribe el front en `profiles`; con cuenta solo vale ese, y la base de datos rechaza guardar sin él. **Sincronización:** las sesiones de la nube se copian al dispositivo, que sigue siendo de donde leen todas las pantallas; unas marcas por cuenta distinguen «nunca enviada» de «borrada desde otro dispositivo»; borrar no espera a la nube (aprobado el 12 oct 2026, bloque 16): la sesión se borra primero del dispositivo y, si estaba en la cuenta, su borrado queda en una cola por cuenta hasta que la nube lo confirme; la sincronización entrega esa cola antes de leer la nube, para que la sesión no vuelva a aparecer. |
 | Desviación | `good_quality` y `SUPABASE_ANON_KEY` no estaban en el plan anotado. La cuenta con segundo factor solo se puede borrar desde una sesión que lo pasó. |
-| Consecuencias | Desde el bloque 16 se puede borrar sin conexión; la app sincroniza sola cuando la conexión vuelve. El back necesita cinco variables en Vercel. La CSP del front debe incluir la URL del back en `connect-src` cuando se despliegue. La migración se prueba en local con la CLI de Supabase 2.120.0 por `npx` y Docker; la aplica el usuario en el SQL Editor. |
+| Consecuencias | Desde el bloque 16 se puede borrar sin conexión; la app sincroniza sola cuando la conexión vuelve. El back necesita cinco variables en Vercel. La CSP del front debe incluir la URL del back en `connect-src` cuando se despliegue. La migración se prueba en local con la CLI de Supabase 2.120.0 por `npx` y Docker; se aplica a mano en el SQL Editor. |
 
 ## ADR-35. Modo de prueba: el simulador y los registros de ejemplo no son sesiones de la persona
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 12 oct 2026 por el usuario («el centro de la app es tu propio pulso»; el simulador y los ejemplos «simplemente servirían para probar la app»). |
+| Estado | Aprobado el 12 oct 2026: el centro de la app es el pulso de la persona; el simulador y los ejemplos solo sirven para probarla. |
 | Contexto | El simulador y los registros de ejemplo aparecían en el selector junto a la banda y la cámara, y sus sesiones se guardaban, contaban en el progreso y podían llegar al informe o a la nube como si fueran de la persona. |
 | Decisión | El panel de fuente ofrece solo las que miden a la persona (banda y cámara). El simulador y los registros pasan a un **modo de prueba** que se abre con un enlace, lo dice en pantalla y no guarda nada: una sesión de prueba no va al historial, al progreso, al informe ni a la nube, y una grabación guiada de prueba no se guarda ni se exporta. Las sesiones de prueba guardadas antes de esta regla siguen en el historial, donde se pueden borrar, y no cuentan en ninguna cifra. El rasgo `trial` de `sourceTraits.ts` es la única fuente de verdad. |
 | Consecuencias | Se mantienen para la demostración sin sensor (RF-02) y para las pruebas automáticas, que entran al modo de prueba. La prueba de extremo a extremo del historial ya no puede grabar una sesión guardable desde un navegador sin sensor: la deja escrita en el almacenamiento. Qué fuentes reales añadir se estudia en `fuentes-de-pulso.md`. |
@@ -265,7 +265,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 12 oct 2026 por el usuario. Concreta ADR-08 para RF-15. |
+| Estado | Aprobado el 12 oct 2026. Concreta ADR-08 para RF-15. |
 | Contexto | La primera versión leía la sesión de la nube en el servidor, así que el resumen solo existía para quien tuviera dos pasos, consentimiento de sincronización y la sesión ya subida. |
 | Decisión | `POST /v1/sessions/{id}/summary` recibe `figures`: las cifras agregadas que la pantalla de resumen ya muestra, en un esquema cerrado de números enteros dentro de rango y valores de catálogo. No lee ni guarda nada, no envía el `id`, y basta una cuenta (no pide `aal2`): la respuesta no contiene ningún dato que quien llama no haya enviado. Sigue exigiendo `consent: true`. |
 | Desviación | La ruta de la Tabla 15 se mantiene, pero ya no lee la sesión guardada. |
@@ -275,7 +275,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 12 oct 2026 por el usuario («sí», «con clic mío para publicar»; combinar con WESAD evaluando primero y no publicar con menos de 5 personas). Resuelve la propuesta P-04 y amplía ADR-32 y ADR-33. |
+| Estado | Aprobado el 12 oct 2026: cada versión se publica solo con aprobación manual, se combina con WESAD evaluando primero y no se publica con menos de 5 personas. Resuelve la propuesta P-04 y amplía ADR-32 y ADR-33. |
 | Contexto | El modelo se entrenaba a mano con WESAD y la app lo traía como archivo fijo. Las grabaciones guiadas solo podían exportarse como archivo. |
 | Decisión | (1) **Envío consentido:** la persona puede enviar cada grabación guiada (`POST /v1/recordings`), con un consentimiento propio y segundo factor, y retirarla cuando quiera; se guardan en `training_recordings`, con RLS. (2) **Entrenamiento programado** en GitHub Actions, gratuito en repositorios públicos: entrena con WESAD y con las grabaciones, dejando fuera a cada persona por turno. (3) **Control de calidad:** el modelo nuevo solo puede publicarse con al menos 5 personas de la app, si en ellas acierta al menos igual que el modelo entrenado solo con WESAD y si en WESAD no pierde más de un punto. (4) **Publicación con aprobación:** el paso que publica espera a una persona (entorno `model-release` con revisor obligatorio) e inserta la versión en `model_versions`, con su archivo y su suma de comprobación. (5) **La app descarga la última versión** (`GET /v1/models/classifier`, de la Tabla 15) al abrir una sesión con cuenta, la valida, la conserva para cuando no hay red y, si no hay ninguna o no valida, usa la que trae. |
 | Desviación | Hay latidos en la nube por primera vez (antes solo indicadores agregados), siempre por decisión expresa de la persona; `/privacy` lo explica. La clave de servicio de Supabase está también en los secretos de GitHub. `model_versions` guarda el archivo del modelo en una columna en lugar de una ruta de almacenamiento. |
@@ -285,7 +285,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 1 a 6 de la propuesta P-06). Este ADR cubre el paso 1; los demás se añaden al implementarse. |
+| Estado | Aprobado el 13 oct 2026 (pasos 1 a 6 de la propuesta P-06). Este ADR cubre el paso 1; los demás se añaden al implementarse. |
 | Contexto | Los objetivos del plan (ADR-27) no cambiaban nada de la música: solo «Acompañar una respiración lenta» encendía la respiración guiada. Toda sesión empezaba en Intermedio y bajaba a la meta, eligiera lo que eligiera la persona. |
 | Decisión | Cada objetivo tiene un **programa** (`src/features/plan/programCatalog.ts`) con tres valores: el nivel en que empieza la música, el nivel más calmado al que llega y si la respiración guiada empieza encendida. Relajarme: de Intermedio a la meta. Descansar antes de dormir: igual, con respiración. Recuperar la calma después de una actividad: empieza en Activación alta y baja dos escalones. Acompañar una respiración lenta: empieza ya en la meta, con respiración. Tomar una pausa: se queda en Intermedio. Sin objetivo, la sesión es la de siempre. El objetivo pasa a ser **uno solo**; un enlace con varios se lee por el primero. |
 | Desviación | Modifica ADR-12 en dos puntos: la calibración ocurre en el nivel inicial del programa, no siempre en Intermedio, y el avance se detiene en el nivel más calmado del programa. Todo lo demás de ADR-12 sigue igual: histéresis de 3, permanencia de 3 minutos, un escalón por vez, retroceso inmediato por Alta y rampas graduales. Modifica ADR-27: el objetivo deja de ser múltiple. |
@@ -295,7 +295,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 13 oct 2026 por el usuario (paso 2 de P-06). |
+| Estado | Aprobado el 13 oct 2026 (paso 2 de P-06). |
 | Contexto | El tempo de cada nivel era fijo (76, 66 y 59 por minuto) para todo el mundo. El principio iso pide empezar donde está la persona y guiarla desde ahí; con un tempo igual para todos, «se adapta a ti» era solo el cambio de escalón. |
 | Decisión | El tempo del nivel en que empieza la sesión se mueve al pulso medido, como mucho 14 por minuto hacia arriba y 5 hacia abajo (`src/features/adaptation/personalTempo.ts`). Los niveles más activos reciben el mismo desplazamiento, los intermedios hacia la calma una parte proporcional, y la meta conserva sus 59. Se ajusta dos veces: con las tres primeras lecturas de buena calidad, para que la música encuentre pronto a la persona, y al terminar la calibración, con la referencia completa. Cada ajuste es una rampa gradual con la regla de siempre: máx(20 s, \|ΔBPM\| × 2 s). Una sesión que empieza en la meta no se mueve. |
 | Desviación | Modifica la tabla de niveles de `diseno-musical.md`: 76 y 66 pasan a ser los valores de partida cuando aún no hay pulso. No cambia ADR-12 (histéresis, permanencias, un escalón por vez) ni RNF-03 (ninguna rampa de tempo de menos de 20 s). |
@@ -305,7 +305,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 13 oct 2026 por el usuario (paso 6 de P-06; concreta el «paisaje sonoro» de ADR-33). |
+| Estado | Aprobado el 13 oct 2026 (paso 6 de P-06; concreta el «paisaje sonoro» de ADR-33). |
 | Decisión | La persona elige en el plan un ambiente de un catálogo (`src/features/audio/core/ambienceCatalog.ts`): solo música (por defecto), lluvia, mar o viento. Los tres se sintetizan con ruido filtrado en el AudioWorklet (`core/ambience.ts`), sin archivos de audio y sin reservar memoria en `process()`. Salen por una segunda salida del sintetizador y se unen antes del volumen: no pasan por el filtro de brillo ni por la reverberación de la música, y sí por el control de volumen, la detención y el límite de salida (ADR-16). El ambiente es el mismo durante toda la sesión. La elección viaja en la dirección de la sesión (`ambience`) y se recuerda en el dispositivo, junto al tema y el idioma; no se guarda con la sesión ni se envía a ningún sitio. |
 | Consecuencias | Una sesión iniciada desde el inicio, sin pasar por el plan, usa el último ambiente elegido. La herramienta de muestras renderiza la meta con cada ambiente. Un ambiente nuevo es una entrada del catálogo, su sonido, su icono y su nombre en los dos idiomas. |
 
@@ -313,7 +313,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 13 oct 2026 por el usuario (paso 5 de P-06). |
+| Estado | Aprobado el 13 oct 2026 (paso 5 de P-06). |
 | Decisión | (1) **Un cuarto nivel, «Para dormir»**, un escalón más allá de la meta: 50 por minuto, modo «bordón profundo» (las mismas notas de la pentatónica, díadas graves que duran un ciclo entero de 16 pulsos y tardan cinco segundos en entrar, sin campanas ni notas pulsadas), filtro en 1,2 kHz y reverberación 0,55. Solo lo alcanza el programa del objetivo «Descansar antes de dormir»; los demás siguen deteniéndose en la meta. Se llega con las mismas reglas de ADR-12: tres minutos de permanencia, un escalón por vez, y Alta aceptada hace retroceder. (2) **Final silencioso:** en ese programa no se abre el aviso de fin de plan; la música se apaga sola en un fundido de dos minutos que termina justo cuando acaba el plan, programado en el reloj de audio. (3) **Pantalla atenuada:** tras 20 segundos sin tocar la pantalla ni el teclado, una capa oscura cubre la página; cualquier toque la quita. El botón «Detener» queda por encima de la capa, siempre visible. |
 | Desviación | Añade un nivel y un modo a los tres de ADR-12 y `diseno-musical.md`, y exceptúa a este programa del aviso de fin de plan de ADR-16 (el límite de nivel de salida y la duración máxima de 60 minutos se mantienen). |
 | Consecuencias | La app no detecta el sueño ni lo afirma: el final depende del tiempo del plan. El tempo de este nivel no lo mueve el pulso (ADR-39). La cámara no sirve acostado: para dormir conviene la banda o, sin sensor, el modo de prueba. |
@@ -322,7 +322,7 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 13 oct 2026 por el usuario (pasos 3, 4 y 7 de P-06; el 7, con la condición de añadir usos sin quitar el dolor crónico). |
+| Estado | Aprobado el 13 oct 2026 (pasos 3, 4 y 7 de P-06; el 7, con la condición de añadir usos sin quitar el dolor crónico). |
 | Contexto | Se podía iniciar una sesión desde el inicio sin elegir nada; el plan parecía opcional; la pantalla de sesión juntaba paneles sin orden y no decía qué hacía la música ni qué era el «estado estimado». |
 | Decisión | (1) **Recorrido:** Inicio → Preparar (`/plan`: intención, duración y ambiente) → Sesión → Cierre. El inicio lleva a preparar la sesión; solo «Repetir la última» va directo, con la intención y la duración de la última sesión. La navegación pasa a ser Inicio, Nueva sesión e Historial: la sesión no tiene entrada propia. (2) **Antes de la música**, la sesión muestra tres pasos con su estado: medir el pulso, decir cómo te sientes (opcional) e iniciar la música. El panel de la fuente de señal va primero y se pliega solo cuando la música suena con el pulso conectado; la persona puede abrirlo cuando quiera. (3) **Mientras suena**, el escenario muestra el recorrido de la música (los escalones de su programa en palabras llanas: Con movimiento, A paso medio, En calma, Para dormir, con el actual marcado), a cuántos pulsos por minuto va y si está ajustada al pulso, y «¿Qué significa?» junto al estado estimado. (4) **Al terminar**, «Lo que hizo la música»: el ritmo al que empezó y terminó y cada cambio de escalón con su minuto. No se guarda: vive hasta salir de la pantalla. (5) **Alcance:** la portada dice que NeuroMelody nació para acompañar a personas con dolor crónico y que sirve también para calmarse, descansar antes de dormir, respirar más despacio o tomar una pausa. |
 | Desviación | Cambia `pantallas.md` (navegación, inicio y organización de `/session`, ADR-24). Amplía el alcance descrito en la especificación sin retirar el dolor crónico. Las advertencias y el lenguaje no clínico no cambian. |
@@ -332,20 +332,20 @@ Decisiones aprobadas durante la construcción que completan o se desvían del do
 
 | Campo | Contenido |
 |---|---|
-| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 18 por pedido del usuario («sigue programando lo que falte»); pendiente de su visto bueno. |
+| Estado | Aprobado el 15 oct 2026, al implementar el bloque 18. |
 | Contexto | ADR-33 (6) pide recordatorios «donde el navegador lo permita». Una página no puede avisar a una hora concreta en todos los teléfonos sin un servidor que envíe notificaciones (Web Push necesita claves y un envío programado; los trabajos programados de Vercel Hobby son diarios y no por persona), y las alarmas locales del navegador no existen de forma estable. |
 | Decisión | En el perfil, la persona elige la hora y los días; la app genera un archivo de calendario (iCalendar, RFC 5545) con una cita que se repite esos días a esa hora local, con aviso al empezar y el enlace a la app. El calendario del teléfono o del ordenador es quien avisa. La elección se guarda en el dispositivo (\`neuromelody.reminder\`); nada viaja a un servidor. Por defecto: 21:00, todos los días. |
 | Consecuencias | Funciona en cualquier sistema con calendario y sin permisos de notificación. Cambiar la hora exige descargar el archivo otra vez (el calendario sustituye la cita por su identificador, si lo admite). Si más adelante hay notificaciones push, este archivo sigue siendo la opción sin cuenta. Además, los controles nativos (campo de hora, listas) siguen ahora el tema claro u oscuro (\`color-scheme\`). |
 
 ### Ajuste de ADR-43 (19 oct 2026)
 
-Tras probarlo en el teléfono, el usuario rechazó la descarga como acción principal y eligió «Abrir Google Calendar y guardar allí». El perfil abre un borrador con hora, días, zona horaria, título y enlace a la app. La persona revisa repetición y aviso y lo guarda en Google Calendar; el enlace no fija la notificación ni comprueba el guardado. No requiere conectar la cuenta a la API de Calendar y no envía datos de sesiones. Cada apertura prepara un evento nuevo: la interfaz explica que un recordatorio ya guardado se cambia en el calendario. El archivo iCalendar se conserva como opción secundaria «Descargar para otro calendario».
+Tras probarlo en el teléfono, se descartó la descarga como acción principal y se eligió «Abrir Google Calendar y guardar allí». El perfil abre un borrador con hora, días, zona horaria, título y enlace a la app. La persona revisa repetición y aviso y lo guarda en Google Calendar; el enlace no fija la notificación ni comprueba el guardado. No requiere conectar la cuenta a la API de Calendar y no envía datos de sesiones. Cada apertura prepara un evento nuevo: la interfaz explica que un recordatorio ya guardado se cambia en el calendario. El archivo iCalendar se conserva como opción secundaria «Descargar para otro calendario».
 
 ## ADR-44. Rendimiento y accesibilidad medidos (bloque 19)
 
 | Campo | Contenido |
 |---|---|
-| Estado | Tomada por el agente el 15 oct 2026 al programar el bloque 19 por pedido del usuario; pendiente de su visto bueno y de la prueba en un celular de gama media. |
+| Estado | Aprobado el 15 oct 2026, al implementar el bloque 19; pendiente de la prueba en un celular de gama media. |
 | Medición | En Chrome, sobre la versión de producción con los servicios apagados, con el simulador: tareas largas del hilo principal (más de 50 ms), CPU de cada proceso del navegador por fase y árbol de accesibilidad de 14 pantallas. Equipo: portátil AMD Ryzen 7 8845HS con pantalla de 130 Hz. |
 | Hallazgos | (1) Al pulsar «Iniciar música» había dos tareas largas: abrir la salida de audio (110–200 ms, del navegador) y preparar la reverberación (40 ms más el resto de la cadena). (2) Con la música sonando el navegador gastaba ≈ 120 % de un núcleo: la barra de progreso y el anillo se animaban con una transición de 1 s renovada cada segundo, lo que rehacía el diseño en cada fotograma, y el orbe se redibujaba en vez de solo moverse. El audio en sí costaba poco. (3) Accesibilidad: ningún control sin nombre, un solo título principal por pantalla y ningún salto de nivel de títulos en las 14 pantallas. |
 | Decisión | (1) La salida de audio se abre al cargar la pantalla de sesión (silenciosa y en pausa hasta que la persona pulsa iniciar) y se cierra si nadie la usa; la preparación del motor cede el turno entre pasos y la respuesta al impulso se calcula tres veces más rápido. (2) La barra y el anillo de progreso se redibujan una vez por segundo, sin transición (avanzan menos de un píxel por segundo); las partes animadas del orbe tienen su propia capa (\`will-change\`). (3) Las pantallas menos visitadas (sesión, resumen, historial, progreso, informe, grabación, perfil, privacidad y diagnóstico) se cargan al abrirlas; el trabajador de servicio las guarda igual para usarlas sin conexión. |
@@ -356,7 +356,7 @@ Tras probarlo en el teléfono, el usuario rechazó la descarga como acción prin
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). |
+| Estado | Aprobado el 18 oct 2026, entre las mejoras de producto. |
 | Decisión | El relato de la música (ritmo al empezar y al terminar, y cada cambio de escalón con su minuto) se guarda con la sesión en el dispositivo y aparece en su resumen. Reemplaza el «no se guarda» de ADR-42. |
 | Consecuencias | Solo vive en el dispositivo: la copia de la sesión en la nube no lo lleva (el contrato de la API no cambia), así que una sesión traída de otro dispositivo no lo muestra. Las sesiones anteriores tampoco lo tienen. |
 
@@ -364,7 +364,7 @@ Tras probarlo en el teléfono, el usuario rechazó la descarga como acción prin
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 18 oct 2026 por el usuario («me gustan las mejoras que propones de mejor producto, hay que hacerlas»). Los valores de cada timbre son del agente y se ajustan con la escucha del usuario. |
+| Estado | Aprobado el 18 oct 2026, entre las mejoras de producto. Los valores de cada timbre se ajustan escuchando. |
 | Decisión | En el plan se elige el sonido de la música (`src/features/audio/core/instrumentCatalog.ts`): **cálido** (el de siempre: colchón y teclas suaves), **piano** o **cuencos**. Las notas, los escalones y la guía son los mismos; cambia cómo suena cada parte (`instruments.ts`: colchón, díadas, melodía, notas del acorde y campanas) y cómo se tocan los acordes. En el sonido cálido se sostienen; en piano y cuencos se pulsan, escalonados como una mano, y se vuelven a pulsar más suave cada 4 pulsos (piano) u 8 (cuencos) mientras dura el acorde. Los cuencos tienen armónicos que no son múltiplos de la nota (razón 2,76) y un vaivén lento entre los oídos. El bordón suena algo más bajo con piano y cuencos. Todo en el AudioWorklet, sin archivos de audio. La elección viaja en la dirección de la sesión (`instrument`) y se recuerda en el dispositivo, como el ambiente. |
 | Consecuencias | El nivel percibido de cada instrumento quedó dentro de ±2 dB del sonido cálido (medido con la herramienta de muestras). Un instrumento nuevo es una entrada del catálogo, su juego de timbres, su icono y su nombre en los dos idiomas. |
 
@@ -372,24 +372,24 @@ Tras probarlo en el teléfono, el usuario rechazó la descarga como acción prin
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado el 18 oct 2026 por el usuario (lo propuso él: «que fueran como unos slides, con animación súper fluida»). Los detalles de interacción son del agente. |
+| Estado | Aprobado el 18 oct 2026: la sesión como diapositivas con una animación fluida. |
 | Contexto | Aun con los pasos de ADR-42, la pantalla de sesión mostraba a la vez la fuente, la valoración, el escenario y los controles: se leía como una lista de paneles. |
 | Decisión | \`/session\` es un recorrido de tres diapositivas: **Tu pulso** (la fuente y el modo de prueba), **Cómo llegas** (el pulso en vivo, lo elegido y la valoración, con «Iniciar música») y **Escuchando** (el escenario de siempre). Al conectarse el pulso, la segunda llega sola tras 0,7 s; «Seguir sin medir mi pulso» permite avanzar igualmente. Un indicador de pasos arriba marca el actual y deja volver atrás, también con la música sonando. Las diapositivas se deslizan con una transición de vista del navegador (\`document.startViewTransition\`, 480 ms) y sus partes entran escalonadas; con «reducir movimiento» o sin soporte, el cambio es inmediato. Todas siguen montadas aunque estén ocultas, así que la fuente sigue midiendo y la música sigue sonando al cambiar de diapositiva. Al cambiar, el foco va al título de la nueva. Los detalles técnicos quedan debajo, plegados. |
 | Consecuencias | Las pruebas E2E conectan el pulso antes de iniciar la música. En navegadores sin transiciones de vista (Firefox, hoy) se ve el cambio sin animación. «Detener» y Esc siguen disponibles en todo momento. |
 
 ### Ajuste de ADR-47 (19 oct 2026)
 
-El usuario probó las diapositivas en el celular y pidió un desvanecido sencillo porque el deslizamiento se veía raro. Se sustituye la animación lateral y las entradas escalonadas por un desvanecido único de 240 ms, igual al avanzar y retroceder. El navegador no interpola el tamaño del grupo durante el cambio. Se conservan el montaje de los paneles, el foco, la música al navegar, Detener y el cambio inmediato con movimiento reducido o sin soporte de transiciones de vista.
+En el celular el deslizamiento entre diapositivas se veía raro, así que se cambió por un desvanecido sencillo. Se sustituye la animación lateral y las entradas escalonadas por un desvanecido único de 240 ms, igual al avanzar y retroceder. El navegador no interpola el tamaño del grupo durante el cambio. Se conservan el montaje de los paneles, el foco, la música al navegar, Detener y el cambio inmediato con movimiento reducido o sin soporte de transiciones de vista.
 
 ### Audio interrumpido y diagnóstico local (19 oct 2026)
 
-El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cortes al bloquear el Xiaomi con Chrome y simulador. Se añaden observación del estado real del contexto, Detener seguro durante una interrupción, liberación de audio o cámara que terminan de abrirse después de salir y un diagnóstico local exportable con comparación de salidas. Mantiene ADR-07 y ADR-16: el motor no usa temporizadores para sonar y la salida de las sesiones normales no cambia. La alternativa con reproductor no se activa globalmente hasta demostrar su utilidad; el fallo de bloqueo necesita la prueba física del usuario. No se atribuye el calentamiento ni el corte a una causa no medida.
+Se priorizó este trabajo tras observar cortes al bloquear un Xiaomi con Chrome y el simulador. Se añaden observación del estado real del contexto, Detener seguro durante una interrupción, liberación de audio o cámara que terminan de abrirse después de salir y un diagnóstico local exportable con comparación de salidas. Mantiene ADR-07 y ADR-16: el motor no usa temporizadores para sonar y la salida de las sesiones normales no cambia. La alternativa con reproductor no se activa globalmente hasta demostrar su utilidad; el fallo de bloqueo necesita una prueba en un teléfono físico. No se atribuye el calentamiento ni el corte a una causa no medida.
 
 ## ADR-48. Observaciones locales y preparación personal
 
 | Campo | Contenido |
 |---|---|
-| Estado | Desarrollo autorizado el 19 oct 2026: el usuario pidió continuar todas las funciones y terminar los sprints para revisarlos al día siguiente. El plan del bloque 23 ya estaba presentado y había elegido analizar los datos disponibles en este dispositivo. |
+| Estado | Aprobado el 19 oct 2026 con el plan del bloque 23, que analiza los datos guardados en el dispositivo. |
 | Contexto local | Las nuevas sesiones guardan instrumento, ambiente, hora y fecha local al empezar, y una versión del contexto que identifica los programas actuales. Los datos antiguos ausentes siguen desconocidos. Este contexto, las notas y el relato musical no se sincronizan ni se envían a la redacción. Las actualizaciones de nota y valoración son atómicas en IndexedDB y conservan los otros campos. |
 | Observaciones | `/progress` añade «Lo que te funciona» después de los totales. Excluye fuentes de prueba antes del selector de 7, 30 o todas las sesiones. Usa medianas del cambio final menos inicial, redondeadas a una décima, con al menos 5 sesiones válidas en cada una de dos opciones. Para valoración exige ambas respuestas; para pulso, extremos de buena calidad y fuente conocida e idéntica. Separa intención y versión de programa, salvo al comparar las propias intenciones. No recomienda según pulso ni afirma causalidad. Un empate entre opciones líderes no elige una arbitrariamente. |
 | Dimensiones | Sonido, ambiente, bandas de hora local de 6 horas, tiempo realmente escuchado (menos de 10, 10–menos de 20, 20–menos de 30, 30 o más), intención y duración prevista exacta del catálogo manual. Orden fijo por dimensión y métrica, hasta 3 observaciones; tabla desplegable de todos los grupos y sus conteos. Los días de constancia usan solo fechas locales registradas y declaran las desconocidas. Los mínimos son decisiones de producto, no significación científica. |
@@ -404,7 +404,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 20 oct 2026, tras la revisión de 14 pantallas en celular (claro y oscuro) y escritorio, con historial de ejemplo, y de una sesión de prueba completa. |
+| Estado | Aprobado el 20 oct 2026, tras la revisión de 14 pantallas en celular (claro y oscuro) y escritorio, con historial de ejemplo, y de una sesión de prueba completa. |
 | Problemas | Textos de método donde la persona espera una respuesta («Lo que te funciona» sin datos, sesión rápida), una tarjeta «Para ti» vacía antes de elegir, jerga (RMSSD, LF/HF, «Calibrando: no hay datos suficientes»), un historial de unos 450 px por sesión en el celular y un final de sesión que seguía mostrando la calibración sin un paso siguiente. |
 | Decisión | Los cambios de `pantallas.md`, «Revisión de la experiencia». Lo que falta para una comparación se calcula en el dispositivo con las mismas reglas de ADR-48 (valoración, contexto actual, sonido o ambiente, dos opciones más usadas, mínimo de 5) y no añade observaciones ni recomendaciones. El historial agrupa por semana local empezando en lunes, en los dos idiomas. |
 | Límites | Solo front, sin dependencias, sin cambios de datos ni del contrato con la API. Las cifras de pulso y variación siguen en el resumen, el progreso, el informe y el CSV. |
@@ -413,7 +413,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 20 oct 2026 dentro de P-05 A (mejorar la cámara). La cámara sigue experimental (P-01) hasta la prueba física. |
+| Estado | Aprobado el 20 oct 2026 dentro de P-05 A (mejorar la cámara). La cámara sigue experimental (P-01) hasta la prueba física. |
 | Medición | Antes de cambiar nada se ampliaron las grabaciones sintéticas: 15, 24, 30 y 60 fotogramas por segundo, una forma de pulso con onda sistólica y diastólica, fotogramas perdidos o repetidos, más variación de tiempos, un dedo que resbala un fotograma y una imagen saturada. El detector ya acertaba en frecuencia, forma, pérdidas y repeticiones (error medio de 3 a 8 ms en 39 intervalos). Fallaba en dos casos: tres resbalones de un fotograma perdían 6 de 39 latidos, porque cada uno reiniciaba el detector, y la imagen saturada perdía de 10 a 12 sin avisar. |
 | Decisión | 1) Hasta 300 ms sin dedo se saltan los fotogramas en lugar de reiniciar; con más, se reinicia como antes y la guía dice que se perdió el contacto. 2) La captura cuenta la parte de píxeles con el rojo al máximo; si en el último segundo es la mitad o más, la guía dice «Entra demasiada luz…». No se intenta recuperar latidos ocultos por la saturación. 3) El tiempo de cada fotograma usa siempre el mismo reloj, elegido con el primero (captura de la cámara o, si no existe, la visualización); un fotograma sin ese dato se salta. |
 | Resultado | Con resbalones, 39 de 39 latidos a 15, 24, 30 y 60 fotogramas por segundo, con menos de 20 ms de error por intervalo en las pruebas. La saturación se detecta y se avisa. |
@@ -423,19 +423,19 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 20 oct 2026 (P-05 B): regla simple por pulso y sesiones también en la nube, con migración que aplica el usuario. Sin reloj físico para probar: se verifica con pruebas automáticas y con nRF Connect enviando pulso sin intervalos. |
+| Estado | Aprobado el 20 oct 2026 (P-05 B): regla simple por pulso y sesiones también en la nube, con una migración que se aplica a mano. Sin reloj físico para probar: se verifica con pruebas automáticas y con nRF Connect enviando pulso sin intervalos. |
 | Problema | Muchos relojes (Garmin, Huawei, Amazfit) emiten el servicio estándar de frecuencia cardíaca solo con el pulso, sin el tiempo entre latidos. Hoy se conectan, pero el análisis no recibe latidos: la señal queda «baja», nunca termina la calibración y la música no se adapta, sin explicar por qué. |
 | Detección | En el hilo de señal, por conexión. En cuanto llega un intervalo, la conexión es de variabilidad. Si llegan 5 notificaciones seguidas con contacto y pulso pero sin intervalos, la conexión pasa a «solo pulso». Si después llegan intervalos, vuelve a variabilidad. |
 | Análisis | En solo pulso, una pausa es el tiempo sin notificaciones con contacto, con el mismo umbral de 3 s. El pulso medio se calcula con los valores que envía el reloj en la ventana de 5 minutos y se publica tras 60 s de señal, como antes. Variación, SDNN y LF/HF quedan vacíos. El resultado lleva el modo. |
 | Adaptación | Misma calibración (3 min y 12 lecturas), histéresis de 3 estimaciones, permanencia y tempo inicial a partir del pulso. El estado sale de una regla solo de pulso respecto a la referencia: «Alta» con una subida del 10 %, «Baja» con una bajada del 10 % e «Incierta» en otro caso. Es más simple que la de ADR-12 y la interfaz lo dice («Estimado solo con tu pulso»). El modelo entrenado no se usa, porque necesita la variación. |
-| Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que aplica el usuario. Hay que publicar el back y aplicar la migración antes que el front. |
+| Datos | La sesión guarda `signalMode: 'hr_only'` (ausente = variabilidad). Resumen, historial, progreso e informe muestran el pulso y ocultan o dejan vacía la variación, con una nota. «Lo que te funciona» no mezcla el pulso de estas sesiones con el de una banda. La API acepta `signal_mode` (`hrv` por defecto) y exige que una sesión solo pulso venga de Bluetooth y sin variación; la base añade la columna con una migración que se aplica a mano. Hay que publicar el back y aplicar la migración antes que el front. |
 | Límites | No se añade ninguna fuente nueva ni se cambia el clasificador. Las grabaciones de `/collect` siguen necesitando intervalos. Como el reloj no envía latidos, el orbe y el corazón de «Cómo llegas» laten al ritmo del pulso que envía; es solo visual. La ayuda «¿Qué significa?» explica la regla solo de pulso. |
 
 ## ADR-52. Detener pausa la sesión; terminarla es otra acción
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 2 nov 2026, tras la auditoría de calidad: opción «Pausa + Terminar». |
+| Estado | Aprobado el 2 nov 2026, tras la auditoría de calidad: opción «Pausa + Terminar». |
 | Problema | «Detener» cerraba el registro y la pantalla decía «Terminaste tu sesión», pero «Iniciar música» seguía disponible. Al pulsarlo se abría otro registro: una sesión detenida sin querer (o con Esc) quedaba partida en dos, la segunda sin su propia referencia, y «Tu progreso» comparaba mitades. Además, el reloj del plan mezclaba los relojes de dos salidas de audio. |
 | Decisión | 1) «Detener», Esc y los controles del sistema siguen silenciando al instante. 2) Con la música detenida, la sesión queda en pausa: la diapositiva «Escuchando» dice «Música en pausa» y ofrece, juntos, «Reanudar música» y «Terminar sesión»; el botón de inicio del panel de música no se repite. 3) Al reanudar sigue el mismo registro: el plan cuenta desde donde se pausó (las pausas no cuentan como tiempo escuchado), la música vuelve al nivel en que estaba y «Lo que hizo la música» sigue la misma historia. 4) La sesión termina, y se guarda como antes, al pulsar «Terminar sesión», al acabar el plan, tras 5 minutos de pausa o al salir de la pantalla. Después ya no se ofrece iniciar música. |
 | Límites | Los 5 minutos son una cifra de producto. Mientras dura la pausa el registro sigue abierto, igual que mientras suena: si el sistema cierra la pestaña sin aviso, se pierde lo mismo que antes. Al reanudar, la respiración guiada queda apagada, como al empezar. |
@@ -444,7 +444,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 4 de la auditoría de calidad (SEC-P1). |
+| Estado | Aprobado el 2 nov 2026 como n.º 4 de la auditoría de calidad (SEC-P1). |
 | Problema | Las marcas de «ya sincronizada» eran por cuenta, pero el historial del dispositivo es uno solo. Si una segunda persona entraba con su cuenta, con verificación en dos pasos y consentimiento, la sincronización subía a esa cuenta todas las sesiones locales que no tuviera marcadas, incluidas las de la primera persona, también las que se habían bajado de su nube. Y al cerrar sesión, esos datos de salud seguían legibles sin cuenta. |
 | Decisión | 1) Cada sesión guarda, solo en el dispositivo, `ownerId`: la cuenta dentro al grabarla, la cuenta de la que se bajó o la primera que la subió si se hizo sin cuenta. Nunca viaja a la API. 2) La sincronización y los envíos en segundo plano solo tocan las sesiones de la cuenta dentro y las que no tienen dueño. Una sesión sin dueño que figure en las marcas de otra cuenta (sesiones anteriores a este cambio) es de esa cuenta. 3) Al cerrar sesión, con la sincronización activa, la persona puede marcar que se borren del dispositivo, y solo de él, las sesiones de su cuenta que su nube ya guarda. Las que no se subieron se quedan para no perder datos. |
 | Se mantiene | Una sesión hecha sin cuenta pasa a la primera cuenta que la sincroniza, como antes. El historial, «Tu progreso» y el informe siguen mostrando todas las sesiones del dispositivo, sin filtrar por cuenta. |
@@ -454,7 +454,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 2 nov 2026 como n.º 5 de la auditoría de calidad (SEC-P2 y SEC-P7): 30 llamadas al día por cuenta, compartidas. |
+| Estado | Aprobado el 2 nov 2026 como n.º 5 de la auditoría de calidad (SEC-P2 y SEC-P7): 30 llamadas al día por cuenta, compartidas. |
 | Problema | Los tres puntos que llaman al modelo (propuesta de plan, resumen de sesión y explicación del progreso) no tenían límite, y el registro no confirma el correo (ADR-30). Un programa con una o varias cuentas podía agotar la cuota gratuita del proveedor para todos. Además, producción publicaba `/docs`, `/redoc` y `/openapi.json`, y sus respuestas, con datos de salud, no prohibían guardarse en caché. |
 | Contrato | Cada llamada consume una de las 30 diarias (día UTC) de la cuenta, después de sus comprobaciones (consentimiento y forma de la petición) y antes del modelo; una petición rechazada no consume. Agotada la cuota, la API responde `429` con `{"code":"rate_limited"}` sin llamar al proveedor. El front lo muestra como «llegaste al límite de textos automáticos de hoy; vuelve a intentarlo mañana» dentro del aviso de fallo de cada pantalla. |
 | Datos | Migración `20261102000000_language_model_quota.sql`: la tabla `language_model_usage` (cuenta, día, llamadas) tiene RLS y ninguna política, así que nadie la lee ni la reescribe con su propio token. Solo la cambia `consume_language_model_quota(p_daily_limit)`, una función `security definer` con `search_path = ''`, concedida a `authenticated` y no a `anon`. Suma de forma atómica, no cuenta más allá del límite y borra los días anteriores de la cuenta. Probada en PostgreSQL 18 local. |
@@ -465,16 +465,16 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 3 nov 2026: el registro debe informar de lo básico (correo ya registrado, correo válido y contraseña con los caracteres necesarios). Cierra la decisión abierta de la auditoría sobre la enumeración en el registro. |
+| Estado | Aprobado el 3 nov 2026: el registro debe informar de lo básico (correo ya registrado, correo válido y contraseña con los caracteres necesarios). Cierra la decisión abierta de la auditoría sobre la enumeración en el registro. |
 | Problema | El registro solo pedía 8 caracteres y Supabase aceptaba cualquier contraseña de esa longitud. El correo ya registrado se explicaba con Confirm email apagado, pero con él encendido Supabase lo oculta. |
-| Decisión | 1) Bajo cada contraseña nueva (registro, contraseña nueva y perfil) una lista dice lo que necesita: 8 caracteres, una minúscula, una mayúscula, un número y un símbolo; cada punto se marca al cumplirse y el formulario no se envía hasta cumplirlos todos. 2) Los conjuntos son los de Supabase con «Lowercase, uppercase letters, digits and symbols», que el usuario activa en el panel para que el servidor exija lo mismo. 3) Un correo con cuenta se dice claramente, con enlaces a iniciar sesión y a recuperar la contraseña; con Confirm email encendido se reconoce por el usuario sin identidades que devuelve Supabase. 4) Un correo que el servidor rechaza tiene su propio mensaje. |
-| Límites | Decir que un correo tiene cuenta permite comprobar si alguien está registrado; el usuario lo acepta por claridad, y el límite de intentos de Supabase lo frena. Las letras con tilde y la ñ no cuentan como minúscula o mayúscula, igual que en el servidor. Las cuentas existentes conservan su contraseña hasta que la cambien. |
+| Decisión | 1) Bajo cada contraseña nueva (registro, contraseña nueva y perfil) una lista dice lo que necesita: 8 caracteres, una minúscula, una mayúscula, un número y un símbolo; cada punto se marca al cumplirse y el formulario no se envía hasta cumplirlos todos. 2) Los conjuntos son los de Supabase con «Lowercase, uppercase letters, digits and symbols», que se activa en el panel para que el servidor exija lo mismo. 3) Un correo con cuenta se dice claramente, con enlaces a iniciar sesión y a recuperar la contraseña; con Confirm email encendido se reconoce por el usuario sin identidades que devuelve Supabase. 4) Un correo que el servidor rechaza tiene su propio mensaje. |
+| Límites | Decir que un correo tiene cuenta permite comprobar si alguien está registrado; se acepta por claridad, y el límite de intentos de Supabase lo frena. Las letras con tilde y la ñ no cuentan como minúscula o mayúscula, igual que en el servidor. Las cuentas existentes conservan su contraseña hasta que la cambien. |
 
 ## ADR-56. Cambiar la contraseña desde el perfil pide la actual
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 4 nov 2026, en lugar de «Secure password change» con código por correo, que necesita SMTP propio. |
+| Estado | Aprobado el 4 nov 2026, en lugar de «Secure password change» con código por correo, que necesita SMTP propio. |
 | Problema | Quien tuviera delante una sesión abierta podía cambiar la contraseña sin conocerla y quedarse con la cuenta. |
 | Decisión | 1) En el perfil, «Contraseña actual» va antes de la nueva y es obligatoria; se envía a Supabase como `current_password` en la misma petición. 2) Supabase la comprueba con «Require current password when updating» encendido en el panel; una contraseña que falta o no coincide (`current_password_required`, `current_password_mismatch`) se explica como «La contraseña actual no es correcta». 3) Una cuenta creada solo con Google no tiene contraseña que confirmar y no ve el campo. 4) El enlace de recuperación sigue sin pedirla. |
 | Límites | Mientras la opción del panel esté apagada, el servidor ignora el campo y la comprobación no existe. Al encenderla hay que probar el enlace de recuperación; si Supabase lo rechazara, se apaga y se revisa. No se cambió la versión de supabase-js: la actual ya envía el campo tal cual. |
@@ -483,7 +483,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 | Campo | Contenido |
 |---|---|
-| Estado | Ordenado por el usuario el 4 nov 2026: «solo se podrá usar con cuenta», con el límite bien marcado, como una página profesional. Sustituye lo que ADR-10, ADR-18, ADR-30 y la definición decían sobre usar la app sin cuenta. |
+| Estado | Aprobado el 4 nov 2026: la app solo se usa con cuenta, con el límite bien marcado, como en una página profesional. Sustituye lo que ADR-10, ADR-18, ADR-30 y la definición decían sobre usar la app sin cuenta. |
 | Decisión | 1) Públicas: la portada, entrar, crear cuenta, recuperar la contraseña, privacidad y la página de dirección desconocida. 2) Toda pantalla de la app (inicio, plan, sesión, resumen, historial, progreso, informe, grabación, diagnóstico y perfil) está bajo `RequireAccount`: sin sesión se va a entrar y, después, vuelve a la pantalla pedida; con verificación en dos pasos se pide el código antes de mostrar nada. 3) Desaparecen «Continuar sin cuenta», el perfil de invitado y los textos que decían que la app funciona sin cuenta. 4) En las pantallas públicas, quien no ha entrado ve «Iniciar sesión» en lugar de la navegación de la app. 5) Si el servicio de cuentas no responde, la app no se abre: lo dice y ofrece intentarlo de nuevo. |
 | Se mantiene | La señal, el análisis y la música siguen en el navegador (ADR-19) y las sesiones se guardan primero en el dispositivo; la nube sigue pidiendo segundo factor y consentimiento (ADR-18). Con una sesión guardada, la app abre sin conexión. |
 | Pruebas | Las E2E entran con una cuenta simulada (`e2e/fixtures.ts`) sobre una compilación que apunta a servicios que nadie escucha; nunca tocan el proyecto real. |
@@ -505,7 +505,7 @@ El usuario aprobó priorizar el plan `plan-audio-bloqueo.md` tras comunicar cort
 
 ## ADR-60. La escucha se ve: halo del orbe, vista inmersiva y final adelantado para dormir
 
-Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos ni dependencias.
+Aprobado el 13 nov 2026. Solo frontend; sin cambios de API, datos ni dependencias.
 
 - **Halo del orbe.** Mientras suena la música, un halo detrás del orbe sigue el paso musical: más ancho y más tenue a medida que la música se calma. Cambia en 45 s, lo mismo que el timbre, solo con `scale` y `opacity`. Es decorativo: el paso sigue escrito al lado y el color del orbe sigue al estado estimado. Con movimiento reducido cambia sin transición.
 - **Vista inmersiva.** Con la música sonando, un botón deja en pantalla el orbe, la respiración guiada, la frase del momento, el tiempo y «Detener». Lo demás se retira del diseño, no se tapa, para que nada oculto sea alcanzable con el teclado. Una pausa, el final de la sesión o el mismo botón devuelven todos los controles. Los avisos de duración y de interrupción del audio se siguen mostrando. No usa la API de pantalla completa del navegador.
@@ -516,7 +516,7 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-09 de la revisión de noviembre), con la opción «primera cuenta» para las sesiones sin dueño. Modifica lo que ADR-53 mantenía: el historial ya no muestra todas las sesiones del dispositivo. |
+| Estado | Aprobado el 14 nov 2026 (propuesta P-09 de la revisión de noviembre), con la opción «primera cuenta» para las sesiones sin dueño. Modifica lo que ADR-53 mantenía: el historial ya no muestra todas las sesiones del dispositivo. |
 | Problema | ADR-53 solo separaba la sincronización. Con dos cuentas en un dispositivo, la segunda podía ver el historial de la primera, abrir sus sesiones por enlace directo, escribir notas, cambiar valoraciones y borrarlas. Los textos automáticos se guardaban en una sola clave que leía cualquier cuenta. |
 | Decisión | 1) El filtro vive en una sola capa: el almacén que entrega `CloudSyncProvider` (`mirroredSessionStore.ts`). Cada cuenta solo lista, lee, anota, valora y borra sus sesiones. La de otra cuenta responde como si no existiera, y sin cuenta no se muestra ninguna. 2) Las sesiones antiguas sin dueño pasan a la primera cuenta que entra en el dispositivo después de la actualización (`claimUnownedSessions`). Siguen siendo de otra cuenta las que figuren en sus marcas, como en ADR-53. 3) Los textos automáticos se guardan por cuenta (`neuromelody.narratives.<cuenta>`), y la clave común anterior se borra al escribir. 4) Al borrar la cuenta se eliminan también del dispositivo sus sesiones, con notas y valoraciones, sus marcas, colas, sesiones apartadas, textos y favoritos. Si la nube rechaza el borrado, no se toca nada. |
 | Límites | Es una separación de la interfaz en un mismo navegador, no un cifrado: quien tenga acceso al perfil del navegador puede leer IndexedDB. Las grabaciones de `/collect` (otra base) no cambian. No se probó con dos cuentas reales. |
@@ -525,7 +525,7 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 14 nov 2026 (propuesta P-11), con la política (a): 24 horas. Cubre el límite que ADR-52 dejaba abierto. |
+| Estado | Aprobado el 14 nov 2026 (propuesta P-11), con la política (a): 24 horas. Cubre el límite que ADR-52 dejaba abierto. |
 | Problema | El registro de la sesión activa solo vivía en memoria: si el sistema o la persona cerraban la pestaña sin terminarla, se perdía todo lo escuchado. |
 | Decisión | 1) Mientras una sesión con una fuente que mide a la persona está abierta, sonando o en pausa, se escribe su borrador en IndexedDB: cada 15 s, en cada pausa y al ocultarse o cerrarse la página (`pagehide`, `visibilitychange`). El borrador es la sesión tal como se guardaría en ese instante. 2) El dueño es la cuenta que la empezó, y solo a ella se le ofrece. 3) Cuenta como escuchado solo el tiempo con música, sin las pausas (ADR-52). 4) Al abrir la app, la cuenta ve el aviso «Una sesión quedó sin terminar» con «Guardar lo escuchado» y «Descartar». La música nunca vuelve a sonar sola. 5) Se guarda con el id de la sesión: guardar dos veces, o guardar un borrador cuya sesión ya estaba guardada, no duplica nada. 6) Se descartan solos los borradores de más de 24 horas, de cualquier cuenta, y los que no alcanzan el mínimo de una sesión normal (`worthKeeping`). Al terminar la sesión se borra su borrador; si el guardado falla, se conserva para recuperarla. Borrar la cuenta borra sus borradores (ADR-61). |
 | Datos | La base `neuromelody` pasa a la versión 2: la actualización solo crea el almacén `drafts` y conserva `sessions`. Se cierra si otra pestaña abre una versión más nueva. |
@@ -535,14 +535,14 @@ Aprobado por el usuario el 13 nov 2026. Solo frontend; sin cambios de API, datos
 
 | Campo | Contenido |
 |---|---|
-| Estado | Aprobado por el usuario el 14 nov 2026 entre las mejoras menores de la auditoría del 13 nov. Las cifras (2000 sesiones y 20 grabaciones) son de producto y se pueden cambiar con una migración nueva. |
+| Estado | Aprobado el 14 nov 2026 entre las mejoras menores de la auditoría del 13 nov. Las cifras (2000 sesiones y 20 grabaciones) son de producto y se pueden cambiar con una migración nueva. |
 | Problema | La clave anónima es pública y el plan gratuito de Supabase tiene 500 MB compartidos: una cuenta podía llenar la base insertando sesiones o grabaciones sin fin, directamente o a través de la API. |
 | Decisión | 1) La base guarda como mucho 2000 sesiones y 20 grabaciones guiadas por cuenta. Lo impone un disparador `before insert` con un bloqueo por cuenta (migración `20261114000000_account_storage_limits.sql`), que rechaza con `54000`. 2) La API responde 409 `limit_reached`. 3) Reenviar una sesión ya guardada (para actualizar su valoración) sigue funcionando. 4) En el front, con la cuenta llena la sincronización no ofrece más sesiones nuevas en esa pasada, pero termina el resto (descargas, valoraciones, borrados) y después lo dice: «tu cuenta ya guarda en la nube todo lo que puede; lo nuevo sigue en este dispositivo». No se aparta ninguna sesión, así que suben cuando hay sitio. |
 | Límites | Las filas que ya existan por encima del tope se conservan. Hay que aplicar la migración en Supabase antes de publicar el back; sin ella no hay tope, pero nada falla. |
 
 ## ADR-64. Mundos sonoros
 
-Aprobado por el usuario el 14 nov 2026. Solo frontend; sin cambios de API, datos, motor de audio ni dependencias.
+Aprobado el 14 nov 2026. Solo frontend; sin cambios de API, datos, motor de audio ni dependencias.
 
 - **Qué es un mundo.** Una combinación con nombre de instrumento, ambiente y textura, más dos colores propios. Hay seis: Bosque de niebla, Costa nocturna, Lluvia en la ciudad, Páramo al amanecer, Espacio profundo y Habitación en calma (`worldCatalog.ts`). Cada combinación pertenece a un solo mundo; una prueba lo comprueba.
 - **En el plan.** Un grupo nuevo, antes del sonido y el ambiente, ofrece los mundos como tarjetas. Entrar en uno fija las tres elecciones, que se pueden seguir cambiando a mano; si la combinación deja de ser un mundo, la pantalla lo dice.

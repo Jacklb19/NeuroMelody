@@ -1,7 +1,7 @@
 /**
  * Public configuration of this deployment, read once from Vite's
  * environment. Only `VITE_` variables reach the browser and none of them is
- * a secret: secrets live only in the backend (AGENTS.md, ADR-19).
+ * a secret: secrets live only in the backend (ADR-19).
  *
  * Every value is optional until the account and the API arrive (S6.2);
  * features that need one check for `null` and explain what is missing.

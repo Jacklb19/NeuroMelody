@@ -1,8 +1,8 @@
 # Diseño musical — NeuroMelody
 
-Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha del usuario; 3–5 oyentes no bloquean ese cierre. El ajuste posterior con oyentes va en un commit pequeño separado de levels.ts, basado en resultados reales.
+Criterios musicales del motor de adaptación (RF-08, RF-09, RF-10). S4 cierra con pruebas automáticas y una escucha manual completa; 3–5 oyentes no bloquean ese cierre. El ajuste posterior con oyentes va en un commit pequeño separado de levels.ts, basado en resultados reales.
 
-**S4 cerrado el 5 de octubre de 2026.** El usuario confirmó la escucha completa con «todo pasó»: inicio, timbre, avance con Incierta, retroceso por Alta, relajación progresiva, continuidad al cambiar de pestaña y detención. Esta confirmación manual complementa las 332 pruebas aprobadas, cobertura de líneas 96,01 %, tipos/lint/build correctos y los 8 E2E Chrome/Edge de la revisión RNF-02. No se cambiaron los valores de levels.ts. La evaluación con 3–5 oyentes sigue posterior y separada; BLE físico, accesibilidad completa y despliegue conservan sus comprobaciones pendientes.
+**S4 cerrado el 5 de octubre de 2026.** La escucha manual completa fue satisfactoria: inicio, timbre, avance con Incierta, retroceso por Alta, relajación progresiva, continuidad al cambiar de pestaña y detención. Esta confirmación manual complementa las 332 pruebas aprobadas, cobertura de líneas 96,01 %, tipos/lint/build correctos y los 8 E2E Chrome/Edge de la revisión RNF-02. No se cambiaron los valores de levels.ts. La evaluación con 3–5 oyentes sigue posterior y separada; BLE físico, accesibilidad completa y despliegue conservan sus comprobaciones pendientes.
 
 ## Principio iso
 
@@ -69,7 +69,7 @@ Un cuarto escalón, más allá de la meta, que solo alcanza el programa para dor
 
 ## Cómo suena (bloque 17, 12 oct 2026)
 
-**Estado: programado y verificado con pruebas; falta la escucha del usuario.** Los valores de la tabla de niveles y las reglas de la guía no cambiaron: cambió lo que suena dentro de cada nivel y cómo se pasa de uno a otro.
+**Estado: programado, verificado con pruebas y publicado; las muestras se aprobaron escuchándolas.** Los valores de la tabla de niveles y las reglas de la guía no cambiaron: cambió lo que suena dentro de cada nivel y cómo se pasa de uno a otro.
 
 ### Qué se encontró antes de cambiar nada
 
@@ -103,10 +103,10 @@ ADR-07 (todo en el AudioWorklet, sin reservar memoria en `process()`, parámetro
 
 `node scripts/audio/renderSamples.ts <etiqueta>` renderiza el sintetizador a archivos WAV en `audio-samples/<etiqueta>/` (sin versionar) con la misma cadena que la sesión —filtro de brillo, reverberación, volumen y recorte—, la misma semilla y los valores de `levels.ts`: cada nivel durante 45 s y el paso de Intermedio a la meta. `audio-samples/escuchar.html` lista todas las etiquetas para compararlas. Junto a cada archivo guarda sus medidas (`metrics.json`): pico, nivel eficaz, nivel percibido, reparto de la energía por bandas y cuán distintos son los dos canales. El limitador no se reproduce: el informe avisa si un archivo lo alcanzaría.
 
-### Pendiente
+### Después del bloque 17
 
-- La escucha del usuario de cada paso (`0-antes` a `4-espacio`). Lo que no guste se ajusta en una constante o se deshace con su commit.
-- El paisaje sonoro de ADR-33 (elegir timbre o ambiente): hay tres bocetos de ambiente (mar, lluvia, viento) en `audio-samples/5-bocetos-de-ambiente/` para decidir si merece la pena. No está programado en la app ni ubicado en `pantallas.md`.
+- Cada paso (`0-antes` a `4-espacio`) se aprobó escuchándolo; lo que no guste se ajusta en una constante o se deshace con su commit.
+- El paisaje sonoro de ADR-33 se programó después: ambientes de lluvia, mar y viento (ADR-40) y mundos sonoros (ADR-64).
 
 ## Reglas de transición
 
@@ -118,4 +118,4 @@ ADR-07 (todo en el AudioWorklet, sin reservar memoria en `process()`, parámetro
 
 ## Ajuste con oyentes posterior a S4 (propuesto)
 
-Con 3 a 5 oyentes se revisarán tempo, capas, brillo/reverberación y fundidos. Cambios con fecha/motivo en commit separado pequeño cuando el usuario entregue resultados. No se cambian valores por escucha simulada. El grupo no bloquea S4, cuya única escucha manual de cierre corresponde al usuario.
+Con 3 a 5 oyentes se revisarán tempo, capas, brillo/reverberación y fundidos. Cambios con fecha y motivo en un commit pequeño separado cuando haya resultados. No se cambian valores por escucha simulada. El grupo no bloquea S4, que se cerró con una escucha manual.
