@@ -16,6 +16,8 @@ export const DEFAULT_DURATION_MIN: DurationMin = 20;
 
 /** Longest text a person may write to have a plan composed (ADR-68). Mirrors the API's `PLAN_TEXT_MAX_CHARS`. */
 export const PLAN_TEXT_MAX_CHARS = 300;
+/** Maximum returned sentence, mirrored from the API's compose contract (ADR-68). */
+export const PLAN_COMPOSE_NOTE_MAX_CHARS = 160;
 
 /** How many characters before the limit the remaining count appears. */
 export const PLAN_TEXT_COUNT_FROM = 60;

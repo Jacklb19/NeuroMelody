@@ -551,6 +551,10 @@ describe('cloud API client', () => {
       { ...plan, goal: 'become_invincible' },
       { ...plan, mode: 'loud' },
       { ...plan, note: 7 },
+      { ...plan, note: 'x'.repeat(161) },
+      { ...plan, model: null },
+      { ...plan, model: '' },
+      { ...plan, extra: 'unexpected' },
       { ...plan, generated: false },
     ]) {
       await expect(compose(invented)).rejects.toMatchObject({ code: 'unknown' });

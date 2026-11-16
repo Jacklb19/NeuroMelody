@@ -1,5 +1,5 @@
 import type { Locale } from '../../i18n/locale';
-import { DURATIONS_MIN, type DurationMin } from '../plan/plan';
+import { DURATIONS_MIN, PLAN_COMPOSE_NOTE_MAX_CHARS, type DurationMin } from '../plan/plan';
 import { isGoalId, type GoalId } from '../plan/goalCatalog';
 import { WORLD_IDS, type WorldId } from '../plan/worldCatalog';
 import { readSessionRecord, type SessionRecord, type SessionSample } from '../records/sessionRecord';
@@ -309,12 +309,15 @@ function generatedText(body: Json, field: string): string | null {
 /** Reads a composed plan. Every choice is checked against the app's own catalogs, whatever the API says. */
 export function composedPlanFromWire(value: unknown): ComposedPlan | null {
   if (!isJson(value) || value.generated !== true) return null;
+  const fields = ['goal', 'duration_minutes', 'world', 'mode', 'note', 'generated', 'model'];
+  if (Object.keys(value).some((key) => !fields.includes(key)) || typeof value.model !== 'string' || value.model.trim() === '') return null;
   const durationMin = DURATIONS_MIN.find((minutes) => minutes === value.duration_minutes);
   const world = WORLD_IDS.find((id) => id === value.world);
   const goal = value.goal === null ? null : isGoalId(value.goal) ? value.goal : undefined;
   const fixed = value.mode === 'fixed' ? true : value.mode === 'adaptive' ? false : undefined;
   if (durationMin === undefined || world === undefined || goal === undefined || fixed === undefined) return null;
   if (value.note !== null && typeof value.note !== 'string') return null;
+  if (typeof value.note === 'string' && value.note.trim().length > PLAN_COMPOSE_NOTE_MAX_CHARS) return null;
   const note = generatedText(value, 'note');
   return { goal, durationMin, world, fixed, note };
 }

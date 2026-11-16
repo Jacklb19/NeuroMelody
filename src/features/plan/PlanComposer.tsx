@@ -30,6 +30,14 @@ type Request =
  * plan below is still there. Without an API it is not shown at all.
  */
 export function PlanComposer({ onUse }: PlanComposerProps): React.JSX.Element | null {
+  const { state } = useAuth();
+  const locale = useLocale();
+  const owner = state.kind === 'signed_in' ? state.user.id : state.kind;
+  // Leaving a language or account also leaves its text and any answer still on its way.
+  return <ScopedPlanComposer key={`${owner}:${locale}`} onUse={onUse} />;
+}
+
+function ScopedPlanComposer({ onUse }: PlanComposerProps): React.JSX.Element | null {
   const t = useMessages();
   const copy = t.plan.compose;
   const locale = useLocale();

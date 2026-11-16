@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,9 @@ import { CloudError, type CloudApi, type ComposedPlan } from '../cloud/cloudApi'
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from '../cloud/cloudSyncContext';
 import { PlanPage } from './PlanPage';
 import { PLAN_TEXT_MAX_CHARS } from './plan';
+import { PlanComposer } from './PlanComposer';
+import { LocaleContext } from '../../i18n/messages';
+import type { Locale } from '../../i18n/locale';
 
 const copy = es.plan.compose;
 const SIGNED_IN: AuthState = { kind: 'signed_in', user: { id: 'user-1', email: 'persona@example.test', name: null }, assurance: { current: 'aal1', next: 'aal1' } };
@@ -140,5 +143,26 @@ describe('plan composed from what the person writes (ADR-68)', () => {
   it('is not shown in a deployment without an API', () => {
     renderPlan(cloud('unavailable', null));
     expect(screen.queryByRole('textbox', { name: copy.question })).not.toBeInTheDocument();
+  });
+
+  it.each(['account', 'language'] as const)('discards text and a late answer after changing %s', async (change) => {
+    let answer: ((plan: ComposedPlan) => void) | undefined;
+    const composePlan = vi.fn<CloudApi['composePlan']>(() => new Promise((resolve) => { answer = resolve; }));
+    const value = cloud('synced', { composePlan });
+    const view = (state: AuthState, locale: Locale): React.JSX.Element => (
+      <LocaleContext value={locale}>
+        <AuthContext value={{ state, service: null, refresh: () => Promise.resolve(), finishRecovery: () => Promise.resolve() }}>
+          <CloudSyncContext value={value}><PlanComposer onUse={vi.fn()} /></CloudSyncContext>
+        </AuthContext>
+      </LocaleContext>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(view(SIGNED_IN, 'es'));
+    await user.type(screen.getByRole('textbox'), `${TEXT}{Enter}`);
+    const nextAccount: AuthState = { ...SIGNED_IN, user: { ...SIGNED_IN.user, id: 'user-2' } };
+    rerender(view(change === 'account' ? nextAccount : SIGNED_IN, change === 'language' ? 'en' : 'es'));
+    await act(async () => { answer?.(PLAN); await Promise.resolve(); });
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(screen.queryByRole('region')).not.toBeInTheDocument();
   });
 });
