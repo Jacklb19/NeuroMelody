@@ -18,6 +18,8 @@ interface SessionStageProps {
   readonly playing: boolean;
   /** The music played and has stopped: the session is over, so the moment and the estimate give way to its end. */
   readonly ended?: boolean;
+  /** The pulse beat by beat and the reference (P-17), between the moment and what the music does. */
+  readonly pulseTrace?: React.ReactNode;
 }
 
 const PERCENT = 100;
@@ -28,7 +30,7 @@ const PERCENT = 100;
  * estimated state with what it means, and the notices that explain why the
  * music holds still. Technical figures live elsewhere.
  */
-export function SessionStage({ session, connection, playing, ended = false }: SessionStageProps): React.JSX.Element {
+export function SessionStage({ session, connection, playing, ended = false, pulseTrace }: SessionStageProps): React.JSX.Element {
   const t = useMessages();
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const titleId = useId();
@@ -58,6 +60,8 @@ export function SessionStage({ session, connection, playing, ended = false }: Se
       {!ended && <p className="eyebrow">{t.session.stage.eyebrow}</p>}
       <h2 id={titleId} className="stage-title">{narrative.title}</h2>
       <p className="stage-detail">{narrative.detail}</p>
+
+      {!ended && connected && pulseTrace}
 
       {playing && (
         <div className="music-now">

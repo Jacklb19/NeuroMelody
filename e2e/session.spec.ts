@@ -65,3 +65,32 @@ test('the immersive view keeps the orb, the time and Stop, and ends when the mus
   await expect(page.getByRole('button', { name: es.session.paused.resume })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the pulse beat by beat shows how far the reference has come and leads to the full signal (P-17)', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const { pulseTrace } = es.session;
+  await page.goto(ROUTES.session);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: es.warnings.accept }).click();
+  await page.getByRole('button', { name: es.acquisition.trial.enter }).click();
+  await page.getByRole('button', { name: es.acquisition.connect.simulator }).click();
+
+  // The arrival slide comes in on its own once the pulse connects; the line follows the first beats.
+  const arrival = page.locator('.arrival');
+  await expect(arrival.getByRole('heading', { name: pulseTrace.title })).toBeVisible();
+  await expect(arrival.getByRole('img', { name: pulseTrace.chartLabel })).toBeVisible();
+  await expect(arrival.getByRole('progressbar', { name: pulseTrace.progressLabel })).toBeVisible();
+
+  await page.getByRole('button', { name: playback.start }).click();
+  const stage = page.locator('.session-stage');
+  await expect(stage.getByRole('heading', { name: pulseTrace.title })).toBeVisible();
+  await stage.getByRole('button', { name: pulseTrace.showDetails }).click();
+  await expect(page.locator('details.technical-details')).toHaveAttribute('open', '');
+  await expect(page.getByTestId('mean-hr')).toBeInViewport();
+
+  // The immersive view keeps only the orb, the moment, the time and Stop.
+  await page.getByRole('button', { name: es.session.immersive.enter }).click();
+  await expect(stage.getByRole('heading', { name: pulseTrace.title })).toBeHidden();
+  expect(errors).toEqual([]);
+});

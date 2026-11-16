@@ -41,6 +41,7 @@ import { SessionRecap } from './SessionRecap';
 import { ArrivalSlide } from './ArrivalSlide';
 import { useHeartRateBeats } from './useHeartRateBeats';
 import { SessionStepper } from './SessionStepper';
+import { PulseTrace } from './PulseTrace';
 import { AUTO_ADVANCE_MS, SLIDE_IDS, useSlides, type SlideId } from './sessionSlides';
 import { SleepDimmer } from './SleepDimmer';
 import { BreathingGuide } from './breathing/BreathingGuide';
@@ -140,7 +141,17 @@ export function SessionPage(): React.JSX.Element {
   const ratingBeforeRef = useRef<number | null>(null);
   const sourceRef = useRef<SignalSource | null>(null);
   const orbRef = useRef<OrbHandle | null>(null);
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
+
+  // The live pulse leads to the full signal: the details open and come into sight, with the focus on their title.
+  const showDetails = useCallback((): void => {
+    const details = detailsRef.current;
+    if (details === null) return;
+    details.open = true;
+    details.scrollIntoView({ block: 'start' });
+    details.querySelector('summary')?.focus();
+  }, []);
 
   const clearPauseTimer = useCallback((): void => {
     if (pauseTimerRef.current !== null) clearTimeout(pauseTimerRef.current);
@@ -365,6 +376,7 @@ export function SessionPage(): React.JSX.Element {
             rating={ratingBefore}
             onRatingChange={handleRatingBefore}
             onMeasure={() => { goTo('pulse'); }}
+            pulseTrace={<PulseTrace source={source} session={adaptation} showRate={false} onShowDetails={showDetails} />}
             onStart={() => {
               // Started inside the click, as browsers require. The listening slide comes in at once,
               // so a start the browser refuses is explained where the controls are.
@@ -388,7 +400,13 @@ export function SessionPage(): React.JSX.Element {
           <BreathingGuide startActive={program.breathing} engine={engine} orbRef={orbRef} />
         </div>
         <div className="stage-main">
-          <SessionStage session={adaptation} connection={connection} playing={playing} ended={ended} />
+          <SessionStage
+            session={adaptation}
+            connection={connection}
+            playing={playing}
+            ended={ended}
+            pulseTrace={<PulseTrace source={source} session={adaptation} onShowDetails={showDetails} />}
+          />
           {playing && (
             <button
               type="button"
@@ -442,7 +460,7 @@ export function SessionPage(): React.JSX.Element {
         </section>
       </div>
 
-      <details className="technical-details">
+      <details ref={detailsRef} className="technical-details">
         <summary>
           <span className="summary-title">{t.session.technicalDetails.title}</span>
           <span className="summary-hint">{t.session.technicalDetails.hint}</span>

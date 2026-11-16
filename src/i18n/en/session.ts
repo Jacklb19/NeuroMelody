@@ -38,6 +38,22 @@ export const session = {
     measure: 'Connect my pulse',
     choicesLabel: 'What you chose for this session',
   },
+  /** The pulse beat by beat and how far the baseline has come (P-17). Descriptive: it never judges the pulse. */
+  pulseTrace: {
+    title: 'Your pulse, beat by beat',
+    chartLabel: 'Line of your pulse beat by beat over the last minute',
+    waiting: 'The line appears with the first beats.',
+    /** Times as mm:ss; the readings are the good ones the baseline needs. */
+    reference: (elapsed: string, total: string, readings: number, minimum: number): string =>
+      `Taking your reference: ${elapsed} of ${total} · ${String(readings)} of ${String(minimum)} readings`,
+    referenceHint: 'It started when your pulse connected. Meanwhile, the music stays steady.',
+    referenceStarted: 'Taking your reference.',
+    referenceReady: 'Reference ready. From now on the music can change its step.',
+    /** A session with fixed music takes the reference too, but the music keeps its step. */
+    referenceReadyFixed: 'Reference ready.',
+    progressLabel: 'Progress of the reference',
+    showDetails: 'See the full signal',
+  },
   /** The steps the music of a session can take, in plain words; `levels` keys mirror `LevelId`. */
   journey: {
     label: 'Step of the music',

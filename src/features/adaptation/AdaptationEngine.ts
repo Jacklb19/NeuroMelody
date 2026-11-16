@@ -26,6 +26,12 @@ export interface AdaptationSnapshot {
   readonly state: ActivationState | null;
   readonly calibrated: boolean;
   readonly baselineReadings: number;
+  /**
+   * Signal time of the latest reading, in ms since the source connected; 0
+   * before any. The baseline is sought in this time, not in listening time,
+   * so the screen can say how far it has come (P-17).
+   */
+  readonly signalTimeMs: number;
   readonly qualityGood: boolean;
   /**
    * Who estimated the accepted state: the trained model, the rules when no
@@ -124,7 +130,8 @@ export class AdaptationEngine {
 
   get snapshot(): AdaptationSnapshot {
     return { state: this.#accepted, calibrated: this.#calibrated,
-      baselineReadings: this.#count, qualityGood: this.#qualityGood, level: this.#level,
+      baselineReadings: this.#count, signalTimeMs: Math.max(0, this.#lastTimeMs),
+      qualityGood: this.#qualityGood, level: this.#level,
       tempoOffsetBpm: this.#tempoOffsetBpm,
       estimator: this.#heartRateOnly ? 'heart_rate' : this.#model === null ? 'rules' : 'model', confidence: this.#acceptedConfidence,
       waitingForDwell: this.#calibrated && this.#qualityGood && this.#accepted !== null &&
