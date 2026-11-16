@@ -1,11 +1,16 @@
 import { useId, useState } from 'react';
 import { useMessages } from '../../i18n/messages';
 import { downloadText } from '../../shared/downloadText';
+import { FileIcon, HistoryIcon } from '../../shared/icons';
 import { readFavorites, writeFavorites } from '../plan/favorites';
 import { BACKUP_FORMAT, BACKUP_VERSION, MAX_BACKUP_BYTES, parseListeningBackup, type ListeningBackup } from './listeningBackup';
 import { useSessionStore } from './sessionStoreContext';
 
-/** Explicit, account-bound export and merge of the local listening library. */
+/**
+ * Explicit, account-bound export and merge of the local listening library,
+ * laid out like the other sections of the profile: one row to download a copy
+ * and one to restore it.
+ */
 export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: string; readonly onRestored: () => void }): React.JSX.Element {
   const copy = useMessages().listeningTools;
   const titleId = useId();
@@ -69,22 +74,41 @@ export function ListeningBackupPanel({ owner, onRestored }: { readonly owner: st
   }
 
   return (
-    <section className="profile-section glass-card listening-tools" aria-labelledby={titleId}>
+    <section className="profile-section" aria-labelledby={titleId}>
       <h2 id={titleId}>{copy.backup}</h2>
-      <p className="secondary-text">{copy.backupHint}</p>
-      <div className="action-row">
-        <button type="button" className="pill-button pill-button-ghost" disabled={busy} onClick={() => { void exportBackup(); }}>{copy.exportBackup}</button>
-        <label>
-          {copy.selectBackup}
-          <input type="file" accept=".json,application/json" className="tool-input" disabled={busy} onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file !== undefined) void selectBackup(file);
-          }} />
-        </label>
-        {pending !== null && <button type="button" className="pill-button pill-button-primary" disabled={busy} onClick={() => { void restore(pending); }}>{copy.importBackup}</button>}
+      <div className="setting-list glass-card">
+        <div className="setting-row">
+          <span className="icon-badge"><FileIcon /></span>
+          <div className="setting-text">
+            <strong>{copy.exportTitle}</strong>
+            <span>{copy.backupHint}</span>
+          </div>
+          <button type="button" className="pill-button pill-button-ghost" disabled={busy} onClick={() => { void exportBackup(); }}>{copy.exportBackup}</button>
+        </div>
+        <div className="setting-row">
+          <span className="icon-badge"><HistoryIcon /></span>
+          <div className="setting-text">
+            <strong>{copy.restoreTitle}</strong>
+            <span>{copy.restoreHint}</span>
+          </div>
+          {/* The native file field is hidden behind a button of the app; the label keeps it reachable and named. */}
+          <label className={busy ? 'pill-button pill-button-ghost file-picker is-busy' : 'pill-button pill-button-ghost file-picker'}>
+            <span aria-hidden="true">{copy.chooseBackup}</span>
+            <span className="visually-hidden">{copy.selectBackup}</span>
+            <input type="file" accept=".json,application/json" className="visually-hidden" disabled={busy} onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file !== undefined) void selectBackup(file);
+            }} />
+          </label>
+        </div>
+        {pending !== null && (
+          <div className="backup-confirm">
+            <button type="button" className="pill-button pill-button-primary" disabled={busy} onClick={() => { void restore(pending); }}>{copy.importBackup}</button>
+          </div>
+        )}
       </div>
-      <p role="status">{notice}</p>
+      <p role="status" className="backup-status">{notice}</p>
     </section>
   );
 }

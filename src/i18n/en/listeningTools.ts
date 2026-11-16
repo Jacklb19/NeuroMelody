@@ -1,5 +1,7 @@
 export const listeningTools = {
   favorites: 'Favorite plans',
+  favoritesHint: 'Save this combination and repeat it in one click.',
+  favoritePlaceholder: 'For example, Quiet night',
   favoriteName: 'Plan name',
   saveFavorite: 'Save as favorite',
   updateFavorite: 'Update favorite',
@@ -30,6 +32,10 @@ export const listeningTools = {
   weekTotals: (count: number, minutes: string, rated: number): string => `Saved sessions: ${String(count)}. Listening time: ${minutes}. Sessions with a rating: ${String(rated)}.`,
   weekGoals: 'Most selected intentions',
   backup: 'Backup',
+  exportTitle: 'Download a copy',
+  restoreTitle: 'Restore a copy',
+  restoreHint: 'Choose a file downloaded from this same account. Your current data is kept.',
+  chooseBackup: 'Choose file',
   backupHint: 'Save a file with your sessions, notes, music details, and favorites from this browser. It contains personal data. You can restore it using the same account.',
   exportBackup: 'Download JSON backup',
   selectBackup: 'Choose JSON backup',

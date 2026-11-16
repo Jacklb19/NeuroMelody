@@ -4,7 +4,7 @@ import { usePageTitle } from '../../app/usePageTitle';
 import { planPath, QUERY_PARAMS, ROUTES, sessionPath, summaryPath } from '../../config/routes';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
-import { ArrowRightIcon, PlayIcon } from '../../shared/icons';
+import { ArrowRightIcon, ClockIcon, FileIcon, HeartIcon, MonitorIcon, PlayIcon, SparkIcon, WaveIcon } from '../../shared/icons';
 import { useAuth } from '../account/authContext';
 import { GOAL_IDS, type GoalId } from '../plan/goalCatalog';
 import { GoalIcon } from '../plan/GoalIcon';
@@ -12,6 +12,7 @@ import { QUICK_DURATION_MIN } from '../plan/plan';
 import { readAmbience, readInstrument, readLastGoals } from '../plan/soundChoices';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
+import { EXPLORE_IDS, EXPLORE_ROUTES, type ExploreId } from './exploreCatalog';
 import { dayPartAt, FIRST_SESSION_STEP_IDS, firstName } from './greeting';
 import './home.css';
 
@@ -22,6 +23,16 @@ import './home.css';
  * none yet. A session is always prepared first; only repeating the last one
  * goes straight to it.
  */
+/** The icon of each place to explore. */
+const EXPLORE_ICONS: Readonly<Record<ExploreId, React.JSX.Element>> = {
+  worlds: <SparkIcon />,
+  progress: <WaveIcon />,
+  report: <FileIcon />,
+  reminder: <ClockIcon />,
+  collect: <HeartIcon />,
+  diagnostics: <MonitorIcon />,
+};
+
 export function HomePage(): React.JSX.Element {
   const t = useMessages();
   const copy = t.home;
@@ -31,7 +42,8 @@ export function HomePage(): React.JSX.Element {
   const records = useSessionRecords();
   // Read once: the greeting should not change under the person's eyes.
   const [dayPart] = useState(() => dayPartAt(new Date().getHours()));
-  const ids = { start: useId(), goals: useId(), activity: useId() };
+  const ids = { start: useId(), goals: useId(), activity: useId(), explore: useId() };
+  const exploreItems: Readonly<Record<ExploreId, { readonly title: string; readonly text: string }>> = copy.explore.items;
   const name = state.kind === 'signed_in' ? firstName(state.user.name) : null;
   const greeting = name === null ? copy.greetings[dayPart] : copy.greetingWithName(copy.greetings[dayPart], name);
   const goalNames: Readonly<Record<GoalId, string>> = t.plan.goals.names;
@@ -95,6 +107,23 @@ export function HomePage(): React.JSX.Element {
                 <span className="icon-badge"><GoalIcon goal={goal} /></span>
                 <span>{goalNames[goal]}</span>
                 <span className="goal-tagline">{goalTaglines[goal]}</span>
+                <ArrowRightIcon className="goal-shortcut-arrow" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby={ids.explore} className="home-section">
+        <h2 id={ids.explore}>{copy.explore.title}</h2>
+        <p className="secondary-text">{copy.explore.hint}</p>
+        <ul className="explore-grid">
+          {EXPLORE_IDS.map((id) => (
+            <li key={id}>
+              <Link to={EXPLORE_ROUTES[id]} className="glass-card explore-card">
+                <span className="icon-badge">{EXPLORE_ICONS[id]}</span>
+                <strong>{exploreItems[id].title}</strong>
+                <span className="secondary-text">{exploreItems[id].text}</span>
                 <ArrowRightIcon className="goal-shortcut-arrow" />
               </Link>
             </li>

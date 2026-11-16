@@ -229,7 +229,7 @@ export function PlanPage(): React.JSX.Element {
               ))}
             </div>
           </fieldset>
-          <fieldset className="glass-card listening-tools">
+          <fieldset className="glass-card plan-sound">
             <legend>{t.listeningTools.sound}</legend>
             <div className="tool-grid">
               <label>{t.listeningTools.mode}
