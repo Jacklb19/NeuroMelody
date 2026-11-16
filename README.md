@@ -61,6 +61,16 @@ La página `/diagnostics` muestra si el entorno tiene aislamiento de origen cruz
 
 Para comprobar 30 minutos de audio sin cortes: `AUDIO_LONG=1 npm run test:audio` (en PowerShell, `$env:AUDIO_LONG='1'` antes del comando). También existe el workflow manual «Continuidad de audio (30 minutos)».
 
+## Datos de demostración
+
+Para mostrar el historial, el progreso y el informe con datos, se puede generar una biblioteca inventada de seis semanas (36 sesiones con sus muestras, valoraciones, notas y dos favoritos) para una cuenta concreta:
+
+```bash
+node scripts/demo/buildDemoBackup.ts <id de la cuenta> neuromelody-demo-backup.json
+```
+
+El id es el UUID de la cuenta en Supabase (*Authentication → Users*). El archivo se carga desde la app en **Perfil → Copia de seguridad → Restaurar**, y la app lo rechaza en cualquier otra cuenta. Ningún dato procede de una persona.
+
 ## Sin conexión
 
 El service worker se genera solo en el build de producción: `npm run build` y luego `npm run preview` (`npm run dev` no lo registra). Guarda la aplicación, los módulos de audio, el Worker de señal y los registros de ejemplo, nunca peticiones a la API ni datos personales.
