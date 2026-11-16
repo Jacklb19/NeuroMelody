@@ -65,3 +65,12 @@
   .progress-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .progress-totals dd { font-size: var(--text-metric); }
 }
+
+/* The explanation of the observations: one card per comparison, with what to try next. */
+.automatic-lead { margin-bottom: var(--space-4); }
+.insight-readings { list-style: none; display: grid; gap: var(--space-4); margin-bottom: var(--space-4); }
+.insight-readings li { display: grid; gap: var(--space-2); padding: var(--space-5); background: var(--color-surface); border-radius: var(--border-radius); }
+.insight-readings h4 { font-size: var(--text-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-strong); }
+.insight-next { padding-top: var(--space-2); border-top: var(--border-width) solid var(--color-border-subtle); }
+.insight-next strong { color: var(--color-accent); }
+.progress-more { margin-top: var(--space-4); }

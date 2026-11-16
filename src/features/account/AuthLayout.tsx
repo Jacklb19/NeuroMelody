@@ -1,4 +1,6 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
+import { QuickPreferences } from '../../app/preferences/PreferenceControls';
+import { PublicHeader } from '../landing/PublicHeader';
 import { MAIN_CONTENT_ID } from '../../app/Layout';
 import { APP_NAME } from '../../config/app';
 import { ROUTES } from '../../config/routes';
@@ -21,13 +23,19 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps): React.JSX.Element {
   const copy = useMessages().account.auth;
+  const { pathname } = useLocation();
   return (
     <div className="auth-screen">
+      {/* On a phone the side panel gives way to the floating header of the public screens. */}
+      <PublicHeader page="access" offer={pathname === ROUTES.login ? 'register' : 'login'} />
       <aside className="auth-aside">
-        <Link to={ROUTES.home} className="brand" aria-label={copy.backToHome}>
-          <BrandMark />
-          {APP_NAME}
-        </Link>
+        <div className="auth-aside-top">
+          <Link to={ROUTES.home} className="brand" aria-label={copy.backToHome}>
+            <BrandMark />
+            {APP_NAME}
+          </Link>
+          <QuickPreferences />
+        </div>
         <div className="auth-figure">
           <BreathingOrb className="orb-large" />
           <p className="auth-tagline">{copy.tagline}</p>

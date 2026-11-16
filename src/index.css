@@ -97,6 +97,8 @@
   --dimmer-layer: 9;
   /* The floating navigation: above the page, under the sleep dimmer and the Stop button. */
   --header-layer: 8;
+  /* Room under the floating header of the public screens on a phone. */
+  --public-header-reserve: 6rem;
   --color-dimmer: rgb(0 0 0 / 0.92);
   --color-dimmer-text: rgb(255 255 255 / 0.45);
   --dimmer-fade: 1.5s;
@@ -399,6 +401,8 @@ p, dt, dd, label { overflow-wrap: anywhere; }
 .skip-link:focus { top: var(--space-2); }
 .app-header { display: flex; align-items: center; gap: var(--space-8); padding: var(--space-5) 0; border-bottom: var(--border-width) solid var(--color-border-subtle); }
 .app-header nav { margin-left: auto; }
+/* The links and the preferences of the bar: part of its row on wide screens, the menu on phones. */
+.header-links { display: contents; }
 .header-menu-button { display: none; }
 .app-header .avatar.active, .app-header .avatar:hover { border-color: var(--color-accent); }
 .brand { color: inherit; text-decoration: none; }
@@ -693,26 +697,29 @@ select.tool-input { padding-right: var(--space-10); }
 }
 /* Below this width the sections fold into a menu that opens under the same floating bar. */
 /*
- * On a phone the header becomes one floating pill that stays at the top while the page scrolls, with the brand,
- * the profile and a menu that holds the sections. It is translucent so the page shows faintly under it.
+ * On a phone or a tablet the header becomes one floating pill that stays at the top while the page scrolls, with
+ * the brand, the profile and a menu that holds the sections, theme and language. It is translucent so the page
+ * shows faintly under it.
  */
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .app-header {
     position: sticky; top: var(--space-3); z-index: var(--header-layer);
     gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
     background: color-mix(in srgb, var(--color-background) 80%, transparent); backdrop-filter: blur(14px);
     border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); box-shadow: var(--card-shadow);
   }
-  .app-header nav.is-open ul { padding: 0; background: none; border: 0; }
+  .header-links.is-open ul { padding: 0; background: none; border: 0; }
   .app-header .brand { margin-right: auto; }
-  .app-header nav { display: none; }
-  .app-header nav.is-open {
-    display: block; position: absolute; top: calc(100% + var(--space-2)); left: 0; right: 0; margin: 0;
+  .header-links { display: none; }
+  .header-links.is-open {
+    display: grid; gap: var(--space-3); position: absolute; top: calc(100% + var(--space-2)); left: 0; right: 0; margin: 0;
     padding: var(--space-3); background: var(--color-background); border: var(--border-width) solid var(--color-border-subtle);
     border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: header-menu-in var(--motion-duration) ease-out;
   }
-  .app-header nav.is-open ul { display: grid; gap: var(--space-1); }
-  .app-header nav.is-open .nav-link { width: 100%; justify-content: flex-start; padding: var(--space-3) var(--space-4); font-size: var(--text-base); }
+  .header-links.is-open nav { margin: 0; }
+  .header-links.is-open .quick-preferences { display: flex; gap: var(--space-2); padding: var(--space-2) var(--space-4) var(--space-1); border-top: var(--border-width) solid var(--color-border-subtle); }
+  .header-links.is-open ul { display: grid; gap: var(--space-1); }
+  .header-links.is-open .nav-link { width: 100%; justify-content: flex-start; padding: var(--space-3) var(--space-4); font-size: var(--text-base); }
   .header-menu-button { display: inline-grid; place-items: center; width: var(--avatar-size); height: var(--avatar-size); padding: 0; border: var(--border-width) solid var(--color-border); border-radius: 50%; background: var(--color-surface); color: var(--color-text); cursor: pointer; }
 }
 @keyframes header-menu-in { from { opacity: 0; } to { opacity: 1; } }
