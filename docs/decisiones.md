@@ -1,6 +1,6 @@
 # Decisiones técnicas — NeuroMelody
 
-Decisiones aprobadas durante la construcción que completan o se desvían del documento de definición (`docs/definicion-proyecto.md`, que no se modifica). Los ADR-01 a ADR-06 están en ese documento. Aquí solo entran decisiones ya aprobadas.
+Decisiones aprobadas durante la construcción que completan o se desvían del documento de definición (`docs/definicion-proyecto.md`, que no se modifica). Los ADR-01 a ADR-06 están en ese documento. Aquí solo entran decisiones ya aprobadas. Las referencias P-01 a P-16 son propuestas de cambio y SEC-P1 a SEC-P7 hallazgos de seguridad de la auditoría de calidad del 2 nov 2026: lo que se aprobó de cada una está en el ADR que la cita.
 
 ## ADR-07. Síntesis y secuenciador dentro del AudioWorklet, sin Tone.js
 
