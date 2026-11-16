@@ -550,6 +550,17 @@ Aprobado el 14 nov 2026. Solo frontend; sin cambios de API, datos, motor de audi
 - **En la sesión.** El mundo da color al fondo del escenario, al anillo, al halo y a la nota del progreso, en tema claro y oscuro. El orbe conserva los tonos del estado estimado y el texto sus colores.
 - **Límites.** Un mundo no añade sonidos al sintetizador: reordena los que ya existen. Mundos con timbres o escalas propias necesitarían una decisión sobre el motor de audio.
 
+## ADR-65. Navegación, preferencias y lecturas del progreso
+
+Aprobado el 16 nov 2026, tras las revisiones manuales del usuario en PC y celular. Solo frontend; sin cambios de API, datos ni dependencias.
+
+- **Progreso en la navegación (P-10).** La barra de la app tiene cuatro entradas: Inicio, Nueva sesión, Historial y Progreso. Inicio suma la sección «Explora NeuroMelody» con mundos sonoros, progreso, informe, recordatorio, grabación guiada y revisión del equipo.
+- **Celular y tableta.** Hasta 900 px la cabecera es una píldora flotante que sigue el desplazamiento, con el logo, el avatar y un menú con las secciones, el tema y el idioma. En pantallas anchas se mantiene la cabecera de siempre, con el tema y el idioma junto al avatar.
+- **Pantallas públicas.** La portada, el acceso y el registro comparten una cabecera (`PublicHeader`). En el acceso y el registro de escritorio, el panel lateral lleva el logo con el tema y el idioma; en el celular aparece la píldora con la otra forma de entrar y un menú.
+- **Lecturas del progreso.** La explicación de las observaciones se construye en el dispositivo con las cifras calculadas: qué opción acompañó un resultado mejor, el tamaño de la diferencia, cuánto la respaldan las sesiones y qué probar. El modelo de lenguaje sigue eligiendo solo el enfoque (`overview` o `balance`) dentro del contrato de ADR-48; una diferencia pequeña no recomienda ninguna opción.
+- **Listas largas.** La tabla del método muestra cinco filas y crece de cinco en cinco. La lista de sesiones del informe muestra cinco en pantalla y se imprime completa.
+- **Datos de demostración.** `scripts/demo/buildDemoBackup.ts` genera seis semanas de sesiones inventadas como copia de seguridad para una cuenta concreta.
+
 ## Decisiones menores aprobadas
 
 | Tema | Decisión |
