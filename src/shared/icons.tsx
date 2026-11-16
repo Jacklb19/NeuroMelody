@@ -24,6 +24,12 @@ function Icon({ className, children }: IconProps & { readonly children: React.Re
   );
 }
 
+export const MenuIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M4 7h16M4 12h16M4 17h16" /></Icon>
+);
+export const CloseIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M6 6l12 12M18 6L6 18" /></Icon>
+);
 export const UserIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-3.6 4.4-5.4 8-5.4s6.500 1.800 8 5.400" /></Icon>
 );

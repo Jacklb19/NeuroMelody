@@ -17,9 +17,9 @@ export function HistoryFilterPanel({ value, onChange }: HistoryFilterPanelProps)
   const t = useMessages();
   const copy = t.listeningTools;
   return (
-    <fieldset className="glass-card listening-tools">
+    <fieldset className="glass-card history-filters">
       <legend>{copy.filters}</legend>
-      <div className="tool-grid">
+      <div className="history-filter-grid">
         <label>{copy.from}<input type="date" className="tool-input" value={value.from} onChange={(event) => { onChange({ ...value, from: event.target.value }); }} /></label>
         <label>{copy.to}<input type="date" className="tool-input" value={value.to} onChange={(event) => { onChange({ ...value, to: event.target.value }); }} /></label>
         <label>{copy.goal}
@@ -36,8 +36,8 @@ export function HistoryFilterPanel({ value, onChange }: HistoryFilterPanelProps)
           </select>
         </label>
       </div>
-      <div className="action-row">
-        <label className="confirmation-control"><input type="checkbox" checked={value.withNotes} onChange={(event) => { onChange({ ...value, withNotes: event.target.checked }); }} />{copy.withNotes}</label>
+      <div className="history-filter-actions">
+        <label className="history-filter-check"><input type="checkbox" checked={value.withNotes} onChange={(event) => { onChange({ ...value, withNotes: event.target.checked }); }} />{copy.withNotes}</label>
         <button type="button" className="pill-button pill-button-ghost" onClick={() => { onChange(EMPTY_FILTERS); }}>{copy.clearFilters}</button>
       </div>
     </fieldset>

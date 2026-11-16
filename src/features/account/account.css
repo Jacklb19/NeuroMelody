@@ -130,9 +130,19 @@
   .auth-aside { display: none; }
   .auth-brand-compact { display: inline-flex; }
   .auth-card { padding: var(--space-8) var(--space-6); }
+  /* Without the side panel, theme and language sit above the card instead of behind it. */
+  .auth-preferences { position: static; justify-self: end; }
+  .auth-main { align-content: start; padding-top: var(--space-5); }
 }
 @media (max-width: 600px) {
   .stat-grid { grid-template-columns: minmax(0, 1fr); }
-  .setting-row { flex-wrap: wrap; }
+  /* The text takes the whole width beside its icon, and the action goes under it instead of squeezing it. */
+  .setting-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: var(--space-4); row-gap: var(--space-3); }
+  .setting-row > :nth-child(n + 3) { grid-column: 2; justify-self: start; }
+  /* A choice of several options needs the whole width of the row, so it never runs past the card. */
+  .setting-row > .segmented { grid-column: 1 / -1; justify-self: stretch; }
+  .setting-row > .segmented .segment { flex: 1; }
+  .setting-link .setting-row > .icon:last-child { display: none; }
+  .backup-confirm { justify-content: flex-start; }
   .profile-header { grid-template-columns: minmax(0, 1fr); padding: var(--space-6); }
 }
