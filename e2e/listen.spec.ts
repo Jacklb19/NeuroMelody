@@ -74,11 +74,11 @@ test('creating a piece applies pending choices and saves the actual piece withou
   await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('max', '2700');
   await expect(page).toHaveURL(ROUTES.listen);
 
-  const expand = stage(page).getByRole('button', { name: listen.player.expand });
+  const expand = player(page).getByRole('button', { name: listen.player.expand });
   await expand.press('Enter');
   await expect(page).toHaveURL(`${ROUTES.listen}?player=open`);
   await expect(player(page).getByRole('heading', { name: listen.player.queueTitle })).toBeVisible();
-  await expect(stage(page).getByRole('button', { name: listen.player.collapse })).toBeFocused();
+  await expect(player(page).getByRole('button', { name: listen.player.collapse })).toBeFocused();
 
   // Back closes the player, not the screen, and the music goes on.
   await page.goBack();
@@ -93,15 +93,15 @@ test('creating a piece applies pending choices and saves the actual piece withou
   await expect(pause(page)).toBeVisible();
 
   // Saving asks for a name; Escape closes the dialog without stopping the music.
-  await stage(page).getByRole('button', { name: listen.player.save }).click();
+  await player(page).getByRole('button', { name: listen.player.save }).click();
   await expect(page.getByRole('dialog', { name: listen.save.title })).toBeVisible();
   await page.keyboard.press(STOP_SHORTCUT_KEY);
   await expect(page.getByRole('dialog', { name: listen.save.title })).toBeHidden();
   await expect(pause(page)).toBeVisible();
-  await stage(page).getByRole('button', { name: listen.player.save }).click();
+  await player(page).getByRole('button', { name: listen.player.save }).click();
   await page.getByLabel(listen.save.nameLabel).fill('Mi espacio');
   await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
-  await expect(stage(page).locator('.listen-saved')).toHaveText(new RegExp(listen.player.saved));
+  await expect(player(page).getByRole('button', { name: listen.player.saved })).toBeVisible();
   const savedCard = page.locator('.melody-card', { hasText: 'Mi espacio' });
   await expect(savedCard).toHaveAttribute('data-world', 'deep_space');
 
@@ -154,7 +154,7 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
   await card.getByRole('button', { name: listen.melodies.playNamed('Costa de prueba') }).click();
   await expect(pause(page)).toBeVisible();
   await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies&melody=${SAVED_ID}`);
-  await stage(page).getByRole('button', { name: listen.player.expand }).click();
+  await player(page).getByRole('button', { name: listen.player.expand }).click();
   await expect(player(page).getByRole('button', { name: /Costa de prueba/ })).toHaveAttribute('aria-current', 'true');
 
   // The bar is a slider: a key jumps a minute ahead, and the piece plays from there.
@@ -169,8 +169,17 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
   await page.getByRole('button', { name: listen.player.collapse }).click();
   await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.history }).click();
   await expect(page.getByRole('heading', { level: 1, name: es.history.title })).toBeVisible();
-  await expect(page.locator('.listening-bar').getByRole('button', { name: listen.player.pause, exact: true })).toBeVisible();
-  await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.listen }).click();
+  const globalBar = page.locator('.listening-bar');
+  await expect(globalBar.getByRole('button', { name: listen.player.pause, exact: true })).toBeVisible();
+  const openFromHistory = globalBar.getByRole('button', { name: listen.player.expand, exact: true });
+  await openFromHistory.click();
+  await expect(page).toHaveURL(`${ROUTES.listen}?player=open`);
+  await page.goBack();
+  await expect(page).toHaveURL(ROUTES.history);
+  await openFromHistory.click();
+  await page.getByRole('button', { name: listen.player.collapse, exact: true }).click();
+  await expect(page).toHaveURL(ROUTES.listen);
+  await expect(page.getByRole('button', { name: listen.create.action, exact: true })).toBeVisible();
   await expect(pause(page)).toBeVisible();
   await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('aria-valuetext', /^01:0\d de 30:00$/);
 
@@ -182,7 +191,7 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
   await page.getByRole('button', { name: listen.melodies.deleteConfirm }).click();
   await expect(page.getByText(listen.melodies.empty)).toBeVisible();
   await expect(stage(page).getByText(listen.player.unsaved)).toBeVisible();
-  await expect(stage(page).getByRole('button', { name: listen.player.save })).toBeVisible();
+  await expect(player(page).getByRole('button', { name: listen.player.save })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -205,7 +214,7 @@ test('a custom piece has its own identity and a failed save can be retried', asy
   await expect(page.getByText(listen.create.created(listen.player.custom), { exact: true })).toBeVisible();
   await expect(player(page)).toHaveAttribute('data-world', 'custom');
 
-  const save = stage(page).getByRole('button', { name: listen.player.save });
+  const save = player(page).getByRole('button', { name: listen.player.save });
   await save.click();
   await page.getByLabel(listen.save.nameLabel).fill('Guardar falla');
   await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
@@ -214,9 +223,9 @@ test('a custom piece has its own identity and a failed save can be retried', asy
   await save.click();
   await page.getByLabel(listen.save.nameLabel).fill('Combinación propia');
   await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
-  await expect(stage(page).locator('.listen-saved')).toHaveText(listen.player.saved);
+  await expect(player(page).getByRole('button', { name: listen.player.saved })).toBeVisible();
 
-  await stage(page).getByRole('button', { name: listen.player.expand }).click();
+  await player(page).getByRole('button', { name: listen.player.expand }).click();
   const custom = page.getByRole('button', { name: /Combinación propia/ });
   await expect(custom).toContainText(listen.player.custom);
   await expect(custom).toHaveAttribute('data-world', 'custom');
@@ -243,6 +252,18 @@ test('on a phone a bar at the bottom opens the player over the screen, and Back 
   await expect(pause(page)).toBeInViewport();
   await pause(page).click();
   await expect(stage(page).getByRole('button', { name: listen.player.resume, exact: true })).toBeInViewport();
+  await player(page).getByText(listen.player.soundSettings, { exact: true }).click();
+  const ambienceMix = player(page).getByRole('slider', { name: es.listeningTools.ambienceMix });
+  await ambienceMix.scrollIntoViewIfNeeded();
+  await expect(ambienceMix).toBeInViewport();
+  await player(page).evaluate((sheet) => { sheet.scrollTop = sheet.scrollHeight; });
+  const minimize = player(page).getByRole('button', { name: listen.player.collapse, exact: true });
+  await expect(minimize).toBeInViewport();
+  await minimize.click();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
+  await expect(mini.getByRole('button', { name: listen.player.resume, exact: true })).toBeInViewport();
+  await page.getByRole('link', { name: listen.tabs.create, exact: true }).click();
+  await expect(page.getByRole('button', { name: listen.create.action, exact: true })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBe(0);
 });

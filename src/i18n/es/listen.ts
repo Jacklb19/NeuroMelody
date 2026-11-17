@@ -52,7 +52,7 @@ export const listen = {
     seeking: 'Buscando ese momento…',
     savedPoint: (at: string): string => `Punto guardado: ${at}`,
     expand: 'Abrir el reproductor',
-    collapse: 'Reducir el reproductor',
+    collapse: 'Minimizar',
     save: 'Guardar esta melodía',
     saveShort: 'Guardar',
     saved: 'Guardada',

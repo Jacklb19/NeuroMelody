@@ -52,7 +52,7 @@ export const listen = {
     seeking: 'Finding that moment…',
     savedPoint: (at: string): string => `Saved point: ${at}`,
     expand: 'Open the player',
-    collapse: 'Make the player smaller',
+    collapse: 'Minimize',
     save: 'Save this melody',
     saveShort: 'Save',
     saved: 'Saved',

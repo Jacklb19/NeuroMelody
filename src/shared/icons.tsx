@@ -143,7 +143,7 @@ export const ExpandIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M14 5h5v5M10 19H5v-5M19 5l-6 6M5 19l6-6" /></Icon>
 );
 export const CollapseIcon = (props: IconProps): React.JSX.Element => (
-  <Icon {...props}><path d="M6 9l6 6 6-6" /></Icon>
+  <Icon {...props}><path d="M19 5l-6 6m0-5v5h5M5 19l6-6m-5 0h5v5" /></Icon>
 );
 
 /** Google's mark, in the colours its brand guidelines require for sign-in buttons. */

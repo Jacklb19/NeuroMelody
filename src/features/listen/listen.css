@@ -41,19 +41,20 @@
 .listen-session-link { font-size: var(--text-sm); color: var(--color-text-secondary); }
 
 /* The player card: the paper card of the app, kept in sight while the choices scroll. */
-.listen-player { grid-area: player; position: sticky; top: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding: var(--space-4); color: var(--color-text); background: linear-gradient(var(--listen-tint), var(--color-paper)); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-settle var(--player-motion) var(--player-easing) both; }
+.listen-player { grid-area: player; position: sticky; top: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'top' 'stage' 'audio'; gap: var(--space-3); padding: var(--space-4); color: var(--color-text); background: linear-gradient(var(--listen-tint), var(--color-paper)); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-settle var(--player-motion) var(--player-easing) both; }
 .listen-player > * { min-width: 0; }
-.player-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); text-align: center; }
+.player-stage { grid-area: stage; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); text-align: center; }
 /* The panels it borrows from the session carry named grid areas there; here they simply follow one another. */
 .player-stage > * { grid-area: auto; min-width: 0; width: 100%; }
 .player-identity { display: flex; align-items: center; gap: var(--space-3); text-align: left; }
 .is-expanded .player-identity { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }
-.player-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.player-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .player-phase { font-size: var(--text-sm); text-align: left; }
 .player-header-actions { display: flex; align-items: center; gap: var(--space-2); }
 .player-header-actions :is(.player-save, .listen-saved) { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); min-height: var(--control-height); white-space: nowrap; }
 .player-header-actions .icon { flex-shrink: 0; }
 .player-header-actions :is(.player-save, .listen-saved) .icon { width: var(--space-4); height: var(--space-4); }
+.player-collapse { padding-inline: var(--space-3); background: var(--color-paper); white-space: nowrap; }
 .listen-orb { flex-shrink: 0; font-size: var(--listen-orb-size); transition: font-size var(--player-motion) var(--player-easing); }
 .listen-player .orb, .listening-bar .orb { --orb-colour: var(--world-glow); }
 .listen-now { display: grid; min-width: 0; gap: var(--space-2); }
@@ -119,6 +120,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .listen-notice { font-size: var(--text-sm); animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
 .listen-notice .text-button { min-height: 0; padding: 0; }
 /* The playback panel of the session, quieter inside the card: its title is for screen readers. */
+.player-audio-controls { grid-area: audio; }
 .listen-player .playback-panel { padding: var(--space-2) 0 0; text-align: left; border: 0; border-top: var(--border-width) solid var(--color-border-subtle); border-radius: 0; background: none; box-shadow: none; }
 .listen-player .playback-panel > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .listen-player .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; margin-top: 0; font-size: var(--text-sm); }
@@ -161,9 +163,9 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .melody-empty { display: grid; justify-items: start; gap: var(--space-4); padding: var(--space-8); }
 
 /* The queue beside the open player. */
-.player-queue { display: grid; align-content: start; gap: var(--space-4); min-height: 0; animation: listen-fade-up var(--player-motion) var(--player-easing) 80ms both; }
+.player-queue { grid-area: queue; min-height: 0; animation: listen-fade-up var(--player-motion) var(--player-easing) 80ms both; }
 .melody-queue { display: grid; gap: var(--space-4); }
-.melody-queue-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
+.melody-queue-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); margin: 0; }
 .melody-queue-list { list-style: none; display: grid; gap: var(--space-2); }
 .melody-queue-item { display: flex; align-items: center; gap: var(--space-4); width: 100%; padding: var(--space-3) var(--space-4); color: var(--color-text); text-align: left; background: var(--listen-tint); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); font: inherit; cursor: pointer; transition: border-color var(--motion-duration); }
 .melody-queue-item:hover { border-color: var(--color-border); }
@@ -172,8 +174,6 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .melody-queue-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .melody-queue-text .secondary-text { font-size: var(--text-sm); }
 .melody-queue-current { flex-shrink: 0; width: var(--icon-size); height: var(--icon-size); color: var(--color-accent); }
-/* Three bars that move while the current melody sounds, and rest while it waits. */
-
 /* Naming a melody: a modal card, with the page stepping back behind it. */
 .listen-save-dialog::backdrop { background: var(--color-dimmer-soft); animation: listen-fade var(--player-motion) ease both; }
 .listen-save-dialog { position: fixed; inset: 0; z-index: calc(var(--stop-layer) + 1); width: min(var(--auth-card-width), calc(100vw - 2 * var(--space-4))); height: fit-content; margin: auto; padding: var(--space-6); color: var(--color-text); background: var(--color-background); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-pop var(--player-motion) var(--player-easing) both; }
@@ -185,10 +185,20 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 /* Open player on a wide screen: the stage and the queue side by side, over most of the screen. */
 .listen-page.is-player-open .page-heading, .listen-page.is-player-open .listen-main { display: none; }
 .listen-page.is-player-open .listen-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'player'; }
-.listen-player.is-expanded { position: relative; top: auto; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; gap: var(--space-12); min-height: var(--player-open-min-height); padding: var(--space-10) var(--space-12); animation: listen-open var(--player-motion-open) var(--player-easing) both; }
+.listen-player.is-expanded { position: relative; top: auto; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-areas: 'top top' 'stage queue' 'audio audio'; align-items: start; align-content: start; gap: var(--space-5) var(--space-8); min-height: var(--player-open-min-height); padding: var(--space-5) var(--space-8) var(--space-8); animation: listen-open var(--player-motion-open) var(--player-easing) both; }
+.is-expanded .player-top { position: sticky; top: 0; z-index: 1; padding: var(--space-2) var(--space-3); background: var(--listen-tint); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); }
+.is-expanded .player-header-actions { flex-wrap: wrap; justify-content: flex-end; }
 .listen-player.is-expanded .listen-orb { font-size: var(--player-orb-size-open); }
 .listen-player.is-expanded .listen-title { font-size: var(--text-welcome); }
-.listen-player.is-expanded .player-queue { max-height: var(--player-open-min-height); overflow-y: auto; padding-left: var(--space-8); border-left: var(--border-width) solid var(--color-border-subtle); }
+.is-expanded .playback-panel { padding: var(--space-4); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); background: var(--color-surface); }
+.is-expanded .player-sound-settings > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); padding-inline: 0; font-weight: var(--font-weight-strong); }
+.is-expanded .player-sound-settings > summary::-webkit-details-marker { display: none; }
+.is-expanded .player-sound-settings > summary::after { content: ''; width: var(--space-2); height: var(--space-2); margin-inline-end: var(--space-1); rotate: 45deg; border: solid var(--color-text-secondary); border-width: 0 var(--border-width) var(--border-width) 0; }
+.is-expanded .player-sound-settings[open] > summary::after { rotate: 225deg; }
+.is-expanded .player-sound-settings-body { gap: var(--space-3); padding-inline: 0; }
+.is-expanded .player-sound-settings-body .listening-tools { margin: 0; }
+.is-expanded .player-queue { padding-inline-start: var(--space-5); border-inline-start: var(--border-width) solid var(--color-border-subtle); }
+.is-expanded .melody-queue-list { max-block-size: var(--player-queue-max-height); overflow: auto; padding: var(--space-2); scrollbar-color: var(--color-border) var(--color-surface); scrollbar-width: thin; scrollbar-gutter: stable; }
 
 @keyframes listen-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes listen-fade-up { from { opacity: 0; translate: 0 var(--space-3); } to { opacity: 1; translate: 0 0; } }
@@ -201,7 +211,6 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 @media (max-width: 1100px) {
   .melody-cards { grid-template-columns: minmax(0, 1fr); }
   .listen-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
-  .listen-player.is-expanded { padding: var(--space-8); gap: var(--space-8); }
 }
 
 /* Tablet and phone: no card; a bar at the bottom opens the player over the whole screen. */
@@ -210,7 +219,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
   .listen-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'main'; gap: var(--space-8); }
   /* Closed, the player keeps no box of its own: only its bar, fixed at the bottom, and nothing in the layout. */
   .listen-player:not(.is-expanded) { display: contents; }
-  .listen-player:not(.is-expanded) > .player-stage { display: none; }
+  .listen-player:not(.is-expanded) > :is(.player-top, .player-stage, .player-audio-controls) { display: none; }
   .listen-player[data-mini]:not(.is-expanded) > .player-mini {
     position: fixed; left: var(--space-3); right: var(--space-3); bottom: max(var(--space-3), env(safe-area-inset-bottom)); z-index: var(--stop-layer);
     display: flex;
@@ -219,13 +228,16 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
   /* Open on a phone: a sheet over the whole screen, the queue under the controls. */
   .listen-page.is-player-open .listen-layout { grid-template-areas: 'player'; }
   .listen-player.is-expanded {
-    position: fixed; inset: 0; z-index: var(--header-layer); grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-8);
-    min-height: 0; padding: max(var(--space-5), env(safe-area-inset-top)) var(--space-5) max(var(--space-8), env(safe-area-inset-bottom)); overflow-y: auto;
+    position: fixed; inset: 0; z-index: var(--header-layer); grid-template-columns: minmax(0, 1fr); grid-template-areas: 'top' 'stage' 'audio' 'queue';
+    min-height: 0; padding: max(var(--space-3), env(safe-area-inset-top)) var(--space-4) max(var(--space-8), env(safe-area-inset-bottom)); overflow-y: auto;
     border-radius: 0; animation: listen-sheet var(--player-motion-open) var(--player-easing) both;
+    scrollbar-color: var(--color-border) var(--color-surface); scrollbar-width: thin;
   }
+  .is-expanded .player-top { top: env(safe-area-inset-top); }
   .listen-player.is-expanded .listen-orb { font-size: var(--player-orb-size-sheet); }
   .listen-player.is-expanded .listen-title { font-size: var(--text-2xl); }
-  .listen-player.is-expanded .player-queue { max-height: none; overflow: visible; padding: var(--space-6) 0 0; border-left: 0; border-top: var(--border-width) solid var(--color-border-subtle); }
+  .is-expanded .player-queue { padding: var(--space-5) 0 0; border: 0; border-top: var(--border-width) solid var(--color-border-subtle); }
+  .is-expanded .melody-queue-list { max-block-size: none; overflow: visible; padding: var(--space-1); }
   .app-shell:has(.listen-page.is-player-open) .app-header { visibility: hidden; }
 }
 @media (max-width: 600px) {
@@ -237,6 +249,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
   .listen-adjust-body { padding: 0 var(--space-5) var(--space-5); }
   .listen-create-action { grid-template-columns: auto minmax(0, 1fr); padding: var(--space-4); }
   .listen-create-action .pill-button, .listen-creation-status { grid-column: 1 / -1; }
+  .is-expanded .listening-tools { grid-template-columns: minmax(0, 1fr); }
   .melody-card { padding: var(--space-4); }
   .melody-empty { padding: var(--space-6); }
 }
@@ -246,4 +259,5 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 @media (forced-colors: active) {
   .listen-tabs a[aria-current='page'], .melody-queue-item.is-current { border: var(--border-width) solid Highlight; }
   .seek-fill { background: Highlight; }
+  .is-expanded, .is-expanded .melody-queue-list { scrollbar-color: auto; }
 }

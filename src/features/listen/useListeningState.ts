@@ -29,10 +29,10 @@ import { MelodyLimitError, useMelodies } from './useMelodies';
 /** Query value of the open player: it gets an entry of its own, so Back closes it (ADR-67). */
 const PLAYER_PARAM = 'player';
 const PLAYER_OPEN = 'open';
-/** Navigation state left when this screen opened the player, so closing it can step back instead. */
-interface OpenedHere { readonly playerOpened: true }
+/** Only a player opened from Listen can minimize by stepping back. */
+interface OpenedHere { readonly playerOpenedHere: true }
 const openedHere = (state: unknown): state is OpenedHere =>
-  typeof state === 'object' && state !== null && (state as Record<string, unknown>).playerOpened === true;
+  typeof state === 'object' && state !== null && (state as Record<string, unknown>).playerOpenedHere === true;
 
 /** Pressing "previous" this far into a piece starts it again, as the players people know do. */
 export const RESTART_INSTEAD_OF_PREVIOUS_S = 5;
@@ -137,12 +137,15 @@ export function useListeningState() {
 
   const openPlayer = useCallback((): void => {
     if (expanded) return;
-    const opened = new URLSearchParams(location.pathname === ROUTES.listen ? params : undefined);
+    const fromListen = location.pathname === ROUTES.listen;
+    const opened = new URLSearchParams(fromListen ? params : undefined);
     opened.set(PLAYER_PARAM, PLAYER_OPEN);
     // The open player starts at the top of the page, wherever the choices had been scrolled to.
     window.scrollTo({ top: 0 });
-    // An entry of its own: Back, on the phone or the browser, closes the player instead of leaving the screen.
-    void navigate(`${ROUTES.listen}?${opened.toString()}`, { state: { playerOpened: true } satisfies OpenedHere });
+    // Browser Back always returns to the screen that opened the player.
+    void navigate(`${ROUTES.listen}?${opened.toString()}`, {
+      state: fromListen ? { playerOpenedHere: true } satisfies OpenedHere : undefined,
+    });
   }, [expanded, params, navigate, location.pathname]);
 
   const closePlayer = (): void => {

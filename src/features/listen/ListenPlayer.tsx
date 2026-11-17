@@ -117,22 +117,25 @@ export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
         <PrimaryButton {...props} compact />
       </div>
 
-      <div className="player-stage">
-        <div className="player-top">
-          <p className="secondary-text player-phase">{seeking && phase === 'paused' ? copy.preparing : copy.phases[phase]}</p>
-          <div className="player-header-actions">
-            {hasPiece && (saved
-              ? <button type="button" className="text-button listen-saved" onClick={props.onViewSaved}
-                aria-description={copy.viewSaved}><CheckIcon /> {copy.saved}</button>
-              : <button type="button" className="text-button player-save" onClick={props.onSave} disabled={seeking}
-                aria-label={copy.save}><BookmarkIcon /> {copy.saveShort}</button>)}
-            {expanded ? (
-              <button ref={collapseRef} type="button" className="icon-button" onClick={props.onCollapse} aria-label={copy.collapse}><CollapseIcon /></button>
-            ) : hasPiece && (
-              <button ref={cardOpenRef} type="button" className="icon-button" onClick={props.onExpand} aria-label={copy.expand}><ExpandIcon /></button>
-            )}
-          </div>
+      <div className="player-top">
+        <p className="secondary-text player-phase">{seeking && phase === 'paused' ? copy.preparing : copy.phases[phase]}</p>
+        <div className="player-header-actions">
+          {hasPiece && (saved
+            ? <button type="button" className="text-button listen-saved" onClick={props.onViewSaved}
+              aria-description={copy.viewSaved}><CheckIcon /> {copy.saved}</button>
+            : <button type="button" className="text-button player-save" onClick={props.onSave} disabled={seeking}
+              aria-label={copy.save}><BookmarkIcon /> {copy.saveShort}</button>)}
+          {expanded ? (
+            <button ref={collapseRef} type="button" className="pill-button pill-button-ghost player-collapse" onClick={props.onCollapse}>
+              <CollapseIcon /> {copy.collapse}
+            </button>
+          ) : hasPiece && (
+            <button ref={cardOpenRef} type="button" className="icon-button" onClick={props.onExpand} aria-label={copy.expand}><ExpandIcon /></button>
+          )}
         </div>
+      </div>
+
+      <div className="player-stage">
         <div className="player-identity">
           <BreathingOrb className="listen-orb" />
           <div className="listen-now">
@@ -160,10 +163,9 @@ export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
             {notice === 'failed' && copy.saveFailed}
           </p>
         )}
-
-        <div ref={onControlsHostChange} className="player-audio-controls" />
       </div>
 
+      <div ref={onControlsHostChange} className="player-audio-controls" />
       {expanded && <div className="player-queue">{queue}</div>}
     </aside>
   );

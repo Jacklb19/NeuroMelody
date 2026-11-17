@@ -216,6 +216,7 @@
   --player-orb-size-sheet: clamp(8rem, 34vw, 11rem);
   --player-mini-orb-size: 2.5rem;
   --player-open-min-height: calc(100dvh - 9rem);
+  --player-queue-max-height: min(22rem, 45dvh);
   --seek-height: 6px;
   --seek-hit-height: 24px;
   --seek-thumb-size: 16px;

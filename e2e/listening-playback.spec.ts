@@ -5,7 +5,7 @@ import { WARNINGS_STORAGE_KEY } from '../src/features/warnings/warningsRegistry'
 
 const copy = es.listen.player;
 const stage = (page: Page) => page.locator('.player-stage');
-const soundSettings = (page: Page) => stage(page).getByText(copy.soundSettings, { exact: true });
+const soundSettings = (page: Page) => page.getByText(copy.soundSettings, { exact: true });
 const nav = (page: Page, label: string) => page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: label, exact: true });
 
 async function enter(page: Page): Promise<void> {
@@ -61,7 +61,7 @@ test('the same audio graph survives navigation and a background tab; previews an
   const countGraphs = (): Promise<number> => page.evaluate(() => (window as Window & { testAudioContexts?: AudioContext[] }).testAudioContexts?.length ?? 0);
   const graphCount = await countGraphs();
   expect(graphCount).toBeGreaterThan(0);
-  const mix = stage(page).getByRole('slider', { name: es.listeningTools.ambienceMix });
+  const mix = page.getByRole('slider', { name: es.listeningTools.ambienceMix });
   await expect(mix).toBeHidden();
   await soundSettings(page).click();
   await mix.fill('42');
@@ -112,7 +112,7 @@ test('the queue advances automatically from zero and stops after the last melody
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
   await expect(page.getByRole('slider', { name: copy.seekLabel })).toHaveAttribute('aria-valuetext', /^00:0\d de 15:00$/);
   await page.getByRole('slider', { name: copy.seekLabel }).press('End');
-  await expect(stage(page).getByText(copy.phases.ended, { exact: true })).toBeVisible();
+  await expect(page.getByText(copy.phases.ended, { exact: true })).toBeVisible();
   await expect(stage(page).getByRole('heading', { name: 'Segunda costa', exact: true })).toBeVisible();
 });
 
@@ -135,7 +135,7 @@ test('turning automatic advance off persists on reload and stops at the current 
   await stage(page).getByRole('button', { name: copy.resume, exact: true }).click();
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
   await page.getByRole('slider', { name: copy.seekLabel }).press('End');
-  await expect(stage(page).getByText(copy.phases.ended, { exact: true })).toBeVisible();
+  await expect(page.getByText(copy.phases.ended, { exact: true })).toBeVisible();
   await expect(stage(page).getByRole('heading', { name: 'Primera costa', exact: true })).toBeVisible();
 });
 
