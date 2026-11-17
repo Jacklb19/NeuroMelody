@@ -71,6 +71,7 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
   const playing = playingId === melody.id;
   const highlighted = highlightedId === melody.id;
+  const waiting = pending.has(melody.id);
   const sound = world === null
     ? `${t.listen.player.custom} · ${instrumentNames[melody.instrument]} · ${ambienceNames[melody.ambience]}`
     : worldNames[world];
@@ -89,47 +90,49 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
       <div className="melody-body">
         <h3 className="melody-name">{melody.name}</h3>
         <p className="secondary-text melody-meta">
-          {sound} · {levelNames[melody.level]} · {copy.length(melody.durationMin)} · {copy.savedOn(format.shortDate(melody.createdAt))}
+          {sound} · {levelNames[melody.level]} · <span className="melody-duration">{copy.length(melody.durationMin)}</span>
         </p>
-        <p className="melody-badges">
-          {playing && <span className="melody-badge is-playing">{paused ? t.listen.player.phases.paused : copy.playing}</span>}
-          {pending.has(melody.id) && <span className="melody-badge">{copy.pending}</span>}
+        <p className="melody-details">
+          <time className="secondary-text" dateTime={melody.createdAt}>{copy.savedOn(format.shortDate(melody.createdAt))}</time>
+          {waiting && <span className="melody-badge">{copy.pending}</span>}
         </p>
         {!soundsAsSaved(melody) && <p className="secondary-text melody-note">{t.listen.player.olderSound}</p>}
-
-        {renaming ? (
-          <form className="melody-rename" onSubmit={(event) => {
-            event.preventDefault();
-            const trimmed = name.trim();
-            if (!isMelodyName(trimmed)) return;
-            onRename(melody.id, trimmed);
-            setRenaming(false);
-          }}>
-            <label htmlFor={nameId} className="visually-hidden">{t.listen.save.nameLabel}</label>
-            <input id={nameId} className="tool-input" value={name} maxLength={MELODY_NAME_LIMIT} required autoFocus
-              onChange={(event) => { setName(event.target.value); }}
-              onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setRenaming(false); } }} />
-            <button type="submit" className="pill-button pill-button-ghost">{copy.renameSave}</button>
-            <button type="button" className="text-button" onClick={() => { setName(melody.name); setRenaming(false); }}>{t.common.cancel}</button>
-          </form>
-        ) : (
-          <div className="melody-actions">
-            {!playing && (
-              <button type="button" className="pill-button pill-button-primary" aria-label={copy.playNamed(melody.name)}
-                onClick={() => { onPlay(melody); }}>
-                <PlayIcon /> {copy.play}
-              </button>
-            )}
-            <details className="melody-menu">
-              <summary aria-label={copy.more(melody.name)}><span aria-hidden="true">⋯</span></summary>
-              <div className="melody-menu-body">
-                <button type="button" className="text-button" onClick={() => { setName(melody.name); setRenaming(true); }}>{copy.rename}</button>
-                <ConfirmButton label={copy.delete} confirmLabel={copy.deleteConfirm} onConfirm={() => { onDelete(melody.id); }} />
-              </div>
-            </details>
-          </div>
-        )}
       </div>
+
+      {renaming ? (
+        <form className="melody-rename" onSubmit={(event) => {
+          event.preventDefault();
+          const trimmed = name.trim();
+          if (!isMelodyName(trimmed)) return;
+          onRename(melody.id, trimmed);
+          setRenaming(false);
+        }}>
+          <label htmlFor={nameId} className="visually-hidden">{t.listen.save.nameLabel}</label>
+          <input id={nameId} className="tool-input" value={name} maxLength={MELODY_NAME_LIMIT} required autoFocus
+            onChange={(event) => { setName(event.target.value); }}
+            onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setRenaming(false); } }} />
+          <button type="submit" className="pill-button pill-button-ghost">{copy.renameSave}</button>
+          <button type="button" className="text-button" onClick={() => { setName(melody.name); setRenaming(false); }}>{t.common.cancel}</button>
+        </form>
+      ) : (
+        <div className="melody-actions">
+          {playing ? (
+            <span className="melody-badge is-playing">{paused ? t.listen.player.phases.paused : copy.playing}</span>
+          ) : (
+            <button type="button" className="pill-button pill-button-ghost" aria-label={copy.playNamed(melody.name)}
+              onClick={() => { onPlay(melody); }}>
+              <PlayIcon /> {copy.play}
+            </button>
+          )}
+          <details className="melody-menu">
+            <summary aria-label={copy.more(melody.name)}><span aria-hidden="true">⋯</span></summary>
+            <div className="melody-menu-body">
+              <button type="button" className="text-button" onClick={() => { setName(melody.name); setRenaming(true); }}>{copy.rename}</button>
+              <ConfirmButton label={copy.delete} confirmLabel={copy.deleteConfirm} onConfirm={() => { onDelete(melody.id); }} />
+            </div>
+          </details>
+        </div>
+      )}
     </li>
   );
 }

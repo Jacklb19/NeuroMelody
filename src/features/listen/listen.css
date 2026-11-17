@@ -136,29 +136,30 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 /* The saved melodies. */
 .melody-list { display: grid; gap: var(--space-5); }
 .melody-cloud { font-size: var(--text-sm); }
-.melody-cards { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-.melody-card { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); min-width: 0; background: var(--listen-tint); animation: listen-fade-up var(--player-motion) var(--player-easing) both; transition: border-color var(--motion-duration), transform var(--motion-duration) var(--player-easing); }
-.melody-card:hover { transform: translateY(-2px); }
+.melody-cards { list-style: none; display: grid; gap: var(--space-3); }
+.melody-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-4); min-width: 0; background: linear-gradient(100deg, var(--listen-tint), var(--color-paper)); animation: listen-fade var(--player-motion) ease both; transition: border-color var(--motion-duration); }
+.melody-card:has(.melody-menu[open]) { z-index: 1; }
 .melody-card:focus { outline: none; }
 .melody-card.is-highlighted { box-shadow: inset 0 0 0 var(--focus-width) var(--color-focus); }
 .melody-card.is-playing { border-color: var(--color-accent); }
-.melody-body { flex: 1; display: grid; gap: var(--space-2); min-width: 0; }
+.melody-body { display: grid; gap: var(--space-1); min-width: 0; }
 .melody-name { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
 .melody-meta { font-size: var(--text-sm); }
-.melody-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.melody-badges:empty { display: none; }
+.melody-duration { white-space: nowrap; }
+.melody-details { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-2); font-size: var(--text-xs); }
 .melody-badge { padding: var(--space-1) var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: var(--font-weight-strong); color: var(--color-text-secondary); }
-.melody-badge.is-playing { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-button-text); }
+.melody-badge.is-playing { border-color: var(--color-accent); color: var(--color-button-background); }
 .melody-note { font-size: var(--text-sm); }
-.melody-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.melody-actions { display: flex; align-items: center; gap: var(--space-2); }
+.melody-actions .pill-button { padding-inline: var(--space-3); }
 .melody-actions .pill-button .icon { width: var(--space-4); height: var(--space-4); }
-.melody-menu { position: relative; margin-left: auto; }
+.melody-menu { position: relative; }
 .melody-menu > summary { display: grid; place-items: center; width: var(--control-height); height: var(--control-height); list-style: none; border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); font-size: var(--text-lg); line-height: 1; cursor: pointer; transition: background var(--motion-duration); }
 .melody-menu > summary::-webkit-details-marker { display: none; }
 .melody-menu[open] > summary { border-color: var(--color-border); background: var(--color-surface); }
 .melody-menu-body { position: absolute; right: 0; top: calc(100% + var(--space-2)); z-index: var(--header-layer); display: grid; justify-items: start; gap: var(--space-2); min-width: var(--melody-menu-min-width); padding: var(--space-3) var(--space-4); background: var(--color-background); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-control); box-shadow: var(--card-shadow); animation: listen-fade-up var(--motion-duration) var(--player-easing) both; }
 .melody-menu-body .confirm-group { display: grid; gap: var(--space-2); }
-.melody-rename { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.melody-rename { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .melody-rename .tool-input { flex: 1 1 var(--melody-menu-min-width); min-width: 0; }
 .melody-empty { display: grid; justify-items: start; gap: var(--space-4); padding: var(--space-8); }
 
@@ -209,7 +210,6 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 @keyframes listen-breathe { 50% { opacity: 0.45; } }
 
 @media (max-width: 1100px) {
-  .melody-cards { grid-template-columns: minmax(0, 1fr); }
   .listen-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
 }
 
@@ -250,7 +250,8 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
   .listen-create-action { grid-template-columns: auto minmax(0, 1fr); padding: var(--space-4); }
   .listen-create-action .pill-button, .listen-creation-status { grid-column: 1 / -1; }
   .is-expanded .listening-tools { grid-template-columns: minmax(0, 1fr); }
-  .melody-card { padding: var(--space-4); }
+  .melody-card { grid-template-columns: auto minmax(0, 1fr); }
+  .melody-actions { grid-column: 2 / -1; justify-content: space-between; }
   .melody-empty { padding: var(--space-6); }
 }
 @media (prefers-reduced-motion: reduce) {
