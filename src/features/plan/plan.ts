@@ -14,6 +14,14 @@ export type SessionDurationMin = (typeof SESSION_DURATIONS_MIN)[number];
 /** Default plan: 20 minutes (also the offline plan from S6). */
 export const DEFAULT_DURATION_MIN: DurationMin = 20;
 
+/** Longest text a person may write to have a plan composed (ADR-68). Mirrors the API's `PLAN_TEXT_MAX_CHARS`. */
+export const PLAN_TEXT_MAX_CHARS = 300;
+/** Maximum returned sentence, mirrored from the API's compose contract (ADR-68). */
+export const PLAN_COMPOSE_NOTE_MAX_CHARS = 160;
+
+/** How many characters before the limit the remaining count appears. */
+export const PLAN_TEXT_COUNT_FROM = 60;
+
 /** Shortest and longest allowed plans; the home page shows them as the range. */
 export const MIN_DURATION_MIN: number = Math.min(...DURATIONS_MIN);
 export const MAX_DURATION_MIN: number = Math.max(...DURATIONS_MIN);

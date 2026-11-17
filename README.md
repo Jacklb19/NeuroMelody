@@ -45,7 +45,9 @@ Antes de cada sesión la persona elige qué busca (relajarse, dormir, recuperar 
 
 «Tu progreso» también compara elecciones del historial local con mínimos de datos, sin atribuirles efectos. «Para ti» permite aceptar opciones respaldadas por las valoraciones, cada una por separado. Hay notas privadas en el resumen y una entrada de 3 minutos desde Inicio; esa sesión rápida conserva la calibración normal y puede acabar antes de una estimación adaptada.
 
-El modelo de lenguaje nunca participa en el lazo de control: propone la duración del plan y redacta el resumen final, marcado siempre como texto generado automáticamente. Con consentimiento también puede elegir una explicación del progreso entre frases verificadas, manteniendo las cifras calculadas en el dispositivo.
+El modelo de lenguaje nunca participa en el lazo de control: arma el plan inicial a partir de lo que escribe la persona (ADR-68), con valores de los catálogos de la app, y redacta el resumen final, marcado siempre como texto generado automáticamente. Con consentimiento también puede elegir una explicación del progreso entre frases verificadas, manteniendo las cifras calculadas en el dispositivo.
+
+Escuchar permite oír música sin sensor y guardar melodías. Su reproductor sigue sonando al navegar por la app, con una barra para pausar o reanudar, controles del sistema y avance opcional a la siguiente melodía (ADR-69). Una sesión medida o una muestra toma prioridad; recargar recupera en pausa. El audio con el teléfono bloqueado sigue pendiente de prueba física.
 
 ## Requisitos
 
@@ -158,6 +160,7 @@ El esquema y sus migraciones viven en el repositorio del backend ([NeuroM_Back](
 | [`fuentes-de-pulso.md`](docs/fuentes-de-pulso.md) | Sensores que sirven y por qué |
 | [`prueba-ble.md`](docs/prueba-ble.md) | Prueba manual de Bluetooth con nRF Connect |
 | [`contrato-progress-summary.md`](docs/contrato-progress-summary.md) | Contrato de `POST /v1/progress/summary` |
+| [`contrato-plan-compose.md`](docs/contrato-plan-compose.md) | Contrato de `POST /v1/plans/compose`: el plan a partir de un texto (ADR-68) |
 | [`contrato-melodies.md`](docs/contrato-melodies.md) | Contrato de `/v1/melodies` y de su sincronización (ADR-66) |
 | [`plan-escuchar.md`](docs/plan-escuchar.md) | Definición de Escuchar, las melodías y el pulso en vivo, con su flujo de navegación (ADR-66) |
 | [`demo.md`](docs/demo.md) | Guion de demostración |

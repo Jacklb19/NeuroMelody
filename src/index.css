@@ -80,7 +80,8 @@
   /* Printable report (ADR-33): width of the sheet on screen and of the hint beside the print button. */
   --report-sheet-width: 52rem;
   --report-hint-max-width: 44ch;
-  --plan-suggestion-text-min-width: 16rem;
+  /* The text field of the plan composed from what the person writes (ADR-68): two lines. */
+  --plan-compose-input-height: 5rem;
   --control-height: 48px;
   /* Text fields of the sign-in screens on a short laptop screen. */
   --control-height-compact: 42px;

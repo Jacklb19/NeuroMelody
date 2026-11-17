@@ -14,7 +14,8 @@ import { readAmbience, readInstrument, rememberAmbience, rememberInstrument } fr
 import { GOAL_IDS, readGoals, type GoalId } from './goalCatalog';
 import { GoalIcon } from './GoalIcon';
 import { CALIBRATION_MIN, DEFAULT_DURATION_MIN, DURATIONS_MIN, type DurationMin } from './plan';
-import { PlanSuggestionCard } from './PlanSuggestionCard';
+import { PlanComposer } from './PlanComposer';
+import type { ComposedPlan } from '../cloud/cloudApi';
 import { programFor } from './programCatalog';
 import { WORLD_IDS, WORLDS, worldOf, type WorldId } from './worldCatalog';
 import { parseOption } from '../../shared/parseOption';
@@ -34,7 +35,8 @@ const NARROW_SCREEN_QUERY = '(max-width: 900px)';
  * have, with the session they are about to start always in view. The goal
  * is a single choice, because it decides what the music does (ADR-38). A link
  * from the start screen can arrive with a goal already chosen. With an
- * account, the language model can propose the length (RF-13); the person
+ * account, the person can also write how they are or what they want to hear
+ * and have the language model compose the whole plan (ADR-68); the person
  * always decides.
  */
 export function PlanPage(): React.JSX.Element {
@@ -90,12 +92,24 @@ export function PlanPage(): React.JSX.Element {
   const startSession = (): void => {
     void navigate(sessionPath(duration, goals, ambience, instrument, { fixed, profile, guide: guided }));
   };
+  // A composed plan fills the choices like a favorite does, then opens the session with exactly those values.
+  const startComposedPlan = (plan: ComposedPlan): void => {
+    const sound = WORLDS[plan.world];
+    const chosenGoals = plan.goal === null ? [] : [plan.goal];
+    enterWorld(plan.world);
+    setDuration(plan.durationMin);
+    setGoals(chosenGoals);
+    setFixed(plan.fixed);
+    void navigate(sessionPath(plan.durationMin, chosenGoals, sound.ambience, sound.instrument, { fixed: plan.fixed, profile: sound.profile, guide: guided }));
+  };
 
   return (
     <div className="plan-page">
       <PageHeading eyebrow={t.plan.eyebrow} title={t.plan.pageTitle}>
         <p>{t.plan.introduction}</p>
       </PageHeading>
+
+      <PlanComposer onUse={startComposedPlan} />
 
       <div className="plan-layout">
         <div className="plan-choices">
@@ -158,7 +172,6 @@ export function PlanPage(): React.JSX.Element {
                 </label>
               ))}
             </div>
-            <PlanSuggestionCard goals={goals} duration={duration} onAccept={setDuration} />
           </fieldset>
 
           <fieldset className="plan-fieldset" aria-describedby={worldsHintId}>

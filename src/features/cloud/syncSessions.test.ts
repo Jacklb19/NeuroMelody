@@ -43,7 +43,7 @@ function fakeCloud(initial: readonly SessionRecord[] = []): CloudApi & { readonl
       return Promise.resolve();
     },
     deleteAccount: () => Promise.resolve(),
-    suggestPlan: () => Promise.reject(new CloudError('language_model_unavailable')),
+    composePlan: () => Promise.reject(new CloudError('language_model_unavailable')),
     summarizeSession: () => Promise.reject(new CloudError('language_model_unavailable')),
     summarizeProgress: () => Promise.reject(new CloudError('language_model_unavailable')),
     sendRecording: () => Promise.resolve(),
@@ -516,7 +516,7 @@ describe('cloud API client', () => {
     });
 
     await expect(answering(403, { code: 'second_factor_required' }).listSessions()).rejects.toMatchObject({ code: 'second_factor_required' });
-    await expect(answering(429, { code: 'rate_limited' }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'rate_limited' });
+    await expect(answering(429, { code: 'rate_limited' }).composePlan('algo tranquilo', 22, 'es')).rejects.toMatchObject({ code: 'rate_limited' });
     await expect(answering(409, { code: 'limit_reached' }).saveSession(sessionRecord())).rejects.toMatchObject({ code: 'limit_reached' });
     await expect(answering(500, '<html>').listSessions()).rejects.toMatchObject({ code: 'unknown' });
     await expect(answering(200, { id: ID_A, samples: [{ second: -1 }] }).getSession(ID_A)).rejects.toMatchObject({ code: 'unknown' });
@@ -537,13 +537,28 @@ describe('cloud API client', () => {
         return Promise.resolve(new Response(JSON.stringify(body), { status }));
       },
     });
-    const plan = { duration_minutes: 30, note: ' Media hora va bien. ', generated: true, model: 'm' };
+    const plan = { goal: 'relax', duration_minutes: 30, world: 'city_rain', mode: 'fixed', note: ' Media hora de piano con lluvia. ', generated: true, model: 'm' };
+    const compose = (body: unknown): Promise<unknown> => answering(body).composePlan('Estoy estudiando, algo tranquilo', 22, 'es');
 
-    expect(await answering(plan).suggestPlan(['relax'], 22, 'es')).toEqual({ durationMin: 30, note: 'Media hora va bien.' });
-    expect(sent[0]).toEqual({ url: 'https://api.example.test/v1/plans/suggest', body: { goals: ['relax'], local_hour: 22, locale: 'es' } });
-    // A length the app does not offer, or a text not marked as generated, is not shown.
-    await expect(answering({ ...plan, duration_minutes: 25 }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
-    await expect(answering({ ...plan, generated: false }).suggestPlan(['relax'], 22, 'es')).rejects.toMatchObject({ code: 'unknown' });
+    expect(await compose(plan)).toEqual({ goal: 'relax', durationMin: 30, world: 'city_rain', fixed: true, note: 'Media hora de piano con lluvia.' });
+    // Pressing "send" is the consent: it travels with the text, the hour and the language, and nothing else.
+    expect(sent[0]).toEqual({ url: 'https://api.example.test/v1/plans/compose', body: { consent: true, text: 'Estoy estudiando, algo tranquilo', local_hour: 22, locale: 'es' } });
+    expect(await compose({ ...plan, goal: null, mode: 'adaptive', note: null })).toEqual({ goal: null, durationMin: 30, world: 'city_rain', fixed: false, note: null });
+    // Anything outside the app's own catalogs, or not marked as generated, is not shown.
+    for (const invented of [
+      { ...plan, duration_minutes: 25 },
+      { ...plan, world: 'volcano' },
+      { ...plan, goal: 'become_invincible' },
+      { ...plan, mode: 'loud' },
+      { ...plan, note: 7 },
+      { ...plan, note: 'x'.repeat(161) },
+      { ...plan, model: null },
+      { ...plan, model: '' },
+      { ...plan, extra: 'unexpected' },
+      { ...plan, generated: false },
+    ]) {
+      await expect(compose(invented)).rejects.toMatchObject({ code: 'unknown' });
+    }
 
     // What the summary screen shows of this session: pulse 78 → 68, a rating before and none after.
     const figures = narrativeFigures(sessionRecord({

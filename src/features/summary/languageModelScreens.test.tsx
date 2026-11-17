@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +7,6 @@ import { AuthContext, type AuthState } from '../account/authContext';
 import { es } from '../../i18n/es';
 import { CloudError, type CloudApi } from '../cloud/cloudApi';
 import { CloudSyncContext, type CloudSyncStatus, type CloudSyncValue } from '../cloud/cloudSyncContext';
-import { PlanPage } from '../plan/PlanPage';
 import { sessionRecord } from '../../test/sessionRecords';
 import { AutomaticSummary } from './AutomaticSummary';
 import { LEGACY_NARRATIVE_STORAGE_KEY, narrativeStorageKey } from './narrativeCache';
@@ -17,7 +16,6 @@ const RECORD = sessionRecord();
 const SIGNED_IN: AuthState = { kind: 'signed_in', user: { id: 'user-1', email: 'persona@example.test', name: null }, assurance: { current: 'aal1', next: 'aal1' } };
 const OWN_TEXTS = narrativeStorageKey('user-1');
 const SESSION_ID = RECORD.id;
-const plan = es.plan;
 const automatic = es.summary.automatic;
 
 /** What the screens read from the sync provider: a status and, when signed in, the API. */
@@ -48,55 +46,6 @@ function renderWith(value: CloudSyncValue, screenUnderTest: React.ReactNode, aut
 
 beforeEach(() => {
   window.localStorage.clear();
-});
-
-describe('plan proposed by the language model (RF-13)', () => {
-  it('asks with the chosen goals, marks the note as generated and leaves the choice to the person', async () => {
-    const user = userEvent.setup();
-    const suggestPlan = vi.fn<CloudApi['suggestPlan']>(() => Promise.resolve({ durationMin: 30, note: 'Media hora va bien para descansar.' }));
-    renderWith(cloud('needs_second_factor', { suggestPlan }), <PlanPage />);
-
-    // Without a goal there is nothing to propose from.
-    const ask = screen.getByRole('button', { name: plan.suggestion.ask });
-    expect(ask).toBeDisabled();
-    await user.click(screen.getByRole('checkbox', { name: plan.goals.names.rest_before_sleep }));
-    await user.click(ask);
-
-    expect(suggestPlan).toHaveBeenCalledWith(['rest_before_sleep'], expect.any(Number), 'es');
-    expect(await screen.findByText(plan.suggestion.proposal(plan.minutes(30)))).toBeVisible();
-    expect(screen.getByText(plan.suggestion.generatedMark)).toBeVisible();
-    // Nothing changes until the person accepts.
-    expect(screen.getByRole('radio', { name: plan.minutes(20) })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: plan.suggestion.accept }));
-    expect(screen.getByRole('radio', { name: plan.minutes(30) })).toBeChecked();
-  });
-
-  it('keeps the manual plan when the model is not available, and hides the offer without an API', async () => {
-    const user = userEvent.setup();
-    const suggestPlan = (): Promise<never> => Promise.reject(new CloudError('language_model_unavailable'));
-    renderWith(cloud('synced', { suggestPlan }), <PlanPage />);
-    await user.click(screen.getByRole('checkbox', { name: plan.goals.names.relax }));
-    await user.click(screen.getByRole('button', { name: plan.suggestion.ask }));
-
-    expect(await screen.findByText(plan.suggestion.failed(es.cloud.errors.language_model_unavailable))).toBeVisible();
-    expect(screen.getByRole('button', { name: plan.continueToSession })).toBeEnabled();
-  });
-
-  it('offers nothing in a deployment without an API and points to signing in without an account', () => {
-    renderWith(cloud('unavailable', null), <PlanPage />);
-    expect(screen.queryByRole('button', { name: plan.suggestion.ask })).not.toBeInTheDocument();
-    expect(screen.queryByText(plan.suggestion.signedOut)).not.toBeInTheDocument();
-  });
-
-  it('invites to sign in only once it is clear that nobody is', () => {
-    // A kept session is still being read: the person is probably signed in.
-    renderWith(cloud('signed_out', null), <PlanPage />, { kind: 'loading', sessionExpected: true });
-    expect(screen.queryByText(plan.suggestion.signedOut)).not.toBeInTheDocument();
-    cleanup();
-
-    renderWith(cloud('signed_out', null), <PlanPage />);
-    expect(screen.getByText(plan.suggestion.signedOut)).toBeVisible();
-  });
 });
 
 describe('automatic summary (RF-15)', () => {

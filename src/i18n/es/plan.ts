@@ -30,22 +30,22 @@ export const plan = {
       pause: 'Tomar una pausa para mí',
     },
   },
-  /** Length proposed by the language model (RF-13); the person decides. */
-  suggestion: {
-    ask: 'Proponme una duración',
-    /** What travels, said next to the button. */
-    notice: 'Un modelo de lenguaje recibe solo la intención que elegiste y la hora que es. Tú decides si usas lo que proponga.',
-    needsGoal: 'Elige una intención para pedir una propuesta.',
-    signedOut: 'Con una cuenta, la app puede proponerte la duración según tu intención.',
-    signIn: 'Entrar',
-    working: 'Pensando la propuesta…',
-    /** The proposed length, in the words of `minutes`. */
-    proposal: (duration: string): string => `Propuesta: ${duration}`,
-    generatedMark: 'Texto generado automáticamente.',
-    accept: 'Usar esta duración',
-    accepted: 'Es la duración que tienes elegida.',
+  /** Plan composed by the language model from what the person writes (ADR-68); the person decides. */
+  compose: {
+    question: '¿Cómo te sientes hoy o qué quieres escuchar?',
+    placeholder: 'Por ejemplo: estoy estudiando y quiero algo tranquilo unos 30 minutos',
+    send: 'Enviar',
+    working: 'Armando tu plan…',
+    /** Shown only near the limit. */
+    remaining: (count: number): string => (count === 1 ? 'Queda 1 carácter' : `Quedan ${String(count)} caracteres`),
+    resultTitle: 'Tu plan',
+    generatedMark: 'Propuesta automática',
+    noGoal: 'Sin intención',
+    modes: { adaptive: 'Sigue tu pulso', fixed: 'Música fija' },
+    use: 'Usar esta configuración y empezar sesión',
+    dismiss: 'No, gracias',
     /** `reason` is one of the cloud error sentences. */
-    failed: (reason: string): string => `No se pudo pedir la propuesta: ${reason} Puedes elegir tú la duración.`,
+    failed: (reason: string): string => `No pude armar el plan: ${reason} Puedes elegirlo abajo.`,
   },
   /** Sound worlds (ADR-64); `names` and `descriptions` keys mirror `WorldId`. */
   worlds: {

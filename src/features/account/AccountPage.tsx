@@ -10,6 +10,7 @@ import { ChevronRightIcon, HeartIcon, HistoryIcon, KeyIcon, LogOutIcon, NoteIcon
 import { CloudError, type CloudErrorCode } from '../cloud/cloudApi';
 import { useCloudSync } from '../cloud/cloudSyncContext';
 import { useMelodies } from '../listen/useMelodies';
+import { useOptionalListening } from '../listen/listeningContext';
 import { useRecordFormatter } from '../records/useRecordFormatter';
 import { ListeningBackupPanel } from '../records/ListeningBackupPanel';
 import { sessionTotals, useSessionRecords } from '../records/useSessionRecords';
@@ -241,6 +242,7 @@ function PreferencesSection(): React.JSX.Element {
 }
 
 function SessionSection({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
+  const listening = useOptionalListening();
   const copy = useMessages().account.profile;
   const { pending, error, run } = useAccountAction();
   const { status, forgetDeviceCopies } = useCloudSync();
@@ -250,6 +252,7 @@ function SessionSection({ service, onChanged }: { readonly service: AuthService;
   // Only while syncing is on does the cloud keep the copies that make removing them here safe.
   const canForget = status === 'synced' || status === 'syncing' || status === 'failed';
   const signOut = (): void => {
+    listening?.pause();
     void run(async () => {
       if (canForget && forget) await forgetDeviceCopies();
       await service.signOut();
@@ -283,6 +286,7 @@ function SessionSection({ service, onChanged }: { readonly service: AuthService;
  * notes, marks, automatic texts and favorites (ADR-61).
  */
 function DeleteAccountRow({ service, onChanged }: { readonly service: AuthService; readonly onChanged: () => Promise<void> }): React.JSX.Element {
+  const listening = useOptionalListening();
   const t = useMessages();
   const copy = t.account.profile.rows.deleteAccount;
   const { api, forgetAccount } = useCloudSync();
@@ -291,6 +295,7 @@ function DeleteAccountRow({ service, onChanged }: { readonly service: AuthServic
 
   const deleteAccount = (): void => {
     if (api === null) return;
+    listening?.pause();
     setFailure(null);
     api.deleteAccount()
       // Its data on this device goes too; a local failure must not keep the person signed in to a deleted account.

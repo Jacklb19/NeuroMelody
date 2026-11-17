@@ -30,22 +30,22 @@ export const plan = {
       pause: 'Take a break for myself',
     },
   },
-  /** Length proposed by the language model (RF-13); the person decides. */
-  suggestion: {
-    ask: 'Suggest a length',
-    /** What travels, said next to the button. */
-    notice: 'A language model receives only the intention you chose and the time of day. You decide whether to use what it suggests.',
-    needsGoal: 'Choose an intention to ask for a suggestion.',
-    signedOut: 'With an account, the app can suggest a length for your intention.',
-    signIn: 'Sign in',
-    working: 'Working on the suggestion…',
-    /** The proposed length, in the words of `minutes`. */
-    proposal: (duration: string): string => `Suggestion: ${duration}`,
-    generatedMark: 'Automatically generated text.',
-    accept: 'Use this length',
-    accepted: 'It is the length you have chosen.',
+  /** Plan composed by the language model from what the person writes (ADR-68); the person decides. */
+  compose: {
+    question: 'How are you feeling today, or what would you like to hear?',
+    placeholder: 'For example: I am studying and want something calm for about 30 minutes',
+    send: 'Send',
+    working: 'Putting your plan together…',
+    /** Shown only near the limit. */
+    remaining: (count: number): string => (count === 1 ? '1 character left' : `${String(count)} characters left`),
+    resultTitle: 'Your plan',
+    generatedMark: 'Automatic proposal',
+    noGoal: 'No intention',
+    modes: { adaptive: 'Follows your pulse', fixed: 'Fixed music' },
+    use: 'Use this setup and start the session',
+    dismiss: 'No, thanks',
     /** `reason` is one of the cloud error sentences. */
-    failed: (reason: string): string => `The suggestion could not be requested: ${reason} You can choose the length yourself.`,
+    failed: (reason: string): string => `I could not put the plan together: ${reason} You can choose it below.`,
   },
   /** Sound worlds (ADR-64); `names` and `descriptions` keys mirror `WorldId`. */
   worlds: {

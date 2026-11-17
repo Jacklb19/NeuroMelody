@@ -48,7 +48,23 @@
 .listen-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
 .listen-sound { font-size: var(--text-sm); }
 .listen-now .quiet-notice { margin: 0; }
-.player-mini { display: none; }
+.player-mini { display: none; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); overflow: hidden; color: var(--color-text); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); }
+.player-auto-next { display: flex; align-items: center; justify-content: center; gap: var(--space-3); min-height: var(--control-height); cursor: pointer; font-size: var(--text-sm); }
+.player-auto-next input { accent-color: var(--color-accent); }
+.listening-bar { position: fixed; left: var(--space-3); right: var(--space-3); bottom: max(var(--space-3), env(safe-area-inset-bottom)); z-index: var(--stop-layer); max-width: var(--auth-card-width); margin-inline: auto; }
+.listening-bar .player-mini { position: relative; display: flex; }
+.player-mini-line { position: absolute; left: 0; top: 0; height: var(--seek-mini-height); width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
+.player-mini-open { flex: 1; display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: var(--control-height); padding: 0; color: inherit; text-align: left; background: none; border: 0; font: inherit; cursor: pointer; }
+.player-mini-orb { font-size: var(--player-mini-orb-size); flex-shrink: 0; }
+.player-mini-text { display: grid; min-width: 0; line-height: 1.3; }
+.player-mini-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-lg); }
+.player-mini-text .secondary-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+body:has(.listening-bar) .app-main { padding-bottom: calc(var(--stop-reserve) + var(--space-8)); }
+/* The player owns the fixed bottom edge; the plan action remains in its page flow. */
+body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--space-6); }
+@media (prefers-reduced-motion: reduce) {
+  .listening-bar *, .listening-bar *::before, .listening-bar *::after { animation: none !important; transition: none !important; }
+}
 
 /* Round buttons of the player, the same size and spacing either side of the main one. */
 .icon-button { display: inline-grid; place-items: center; flex-shrink: 0; width: var(--control-height); height: var(--control-height); padding: 0; color: var(--color-text); background: transparent; border: var(--border-width) solid var(--color-border-subtle); border-radius: 50%; cursor: pointer; transition: background var(--motion-duration), border-color var(--motion-duration), transform var(--motion-duration), opacity var(--motion-duration); }
@@ -188,16 +204,9 @@
   .listen-player:not(.is-expanded) > .player-stage { display: none; }
   .listen-player[data-mini]:not(.is-expanded) > .player-mini {
     position: fixed; left: var(--space-3); right: var(--space-3); bottom: max(var(--space-3), env(safe-area-inset-bottom)); z-index: var(--stop-layer);
-    display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); overflow: hidden;
-    color: var(--color-text); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow);
+    display: flex;
     animation: listen-sheet var(--player-motion) var(--player-easing) both;
   }
-  .player-mini-line { position: absolute; left: 0; top: 0; height: var(--seek-mini-height); width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
-  .player-mini-open { flex: 1; display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: var(--control-height); padding: 0; color: inherit; text-align: left; background: none; border: 0; font: inherit; cursor: pointer; }
-  .player-mini-orb { font-size: var(--player-mini-orb-size); flex-shrink: 0; }
-  .player-mini-text { display: grid; min-width: 0; line-height: 1.3; }
-  .player-mini-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-lg); }
-  .player-mini-text .secondary-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
   /* Open on a phone: a sheet over the whole screen, the queue under the controls. */
   .listen-page.is-player-open .listen-layout { grid-template-areas: 'player'; }
   .listen-player.is-expanded {

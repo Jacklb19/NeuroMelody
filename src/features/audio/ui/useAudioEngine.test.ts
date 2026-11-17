@@ -7,6 +7,25 @@ import { useAudioEngine } from './useAudioEngine';
 const options: EngineOptions = { seed: 7, initialLevel: 'intermediate', outputThroughAudioElement: false };
 
 describe('useAudioEngine interruptions', () => {
+  it('waits for a cancelled opening to release its graph before discard completes', async () => {
+    const env = createFakeAudioEnvironment();
+    let release: (() => void) | undefined;
+    const loaded = new Promise<void>((resolve) => { release = resolve; });
+    env.context.audioWorklet.addModule = () => loaded;
+    const { result } = renderHook(() => useAudioEngine(env.factory));
+    let starting: Promise<unknown> | undefined;
+    let discarding: Promise<void> | undefined;
+    let discarded = false;
+    act(() => {
+      starting = result.current.start(options, DEFAULT_VOLUME_DB);
+      discarding = result.current.discard().then(() => { discarded = true; });
+    });
+    expect(discarded).toBe(false);
+    await act(async () => { release?.(); await starting; await discarding; });
+    expect(discarded).toBe(true);
+    expect(env.context.state).toBe('closed');
+    expect(result.current.engine()).toBeNull();
+  });
   it('reflects a system interruption and resumes only on a user start or an actual running event', async () => {
     const env = createFakeAudioEnvironment();
     const { result } = renderHook(() => useAudioEngine(env.factory));

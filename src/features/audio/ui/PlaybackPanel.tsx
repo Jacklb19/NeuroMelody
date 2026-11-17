@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import { createPortal } from 'react-dom';
 import { APP_NAME } from '../../../config/app';
 import { useMessages, type Messages } from '../../../i18n/messages';
 import { SECONDS_PER_MINUTE } from '../../../shared/time';
@@ -72,6 +73,15 @@ export interface PlaybackHandle {
 }
 
 interface PlaybackPanelProps {
+  /** The controls can follow a route while this component and its audio stay mounted. */
+  readonly controlsHost?: HTMLElement | null;
+  readonly media?: {
+    readonly title: string;
+    readonly album: string;
+    readonly onPlay: () => void;
+    readonly onPrevious?: (() => void) | undefined;
+    readonly onNext?: (() => void) | undefined;
+  };
   readonly ref?: Ref<PlaybackHandle>;
   readonly durationMin: number;
   /** Level the music starts at: the one the program of the session asks for (ADR-38). */
@@ -148,6 +158,8 @@ export function PlaybackPanel({
   onFinished,
   hideStart = false,
   onMixChange,
+  controlsHost,
+  media,
 }: PlaybackPanelProps): React.JSX.Element {
   const t = useMessages();
   const control = useAudioEngine(factory);
@@ -166,6 +178,8 @@ export function PlaybackPanel({
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
   // The piece being played, when the page chose one (P-17).
   const pieceRef = useRef<PlaybackPiece | null>(null);
+  const startGeneration = useRef(0);
+  useEffect(() => () => { startGeneration.current++; }, []);
   const titleId = useId();
   const volumeId = useId();
   const warningTitleId = useId();
@@ -198,12 +212,11 @@ export function PlaybackPanel({
   );
 
   const start = async (piece?: PlaybackPiece): Promise<void> => {
+    const generation = ++startGeneration.current;
     if (piece !== undefined) {
       // Another piece: the engine of the last one goes, and its time with it.
-      if (getEngine() !== null) {
-        onEngineChange?.(null);
-        await control.discard();
-      }
+      await control.discard();
+      if (generation !== startGeneration.current) return;
       pieceRef.current = piece;
       if (piece.mix !== undefined) setMix(piece.mix);
       listenedRef.current = 0;
@@ -230,7 +243,7 @@ export function PlaybackPanel({
       // A piece given now brings its own balance; the state above only shows on the next render.
       piece?.mix ?? mix,
     );
-    if (engine === null) {
+    if (engine === null || generation !== startGeneration.current) {
       return;
     }
     if (finished) listenedRef.current = 0;
@@ -242,6 +255,7 @@ export function PlaybackPanel({
 
 
   const stopNow = useCallback((): void => {
+    startGeneration.current++;
     const engine = getEngine();
     const startTime = sessionStartRef.current;
     if (engine !== null && startTime !== null) listenedRef.current = Math.max(listenedRef.current, engine.audioTime - startTime);
@@ -343,6 +357,14 @@ export function PlaybackPanel({
   }, [stopNow]);
 
   const mediaArtist = t.audio.playback.mediaArtist;
+  const mediaTitle = media?.title ?? APP_NAME;
+  const mediaAlbum = media?.album;
+  const mediaPlay = media !== undefined;
+  const mediaPrevious = media?.onPrevious !== undefined;
+  const mediaNext = media?.onNext !== undefined;
+  const mediaActions = useRef(media);
+  // A clock tick changes transport callbacks, but must not replace system metadata every second.
+  useEffect(() => { mediaActions.current = media; }, [media]);
   // Media Session: operating system and headset controls.
   useEffect(() => {
     if (!('mediaSession' in navigator)) {
@@ -350,15 +372,29 @@ export function PlaybackPanel({
     }
     const session = navigator.mediaSession;
     if (typeof MediaMetadata !== 'undefined') {
-      session.metadata = new MediaMetadata({ title: APP_NAME, artist: mediaArtist });
+      session.metadata = new MediaMetadata({ title: mediaTitle, artist: mediaArtist,
+        ...(mediaAlbum === undefined ? {} : { album: mediaAlbum }),
+        artwork: [{ src: new URL('/icon.svg', window.location.origin).href, type: 'image/svg+xml', sizes: 'any' }] });
     }
     session.setActionHandler('pause', stopNow);
     session.setActionHandler('stop', stopNow);
+    const optional: readonly [MediaSessionAction, (() => void) | undefined][] = [
+      ['play', mediaPlay ? () => { mediaActions.current?.onPlay(); } : undefined],
+      ['previoustrack', mediaPrevious ? () => { mediaActions.current?.onPrevious?.(); } : undefined],
+      ['nexttrack', mediaNext ? () => { mediaActions.current?.onNext?.(); } : undefined],
+    ];
+    for (const [action, handler] of optional) {
+      try { session.setActionHandler(action, handler ?? null); } catch { /* Some browsers omit transport actions. */ }
+    }
     return () => {
       session.setActionHandler('pause', null);
       session.setActionHandler('stop', null);
+      for (const [action] of optional) {
+        try { session.setActionHandler(action, null); } catch { /* Unsupported on this browser. */ }
+      }
+      session.metadata = null;
     };
-  }, [stopNow, mediaArtist]);
+  }, [stopNow, mediaArtist, mediaTitle, mediaAlbum, mediaPlay, mediaPrevious, mediaNext]);
 
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -377,7 +413,7 @@ export function PlaybackPanel({
   // The engine works in decibels; people read the slider position as a percentage.
   const volumeText = t.audio.playback.volumeValue(Math.round((volumeDb - MIN_VOLUME_DB) / (MAX_VOLUME_DB - MIN_VOLUME_DB) * PERCENT));
 
-  return (
+  const controls = (
     <section
       aria-labelledby={titleId}
       className="playback-panel"
@@ -489,4 +525,5 @@ export function PlaybackPanel({
       </button>
     </section>
   );
+  return controlsHost == null ? controls : createPortal(controls, controlsHost);
 }

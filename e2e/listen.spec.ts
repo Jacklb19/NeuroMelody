@@ -92,7 +92,7 @@ test('Listen opens a player that keeps sounding while it closes, changes tab and
   expect(errors).toEqual([]);
 });
 
-test('a saved melody plays from its start, its time bar jumps, and leaving pauses it where it was (ADR-67)', async ({ page }) => {
+test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(ROUTES.listen);
@@ -118,15 +118,14 @@ test('a saved melody plays from its start, its time bar jumps, and leaving pause
   await expect(pause(page)).toBeVisible();
   await expect(bar).toHaveAttribute('aria-valuetext', /^01:0\d de 30:00$/);
 
-  // Going elsewhere stops it; coming back finds it paused at the same moment, ready to resume.
+  // Navigation keeps the same piece playing, with a pause control outside Listen.
   await page.getByRole('button', { name: listen.player.collapse }).click();
   await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.history }).click();
   await expect(page.getByRole('heading', { level: 1, name: es.history.title })).toBeVisible();
+  await expect(page.locator('.listening-bar').getByRole('button', { name: listen.player.pause, exact: true })).toBeVisible();
   await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.listen }).click();
-  await expect(stage(page).getByText(listen.player.phases.paused)).toBeVisible();
-  await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('aria-valuetext', /^01:0\d de 30:00$/);
-  await stage(page).getByRole('button', { name: listen.player.resume, exact: true }).click();
   await expect(pause(page)).toBeVisible();
+  await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('aria-valuetext', /^01:0\d de 30:00$/);
 
   // Deleting the melody while it is held keeps the piece, now unsaved.
   await pause(page).click();
