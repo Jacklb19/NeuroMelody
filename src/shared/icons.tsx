@@ -125,10 +125,19 @@ export const NextIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M17.500 5.500v13M6 6l8.500 6L6 18z" /></Icon>
 );
 export const BackIcon = (props: IconProps): React.JSX.Element => (
-  <Icon {...props}><path d="M4.500 12a7.500 7.500 0 1 0 2.200-5.300M4.500 4v3.500H8" /><path d="M10 10v5M13 10h2.500v1.700h-2v1.300a1 1 0 0 0 1 1H15.500" /></Icon>
+  <Icon {...props}><path d="M3 8a10 10 0 1 1-1 5M3 3v5h5" /><SkipDigits /></Icon>
 );
 export const ForwardIcon = (props: IconProps): React.JSX.Element => (
-  <Icon {...props}><path d="M19.500 12a7.500 7.500 0 1 1-2.200-5.300M19.500 4v3.500H16" /><path d="M9 10v5M12 10h2.500v1.700h-2v1.300a1 1 0 0 0 1 1H14.500" /></Icon>
+  <Icon {...props}><path d="M21 8a10 10 0 1 0 1 5M21 3v5h-5" /><SkipDigits /></Icon>
+);
+const SkipDigits = (): React.JSX.Element => (
+  <path d="m7 11 2-2v8m8-8h-4v4h2a2 2 0 0 1 0 4h-2" strokeWidth="1.4" />
+);
+export const BookmarkIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="M6 4h12v16l-6-4-6 4z" /></Icon>
+);
+export const CheckIcon = (props: IconProps): React.JSX.Element => (
+  <Icon {...props}><path d="m5 12 4 4 10-9" /></Icon>
 );
 export const ExpandIcon = (props: IconProps): React.JSX.Element => (
   <Icon {...props}><path d="M14 5h5v5M10 19H5v-5M19 5l-6 6M5 19l6-6" /></Icon>

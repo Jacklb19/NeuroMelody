@@ -576,6 +576,8 @@ Aprobado el 16 nov 2026 (propuesta P-17; definición completa en `plan-escuchar.
 
 ## ADR-67. Escuchar como reproductor: barra de tiempo, reproductor abierto y capítulos de la sesión
 
+La creación y la apertura de la vista ampliada se revisaron en ADR-70. La continuidad entre pantallas se rige por ADR-69.
+
 Aprobado el 16 nov 2026, tras probar ADR-66: el usuario quería un reproductor de música, con una barra que se pueda mover. Sustituye en ADR-66 la forma de retomar una melodía y la distribución de la pantalla; lo demás de ADR-66 sigue.
 
 - **Duración de cada melodía.** Una pieza dura lo que se eligió al crearla (15, 30, 45 o 60 minutos, ahora en la pestaña Crear) y una melodía guarda esa duración. Migración nueva `20261117010000_melody_duration.sql` (`duration_minutes`, 30 para las guardadas antes, y el punto guardado dentro de la pieza); la API la exige y el front lee como de 30 minutos las melodías que no la tienen.
@@ -607,6 +609,15 @@ Aprobado el 16 nov 2026. Amplía ADR-66/67 y conserva RF-11/18, RNF-01, ADR-07/1
 - **Cola.** «Reproducir la siguiente» viene activado por elección del usuario y se recuerda en el dispositivo. Al terminar una melodía guardada, la siguiente de la lista actual empieza desde cero sin cambiar de pantalla. Al terminar la última se detiene; una pieza sin guardar no elige otra por su cuenta. No hay repetición ni reproducción aleatoria.
 - **Aperturas y controles.** Durante una apertura o un salto, los controles que requieren la pieza esperan a que termine. Un cambio de pieza cancela y espera la apertura anterior antes de abrir otra; Detener y desmontar cancelan también lo que estuviera esperando. Los tiempos y fundidos siguen en el reloj de audio, sin cambiar síntesis ni análisis de señal.
 - **Media Session.** Título de melodía (o mundo), mundo e icono; reproducir, pausar, detener y anterior/siguiente cuando están disponibles. Los controles se liberan cuando sale el panel. La pestaña de fondo en PC se comprueba con el reloj del contexto; no acredita la pantalla bloqueada del teléfono. P-08 sigue abierto hasta la prueba física.
+
+## ADR-70. Creación explícita y reproductor compacto
+
+Aprobado el 16 nov 2026 (P-18). Revisa la creación y la apertura del reproductor de ADR-67. Conserva los controles de RF-11, los límites de RF-18 y RNF-06 y la continuidad de ADR-69.
+
+- **Crear pieza.** La acción al final de Crear resume el mundo o la combinación personalizada, el paso y la duración. Captura las opciones y comienza una pieza con semilla nueva. La confirmación aparece cuando arranca la reproducción. Cambiar las opciones deja intacta la pieza activa.
+- **Vista.** Crear, reproducir, reanudar y avanzar por la cola conservan la vista actual. «Abrir el reproductor» y el título de la barra mini abren la vista ampliada. «Atrás» conserva la reproducción al cerrarla. Las advertencias siguen siendo obligatorias.
+- **Identidad.** El orbe, el fondo y el nombre corresponden a la pieza actual. La configuración pendiente y cada entrada de la biblioteca y de la cola tienen su propia identidad, deducida por ADR-64. Las combinaciones personalizadas usan una paleta neutral. Se conserva el formato de las melodías.
+- **Controles.** Guardar y Guardada comparten el encabezado. Los saltos muestran 15 con la flecha de su dirección. El volumen queda visible y «Ajustes de sonido» contiene la mezcla y el avance automático, dentro del mismo panel de audio. Las transiciones respetan la preferencia de movimiento reducido.
 
 ## Decisiones menores aprobadas
 

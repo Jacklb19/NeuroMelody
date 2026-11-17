@@ -5,6 +5,7 @@ import { WARNINGS_STORAGE_KEY } from '../src/features/warnings/warningsRegistry'
 
 const copy = es.listen.player;
 const stage = (page: Page) => page.locator('.player-stage');
+const soundSettings = (page: Page) => stage(page).getByText(copy.soundSettings, { exact: true });
 const nav = (page: Page, label: string) => page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: label, exact: true });
 
 async function enter(page: Page): Promise<void> {
@@ -54,14 +55,25 @@ test('the same audio graph survives navigation and a background tab; previews an
     });
   });
   await enter(page);
-  await stage(page).getByRole('button', { name: copy.play, exact: true }).click();
+  await page.getByRole('radio', { name: es.plan.worlds.names.night_coast, exact: true }).check();
+  await page.getByRole('button', { name: es.listen.create.action }).click();
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
-  await page.getByRole('button', { name: copy.collapse }).click();
-  const graphCount = await page.evaluate(() => (window as Window & { testAudioContexts?: AudioContext[] }).testAudioContexts?.length ?? 0);
+  const countGraphs = (): Promise<number> => page.evaluate(() => (window as Window & { testAudioContexts?: AudioContext[] }).testAudioContexts?.length ?? 0);
+  const graphCount = await countGraphs();
+  expect(graphCount).toBeGreaterThan(0);
+  const mix = stage(page).getByRole('slider', { name: es.listeningTools.ambienceMix });
+  await expect(mix).toBeHidden();
+  await soundSettings(page).click();
+  await mix.fill('42');
+  await soundSettings(page).click();
+  await expect(mix).toBeHidden();
+  await soundSettings(page).click();
+  await expect(mix).toHaveValue('42');
+  expect(await countGraphs()).toBe(graphCount);
   await nav(page, es.app.navigation.history).click();
   const bar = page.locator('.listening-bar');
   await expect(bar).toHaveAttribute('data-phase', 'playing');
-  expect(await page.evaluate(() => (window as Window & { testAudioContexts?: AudioContext[] }).testAudioContexts?.length ?? 0)).toBe(graphCount);
+  expect(await countGraphs()).toBe(graphCount);
   const clock = (): Promise<number> => page.evaluate(() => (window as Window & { testAudioContexts?: AudioContext[] }).testAudioContexts?.find((audio) => audio.state === 'running')?.currentTime ?? -1);
   const before = await clock();
   const other = await context.newPage();
@@ -92,9 +104,11 @@ test('the queue advances automatically from zero and stops after the last melody
   await page.getByRole('button', { name: es.listen.melodies.playNamed('Primera costa') }).click();
   await expect(stage(page).getByRole('heading', { name: 'Primera costa', exact: true })).toBeVisible();
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
+  await soundSettings(page).click();
   await expect(page.getByRole('checkbox', { name: copy.autoNext })).toBeChecked();
   await page.getByRole('slider', { name: copy.seekLabel }).press('End');
   await expect(stage(page).getByRole('heading', { name: 'Segunda costa', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
   await expect(page.getByRole('slider', { name: copy.seekLabel })).toHaveAttribute('aria-valuetext', /^00:0\d de 15:00$/);
   await page.getByRole('slider', { name: copy.seekLabel }).press('End');
@@ -106,8 +120,17 @@ test('turning automatic advance off persists on reload and stops at the current 
   await enter(page);
   await seedQueue(page);
   await page.getByRole('button', { name: es.listen.melodies.playNamed('Primera costa') }).click();
+  await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
+  await stage(page).getByRole('button', { name: copy.next, exact: true }).click();
+  await expect(stage(page).getByRole('heading', { name: 'Segunda costa', exact: true })).toBeVisible();
+  await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
+  await stage(page).getByRole('button', { name: copy.previous, exact: true }).click();
+  await expect(stage(page).getByRole('heading', { name: 'Primera costa', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
+  await soundSettings(page).click();
   await page.getByRole('checkbox', { name: copy.autoNext }).uncheck();
   await page.reload();
+  await soundSettings(page).click();
   await expect(page.getByRole('checkbox', { name: copy.autoNext })).not.toBeChecked();
   await stage(page).getByRole('button', { name: copy.resume, exact: true }).click();
   await expect(stage(page).getByRole('button', { name: copy.pause, exact: true })).toBeVisible();
@@ -118,7 +141,7 @@ test('turning automatic advance off persists on reload and stops at the current 
 
 test('a recovered piece cannot bypass the warnings through the global resume button', async ({ page }) => {
   await enter(page);
-  await stage(page).getByRole('button', { name: copy.play, exact: true }).click();
+  await page.getByRole('button', { name: es.listen.create.action }).click();
   await stage(page).getByRole('button', { name: copy.pause, exact: true }).click();
   await page.evaluate((key) => { localStorage.removeItem(key); }, WARNINGS_STORAGE_KEY);
   await page.goto(ROUTES.app);
@@ -129,5 +152,6 @@ test('a recovered piece cannot bypass the warnings through the global resume but
   await expect(bar).toHaveAttribute('data-phase', 'paused');
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: es.warnings.accept }).click();
+  await expect(page).toHaveURL(ROUTES.listen);
   await expect(stage(page).getByRole('button', { name: copy.resume, exact: true })).toBeVisible();
 });

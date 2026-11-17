@@ -4,14 +4,12 @@
  * the melodies as its queue. Phone: a bar at the bottom that opens the player over the whole screen.
  * Every movement is short and eased, and none happens with reduced motion. Values come from index.css tokens.
  */
-.listen-page { --player-glow: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-/* The glow of the world's own colour, light enough to sit on the card in both themes. */
-.listen-page[data-world] { --player-glow: color-mix(in srgb, var(--world-glow) 22%, transparent); }
-.listen-page[data-world] { --landing-night-raised: var(--world-depth); --landing-glow-colour: color-mix(in srgb, var(--world-glow) var(--world-glow-strength), transparent); }
 .listen-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); grid-template-areas: 'player main'; gap: var(--space-10); align-items: start; }
 .listen-main { grid-area: main; display: grid; gap: var(--space-8); min-width: 0; }
 .listen-choices { display: grid; gap: var(--space-10); }
 .listen-tab-panel { animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
+.listen-layout :is(.listen-player, .listen-choices, .world-option, .melody-card, .melody-queue-item),
+.listening-bar { --listen-tint: color-mix(in srgb, var(--world-depth) var(--listen-world-tint), var(--color-paper)); }
 
 /* The two tabs: links in the query, drawn as one segmented control. */
 .listen-tabs { justify-self: start; display: inline-flex; gap: var(--space-1); padding: var(--space-1); background: var(--color-surface); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-pill); }
@@ -21,6 +19,7 @@
 
 /* The choices of the create tab. */
 .listen-levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.listen-choices .world-option:has(:checked) { background: var(--listen-tint); }
 .listen-level { flex-direction: column; align-items: flex-start; gap: var(--space-1); padding-right: var(--space-8); }
 .listen-level .secondary-text { font-size: var(--text-sm); }
 .listen-duration-options { grid-template-columns: repeat(var(--option-count), minmax(0, 1fr)); }
@@ -32,28 +31,41 @@
 .listen-adjust[open] .listen-adjust-body { animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
 .listen-adjust-body .plan-fieldset legend { font-size: var(--text-lg); }
 .listen-profile { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.listen-create-action { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3) var(--space-4); align-items: center; background: var(--listen-tint); }
+.listen-create-summary { display: grid; gap: var(--space-1); }
+.listen-create-summary strong { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--font-weight-normal); }
+.listen-create-summary .secondary-text, .listen-creation-status { font-size: var(--text-sm); }
+.listen-creation-status { grid-column: 2 / -1; color: var(--color-text-secondary); }
+.listen-creation-status:empty { position: absolute; }
+.listen-creation-status p { animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
 .listen-session-link { font-size: var(--text-sm); color: var(--color-text-secondary); }
 
 /* The player card: the paper card of the app, kept in sight while the choices scroll. */
-.listen-player { grid-area: player; position: sticky; top: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding: var(--space-8); color: var(--color-text); background: radial-gradient(ellipse at 50% 0%, var(--player-glow), transparent 65%), var(--card-background); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-settle var(--player-motion) var(--player-easing) both; }
+.listen-player { grid-area: player; position: sticky; top: var(--space-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding: var(--space-4); color: var(--color-text); background: linear-gradient(var(--listen-tint), var(--color-paper)); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); animation: listen-settle var(--player-motion) var(--player-easing) both; }
 .listen-player > * { min-width: 0; }
-.player-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-5); text-align: center; }
+.player-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); text-align: center; }
 /* The panels it borrows from the session carry named grid areas there; here they simply follow one another. */
 .player-stage > * { grid-area: auto; min-width: 0; width: 100%; }
-.player-stage > .listen-orb { width: 1em; }
+.player-identity { display: flex; align-items: center; gap: var(--space-3); text-align: left; }
+.is-expanded .player-identity { display: grid; justify-items: center; gap: var(--space-4); text-align: center; }
 .player-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
-.player-top .eyebrow { margin: 0; color: var(--color-accent); }
-.listen-orb { font-size: var(--listen-orb-size); transition: font-size var(--player-motion) var(--player-easing); }
-.listen-now { display: grid; gap: var(--space-2); }
-.listen-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-2xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
+.player-phase { font-size: var(--text-sm); text-align: left; }
+.player-header-actions { display: flex; align-items: center; gap: var(--space-2); }
+.player-header-actions :is(.player-save, .listen-saved) { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); min-height: var(--control-height); white-space: nowrap; }
+.player-header-actions .icon { flex-shrink: 0; }
+.player-header-actions :is(.player-save, .listen-saved) .icon { width: var(--space-4); height: var(--space-4); }
+.listen-orb { flex-shrink: 0; font-size: var(--listen-orb-size); transition: font-size var(--player-motion) var(--player-easing); }
+.listen-player .orb, .listening-bar .orb { --orb-colour: var(--world-glow); }
+.listen-now { display: grid; min-width: 0; gap: var(--space-2); }
+.listen-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); line-height: var(--heading-line-height); overflow-wrap: anywhere; }
 .listen-sound { font-size: var(--text-sm); }
 .listen-now .quiet-notice { margin: 0; }
-.player-mini { display: none; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); overflow: hidden; color: var(--color-text); background: var(--card-background); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); }
-.player-auto-next { display: flex; align-items: center; justify-content: center; gap: var(--space-3); min-height: var(--control-height); cursor: pointer; font-size: var(--text-sm); }
+.player-mini { display: none; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4); overflow: hidden; color: var(--color-text); background: var(--listen-tint); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-card); box-shadow: var(--card-shadow); }
+.player-auto-next { display: flex; align-items: center; gap: var(--space-3); min-height: var(--control-height); cursor: pointer; font-size: var(--text-sm); }
 .player-auto-next input { accent-color: var(--color-accent); }
 .listening-bar { position: fixed; left: var(--space-3); right: var(--space-3); bottom: max(var(--space-3), env(safe-area-inset-bottom)); z-index: var(--stop-layer); max-width: var(--auth-card-width); margin-inline: auto; }
 .listening-bar .player-mini { position: relative; display: flex; }
-.player-mini-line { position: absolute; left: 0; top: 0; height: var(--seek-mini-height); width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
+.player-mini-line { position: absolute; left: 0; top: 0; height: var(--seek-mini-height); width: calc(var(--seek-share) * 100%); background: var(--world-glow); transition: width var(--seek-follow) linear; }
 .player-mini-open { flex: 1; display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: var(--control-height); padding: 0; color: inherit; text-align: left; background: none; border: 0; font: inherit; cursor: pointer; }
 .player-mini-orb { font-size: var(--player-mini-orb-size); flex-shrink: 0; }
 .player-mini-text { display: grid; min-width: 0; line-height: 1.3; }
@@ -72,8 +84,9 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .icon-button:active:not(:disabled) { transform: scale(0.94); }
 .icon-button:disabled { opacity: 0.35; cursor: default; }
 .icon-button .icon { width: var(--icon-size); height: var(--icon-size); }
-.player-transport { display: grid; grid-template-columns: repeat(2, auto) auto repeat(2, auto); justify-content: center; align-items: center; gap: var(--space-4); }
+.player-transport { display: flex; justify-content: center; align-items: center; gap: var(--space-2); }
 .player-primary { display: inline-grid; place-items: center; width: var(--player-primary-size); height: var(--player-primary-size); padding: 0; color: var(--color-button-text); background: var(--color-accent); border: 0; border-radius: 50%; box-shadow: var(--glow-accent); cursor: pointer; transition: transform var(--motion-duration) var(--player-easing), box-shadow var(--motion-duration); }
+.listen-player:not(.is-expanded) .player-transport .player-primary { width: var(--listen-primary-size); height: var(--listen-primary-size); }
 .player-primary:hover:not(:disabled) { transform: scale(1.05); }
 .player-primary:active:not(:disabled) { transform: scale(0.95); }
 .player-primary:disabled { opacity: 0.5; cursor: default; }
@@ -89,7 +102,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .seek-track::before, .seek-fill { content: ''; position: absolute; left: 0; top: 50%; height: var(--seek-height); translate: 0 -50%; border-radius: var(--radius-pill); pointer-events: none; }
 .seek-track::before { right: 0; background: var(--color-border-subtle); }
 .seek-fill { width: calc(var(--seek-share) * 100%); background: var(--color-accent); transition: width var(--seek-follow) linear; }
-.listen-page[data-world] .seek-fill { background: var(--world-glow); }
+.listen-player .seek-fill { background: var(--world-glow); }
 .seek-saved { position: absolute; top: 50%; left: calc(var(--saved-share) * 100%); width: var(--seek-mark-width); height: var(--seek-mark-height); translate: -50% -50%; border-radius: var(--radius-pill); background: var(--color-text-secondary); pointer-events: none; }
 .seek-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; appearance: none; cursor: pointer; }
 .seek-input::-webkit-slider-runnable-track { height: 100%; background: transparent; }
@@ -102,15 +115,16 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .seek-bar.is-seeking .seek-fill { animation: listen-breathe 1.2s ease-in-out infinite; }
 .seek-times { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
 
-.listen-secondary { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
-.listen-secondary:empty { display: none; }
-.listen-saved { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); color: var(--color-accent); font-weight: var(--font-weight-strong); animation: listen-pop var(--player-motion) var(--player-easing); }
+.listen-saved { animation: listen-pop var(--player-motion) var(--player-easing); }
 .listen-notice { font-size: var(--text-sm); animation: listen-fade-up var(--player-motion) var(--player-easing) both; }
 .listen-notice .text-button { min-height: 0; padding: 0; }
 /* The playback panel of the session, quieter inside the card: its title is for screen readers. */
-.listen-player .playback-panel { padding: var(--space-5) 0 0; text-align: left; border: 0; border-top: var(--border-width) solid var(--color-border-subtle); border-radius: 0; background: none; box-shadow: none; }
+.listen-player .playback-panel { padding: var(--space-2) 0 0; text-align: left; border: 0; border-top: var(--border-width) solid var(--color-border-subtle); border-radius: 0; background: none; box-shadow: none; }
 .listen-player .playback-panel > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.listen-player .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; margin-top: var(--space-3); }
+.listen-player .playback-controls { grid-template-columns: auto minmax(0, 1fr) auto; margin-top: 0; font-size: var(--text-sm); }
+.player-sound-settings > summary { display: list-item; align-content: center; min-height: var(--control-height); padding-inline: var(--space-2); border-top: var(--border-width) solid var(--color-border-subtle); font-size: var(--text-sm); cursor: pointer; }
+.player-sound-settings-body { display: grid; gap: var(--space-2); padding-inline: var(--space-2); }
+.player-sound-settings-body .panel-footnote { margin: 0; }
 .listen-player .listening-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* "Stopped" would repeat what the player already says ("Paused"); it stays for screen readers. Interruptions still show. */
 .listen-player .playback-status:is([data-state='stopped'], [data-state='idle'], [data-state='playing']) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -121,7 +135,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .melody-list { display: grid; gap: var(--space-5); }
 .melody-cloud { font-size: var(--text-sm); }
 .melody-cards { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-.melody-card { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); min-width: 0; animation: listen-fade-up var(--player-motion) var(--player-easing) both; transition: border-color var(--motion-duration), transform var(--motion-duration) var(--player-easing); }
+.melody-card { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); min-width: 0; background: var(--listen-tint); animation: listen-fade-up var(--player-motion) var(--player-easing) both; transition: border-color var(--motion-duration), transform var(--motion-duration) var(--player-easing); }
 .melody-card:hover { transform: translateY(-2px); }
 .melody-card:focus { outline: none; }
 .melody-card.is-highlighted { box-shadow: inset 0 0 0 var(--focus-width) var(--color-focus); }
@@ -151,18 +165,14 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 .melody-queue { display: grid; gap: var(--space-4); }
 .melody-queue-title { font-family: var(--font-display); font-weight: var(--font-weight-normal); font-size: var(--text-xl); }
 .melody-queue-list { list-style: none; display: grid; gap: var(--space-2); }
-.melody-queue-item { display: flex; align-items: center; gap: var(--space-4); width: 100%; padding: var(--space-3) var(--space-4); color: var(--color-text); text-align: left; background: transparent; border: var(--border-width) solid transparent; border-radius: var(--radius-control); font: inherit; cursor: pointer; transition: background var(--motion-duration), border-color var(--motion-duration); }
-.melody-queue-item:hover { background: var(--color-surface); }
-.melody-queue-item.is-current { border-color: var(--color-accent); background: var(--color-surface); }
+.melody-queue-item { display: flex; align-items: center; gap: var(--space-4); width: 100%; padding: var(--space-3) var(--space-4); color: var(--color-text); text-align: left; background: var(--listen-tint); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-control); font: inherit; cursor: pointer; transition: border-color var(--motion-duration); }
+.melody-queue-item:hover { border-color: var(--color-border); }
+.melody-queue-item.is-current { border-color: var(--color-accent); }
 .melody-queue-text { flex: 1; display: grid; gap: var(--space-1); min-width: 0; }
 .melody-queue-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .melody-queue-text .secondary-text { font-size: var(--text-sm); }
+.melody-queue-current { flex-shrink: 0; width: var(--icon-size); height: var(--icon-size); color: var(--color-accent); }
 /* Three bars that move while the current melody sounds, and rest while it waits. */
-.melody-queue-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: var(--space-4); }
-.melody-queue-bars span { width: 3px; height: 30%; border-radius: var(--radius-pill); background: var(--color-accent); }
-.melody-queue-bars.is-playing span { animation: listen-bars 900ms ease-in-out infinite alternate; }
-.melody-queue-bars.is-playing span:nth-child(2) { animation-delay: 200ms; }
-.melody-queue-bars.is-playing span:nth-child(3) { animation-delay: 420ms; }
 
 /* Naming a melody: a modal card, with the page stepping back behind it. */
 .listen-save-dialog::backdrop { background: var(--color-dimmer-soft); animation: listen-fade var(--player-motion) ease both; }
@@ -187,7 +197,6 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 @keyframes listen-sheet { from { translate: 0 100%; } to { translate: 0 0; } }
 @keyframes listen-pop { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
 @keyframes listen-breathe { 50% { opacity: 0.45; } }
-@keyframes listen-bars { from { height: 25%; } to { height: 100%; } }
 
 @media (max-width: 1100px) {
   .melody-cards { grid-template-columns: minmax(0, 1fr); }
@@ -197,7 +206,7 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
 
 /* Tablet and phone: no card; a bar at the bottom opens the player over the whole screen. */
 @media (max-width: 900px) {
-  .listen-page { padding-bottom: var(--stop-reserve); }
+  .listen-page:has(.listen-player[data-mini]) { padding-bottom: var(--stop-reserve); }
   .listen-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'main'; gap: var(--space-8); }
   /* Closed, the player keeps no box of its own: only its bar, fixed at the bottom, and nothing in the layout. */
   .listen-player:not(.is-expanded) { display: contents; }
@@ -226,12 +235,10 @@ body:has(.listening-bar) .plan-start-bar { position: static; margin-top: var(--s
   .listen-duration-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .listen-adjust > summary { padding: var(--space-4) var(--space-5); }
   .listen-adjust-body { padding: 0 var(--space-5) var(--space-5); }
+  .listen-create-action { grid-template-columns: auto minmax(0, 1fr); padding: var(--space-4); }
+  .listen-create-action .pill-button, .listen-creation-status { grid-column: 1 / -1; }
   .melody-card { padding: var(--space-4); }
   .melody-empty { padding: var(--space-6); }
-  .player-transport { gap: var(--space-3); }
-}
-@media (max-width: 360px) {
-  .player-transport { gap: var(--space-2); }
 }
 @media (prefers-reduced-motion: reduce) {
   .listen-page *, .listen-page *::before, .listen-page *::after, .listen-save-dialog::backdrop { animation: none !important; transition: none !important; }

@@ -206,8 +206,9 @@
   --pulse-trace-height-compact: 3.5rem;
   --pulse-trace-bar-height: 0.375rem;
   /* Listen (P-17): the orb of the player on a wide screen and on a phone, and the width of a melody's menu. */
-  --listen-orb-size: 7rem;
-  --listen-orb-size-mobile: 4.5rem;
+  --listen-orb-size: 4.5rem;
+  --listen-primary-size: 3.5rem;
+  --listen-world-tint: 32%;
   --melody-menu-min-width: 11rem;
   /* The listening player (ADR-67): its sizes, its time bar and how it moves. */
   --player-primary-size: 4rem;
@@ -404,6 +405,7 @@ a.glass-card:hover { border-color: var(--color-border); transform: translateY(-2
 [data-world='high_moor'] { --world-depth: var(--world-high-moor-depth); --world-glow: var(--world-high-moor-glow); }
 [data-world='deep_space'] { --world-depth: var(--world-deep-space-depth); --world-glow: var(--world-deep-space-glow); }
 [data-world='quiet_room'] { --world-depth: var(--world-quiet-room-depth); --world-glow: var(--world-quiet-room-glow); }
+[data-world='custom'] { --world-depth: var(--color-surface); --world-glow: var(--color-text-muted); }
 
 .app-shell { width: 100%; max-width: var(--content-max-width); margin: 0 auto; padding: 0 var(--space-8); }
 a { color: var(--color-button-background); text-underline-offset: var(--space-1); }

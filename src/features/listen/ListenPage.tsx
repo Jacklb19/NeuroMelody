@@ -19,13 +19,13 @@ import './listen.css';
 export function ListenPage(): React.JSX.Element {
   const { copy, tab, expanded, highlightedId, library, melodies, sound, level, durationMin,
     setLevel, setDurationMin, current, phase, positionS, savedMelody, queueIndex, playing, seeking,
-    notice, saving, setSaving, shown, world, place, proposedName, changedSinceStart, sessionSound,
-    openPlayer, closePlayer, playNew, resume, restart, playMelody, seek, previous, next, changeSound,
-    openSave, save, goToTab, removeMelody, pause, setControlsHost, autoNext, changeAutoNext } = useListening();
+    notice, saving, setSaving, shown, world, place, proposedName, creationMessage, sessionSound,
+    openPlayer, closePlayer, createPiece, resume, restart, playMelody, seek, previous, next, changeSound,
+    openSave, save, goToTab, removeMelody, pause, setControlsHost } = useListening();
   usePageTitle(tab === 'melodies' ? copy.melodiesPageTitle : copy.pageTitle);
 
   return (
-    <div className={expanded ? 'listen-page is-player-open' : 'listen-page'} data-world={world ?? undefined}>
+    <div className={expanded ? 'listen-page is-player-open' : 'listen-page'}>
       <SleepDimmer active={playing && shown.initialLevel === 'sleep'} />
       <PageHeading eyebrow={copy.eyebrow} title={copy.pageTitle}>
         <p>{copy.introduction}</p>
@@ -34,10 +34,10 @@ export function ListenPage(): React.JSX.Element {
       <div className="listen-layout">
         <ListenPlayer
           onControlsHostChange={setControlsHost}
-          autoNext={autoNext}
-          onAutoNextChange={changeAutoNext}
           phase={phase}
-          title={savedMelody?.name ?? place}
+          title={current === null ? copy.player.label : savedMelody?.name ?? place}
+          world={world}
+          place={place}
           unsaved={current !== null && library.melodies !== null && savedMelody === null && phase !== 'ready' && !playing}
           level={shown.initialLevel}
           instrument={shown.instrument}
@@ -49,18 +49,14 @@ export function ListenPage(): React.JSX.Element {
           seeking={seeking}
           saved={savedMelody !== null}
           olderSound={savedMelody !== null && !soundsAsSaved(savedMelody)}
-          changedSinceStart={changedSinceStart}
           notice={notice}
           expanded={expanded}
-          tab={tab}
           canPrevious={current !== null && (positionS > RESTART_INSTEAD_OF_PREVIOUS_S || queueIndex > 0)}
           canNext={queueIndex >= 0 && queueIndex < melodies.length - 1}
-          queue={<MelodyQueue melodies={melodies} currentId={savedMelody?.id ?? null} playing={playing} onPlay={playMelody} />}
-          onPlay={playNew}
+          queue={<MelodyQueue melodies={melodies} currentId={savedMelody?.id ?? null} onPlay={playMelody} />}
           onPause={pause}
           onResume={resume}
           onRestart={restart}
-          onNewPiece={playNew}
           onSeek={seek}
           onPrevious={previous}
           onNext={next}
@@ -80,7 +76,8 @@ export function ListenPage(): React.JSX.Element {
           <div key={tab} className="listen-tab-panel">
             {tab === 'create' ? (
               <ListenChoices sound={sound} level={level} onSoundChange={changeSound} onLevelChange={setLevel}
-                durationMin={durationMin} onDurationChange={setDurationMin} />
+                durationMin={durationMin} onDurationChange={setDurationMin}
+                onCreate={createPiece} creating={seeking} creationMessage={creationMessage} />
             ) : (
               <MelodyList
                 melodies={melodies}

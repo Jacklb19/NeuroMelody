@@ -20,7 +20,7 @@ interface MelodyListProps {
   readonly paused: boolean;
   /** A melody a link brought into sight; it gets the focus once. */
   readonly highlightedId: string | null;
-  /** Plays the melody from its start in the open player; its time bar reaches any other moment. */
+  /** Plays the melody from its start without changing the player view. */
   readonly onPlay: (melody: Melody) => void;
   readonly onRename: (id: string, name: string) => void;
   readonly onDelete: (id: string) => void;
@@ -30,8 +30,7 @@ interface MelodyListProps {
 /**
  * The melodies tab of the listening screen (P-17, ADR-67): one card per
  * melody, the newest first, with the way to hear it and a small menu to
- * rename or delete it. Hearing one opens the player, whose time bar reaches
- * any moment of it, the saved one included.
+ * rename or delete it. The player time bar reaches any moment of it.
  */
 export function MelodyList(props: MelodyListProps): React.JSX.Element {
   const { melodies, cloud, failed, onCreate } = props;
@@ -73,7 +72,7 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
   const playing = playingId === melody.id;
   const highlighted = highlightedId === melody.id;
   const sound = world === null
-    ? `${instrumentNames[melody.instrument]} · ${ambienceNames[melody.ambience]}`
+    ? `${t.listen.player.custom} · ${instrumentNames[melody.instrument]} · ${ambienceNames[melody.ambience]}`
     : worldNames[world];
 
   // A link that names this melody brings it into sight once, with the focus on it, without playing it.
@@ -84,9 +83,9 @@ function MelodyCard({ melody, pending, playingId, paused, highlightedId, onPlay,
   }, [highlighted]);
 
   return (
-    <li ref={cardRef} tabIndex={highlighted ? -1 : undefined}
+    <li ref={cardRef} tabIndex={highlighted ? -1 : undefined} data-world={world ?? 'custom'}
       className={`melody-card glass-card${playing ? ' is-playing' : ''}${highlighted ? ' is-highlighted' : ''}`}>
-      <span className="world-swatch" data-world={world ?? undefined} aria-hidden="true" />
+      <span className="world-swatch" aria-hidden="true" />
       <div className="melody-body">
         <h3 className="melody-name">{melody.name}</h3>
         <p className="secondary-text melody-meta">
