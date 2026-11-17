@@ -41,7 +41,7 @@ async function storeMelody(page: Page): Promise<void> {
   }, { id: SAVED_ID, owner: OWNER });
 }
 
-test('Listen opens a player that keeps sounding while it closes, changes tab and saves a melody (ADR-67)', async ({ page }) => {
+test('creating a piece applies pending choices and saves the actual piece without opening the player (ADR-70)', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(ROUTES.app);
@@ -51,23 +51,41 @@ test('Listen opens a player that keeps sounding while it closes, changes tab and
   await acceptWarnings(page);
   await expect(page.getByRole('heading', { level: 1, name: listen.pageTitle })).toBeVisible();
 
-  // Playing opens the player over the screen, with the melodies as its queue.
+  const create = page.getByRole('button', { name: listen.create.action });
   await page.getByRole('radio', { name: es.plan.worlds.names.night_coast, exact: true }).check();
-  await stage(page).getByRole('button', { name: listen.player.play, exact: true }).click();
+  await create.click();
   await expect(pause(page)).toBeVisible();
+  await expect(page).toHaveURL(ROUTES.listen);
+  await expect(page.getByRole('status').filter({ hasText: listen.create.created(es.plan.worlds.names.night_coast) })).toBeVisible();
+
+  // Pending choices update the creation summary while the coast keeps playing.
+  const deepSpace = es.plan.worlds.names.deep_space;
+  await page.getByRole('radio', { name: deepSpace, exact: true }).check();
+  await page.getByRole('radio', { name: listen.player.minutesLong(45), exact: true }).check();
+  const summary = page.locator('.listen-create-summary');
+  await expect(summary).toContainText(deepSpace);
+  await expect(summary).toContainText(listen.player.minutesLong(45));
+  await expect(player(page)).toHaveAttribute('data-world', 'night_coast');
+  await expect(pause(page)).toBeVisible();
+  await create.press('Enter');
+  await expect(page.getByText(listen.create.created(deepSpace), { exact: true })).toBeVisible();
+  await expect(create).toBeFocused();
+  await expect(player(page)).toHaveAttribute('data-world', 'deep_space');
+  await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('max', '2700');
+  await expect(page).toHaveURL(ROUTES.listen);
+
+  const expand = player(page).getByRole('button', { name: listen.player.expand });
+  await expand.press('Enter');
   await expect(page).toHaveURL(`${ROUTES.listen}?player=open`);
   await expect(player(page).getByRole('heading', { name: listen.player.queueTitle })).toBeVisible();
-  await expect(player(page).getByRole('heading', { name: es.plan.worlds.names.night_coast })).toBeVisible();
+  await expect(player(page).getByRole('button', { name: listen.player.collapse })).toBeFocused();
 
   // Back closes the player, not the screen, and the music goes on.
   await page.goBack();
   await expect(page).toHaveURL(ROUTES.listen);
   await expect(player(page).getByRole('heading', { name: listen.player.queueTitle })).toHaveCount(0);
   await expect(pause(page)).toBeVisible();
-
-  // Changing the choices does not touch the music; the player says when they will sound.
-  await page.getByRole('radio', { name: es.plan.worlds.names.city_rain, exact: true }).check();
-  await expect(page.getByText(listen.player.nextNotice)).toBeVisible();
+  await expect(expand).toBeFocused();
 
   // The other tab keeps the music: the tab travels in the query, so the screen is not mounted again.
   await page.getByRole('link', { name: listen.tabs.melodies(0) }).click();
@@ -75,20 +93,47 @@ test('Listen opens a player that keeps sounding while it closes, changes tab and
   await expect(pause(page)).toBeVisible();
 
   // Saving asks for a name; Escape closes the dialog without stopping the music.
-  await stage(page).getByRole('button', { name: listen.player.save }).click();
+  await player(page).getByRole('button', { name: listen.player.save }).click();
   await expect(page.getByRole('dialog', { name: listen.save.title })).toBeVisible();
   await page.keyboard.press(STOP_SHORTCUT_KEY);
   await expect(page.getByRole('dialog', { name: listen.save.title })).toBeHidden();
   await expect(pause(page)).toBeVisible();
-  await stage(page).getByRole('button', { name: listen.player.save }).click();
-  await page.getByLabel(listen.save.nameLabel).fill('Mi costa');
+  await player(page).getByRole('button', { name: listen.player.save }).click();
+  await page.getByLabel(listen.save.nameLabel).fill('Mi espacio');
   await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
-  await expect(stage(page).locator('.listen-saved')).toHaveText(new RegExp(listen.player.saved));
-  await expect(page.getByRole('heading', { level: 3, name: 'Mi costa' })).toBeVisible();
+  await expect(player(page).getByRole('button', { name: listen.player.saved })).toBeVisible();
+  const savedCard = page.locator('.melody-card', { hasText: 'Mi espacio' });
+  await expect(savedCard).toHaveAttribute('data-world', 'deep_space');
 
   // Escape pauses, from anywhere on the screen (ADR-16).
   await page.keyboard.press(STOP_SHORTCUT_KEY);
   await expect(stage(page).getByRole('button', { name: listen.player.resume, exact: true })).toBeVisible();
+  await storeMelody(page);
+  await page.reload();
+  await expect(savedCard).toContainText(deepSpace);
+  await expect(savedCard).toContainText(listen.melodies.length(45));
+  const recipe = await page.evaluate(async () => {
+    const rows = await new Promise<Record<string, unknown>[]>((resolve, reject) => {
+      const request = indexedDB.open('neuromelody');
+      request.onerror = () => { reject(request.error ?? new Error('open failed')); };
+      request.onsuccess = () => {
+        const database = request.result;
+        const get = database.transaction('melodies').objectStore('melodies').getAll();
+        get.onsuccess = () => { resolve(get.result as Record<string, unknown>[]); database.close(); };
+        get.onerror = () => { reject(get.error ?? new Error('read failed')); database.close(); };
+      };
+    });
+    return rows.find((row) => row.name === 'Mi espacio');
+  });
+  expect(recipe).toMatchObject({ instrument: 'warm', ambience: 'none', profile: 'immersive', durationMin: 45 });
+
+  const swatch = savedCard.locator('.world-swatch');
+  const palette = await swatch.evaluate((element) => getComputedStyle(element).backgroundImage);
+  await page.getByRole('button', { name: listen.melodies.playNamed('Costa de prueba') }).click();
+  await expect(player(page)).toHaveAttribute('data-world', 'night_coast');
+  await expect(pause(page)).toBeVisible();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
+  expect(await swatch.evaluate((element) => getComputedStyle(element).backgroundImage)).toBe(palette);
   expect(errors).toEqual([]);
 });
 
@@ -108,6 +153,8 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
 
   await card.getByRole('button', { name: listen.melodies.playNamed('Costa de prueba') }).click();
   await expect(pause(page)).toBeVisible();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies&melody=${SAVED_ID}`);
+  await player(page).getByRole('button', { name: listen.player.expand }).click();
   await expect(player(page).getByRole('button', { name: /Costa de prueba/ })).toHaveAttribute('aria-current', 'true');
 
   // The bar is a slider: a key jumps a minute ahead, and the piece plays from there.
@@ -122,8 +169,17 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
   await page.getByRole('button', { name: listen.player.collapse }).click();
   await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.history }).click();
   await expect(page.getByRole('heading', { level: 1, name: es.history.title })).toBeVisible();
-  await expect(page.locator('.listening-bar').getByRole('button', { name: listen.player.pause, exact: true })).toBeVisible();
-  await page.getByRole('navigation', { name: es.app.mainNavigation }).getByRole('link', { name: es.app.navigation.listen }).click();
+  const globalBar = page.locator('.listening-bar');
+  await expect(globalBar.getByRole('button', { name: listen.player.pause, exact: true })).toBeVisible();
+  const openFromHistory = globalBar.getByRole('button', { name: listen.player.expand, exact: true });
+  await openFromHistory.click();
+  await expect(page).toHaveURL(`${ROUTES.listen}?player=open`);
+  await page.goBack();
+  await expect(page).toHaveURL(ROUTES.history);
+  await openFromHistory.click();
+  await page.getByRole('button', { name: listen.player.collapse, exact: true }).click();
+  await expect(page).toHaveURL(ROUTES.listen);
+  await expect(page.getByRole('button', { name: listen.create.action, exact: true })).toBeVisible();
   await expect(pause(page)).toBeVisible();
   await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toHaveAttribute('aria-valuetext', /^01:0\d de 30:00$/);
 
@@ -135,8 +191,44 @@ test('a saved melody keeps playing across routes and its time bar jumps (ADR-69)
   await page.getByRole('button', { name: listen.melodies.deleteConfirm }).click();
   await expect(page.getByText(listen.melodies.empty)).toBeVisible();
   await expect(stage(page).getByText(listen.player.unsaved)).toBeVisible();
-  await expect(stage(page).getByRole('button', { name: listen.player.save })).toBeVisible();
+  await expect(player(page).getByRole('button', { name: listen.player.save })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('a custom piece has its own identity and a failed save can be retried', async ({ page }) => {
+  await page.addInitScript(() => {
+    const put = Object.getOwnPropertyDescriptor(IDBObjectStore.prototype, 'put')?.value as IDBObjectStore['put'];
+    IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey) {
+      if (this.name === 'melodies' && typeof value === 'object' && value !== null &&
+        'name' in value && value.name === 'Guardar falla') throw new DOMException('Storage is full', 'QuotaExceededError');
+      return put.call(this, value, key);
+    };
+  });
+  await page.goto(ROUTES.listen);
+  await acceptWarnings(page);
+  await page.getByRole('radio', { name: es.plan.worlds.names.deep_space, exact: true }).check();
+  await page.getByText(listen.create.adjust, { exact: true }).click();
+  await page.getByRole('combobox', { name: es.listeningTools.profile }).selectOption('original');
+  await expect(page.locator('.listen-create-summary')).toContainText(listen.player.custom);
+  await page.getByRole('button', { name: listen.create.action }).click();
+  await expect(page.getByText(listen.create.created(listen.player.custom), { exact: true })).toBeVisible();
+  await expect(player(page)).toHaveAttribute('data-world', 'custom');
+
+  const save = player(page).getByRole('button', { name: listen.player.save });
+  await save.click();
+  await page.getByLabel(listen.save.nameLabel).fill('Guardar falla');
+  await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: listen.player.saveFailed })).toBeVisible();
+  await expect(pause(page)).toBeVisible();
+  await save.click();
+  await page.getByLabel(listen.save.nameLabel).fill('Combinación propia');
+  await page.getByRole('button', { name: listen.save.confirm, exact: true }).click();
+  await expect(player(page).getByRole('button', { name: listen.player.saved })).toBeVisible();
+
+  await player(page).getByRole('button', { name: listen.player.expand }).click();
+  const custom = page.getByRole('button', { name: /Combinación propia/ });
+  await expect(custom).toContainText(listen.player.custom);
+  await expect(custom).toHaveAttribute('data-world', 'custom');
 });
 
 test('on a phone a bar at the bottom opens the player over the screen, and Back closes it (ADR-67)', async ({ page }) => {
@@ -144,18 +236,34 @@ test('on a phone a bar at the bottom opens the player over the screen, and Back 
   await page.goto(ROUTES.listen);
   await acceptWarnings(page);
   const mini = page.locator('.player-mini');
-  await expect(mini.getByRole('button', { name: listen.player.play, exact: true })).toBeInViewport();
-
-  await mini.getByRole('button', { name: listen.player.play, exact: true }).click();
+  await storeMelody(page);
+  await page.goto(`${ROUTES.listen}?tab=melodies`);
+  await page.getByRole('button', { name: listen.melodies.playNamed('Costa de prueba') }).click();
+  await expect(mini.getByRole('button', { name: listen.player.pause, exact: true })).toBeInViewport();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
+  await mini.getByRole('button', { name: listen.player.expand }).click();
   await expect(pause(page)).toBeInViewport();
   await expect(page.getByRole('slider', { name: listen.player.seekLabel })).toBeInViewport();
 
   await page.goBack();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
   await expect(mini.getByRole('button', { name: listen.player.pause, exact: true })).toBeInViewport();
   await mini.getByRole('button', { name: listen.player.expand }).click();
   await expect(pause(page)).toBeInViewport();
   await pause(page).click();
   await expect(stage(page).getByRole('button', { name: listen.player.resume, exact: true })).toBeInViewport();
+  await player(page).getByText(listen.player.soundSettings, { exact: true }).click();
+  const ambienceMix = player(page).getByRole('slider', { name: es.listeningTools.ambienceMix });
+  await ambienceMix.scrollIntoViewIfNeeded();
+  await expect(ambienceMix).toBeInViewport();
+  await player(page).evaluate((sheet) => { sheet.scrollTop = sheet.scrollHeight; });
+  const minimize = player(page).getByRole('button', { name: listen.player.collapse, exact: true });
+  await expect(minimize).toBeInViewport();
+  await minimize.click();
+  await expect(page).toHaveURL(`${ROUTES.listen}?tab=melodies`);
+  await expect(mini.getByRole('button', { name: listen.player.resume, exact: true })).toBeInViewport();
+  await page.getByRole('link', { name: listen.tabs.create, exact: true }).click();
+  await expect(page.getByRole('button', { name: listen.create.action, exact: true })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBe(0);
 });

@@ -1,8 +1,10 @@
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useMessages } from '../../i18n/messages';
 import { BreathingOrb } from '../../shared/BreathingOrb';
 import {
   BackIcon,
+  BookmarkIcon,
+  CheckIcon,
   CollapseIcon,
   ExpandIcon,
   ForwardIcon,
@@ -14,7 +16,7 @@ import {
 import type { AmbienceId } from '../audio/core/ambienceCatalog';
 import type { InstrumentId } from '../audio/core/instrumentCatalog';
 import type { LevelId } from '../audio/engine/levels';
-import type { ListenTab } from './listenCatalog';
+import type { WorldId } from '../plan/worldCatalog';
 import { MAX_MELODIES } from './melody';
 import { SeekBar } from './SeekBar';
 
@@ -26,11 +28,11 @@ export const SKIP_S = 15;
 
 interface ListenPlayerProps {
   readonly onControlsHostChange: (node: HTMLDivElement | null) => void;
-  readonly autoNext: boolean;
-  readonly onAutoNextChange: (enabled: boolean) => void;
   readonly phase: PlayerPhase;
   /** The saved melody's name, the world, or the words for a sound chosen by hand. */
   readonly title: string;
+  readonly world: WorldId | null;
+  readonly place: string;
   /** A piece heard and stopped that nobody saved: it is the last one heard. */
   readonly unsaved: boolean;
   readonly level: LevelId;
@@ -44,21 +46,16 @@ interface ListenPlayerProps {
   readonly seeking: boolean;
   readonly saved: boolean;
   readonly olderSound: boolean;
-  /** The create tab no longer matches what sounds: the new choices wait for a new piece. */
-  readonly changedSinceStart: boolean;
   readonly notice: 'saved' | 'full' | 'failed' | null;
   /** Open: the player takes most of the screen, with the melodies as a queue. */
   readonly expanded: boolean;
-  readonly tab: ListenTab;
   readonly canPrevious: boolean;
   readonly canNext: boolean;
   /** The saved melodies beside the open player. */
   readonly queue: ReactNode;
-  readonly onPlay: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onRestart: () => void;
-  readonly onNewPiece: () => void;
   readonly onSeek: (seconds: number) => void;
   readonly onPrevious: () => void;
   readonly onNext: () => void;
@@ -80,101 +77,109 @@ interface ListenPlayerProps {
  */
 export function ListenPlayer(props: ListenPlayerProps): React.JSX.Element {
   const { phase, title, unsaved, level, instrument, ambience, hasPiece, positionS, lengthS, savedAtS } = props;
-  const { seeking, saved, olderSound, changedSinceStart, notice, expanded, tab, queue } = props;
+  const { seeking, saved, olderSound, notice, expanded, queue, world, place } = props;
   const { onControlsHostChange } = props;
   const t = useMessages();
   const copy = t.listen.player;
   const titleId = useId();
+  const miniTextId = useId();
+  const miniOpenRef = useRef<HTMLButtonElement>(null);
+  const cardOpenRef = useRef<HTMLButtonElement>(null);
+  const collapseRef = useRef<HTMLButtonElement>(null);
+  const wasExpanded = useRef(false);
+  useEffect(() => {
+    if (expanded) collapseRef.current?.focus();
+    else if (wasExpanded.current) {
+      const opener = miniOpenRef.current?.getClientRects().length ? miniOpenRef.current : cardOpenRef.current;
+      opener?.focus({ preventScroll: true });
+    }
+    wasExpanded.current = expanded;
+  }, [expanded]);
   const levelNames: Readonly<Record<LevelId, string>> = t.session.journey.levels;
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const ambienceNames: Readonly<Record<AmbienceId, string>> = t.plan.ambience.names;
   const sound = `${levelNames[level]} · ${instrumentNames[instrument]} · ${ambienceNames[ambience]}`;
   const share = lengthS > 0 ? Math.min(1, positionS / lengthS) : 0;
-  // On a phone the bar shows what can be played or what plays; on the melodies tab with nothing chosen, each card plays its own.
-  const miniBar = hasPiece || tab === 'create';
-
   return (
     <aside className={expanded ? 'listen-player is-expanded' : 'listen-player'} aria-labelledby={titleId} data-phase={phase}
-      data-mini={miniBar || undefined}>
+      data-world={world ?? 'custom'} data-mini={hasPiece || undefined}>
       {/* The bar of a phone: the whole of it opens the player, and its button plays or pauses. */}
       <div className="player-mini" style={{ '--seek-share': share } as React.CSSProperties}>
         <span className="player-mini-line" aria-hidden="true" />
-        <button type="button" className="player-mini-open" onClick={props.onExpand} aria-label={copy.expand}>
+        <button ref={miniOpenRef} type="button" className="player-mini-open" onClick={props.onExpand}
+          aria-label={copy.expand} aria-describedby={miniTextId}>
           <BreathingOrb className="player-mini-orb" />
-          <span className="player-mini-text">
+          <span className="player-mini-text" id={miniTextId}>
             <strong>{title}</strong>
-            <span className="secondary-text">{hasPiece ? copy.phases[phase] : sound}</span>
+            <span className="secondary-text">{title === place ? copy.phases[phase] : `${place} · ${copy.phases[phase]}`}</span>
           </span>
         </button>
         <PrimaryButton {...props} compact />
       </div>
 
-      <div className="player-stage">
-        <div className="player-top">
-          <p className="eyebrow">{copy.phases[phase]}</p>
+      <div className="player-top">
+        <p className="secondary-text player-phase">{seeking && phase === 'paused' ? copy.preparing : copy.phases[phase]}</p>
+        <div className="player-header-actions">
+          {hasPiece && (saved
+            ? <button type="button" className="text-button listen-saved" onClick={props.onViewSaved}
+              aria-description={copy.viewSaved}><CheckIcon /> {copy.saved}</button>
+            : <button type="button" className="text-button player-save" onClick={props.onSave} disabled={seeking}
+              aria-label={copy.save}><BookmarkIcon /> {copy.saveShort}</button>)}
           {expanded ? (
-            <button type="button" className="icon-button" onClick={props.onCollapse} aria-label={copy.collapse}><CollapseIcon /></button>
-          ) : (
-            <button type="button" className="icon-button player-open" onClick={props.onExpand} aria-label={copy.expand}><ExpandIcon /></button>
+            <button ref={collapseRef} type="button" className="pill-button pill-button-ghost player-collapse" onClick={props.onCollapse}>
+              <CollapseIcon /> {copy.collapse}
+            </button>
+          ) : hasPiece && (
+            <button ref={cardOpenRef} type="button" className="icon-button" onClick={props.onExpand} aria-label={copy.expand}><ExpandIcon /></button>
           )}
         </div>
-        <BreathingOrb className="listen-orb" />
-        <div className="listen-now">
-          <h2 id={titleId} className="listen-title">{title}</h2>
-          <p className="secondary-text listen-sound">{sound}</p>
-          {unsaved && <p className="secondary-text">{copy.unsaved}</p>}
-          {olderSound && <p className="quiet-notice">{copy.olderSound}</p>}
-          {changedSinceStart && <p className="quiet-notice" role="status">{copy.nextNotice}</p>}
+      </div>
+
+      <div className="player-stage">
+        <div className="player-identity">
+          <BreathingOrb className="listen-orb" />
+          <div className="listen-now">
+            <h2 id={titleId} className="listen-title">{title}</h2>
+            {hasPiece && <p className="secondary-text listen-sound">{title === place ? sound : `${place} · ${sound}`}</p>}
+            {unsaved && <p className="secondary-text">{copy.unsaved}</p>}
+            {olderSound && <p className="quiet-notice">{copy.olderSound}</p>}
+          </div>
         </div>
 
         {hasPiece && <SeekBar positionS={positionS} lengthS={lengthS} savedAtS={savedAtS} seeking={seeking} onSeek={props.onSeek} />}
 
-        <div className="player-transport">
+        {hasPiece && <div className="player-transport">
           <button type="button" className="icon-button" onClick={props.onPrevious} disabled={!props.canPrevious} aria-label={copy.previous}><PreviousIcon /></button>
-          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS - SKIP_S); }} disabled={!hasPiece || seeking} aria-label={copy.back(SKIP_S)}><BackIcon /></button>
+          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS - SKIP_S); }} disabled={seeking} aria-label={copy.back(SKIP_S)}><BackIcon /></button>
           <PrimaryButton {...props} />
-          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS + SKIP_S); }} disabled={!hasPiece || seeking} aria-label={copy.forward(SKIP_S)}><ForwardIcon /></button>
+          <button type="button" className="icon-button" onClick={() => { props.onSeek(positionS + SKIP_S); }} disabled={seeking} aria-label={copy.forward(SKIP_S)}><ForwardIcon /></button>
           <button type="button" className="icon-button" onClick={props.onNext} disabled={!props.canNext} aria-label={copy.next}><NextIcon /></button>
-        </div>
+        </div>}
 
-        <div className="listen-secondary">
-          {hasPiece && phase !== 'ready' && (saved
-            ? <p className="listen-saved" role="status"><span aria-hidden="true">✓</span> {copy.saved}</p>
-            : <button type="button" className="pill-button pill-button-ghost" onClick={props.onSave}>{copy.save}</button>)}
-          {hasPiece && tab === 'create' && (
-            <button type="button" className="pill-button pill-button-ghost" onClick={props.onNewPiece}>{copy.newPiece}</button>
-          )}
-        </div>
-
-        {notice !== null && (
+        <p role="status" className="visually-hidden">{notice === 'saved' && copy.savedNotice}</p>
+        {(notice === 'full' || notice === 'failed') && (
           <p className="listen-notice" role="status">
-            {notice === 'saved' && <>{copy.savedNotice} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.viewSaved}</button></>}
             {notice === 'full' && <>{copy.full(MAX_MELODIES)} <button type="button" className="text-button" onClick={props.onViewSaved}>{copy.goToMelodies}</button></>}
             {notice === 'failed' && copy.saveFailed}
           </p>
         )}
-
-        <label className="player-auto-next">
-          <input type="checkbox" checked={props.autoNext} onChange={(event) => { props.onAutoNextChange(event.target.checked); }} />
-          {copy.autoNext}
-        </label>
-        <div ref={onControlsHostChange} className="player-audio-controls" />
       </div>
 
+      <div ref={onControlsHostChange} className="player-audio-controls" />
       {expanded && <div className="player-queue">{queue}</div>}
     </aside>
   );
 }
 
 /** Play, pause, resume or start again: one button whose meaning follows the moment. */
-function PrimaryButton({ phase, hasPiece, seeking, onPlay, onPause, onResume, onRestart, compact = false }: ListenPlayerProps & { readonly compact?: boolean }): React.JSX.Element {
+function PrimaryButton({ phase, hasPiece, seeking, onPause, onResume, onRestart, compact = false }: ListenPlayerProps & { readonly compact?: boolean }): React.JSX.Element {
   const copy = useMessages().listen.player;
   const playing = phase === 'playing';
-  const label = playing ? copy.pause : phase === 'ended' ? copy.restart : phase === 'paused' ? copy.resume : copy.play;
-  const action = playing ? onPause : phase === 'ended' ? onRestart : phase === 'paused' ? onResume : onPlay;
+  const label = playing ? copy.pause : phase === 'ended' ? copy.restart : copy.resume;
+  const action = playing ? onPause : phase === 'ended' ? onRestart : onResume;
   return (
     <button type="button" className={compact ? 'player-primary is-compact' : 'player-primary'} onClick={action}
-      disabled={seeking || (!hasPiece && phase !== 'ready')} aria-label={label} data-playing={playing || undefined}>
+      disabled={seeking || !hasPiece} aria-label={label} data-playing={playing || undefined}>
       <span className="player-primary-icon" aria-hidden="true">{playing ? <PlayerPauseIcon /> : <PlayIcon />}</span>
     </button>
   );

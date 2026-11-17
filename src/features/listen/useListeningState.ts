@@ -9,6 +9,7 @@ import type { AudioEngine } from '../audio/engine/AudioEngine';
 import type { MixTrack } from '../audio/engine/soundProfile';
 import type { PlaybackHandle, PlaybackPiece } from '../audio/ui/PlaybackPanel';
 import { useAuth } from '../account/authContext';
+import { warningsReturnState } from '../warnings/returnPath';
 import { useWarningsRegistry } from '../warnings/warningsContext';
 import { readAmbience, readInstrument, rememberAmbience, rememberInstrument } from '../plan/soundChoices';
 import { worldOf, type SoundChoices, type WorldId } from '../plan/worldCatalog';
@@ -28,10 +29,10 @@ import { MelodyLimitError, useMelodies } from './useMelodies';
 /** Query value of the open player: it gets an entry of its own, so Back closes it (ADR-67). */
 const PLAYER_PARAM = 'player';
 const PLAYER_OPEN = 'open';
-/** Navigation state left when this screen opened the player, so closing it can step back instead. */
-interface OpenedHere { readonly playerOpened: true }
+/** Only a player opened from Listen can minimize by stepping back. */
+interface OpenedHere { readonly playerOpenedHere: true }
 const openedHere = (state: unknown): state is OpenedHere =>
-  typeof state === 'object' && state !== null && (state as Record<string, unknown>).playerOpened === true;
+  typeof state === 'object' && state !== null && (state as Record<string, unknown>).playerOpenedHere === true;
 
 /** Pressing "previous" this far into a piece starts it again, as the players people know do. */
 export const RESTART_INSTEAD_OF_PREVIOUS_S = 5;
@@ -51,10 +52,6 @@ const FULL_MIX: Readonly<Record<MixTrack, number>> = { music: 1, ambience: 1 };
 function drawSeed(): number {
   return Math.floor(Math.random() * (MAX_SEED + 1));
 }
-
-const sameSound = (current: Current, sound: SoundChoices, level: LevelId, durationMin: number): boolean =>
-  current.piece.instrument === sound.instrument && current.piece.ambience === sound.ambience &&
-  current.piece.profile === sound.profile && current.piece.initialLevel === level && current.lengthS === durationMin * SECONDS_PER_MINUTE;
 
 const clamp = (value: number, max: number): number => Math.min(max, Math.max(0, value));
 
@@ -108,6 +105,8 @@ export function useListeningState() {
     return () => { if (previewStop.current === stop) previewStop.current = null; };
   }, []);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const pendingCreation = useRef<PlaybackPiece | null>(null);
+  const [creationResult, setCreationResult] = useState<PlaybackPiece | 'failed' | null>(null);
   const [saving, setSaving] = useState(false);
   const [controlsHost, setControlsHost] = useState<HTMLDivElement | null>(null);
   const [autoNext, setAutoNext] = useState(readAutoNext);
@@ -138,12 +137,15 @@ export function useListeningState() {
 
   const openPlayer = useCallback((): void => {
     if (expanded) return;
-    const opened = new URLSearchParams(location.pathname === ROUTES.listen ? params : undefined);
+    const fromListen = location.pathname === ROUTES.listen;
+    const opened = new URLSearchParams(fromListen ? params : undefined);
     opened.set(PLAYER_PARAM, PLAYER_OPEN);
     // The open player starts at the top of the page, wherever the choices had been scrolled to.
     window.scrollTo({ top: 0 });
-    // An entry of its own: Back, on the phone or the browser, closes the player instead of leaving the screen.
-    void navigate(`${ROUTES.listen}?${opened.toString()}`, { state: { playerOpened: true } satisfies OpenedHere });
+    // Browser Back always returns to the screen that opened the player.
+    void navigate(`${ROUTES.listen}?${opened.toString()}`, {
+      state: fromListen ? { playerOpenedHere: true } satisfies OpenedHere : undefined,
+    });
   }, [expanded, params, navigate, location.pathname]);
 
   const closePlayer = (): void => {
@@ -156,28 +158,44 @@ export function useListeningState() {
     setParams(closed, { replace: true });
   };
 
+  const ensureWarnings = useCallback((): boolean => {
+    if (warnings.isAccepted()) return true;
+    const returnTo = location.pathname === ROUTES.listen ? `${ROUTES.listen}${location.search}` : ROUTES.listen;
+    void navigate(ROUTES.warnings, { state: warningsReturnState(returnTo) });
+    return false;
+  }, [warnings, location.pathname, location.search, navigate]);
+
   /** Plays a piece from its start point: what is left of it plays, and its ending follows. */
-  const startPiece = useCallback((piece: PlaybackPiece, lengthS: number, melodyId: string | null): void => {
-    if (!warnings.isAccepted()) { openPlayer(); return; }
+  const startPiece = useCallback((piece: PlaybackPiece, lengthS: number, melodyId: string | null, creating = false): void => {
+    if (!ensureWarnings()) return;
+    const playback = playbackRef.current;
+    if (playback === null) return;
     previewStop.current?.();
+    const { mix, ...soundPiece } = piece;
     const startAtS = clamp(piece.startAtS, Math.max(0, lengthS - 1));
-    setCurrent({ piece: { ...piece, startAtS }, lengthS, melodyId });
+    pendingCreation.current = creating ? piece : null;
+    if (creating) setCreationResult(null);
+    setCurrent({ piece: { ...soundPiece, startAtS }, lengthS, melodyId });
+    setPhase('paused');
     setElapsedS(0);
     setNotice(null);
+    setSaving(false);
     setSeeking(true);
-    panelHasPiece.current = true;
+    // Escape can cancel the opening before the panel receives this recipe.
+    panelHasPiece.current = false;
+    if (mix !== undefined) mixRef.current = mix;
     // Inside the press, as browsers require to play sound.
-    playbackRef.current?.start({ ...piece, startAtS, mix: piece.mix ?? mixRef.current, playForS: lengthS - startAtS });
-  }, [warnings, openPlayer]);
+    playback.start({ ...piece, startAtS, mix: mixRef.current, playForS: lengthS - startAtS });
+  }, [ensureWarnings]);
 
-  const playNew = (): void => {
-    startPiece({ seed: drawSeed(), initialLevel: level, ...sound, startAtS: 0 }, durationMin * SECONDS_PER_MINUTE, null);
-    openPlayer();
+  const createPiece = (): void => {
+    if (seeking) return;
+    startPiece({ seed: drawSeed(), initialLevel: level, ...sound, startAtS: 0 }, durationMin * SECONDS_PER_MINUTE, null, true);
   };
   const resume = (): void => {
-    if (!warnings.isAccepted()) { openPlayer(); return; }
+    if (!ensureWarnings()) return;
     previewStop.current?.();
-    if (current === null) { playNew(); return; }
+    if (current === null) return;
     if (panelHasPiece.current && phase === 'paused') { playbackRef.current?.start(); return; }
     // Back on the screen, or after a jump while paused, the piece is built again where it stands.
     startPiece({ ...current.piece, startAtS: positionS }, current.lengthS, current.melodyId);
@@ -185,13 +203,11 @@ export function useListeningState() {
   const restart = (): void => {
     if (current !== null) startPiece({ ...current.piece, startAtS: 0 }, current.lengthS, current.melodyId);
   };
-  const playMelody = (melody: Melody, showPlayer = true): void => {
-    mixRef.current = { music: melody.musicMix, ambience: melody.ambienceMix };
+  const playMelody = (melody: Melody): void => {
     startPiece({
       seed: melody.seed, initialLevel: melody.level, instrument: melody.instrument, ambience: melody.ambience,
-      profile: melody.profile, startAtS: 0, mix: mixRef.current,
+      profile: melody.profile, startAtS: 0, mix: { music: melody.musicMix, ambience: melody.ambienceMix },
     }, melody.durationMin * SECONDS_PER_MINUTE, melody.id);
-    if (showPlayer) openPlayer();
   };
 
   /** A jump on the time bar. Playing, the piece plays from there; paused, it waits there. */
@@ -261,17 +277,21 @@ export function useListeningState() {
     }
   };
 
-  // A piece in a world, or a sound chosen by hand; what the player names and the screen is coloured by.
+  // The panel needs defaults before the first piece; the player palette belongs only to the current piece.
   const shown = current === null ? { ...sound, initialLevel: level } : current.piece;
-  const world: WorldId | null = worldOf(shown);
+  const world = current === null ? null : worldOf(current.piece);
   const worldNames: Readonly<Record<WorldId, string>> = t.plan.worlds.names;
   const instrumentNames: Readonly<Record<InstrumentId, string>> = t.plan.instrument.names;
   const place = world === null ? copy.player.custom : worldNames[world];
   const proposedName = copy.save.defaultName(world === null ? instrumentNames[shown.instrument] : worldNames[world], format.shortDate(new Date().toISOString()));
-  const changedSinceStart = current !== null && phase !== 'ready' && savedMelody === null && !sameSound(current, sound, level, durationMin);
+  const createdWorld = creationResult === null || creationResult === 'failed' ? null : worldOf(creationResult);
+  const creationMessage = creationResult === null ? null : creationResult === 'failed'
+    ? copy.create.failed
+    : copy.create.created(createdWorld === null ? copy.player.custom : worldNames[createdWorld]);
   const sessionSound = current === null ? sound : current.piece;
 
   const pause = useCallback((): void => {
+    pendingCreation.current = null;
     playbackRef.current?.stop();
     setSeeking(false);
     setPhase((value) => value === 'playing' ? 'paused' : value);
@@ -289,12 +309,19 @@ export function useListeningState() {
   const changeMix = useCallback((mix: Readonly<Record<MixTrack, number>>): void => { mixRef.current = mix; }, []);
   const onEngineChange = useCallback((engine: AudioEngine | null): void => {
     setSeeking(false);
-    if (engine !== null) { setPhase('playing'); return; }
+    const creation = pendingCreation.current;
+    pendingCreation.current = null;
+    if (creation !== null) setCreationResult(engine === null ? 'failed' : creation);
+    if (engine !== null) {
+      panelHasPiece.current = true;
+      setPhase('playing');
+      return;
+    }
     setPhase((value) => value === 'playing' ? 'paused' : value);
   }, []);
   const finish = (): void => {
     const following = queueIndex >= 0 ? melodies[queueIndex + 1] : undefined;
-    if (autoNext && following !== undefined && !exclusive) playMelody(following, false);
+    if (autoNext && following !== undefined && !exclusive) playMelody(following);
     else setPhase('ended');
   };
   const changeAutoNext = (enabled: boolean): void => {
@@ -303,8 +330,8 @@ export function useListeningState() {
   };
   return { copy, tab, expanded, highlightedId, library, melodies, sound, level, durationMin,
     setLevel, setDurationMin, current, phase, positionS, savedMelody, queueIndex, playing, seeking,
-    playbackRef, notice, saving, setSaving, shown, world, place, proposedName, changedSinceStart, sessionSound,
-    openPlayer, closePlayer, playNew, resume, restart, playMelody, seek, previous, next, changeSound,
+    playbackRef, notice, saving, setSaving, shown, world, place, proposedName, creationMessage, sessionSound,
+    openPlayer, closePlayer, createPiece, resume, restart, playMelody, seek, previous, next, changeSound,
     openSave, save, goToTab, removeMelody, pause, onEngineChange, setElapsedS,
     finish, changeMix, controlsHost, setControlsHost, exclusive, autoNext, changeAutoNext, registerPreviewStop };
 }

@@ -25,6 +25,15 @@ function ListeningSession({ owner, children }: { readonly owner: string | null; 
       {owner !== null && !exclusive && (current !== null || controlsHost !== null) && (
         <div hidden={controlsHost === null} className="listening-audio-host">
           <PlaybackPanel ref={playbackRef} controlsHost={controlsHost}
+            soundSettings={{
+              label: player.copy.player.soundSettings,
+              options: (
+                <label className="player-auto-next">
+                  <input type="checkbox" checked={player.autoNext} onChange={(event) => { player.changeAutoNext(event.target.checked); }} />
+                  {player.copy.player.autoNext}
+                </label>
+              ),
+            }}
             durationMin={current === null ? player.durationMin : current.lengthS / 60}
             initialLevel={shown.initialLevel} instrument={shown.instrument} ambience={shown.ambience} profile={shown.profile}
             quietEnding hideStart onEngineChange={player.onEngineChange} onElapsedChange={player.setElapsedS}

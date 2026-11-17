@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { APP_NAME } from '../../../config/app';
 import { useMessages, type Messages } from '../../../i18n/messages';
@@ -75,6 +75,8 @@ export interface PlaybackHandle {
 interface PlaybackPanelProps {
   /** The controls can follow a route while this component and its audio stay mounted. */
   readonly controlsHost?: HTMLElement | null;
+  /** Fold the mix controls with the player's related preferences while keeping volume visible. */
+  readonly soundSettings?: { readonly label: string; readonly options: ReactNode };
   readonly media?: {
     readonly title: string;
     readonly album: string;
@@ -159,6 +161,7 @@ export function PlaybackPanel({
   hideStart = false,
   onMixChange,
   controlsHost,
+  soundSettings,
   media,
 }: PlaybackPanelProps): React.JSX.Element {
   const t = useMessages();
@@ -182,6 +185,7 @@ export function PlaybackPanel({
   useEffect(() => () => { startGeneration.current++; }, []);
   const titleId = useId();
   const volumeId = useId();
+  const volumeNoticeId = useId();
   const warningTitleId = useId();
   const warningTextId = useId();
   const planDurationS = durationMin * SECONDS_PER_MINUTE;
@@ -412,6 +416,25 @@ export function PlaybackPanel({
   const stateText = finished && state !== 'playing' ? t.audio.playback.finished : stateLabels[state];
   // The engine works in decibels; people read the slider position as a percentage.
   const volumeText = t.audio.playback.volumeValue(Math.round((volumeDb - MIN_VOLUME_DB) / (MAX_VOLUME_DB - MIN_VOLUME_DB) * PERCENT));
+  const volumeNotice = <p id={volumeNoticeId} className="panel-footnote">{t.audio.playback.volumeNotice}</p>;
+  const mixControls = ambience !== DEFAULT_AMBIENCE_ID && (
+    <div className="tool-grid listening-tools">
+      {(['music', 'ambience'] as const).map((track) => (
+        <label key={track}>
+          {track === 'music' ? t.listeningTools.musicMix : t.listeningTools.ambienceMix}
+          <input type="range" min={0} max={PERCENT} value={Math.round(mix[track] * PERCENT)}
+            aria-valuetext={t.audio.playback.volumeValue(Math.round(mix[track] * PERCENT))}
+            disabled={state === 'loading'} onChange={(event) => {
+              const gain = event.target.valueAsNumber / PERCENT;
+              getEngine()?.setMix(track, gain);
+              const next = { ...mix, [track]: gain };
+              setMix(next);
+              onMixChange?.(next);
+            }} />
+        </label>
+      ))}
+    </div>
+  );
 
   const controls = (
     <section
@@ -421,7 +444,7 @@ export function PlaybackPanel({
       <h2 id={titleId}>
         {t.audio.playback.title}
       </h2>
-      <p className="panel-footnote">{t.audio.playback.volumeNotice}</p>
+      {soundSettings === undefined && volumeNotice}
 
       <div className="playback-controls">
         {/* While the music plays the start button has nothing to offer: the status line says it is sounding.
@@ -446,6 +469,7 @@ export function PlaybackPanel({
           max={MAX_VOLUME_DB}
           step={VOLUME_STEP_DB}
           value={volumeDb}
+          aria-describedby={volumeNoticeId}
           aria-valuetext={volumeText}
           onChange={(event) => {
             const applied = getEngine()?.setVolumeDb(Number(event.target.value)) ?? Number(event.target.value);
@@ -458,23 +482,15 @@ export function PlaybackPanel({
         </span>
       </div>
 
-      {ambience !== DEFAULT_AMBIENCE_ID && (
-        <div className="tool-grid listening-tools">
-          {(['music', 'ambience'] as const).map((track) => (
-            <label key={track}>
-              {track === 'music' ? t.listeningTools.musicMix : t.listeningTools.ambienceMix}
-              <input type="range" min={0} max={PERCENT} value={Math.round(mix[track] * PERCENT)}
-                aria-valuetext={t.audio.playback.volumeValue(Math.round(mix[track] * PERCENT))}
-                disabled={state === 'loading'} onChange={(event) => {
-                  const gain = event.target.valueAsNumber / PERCENT;
-                  getEngine()?.setMix(track, gain);
-                  const next = { ...mix, [track]: gain };
-                  setMix(next);
-                  onMixChange?.(next);
-                }} />
-            </label>
-          ))}
-        </div>
+      {soundSettings === undefined ? mixControls : (
+        <details className="player-sound-settings">
+          <summary>{soundSettings.label}</summary>
+          <div className="player-sound-settings-body">
+            {volumeNotice}
+            {mixControls}
+            {soundSettings.options}
+          </div>
+        </details>
       )}
 
       <p role="status" className="playback-status" data-state={state}>

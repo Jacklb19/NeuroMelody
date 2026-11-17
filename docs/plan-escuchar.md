@@ -2,6 +2,8 @@
 
 **Estado:** aprobado e implementado el 16 nov 2026 como ADR-66 (`decisiones.md`); sus pantallas están en `pantallas.md`. Este documento queda como la definición detallada.
 
+> **Revisión de creación y vista (ADR-70, P-18).** Las opciones de Crear terminan en un resumen y la acción «Crear pieza». La confirmación indica qué mundo se acaba de crear. La pieza activa tiene una identidad propia mientras se ajusta la siguiente. Crear y reproducir conservan la vista compacta o ampliada. Se amplía desde el control de apertura o el título de la barra mini. Guardar y Guardada comparten el encabezado, y «Ajustes de sonido» reúne la mezcla y el avance automático. Biblioteca y cola deducen el mundo de cada melodía.
+
 > **Continuidad aprobada el 16 nov (ADR-69).** Sustituye los apartados anteriores que indican detener al salir: la música sigue al navegar y las otras pantallas muestran una barra global también en pausa. Sesión medida, grabación, diagnóstico y muestra del plan toman prioridad. La siguiente melodía empieza sola si está activado el interruptor (encendido inicialmente); la última termina. Recargar conserva la recuperación en pausa y salir de la cuenta olvida la pieza. Detalles vigentes en ADR-69 y `pantallas.md`.
 
 > **Revisión del 16 nov (ADR-67).** Escuchar pasó a ser un reproductor de música. Donde este documento dice otra cosa, manda ADR-67:

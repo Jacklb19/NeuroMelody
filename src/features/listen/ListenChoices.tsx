@@ -17,15 +17,14 @@ interface ListenChoicesProps {
   /** How long the next piece lasts: the length of its time bar (ADR-67). */
   readonly durationMin: ListenDurationMin;
   readonly onDurationChange: (minutes: ListenDurationMin) => void;
+  readonly onCreate: () => void;
+  readonly creating: boolean;
+  readonly creationMessage: string | null;
 }
 
-/**
- * The create tab of the listening screen (P-17): what will sound when the
- * person presses play or asks for a new piece. The world comes first, as in
- * the plan (ADR-64); the step stays put while the piece plays, and the
- * separate sound choices are folded below.
- */
-export function ListenChoices({ sound, level, onSoundChange, onLevelChange, durationMin, onDurationChange }: ListenChoicesProps): React.JSX.Element {
+/** Configure and explicitly start the next piece independently of the player. */
+export function ListenChoices({ sound, level, onSoundChange, onLevelChange, durationMin, onDurationChange,
+  onCreate, creating, creationMessage }: ListenChoicesProps): React.JSX.Element {
   const t = useMessages();
   const copy = t.listen.create;
   const world = worldOf(sound);
@@ -37,13 +36,13 @@ export function ListenChoices({ sound, level, onSoundChange, onLevelChange, dura
   const ids = { worlds: useId(), levels: useId(), adjust: useId() };
 
   return (
-    <div className="listen-choices">
+    <div className="listen-choices" data-world={world ?? 'custom'}>
       <fieldset className="plan-fieldset" aria-describedby={ids.worlds}>
         <legend><span className="plan-step-number" aria-hidden="true">01</span>{copy.worldLegend}</legend>
         <p id={ids.worlds} className="secondary-text">{copy.worldHint}</p>
         <div className="world-options">
           {WORLD_IDS.map((id) => (
-            <label key={id} className="choice-card world-option">
+            <label key={id} className="choice-card world-option" data-world={id}>
               <input
                 type="radio"
                 name="listen-world"
@@ -53,7 +52,7 @@ export function ListenChoices({ sound, level, onSoundChange, onLevelChange, dura
                 checked={world === id}
                 onChange={() => { onSoundChange(WORLDS[id]); }}
               />
-              <span className="world-swatch" data-world={id} aria-hidden="true" />
+              <span className="world-swatch" aria-hidden="true" />
               <span className="world-text">
                 <strong>{worldNames[id]}</strong>
                 <span id={`${ids.worlds}-${id}`} className="secondary-text">{worldDescriptions[id]}</span>
@@ -141,6 +140,20 @@ export function ListenChoices({ sound, level, onSoundChange, onLevelChange, dura
           </label>
         </div>
       </details>
+
+      <div className="listen-create-action glass-card">
+        <span className="world-swatch" aria-hidden="true" />
+        <div className="listen-create-summary">
+          <strong>{world === null ? t.listen.player.custom : worldNames[world]}</strong>
+          <span className="secondary-text">{levelNames[level]} · {t.listen.player.minutesLong(durationMin)}</span>
+        </div>
+        <button type="button" className="pill-button pill-button-primary" onClick={onCreate} aria-disabled={creating}>
+          {copy.action}
+        </button>
+        <div className="listen-creation-status" role="status">
+          {creationMessage !== null && <p>{creationMessage}</p>}
+        </div>
+      </div>
     </div>
   );
 }
